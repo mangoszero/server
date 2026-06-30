@@ -24,6 +24,11 @@
 
 #include "Common.h"
 #include "BrowseMessages.h"
+#include "ServiceDatabase.h"
+#include "IpcChannel.h"            // IpcClient
+#include "Threading/Threading.h"   // ACE_Based::Runnable, Thread
+#include "BoundedQueue.h"          // explicit-capacity thread-safe queue
+#include <atomic>
 #include <string>
 #include <vector>
 
@@ -55,12 +60,71 @@ struct BrowseRow
     uint32 castSpellId;         ///< spellid_1 (Spells[0].SpellId); recipe-known match
 };
 
+/// Result status for BrowseHandler::Fetch (I3).
+enum FetchStatus
+{
+    FETCH_OK       = 0,   ///< Rows fetched (may be zero if AH genuinely empty)
+    FETCH_EMPTY    = 1,   ///< No rows AND confirmed-empty (COUNT(*) probe was 0)
+    FETCH_DB_ERROR = 2    ///< DB error -- caller must NOT reply (TTL fallback)
+};
+
 namespace BrowseHandler
 {
     /// PURE: usable filter (Task 6) + name filter (LIST) + pagination OR
     /// defer-un-paginated. Cheap proto filters are assumed SQL-applied.
     BrowseResult FilterAndPaginate(const std::vector<BrowseRow>& rows,
                                    const BrowseQuery& q);
+
+    /// On-demand SELECT for one query (auction JOIN item_instance JOIN world
+    /// item_template). Decodes the item_instance blob (Task 4), applies the
+    /// locale overlay (I2/D7/V3), then calls FilterAndPaginate. On a NULL
+    /// result runs a COUNT(*) probe (I3) to distinguish FETCH_EMPTY from
+    /// FETCH_DB_ERROR. Sets status accordingly.
+    BrowseResult Fetch(ServiceDatabase& db, const BrowseQuery& q,
+                       FetchStatus& status);
 }
+
+/// Dedicated worker browse thread. Single thread (FIFO, open-d). Owns per-thread
+/// MySQL init/teardown (C4). Explicit-capacity bounded queue (C4: BoundedQueue
+/// has no default ctor). Atomic stop. Joined before DB/client shutdown.
+class BrowseThread : public ACE_Based::Runnable
+{
+    public:
+        static const size_t QUEUE_CAP      = 256u;                  ///< max queued browses
+        static const size_t QUEUE_BYTE_CAP = 8u * 1024u * 1024u;   ///< 8 MB backstop
+
+        BrowseThread(ServiceDatabase& db, IpcClient& cli)
+            : m_db(db), m_cli(cli),
+              m_queue(QUEUE_CAP, QUEUE_BYTE_CAP),
+              m_stop(false),
+              m_processed(0), m_rejected(0), m_dbErrors(0)
+        {}
+
+        /// Enqueue a decoded query (thread-safe). On queue-full, sends an
+        /// immediate tooMany IPC_BROWSE_RESULT (D4) so mangosd falls back
+        /// in-process at once instead of waiting the ~10s TTL; returns false.
+        bool Submit(const BrowseQuery& q);
+
+        void Stop() { m_stop.store(true); }
+
+        void run() override;
+
+        uint64 Processed() const { return m_processed; }
+        uint64 Rejected()  const { return m_rejected; }
+        uint64 DbErrors()  const { return m_dbErrors; }
+
+    private:
+        ServiceDatabase&          m_db;
+        IpcClient&                m_cli;
+        BoundedQueue<BrowseQuery> m_queue;
+        std::atomic<bool>         m_stop;
+        uint64                    m_processed;
+        uint64                    m_rejected;
+        uint64                    m_dbErrors;
+
+        // Non-copyable.
+        BrowseThread(const BrowseThread&);
+        BrowseThread& operator=(const BrowseThread&);
+};
 
 #endif // AH_WORKER_BROWSE_HANDLER_H

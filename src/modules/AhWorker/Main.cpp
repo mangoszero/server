@@ -825,6 +825,47 @@ static int RunSelfTest()
         return 1;
     }
 
+    // --- Browse dispatch wiring: query decode -> empty fetch result encode ---
+    {
+        BrowseQuery q;
+        q.queryId = UINT64_C(0x00000002CAFEF00D);
+        q.kind = static_cast<uint8>(BROWSE_LIST);
+        q.house = 0u; q.allHouses = 0u;
+        q.itemClass = 0xFFFFFFFFu; q.itemSubClass = 0xFFFFFFFFu;
+        q.inventoryType = 0xFFFFFFFFu; q.quality = 0xFFFFFFFFu;
+        q.levelmin = 0u; q.levelmax = 0u; q.usable = 0u; q.deferEluna = 0u;
+        q.listfrom = 0u; q.localeIndex = 0; q.requesterGuidLow = 0u;
+        q.minMountLevel = 40u; q.minEpicMountLevel = 60u;
+        q.profile.classId = 1u; q.profile.raceId = 1u;
+        q.profile.level = 1u; q.profile.honorRank = 0u;
+
+        IpcMessage qm; qm.op = IPC_BROWSE_QUERY; q.Encode(qm.body);
+        BrowseQuery decoded;
+        if (!decoded.Decode(qm.body))
+        {
+            fprintf(stderr, "selftest FAILED: BrowseQuery loopback decode\n");
+            cli.Stop(); srv.Stop(); return 1;
+        }
+
+        std::vector<BrowseRow> none;
+        BrowseResult rr = BrowseHandler::FilterAndPaginate(none, decoded);
+        IpcMessage rm; rm.op = IPC_BROWSE_RESULT; rr.Encode(rm.body);
+        BrowseResult back;
+        if (!back.Decode(rm.body) || back.queryId != q.queryId ||
+            back.Count() != 0u || back.totalcount != 0u)
+        {
+            fprintf(stderr, "selftest FAILED: BrowseResult loopback mismatch\n");
+            cli.Stop(); srv.Stop(); return 1;
+        }
+
+        // Fetch must exist with the (ServiceDatabase&, BrowseQuery, FetchStatus&)
+        // signature. This cast is a compile-time symbol guard; never called in
+        // --selftest (no live DB), so we suppress the unused-variable warning
+        // by voiding it.
+        (void)static_cast<BrowseResult(*)(ServiceDatabase&, const BrowseQuery&,
+            FetchStatus&)>(&BrowseHandler::Fetch);
+    }
+
     printf("ipc selftest OK\n");
     fflush(stdout);
     return 0;
@@ -1427,6 +1468,11 @@ int main(int argc, char** argv)
            botBrain->BuyerEnabled() ? "on" : "off",
            emitDryRun ? "on" : "off", tickIntervalMs);
 
+    // SP-1: dedicated browse thread (owns per-thread MySQL init in run()).
+    BrowseThread* browseRunnable = new BrowseThread(botDb, cli);
+    browseRunnable->incReference();
+    ACE_Based::Thread browseThread(browseRunnable);
+
     // --- Service loop ---
     volatile bool stop = false;
     uint32 sinceTickMs = 0;       ///< Accumulator toward the bot cadence.
@@ -1503,6 +1549,25 @@ int main(int argc, char** argv)
                     printf("ah-service: IPC_QUEUE_FULL - backing off one"
                            " bot cycle\n");
                     backoffNext = true;
+                    break;
+                }
+                case IPC_BROWSE_QUERY:
+                {
+                    BrowseQuery bq;
+                    if (bq.Decode(msg.body))
+                    {
+                        if (!browseRunnable->Submit(bq))
+                        {
+                            // D4: Submit already replied tooMany=1; mangosd
+                            // serves the in-process fallback NOW (no ~10s TTL).
+                            printf("ah-service: browse queue full -"
+                                   " sent tooMany (mangosd in-process)\n");
+                        }
+                    }
+                    else
+                    {
+                        printf("ah-service: IPC_BROWSE_QUERY decode failed\n");
+                    }
                     break;
                 }
                 case IPC_GAMETIME:
@@ -1630,6 +1695,12 @@ int main(int argc, char** argv)
 
         ACE_Based::Thread::Sleep(10);
     }
+
+    // C4: stop the browse thread and JOIN before DB/client teardown so the
+    // thread's per-thread MySQL handle (ThreadEnd) is released cleanly.
+    browseRunnable->Stop();
+    browseThread.wait();             // guaranteed join
+    browseRunnable->decReference();  // may delete
 
     delete botBrain;
     delete botSnap;

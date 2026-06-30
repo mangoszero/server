@@ -22,6 +22,12 @@
 #include "BrowseHandler.h"
 #include "Usability.h"
 #include "Utilities/Util.h"   // Utf8FitTo / Utf8toWStr (src/shared; worker links `shared`)
+#include "IpcMessage.h"
+#include "IpcOpcodes.h"
+#include "ItemInstanceFields.h"
+#include "Log/Log.h"
+#include <cstdio>
+#include <cstring>
 
 namespace
 {
@@ -80,6 +86,356 @@ namespace
         return true;
     }
 }
+
+// ---------------------------------------------------------------------------
+// Anonymous helpers for Fetch
+// ---------------------------------------------------------------------------
+
+namespace
+{
+    /// Build the SQL house-scope clause.
+    /// allHouses (AllowTwoSide.Interaction.Auction) => neutral house (houseid 7).
+    /// Else by team: 0 -> (1,2,3)  1 -> (4,5,6)  2 -> 7.
+    std::string HouseClause(const BrowseQuery& q)
+    {
+        if (q.allHouses != 0u)
+        {
+            return " AND a.houseid = 7";
+        }
+        if (q.house == 0u)
+        {
+            return " AND a.houseid IN (1,2,3)";
+        }
+        if (q.house == 1u)
+        {
+            return " AND a.houseid IN (4,5,6)";
+        }
+        return " AND a.houseid = 7";
+    }
+}
+
+// ---------------------------------------------------------------------------
+// BrowseHandler::Fetch
+// ---------------------------------------------------------------------------
+
+namespace BrowseHandler
+{
+
+BrowseResult Fetch(ServiceDatabase& db, const BrowseQuery& q, FetchStatus& status)
+{
+    status = FETCH_OK;
+    std::vector<BrowseRow> rows;
+
+    // D7: build the world-DB qualifier ONCE as a std::string so there is no
+    // dangling .c_str() from a temporary. Empty => unqualified (same schema).
+    const std::string worldDb   = db.WorldDbName();
+    const std::string worldQual = worldDb.empty()
+        ? std::string()
+        : ("`" + worldDb + "`.");
+
+    // Locale overlay (I2/D7/V3): a SINGLE LEFT JOIN locales_item — NOT a
+    // per-row N+1. V3: the column suffix is the LocaleConstant DIRECTLY
+    // (name_loc{lc}, NO +1), bounds-checked against MAX_LOCALE. The join
+    // condition and the row-read guard MUST match exactly so f[26] is only
+    // read when the join was added.
+    std::string locCol;
+    std::string locJoin;
+    if (q.localeIndex >= 1 && int(q.localeIndex) < MAX_LOCALE)
+    {
+        char lc[64];
+        snprintf(lc, sizeof(lc), ", li.name_loc%d", int(q.localeIndex));
+        locCol  = lc;
+        locJoin = " LEFT JOIN " + worldQual + "locales_item li ON a.item_template = li.entry";
+    }
+
+    // auction + item_instance live in the character DB; item_template (and
+    // its locale overlay) in the world DB. Blob decoded in code (Task 4).
+    std::string sql =
+        "SELECT a.id, a.item_template, a.item_count, a.item_randompropertyid,"
+        "       a.itemowner, a.buyoutprice, a.lastbid, a.startbid, a.time, a.buyguid,"
+        "       ii.data,"
+        "       it.class, it.subclass, it.InventoryType, it.Quality, it.RequiredLevel,"
+        "       it.AllowableClass, it.AllowableRace, it.RequiredSkill, it.RequiredSkillRank,"
+        "       it.RequiredSpell, it.RequiredHonorRank, it.RequiredReputationFaction,"
+        "       it.RequiredReputationRank, it.name, it.spellid_1";
+    sql += locCol;                   // trailing localized-name column (f[26]) when set
+    sql += " FROM auction a";
+    sql += " JOIN item_instance ii ON a.itemguid = ii.guid";
+    sql += " JOIN " + worldQual + "item_template it ON a.item_template = it.entry";
+    sql += locJoin;
+    sql += " WHERE 1=1";
+    sql += HouseClause(q);
+
+    if (q.kind == static_cast<uint8>(BROWSE_LIST))
+    {
+        char buf[128];
+        if (q.itemClass != 0xFFFFFFFFu)
+        {
+            snprintf(buf, sizeof(buf), " AND it.class = %u", q.itemClass);
+            sql += buf;
+        }
+        if (q.itemSubClass != 0xFFFFFFFFu)
+        {
+            snprintf(buf, sizeof(buf), " AND it.subclass = %u", q.itemSubClass);
+            sql += buf;
+        }
+        if (q.inventoryType != 0xFFFFFFFFu)
+        {
+            snprintf(buf, sizeof(buf), " AND it.InventoryType = %u", q.inventoryType);
+            sql += buf;
+        }
+        if (q.quality != 0xFFFFFFFFu)
+        {
+            snprintf(buf, sizeof(buf), " AND it.Quality >= %u", q.quality);
+            sql += buf;
+        }
+        if (q.levelmin != 0u)
+        {
+            if (q.levelmax != 0u)
+            {
+                snprintf(buf, sizeof(buf), " AND it.RequiredLevel >= %u AND it.RequiredLevel <= %u",
+                         q.levelmin, q.levelmax);
+            }
+            else
+            {
+                snprintf(buf, sizeof(buf), " AND it.RequiredLevel >= %u", q.levelmin);
+            }
+            sql += buf;
+        }
+    }
+    else
+    {
+        // OWNER or BIDDER: scope by the requester GUID.
+        char buf[96];
+        const char* col = (q.kind == static_cast<uint8>(BROWSE_BIDDER))
+            ? "a.buyguid"
+            : "a.itemowner";
+        snprintf(buf, sizeof(buf), " AND %s = %u", col, q.requesterGuidLow);
+        sql += buf;
+    }
+
+    sql += " ORDER BY a.id";
+
+    QueryResult* result = db.Character().Query(sql.c_str());
+    if (!result)
+    {
+        // I3: NULL can be genuine empty OR a DB failure. Probe with COUNT(*) on
+        // the same DB to distinguish. If that also fails => FETCH_DB_ERROR and
+        // we do NOT send any reply (mangosd's TTL fallback fires).
+        QueryResult* probe = db.Character().Query("SELECT COUNT(*) FROM auction");
+        if (!probe)
+        {
+            status = FETCH_DB_ERROR;
+            BrowseResult empty;
+            empty.queryId     = q.queryId;
+            empty.kind        = q.kind;
+            empty.elunaPending = 0u;
+            empty.tooMany     = 0u;
+            empty.totalcount  = 0u;
+            return empty;
+        }
+        const uint32 auctionRows = probe->Fetch()[0].GetUInt32();
+        delete probe;
+        if (auctionRows != 0u)
+        {
+            // Rows exist in auction but the JOIN returned nothing => DB/config
+            // failure (cross-DB JOIN broken, missing grant, etc.).
+            status = FETCH_DB_ERROR;
+            sLog.outError("BrowseHandler::Fetch: JOIN empty but auction has %u rows"
+                          " (cross-DB/config failure)", auctionRows);
+            BrowseResult empty;
+            empty.queryId     = q.queryId;
+            empty.kind        = q.kind;
+            empty.elunaPending = 0u;
+            empty.tooMany     = 0u;
+            empty.totalcount  = 0u;
+            return empty;
+        }
+        // auction is genuinely empty.
+        status = FETCH_EMPTY;
+        return BrowseHandler::FilterAndPaginate(rows, q);
+    }
+
+    do
+    {
+        Field* f = result->Fetch();
+        BrowseRow r;
+
+        const uint32 aId      = f[0].GetUInt32();
+        const uint32 itemTmpl = f[1].GetUInt32();
+        const uint32 itemCnt  = f[2].GetUInt32();
+        const int32  randProp = f[3].GetInt32();    // auction.item_randompropertyid
+        const uint32 owner    = f[4].GetUInt32();
+        const uint32 buyout   = f[5].GetUInt32();
+        const uint32 lastbid  = f[6].GetUInt32();
+        const uint32 startbid = f[7].GetUInt32();
+        const uint64 expire   = f[8].GetUInt64();
+        const uint32 buyguid  = f[9].GetUInt32();
+
+        const std::string blob = f[10].GetCppString();
+        ItemInstanceFields iif = AhItemBlob::Decode(blob);
+
+        r.entry.id            = aId;
+        r.entry.itemEntry     = itemTmpl;
+        r.entry.enchantId     = iif.valid ? iif.enchantId     : 0u;
+        r.entry.randomPropId  = static_cast<uint32>(randProp); // auction col is authoritative
+        r.entry.suffixFactor  = iif.valid ? iif.suffixFactor  : 0u;
+        r.entry.count         = itemCnt;                       // auction col authoritative
+        r.entry.charges       = iif.valid ? iif.charges        : 0;
+        r.entry.ownerGuidLow  = owner;
+        r.entry.startbid      = startbid;
+
+        // outbid = GetAuctionOutBid(): (bid/100)*5, minimum 1 if bid>0.
+        if (lastbid != 0u)
+        {
+            uint32 ob = (lastbid / 100u) * 5u;
+            if (ob == 0u)
+            {
+                ob = 1u;
+            }
+            r.entry.outbid = ob;
+        }
+        else
+        {
+            r.entry.outbid = 0u;
+        }
+
+        r.entry.buyout       = buyout;
+
+        {
+            time_t now    = time(NULL);
+            uint32 leftMs = 0u;
+            if (static_cast<time_t>(expire) > now)
+            {
+                leftMs = static_cast<uint32>(
+                    (expire - static_cast<uint64>(now)) * 1000u);
+            }
+            r.entry.timeLeftMs = leftMs;
+        }
+
+        r.entry.bidderGuidLow = buyguid;
+        // curBid: if bid && startbid > bid, use startbid; else lastbid.
+        r.entry.curBid = (lastbid && startbid > lastbid) ? startbid : lastbid;
+
+        r.itemClass       = f[11].GetUInt32();
+        r.itemSubClass    = f[12].GetUInt32();
+        r.inventoryType   = f[13].GetUInt32();
+        r.quality         = f[14].GetUInt32();
+        r.requiredLevel   = f[15].GetUInt32();
+        r.allowableClass  = f[16].GetUInt32();
+        r.allowableRace   = f[17].GetUInt32();
+        r.reqSkill        = f[18].GetUInt32();
+        r.reqSkillRank    = f[19].GetUInt32();
+        r.reqSpell        = f[20].GetUInt32();
+        r.reqHonorRank    = f[21].GetUInt32();
+        r.reqRepFaction   = f[22].GetUInt32();
+        r.reqRepRank      = f[23].GetUInt32();
+        r.name            = f[24].GetCppString();   // enUS Name1 (locale overlay below)
+        r.castSpellId     = f[25].GetUInt32();       // spellid_1
+
+        // D6: fill the item's own proficiency skill from (class, subclass) for
+        // FULL parity with BuildAuctionInfo. Never 0 for equippable weapon/armor.
+        r.itemProficiencySkill =
+            AhUsability::GetItemProficiencySkill(r.itemClass, r.itemSubClass);
+
+        // Locale overlay (I2/D7/V3): f[26] is present ONLY when the join was
+        // added (same guard as the join condition above). A NULL/empty value
+        // keeps the enUS Name1.
+        if (q.localeIndex >= 1 && int(q.localeIndex) < MAX_LOCALE)
+        {
+            std::string loc = f[26].GetCppString();
+            if (!loc.empty())
+            {
+                r.name = loc;
+            }
+        }
+
+        rows.push_back(r);
+    }
+    while (result->NextRow());
+    delete result;
+
+    status = rows.empty() ? FETCH_EMPTY : FETCH_OK;
+    return BrowseHandler::FilterAndPaginate(rows, q);
+}
+
+} // namespace BrowseHandler (Fetch)
+
+// ---------------------------------------------------------------------------
+// BrowseThread
+// ---------------------------------------------------------------------------
+
+bool BrowseThread::Submit(const BrowseQuery& q)
+{
+    if (m_queue.push(q))
+    {
+        return true;
+    }
+    ++m_rejected;
+    // D4: queue saturated. Reply tooMany=1 NOW so mangosd's in-process
+    // fallback fires immediately instead of waiting the ~10s TTL.
+    // IpcClient::SendFrame is CONFIRMED thread-safe (see header comment).
+    BrowseResult full;
+    full.queryId      = q.queryId;
+    full.kind         = q.kind;
+    full.elunaPending = 0u;
+    full.tooMany      = 1u;
+    full.totalcount   = 0u;
+    IpcMessage rm;
+    rm.op = IPC_BROWSE_RESULT;
+    full.Encode(rm.body);
+    m_cli.SendFrame(rm);
+    return false;
+}
+
+void BrowseThread::run()
+{
+    // C4: per-thread MySQL init/teardown for this thread's connection.
+    m_db.Character().ThreadStart();
+
+    BrowseQuery q;
+    while (!m_stop.load())
+    {
+        if (m_queue.pop(q))
+        {
+            FetchStatus st = FETCH_OK;
+            BrowseResult res = BrowseHandler::Fetch(m_db, q, st);
+            if (st == FETCH_DB_ERROR)
+            {
+                // I3: no reply -- mangosd's TTL fallback serves in-process.
+                ++m_dbErrors;
+                continue;
+            }
+            IpcMessage rm;
+            rm.op = IPC_BROWSE_RESULT;
+            res.Encode(rm.body);
+            // I8: preflight outbound body size; never emit over the MAXLEN cap.
+            if (rm.body.size() > BrowseResult::MAX_WIRE)
+            {
+                // Should be impossible at cap 1000 entries; fail safe by
+                // replying tooMany so mangosd does the in-process fallback.
+                BrowseResult capped;
+                capped.queryId      = res.queryId;
+                capped.kind         = res.kind;
+                capped.elunaPending = res.elunaPending;
+                capped.tooMany      = 1u;
+                capped.totalcount   = res.totalcount;
+                rm.body.clear();
+                capped.Encode(rm.body);
+            }
+            m_cli.SendFrame(rm);
+            ++m_processed;
+        }
+        else
+        {
+            ACE_Based::Thread::Sleep(5);
+        }
+    }
+
+    m_db.Character().ThreadEnd();
+}
+
+// ---------------------------------------------------------------------------
 
 namespace BrowseHandler
 {
