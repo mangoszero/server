@@ -219,9 +219,32 @@ BrowseResult Fetch(ServiceDatabase& db, const BrowseQuery& q, FetchStatus& statu
     QueryResult* result = db.Character().Query(sql.c_str());
     if (!result)
     {
-        // I3: NULL can be genuine empty OR a DB failure. Probe with COUNT(*) on
-        // the same DB to distinguish. If that also fails => FETCH_DB_ERROR and
-        // we do NOT send any reply (mangosd's TTL fallback fires).
+        // 0 rows from the FILTERED query. This is almost always a legitimate
+        // empty result: a filtered LIST that matched nothing, an OWNER list with
+        // no auctions, a BIDDER list with no bids (e.g. right after a buyout
+        // deletes the won auction), or an empty house. Distinguish that from a
+        // genuinely-broken cross-DB JOIN by probing the BARE JOIN (NO WHERE
+        // filters). If it returns a row, the cross-DB wiring is fine and this
+        // query simply matched nothing -> serve an empty list. (Comparing a
+        // filtered 0 against an unfiltered COUNT(*) false-positived on EVERY
+        // empty filtered browse.)
+        std::string probeSql =
+            "SELECT 1 FROM auction a"
+            " JOIN item_instance ii ON a.itemguid = ii.guid"
+            " JOIN " + worldQual + "item_template it ON a.item_template = it.entry"
+            " LIMIT 1";
+        QueryResult* joinProbe = db.Character().Query(probeSql.c_str());
+        if (joinProbe)
+        {
+            delete joinProbe;
+            status = FETCH_EMPTY;
+            return BrowseHandler::FilterAndPaginate(rows, q);
+        }
+
+        // I3: the bare JOIN returned nothing either. NULL can be a genuinely
+        // empty auction table OR a DB failure. Probe with COUNT(*) to
+        // distinguish. If that also fails => FETCH_DB_ERROR and we do NOT send
+        // any reply (mangosd's TTL sweep -> "AH unavailable").
         QueryResult* probe = db.Character().Query("SELECT COUNT(*) FROM auction");
         if (!probe)
         {
