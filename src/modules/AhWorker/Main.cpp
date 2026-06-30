@@ -69,6 +69,7 @@
 #include "ItemPool.h"
 #include "MarketSnapshot.h"
 #include "BotBrain.h"
+#include "ItemInstanceFields.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -472,6 +473,69 @@ static int RunIntentCodecSelfTest()
         if (IpcClientHandler::InboundFrameAcceptable(0xFFFFu, 0u))
         {
             fprintf(stderr, "intent codec selftest FAILED: unknown opcode accepted\n");
+            return 1;
+        }
+    }
+
+    // --- item_instance.data blob decode (full-parity seam) ---
+    {
+        // Build a synthetic blob long enough to index word 44. Fill ascending
+        // word values so each decoded field has a distinct, checkable number,
+        // then override the specific fields we read.
+        std::string blob;
+        for (uint32 w = 0; w < 60u; ++w)
+        {
+            char num[16];
+            // word value = w*1000 so it is unmistakable; overrides below.
+            snprintf(num, sizeof(num), "%u", w * 1000u);
+            if (w)
+            {
+                blob += ' ';
+            }
+            blob += num;
+        }
+        // Overrides at the exact offsets:
+        //   word 14 stack=5, 16 charges=-3, 22 enchant=2564, 43 suffix=77,
+        //   44 randomprop = (uint32)(-9) to test signed read.
+        // Rebuild with overrides for clarity.
+        std::string words[60];
+        for (uint32 w = 0; w < 60u; ++w)
+        {
+            char num[16];
+            snprintf(num, sizeof(num), "%u", w * 1000u);
+            words[w] = num;
+        }
+        words[14] = "5";
+        words[16] = "-3";
+        words[22] = "2564";
+        words[43] = "77";
+        words[44] = "-9";
+        blob.clear();
+        for (uint32 w = 0; w < 60u; ++w)
+        {
+            if (w)
+            {
+                blob += ' ';
+            }
+            blob += words[w];
+        }
+
+        ItemInstanceFields f = AhItemBlob::Decode(blob);
+        if (!f.valid || f.stackCount != 5u || f.charges != -3 ||
+            f.enchantId != 2564u || f.suffixFactor != 77u || f.randomPropId != -9)
+        {
+            fprintf(stderr, "item blob selftest FAILED:"
+                    " valid=%d stack=%u charges=%d ench=%u suffix=%u rand=%d\n",
+                    f.valid ? 1 : 0, unsigned(f.stackCount), int(f.charges),
+                    unsigned(f.enchantId), unsigned(f.suffixFactor),
+                    int(f.randomPropId));
+            return 1;
+        }
+        // A blob too short to reach word 44 must be marked invalid (no OOB).
+        ItemInstanceFields g = AhItemBlob::Decode("1 2 3");
+        if (g.valid)
+        {
+            fprintf(stderr, "item blob selftest FAILED: short blob marked valid\n");
             return 1;
         }
     }
