@@ -11,6 +11,7 @@
 #include "AuctionHouseBot/CustodyLedger.h"
 #include "AuctionHouseBot/CustodyService.h"
 #include "WorkerSupervisor.h"
+#include "Object/AhUsabilityRef.h"
 #include <cstdio>
 #include <ctime>
 #include <memory>
@@ -893,6 +894,160 @@ static int RunAhOwnerTest()
     return 0;
 }
 
+namespace
+{
+    struct RefCtx
+    {
+        const uint16* skills;
+        const uint32* skillIds;
+        size_t nSkills;
+        const uint32* spells;
+        size_t nSpells;
+        const uint32* repFactions;
+        const uint8* repRanks;
+        size_t nReps;
+    };
+
+    uint16 RefSkill(void* c, uint32 id)
+    {
+        RefCtx* x = (RefCtx*)c;
+        for (size_t i = 0; i < x->nSkills; ++i)
+        {
+            if (x->skillIds[i] == id)
+            {
+                return x->skills[i];
+            }
+        }
+        return 0;
+    }
+    bool RefSpell(void* c, uint32 id)
+    {
+        RefCtx* x = (RefCtx*)c;
+        for (size_t i = 0; i < x->nSpells; ++i)
+        {
+            if (x->spells[i] == id)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    uint8 RefRep(void* c, uint32 f)
+    {
+        RefCtx* x = (RefCtx*)c;
+        for (size_t i = 0; i < x->nReps; ++i)
+        {
+            if (x->repFactions[i] == f)
+            {
+                return x->repRanks[i];
+            }
+        }
+        return 0;
+    }
+}
+
+/// Self-test for AhUsabilityRef::Evaluate: drives the production reference
+/// evaluator over a battery of synthetic profiles. Returns 0 on pass.
+static int RunAhUsabilityRefTest()
+{
+    uint32 skillIds[1] = { 43u };
+    uint16 skills[1]   = { 200u };
+    uint32 spells[1]   = { 123u };
+    uint32 repF[1]     = { 609u };
+    uint8  repR[1]     = { 5u };
+    RefCtx ctx;
+    ctx.skills      = skills;
+    ctx.skillIds    = skillIds;
+    ctx.nSkills     = 1;
+    ctx.spells      = spells;
+    ctx.nSpells     = 1;
+    ctx.repFactions = repF;
+    ctx.repRanks    = repR;
+    ctx.nReps       = 1;
+
+    // warrior (class 1) / human (race 1); level 40; honor rank 2
+    const uint32 cm    = 1u << (1u - 1u);
+    const uint32 rm    = 1u << (1u - 1u);
+    const uint32 level = 40u;
+    const uint32 honor = 2u;
+    const uint32 MM    = 40u;
+    const uint32 EM    = 60u;
+
+    AhRefItem it;
+    it.itemClass            = 2u;
+    it.allowableClass       = 0xFFFFFFFFu;
+    it.allowableRace        = 0xFFFFFFFFu;
+    it.requiredLevel        = 30u;
+    it.itemId               = 12345u;
+    it.requiredSkill        = 43u;
+    it.requiredSkillRank    = 150u;
+    it.requiredSpell        = 0u;
+    it.requiredHonorRank    = 0u;
+    it.requiredRepFaction   = 0u;
+    it.requiredRepRank      = 0u;
+    it.itemProficiencySkill = 43u;
+
+    // baseline: everything satisfied
+    if (AhUsabilityRef::Evaluate(cm, rm, level, honor, true, MM, EM, it,
+                                 RefSkill, RefSpell, RefRep, &ctx) != AHUSE_OK)
+    {
+        printf("ahusabilityref FAIL: baseline\n");
+        return 1;
+    }
+
+    // class gate: wrong class mask
+    AhRefItem b = it;
+    b.allowableClass = 0x80u;
+    if (AhUsabilityRef::Evaluate(cm, rm, level, honor, true, MM, EM, b,
+                                 RefSkill, RefSpell, RefRep, &ctx) == AHUSE_OK)
+    {
+        printf("ahusabilityref FAIL: class gate\n");
+        return 1;
+    }
+
+    // honor gate fires when direct_action=true and rank is insufficient
+    b = it;
+    b.requiredHonorRank = 5u;
+    if (AhUsabilityRef::Evaluate(cm, rm, level, honor, true, MM, EM, b,
+                                 RefSkill, RefSpell, RefRep, &ctx) == AHUSE_OK)
+    {
+        printf("ahusabilityref FAIL: honor gate (direct_action)\n");
+        return 1;
+    }
+    // D2: honor gate must NOT fire when direct_action=false
+    if (AhUsabilityRef::Evaluate(cm, rm, level, honor, false, MM, EM, b,
+                                 RefSkill, RefSpell, RefRep, &ctx) != AHUSE_OK)
+    {
+        printf("ahusabilityref FAIL: honor must be skipped when !direct_action\n");
+        return 1;
+    }
+
+    // reputation gate: player rep rank 5, item requires 7
+    b = it;
+    b.requiredRepFaction = 609u;
+    b.requiredRepRank    = 7u;
+    if (AhUsabilityRef::Evaluate(cm, rm, level, honor, true, MM, EM, b,
+                                 RefSkill, RefSpell, RefRep, &ctx) == AHUSE_OK)
+    {
+        printf("ahusabilityref FAIL: reputation gate\n");
+        return 1;
+    }
+
+    // epic mount override: item 12302 bumps requiredLevel to EM(60); player is 40
+    b = it;
+    b.itemId         = 12302u;
+    b.requiredLevel  = 30u;
+    if (AhUsabilityRef::Evaluate(cm, rm, level, honor, true, MM, EM, b,
+                                 RefSkill, RefSpell, RefRep, &ctx) == AHUSE_OK)
+    {
+        printf("ahusabilityref FAIL: epic-mount override\n");
+        return 1;
+    }
+
+    printf("ahusabilityref OK\n");
+    return 0;
+}
+
 int RunMangosdTest(std::string const& name)
 {
     if (name == "noop")
@@ -919,6 +1074,11 @@ int RunMangosdTest(std::string const& name)
     if (name == "ahowner")
     {
         return RunAhOwnerTest();
+    }
+
+    if (name == "ahusabilityref")
+    {
+        return RunAhUsabilityRefTest();
     }
 
     printf("%s FAIL: unknown test\n", name.c_str());
