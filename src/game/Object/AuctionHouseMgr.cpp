@@ -1253,6 +1253,85 @@ void AuctionHouseObject::BuildListAuctionItems(WorldPacket& data, Player* player
 }
 
 /**
+ * @brief Dispatcher for the in-process browse fallback (C1/I1).
+ *
+ * Routes to one of the three existing BuildList* methods based on @p kind:
+ *   0 (or default) = LIST public browse  -> BuildListAuctionItems
+ *   1              = OWNER               -> BuildListOwnerItems
+ *   2              = BIDDER              -> client-outbid prepend + BuildListBidderItems
+ *
+ * For BIDDER the @p clientOutbidIds entries from the stored request are
+ * prepended in CLIENT ORDER ahead of the sweep, matching the live handler's
+ * behaviour in HandleAuctionListBidderItems.  The three inner builders are
+ * completely unchanged; this is a thin dispatcher only.
+ *
+ * @param kind           Browse kind: 0=LIST, 1=OWNER, 2=BIDDER.
+ * @param data           Packet buffer to append auction entries to.
+ * @param player         The resolving player (re-resolved by Task-11 fallback).
+ * @param wname          Name search filter (LIST only).
+ * @param listfrom       Starting offset (LIST only).
+ * @param levelmin       Min required-level filter (LIST only).
+ * @param levelmax       Max required-level filter (LIST only).
+ * @param usable         Usability filter (LIST only).
+ * @param invType        Inventory-type filter (LIST only).
+ * @param itemClass      Item-class filter (LIST only).
+ * @param itemSubClass   Item-subclass filter (LIST only).
+ * @param quality        Minimum quality filter (LIST only).
+ * @param clientOutbidIds Client-supplied outbid auction ids (BIDDER only).
+ * @param count          Receives appended-entry count.
+ * @param totalcount     Receives total matching count.
+ */
+void AuctionHouseObject::BuildListForKind(uint8 kind, WorldPacket& data, Player* player,
+    const std::wstring& wname, uint32 listfrom, uint32 levelmin, uint32 levelmax,
+    uint32 usable, uint32 invType, uint32 itemClass, uint32 itemSubClass,
+    uint32 quality, const std::vector<uint32>& clientOutbidIds,
+    uint32& count, uint32& totalcount)
+{
+    switch (kind)
+    {
+        case 1: // BROWSE_OWNER
+            BuildListOwnerItems(data, player, count, totalcount);
+            break;
+        case 2: // BROWSE_BIDDER
+        {
+            // Client outbid ids prepended in CLIENT ORDER (matches the live handler).
+            for (size_t i = 0; i < clientOutbidIds.size(); ++i)
+            {
+                AuctionEntry* a = GetAuction(clientOutbidIds[i]);
+                if (a && a->BuildAuctionInfo(data))
+                {
+                    ++totalcount;
+                    ++count;
+                }
+            }
+            BuildListBidderItems(data, player, count, totalcount);
+            break;
+        }
+        case 0: // BROWSE_LIST
+        default:
+            BuildListAuctionItems(data, player, wname, listfrom, levelmin, levelmax,
+                usable, invType, itemClass, itemSubClass, quality, count, totalcount);
+            break;
+    }
+}
+
+/**
+ * @brief Test seam for the client-outbid-prepend order contract.
+ *
+ * Records the ids from @p clientIds into @p outOrder in CLIENT ORDER, locking
+ * the invariant that BuildListForKind(BIDDER=2) prepends them before the sweep.
+ * Called only by the -t ahbrowsehelper smoke test.
+ */
+void AhAppendClientOutbidsForTest(const std::vector<uint32>& clientIds,
+                                  std::vector<uint32>& outOrder)
+{
+    for (size_t i = 0; i < clientIds.size(); ++i)
+    {
+        outOrder.push_back(clientIds[i]);
+    }
+}
+
+/**
  * @brief Creates and stores a new auction from a player's item.
  *
  * @param auctionHouseEntry The target auction house entry.

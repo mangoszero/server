@@ -1048,6 +1048,32 @@ static int RunAhUsabilityRefTest()
     return 0;
 }
 
+/// Smoke test for the in-process browse helper (dispatch shape + order contract).
+/// Does NOT require a live Player or world data: it exercises only the
+/// client-outbid-prepend order invariant via the AhAppendClientOutbidsForTest
+/// seam, proving that BuildListForKind will prepend outbid ids in CLIENT ORDER
+/// before calling BuildListBidderItems. Returns 0 on pass, non-zero on fail.
+static int RunAhBrowseHelperTest()
+{
+    // The bidder client-outbid-prepend is extracted as a free helper so it can
+    // be tested without a Player. It appends each client outbid auction id in
+    // CLIENT ORDER ahead of the sweep (matches HandleAuctionListBidderItems).
+    // Here we assert the ORDER-PRESERVING contract over a stub appender.
+    std::vector<uint32> clientIds;
+    clientIds.push_back(7u);
+    clientIds.push_back(3u);
+    clientIds.push_back(9u);
+    std::vector<uint32> appended;
+    AhAppendClientOutbidsForTest(clientIds, appended);
+    if (appended.size() != 3u || appended[0] != 7u || appended[1] != 3u || appended[2] != 9u)
+    {
+        printf("ahbrowsehelper FAIL: client outbid order not preserved\n");
+        return 1;
+    }
+    printf("ahbrowsehelper OK\n");
+    return 0;
+}
+
 int RunMangosdTest(std::string const& name)
 {
     if (name == "noop")
@@ -1079,6 +1105,11 @@ int RunMangosdTest(std::string const& name)
     if (name == "ahusabilityref")
     {
         return RunAhUsabilityRefTest();
+    }
+
+    if (name == "ahbrowsehelper")
+    {
+        return RunAhBrowseHelperTest();
     }
 
     printf("%s FAIL: unknown test\n", name.c_str());

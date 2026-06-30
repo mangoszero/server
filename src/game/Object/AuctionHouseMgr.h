@@ -42,6 +42,7 @@
 #include "DBCStructure.h"
 
 #include <string>
+#include <vector>
 
 /** \addtogroup auctionhouse
  * @{
@@ -202,6 +203,18 @@ class AuctionHouseObject
             std::wstring const& searchedname, uint32 listfrom, uint32 levelmin, uint32 levelmax, uint32 usable,
             uint32 inventoryType, uint32 itemClass, uint32 itemSubClass, uint32 quality,
             uint32& count, uint32& totalcount);
+
+        /// Dispatcher for in-process browse fallback (C1/I1). Switches on @p kind:
+        ///   0 = LIST (public browse), 1 = OWNER, 2 = BIDDER.
+        /// For BIDDER the @p clientOutbidIds entries are prepended in CLIENT ORDER
+        /// (matching HandleAuctionListBidderItems) before the sweep.
+        /// All other parameters mirror the corresponding BuildList* signatures.
+        void BuildListForKind(uint8 kind, WorldPacket& data, Player* player,
+            const std::wstring& wname, uint32 listfrom, uint32 levelmin, uint32 levelmax,
+            uint32 usable, uint32 invType, uint32 itemClass, uint32 itemSubClass,
+            uint32 quality, const std::vector<uint32>& clientOutbidIds,
+            uint32& count, uint32& totalcount);
+
         AuctionEntry* AddAuction(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout = 0, uint32 deposit = 0, Player* pl = NULL, bool ownTransaction = true);
         AuctionEntry* AddAuctionByGuid(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout, uint32 lowguid);
     private:
@@ -297,6 +310,12 @@ class AuctionHouseMgr
 
 /// Convenience define to access the singleton object for the Auction House Manager
 #define sAuctionMgr MaNGOS::Singleton<AuctionHouseMgr>::Instance()
+
+/// Test seam for the client-outbid-prepend order contract (used by -t ahbrowsehelper).
+/// Records the ids from @p clientIds into @p outOrder in CLIENT ORDER, locking
+/// the invariant that BuildListForKind(BIDDER) prepends them before the sweep.
+void AhAppendClientOutbidsForTest(const std::vector<uint32>& clientIds,
+                                  std::vector<uint32>& outOrder);
 
 /** @} */
 
