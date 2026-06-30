@@ -35,6 +35,7 @@
 #include "Timer.h"
 #include "Policies/Singleton.h"
 #include "SharedDefines.h"
+#include "AuctionHouseBot/BrowsePending.h"
 #include <set>
 #include <list>
 #include <vector>
@@ -693,6 +694,11 @@ class World
             return m_ahSupervisor.load(std::memory_order_acquire);
         }
 
+        // SP-1: outstanding async browse requests awaiting a worker reply.
+        // Owned by the world thread; the handlers Register, the reply branch
+        // Takes, and the once-per-second sweep collects timed-out entries.
+        BrowsePendingMap& GetBrowsePending() { return m_browsePending; }
+
     protected:
         void _UpdateGameTime();
         // callback for UpdateRealmCharacters
@@ -813,6 +819,9 @@ class World
         // PF3-A: atomic so the publishing release store in SetAhSupervisor()
         // synchronises-with the acquire loads in the world tick loop.
         std::atomic<WorkerSupervisor*> m_ahSupervisor;
+
+        // SP-1: pending-map for async browse proxying (world-thread owned).
+        BrowsePendingMap m_browsePending;
 
         /**
          * @brief Dispatch one inbound frame from the AH subprocess.

@@ -117,6 +117,8 @@
 #include "IpcMessage.h"
 #include "IpcOpcodes.h"
 #include "AuctionIntents.h"
+#include "BrowseMessages.h"
+#include "AuctionHouseBot/BrowsePending.h"
 
 #include <iostream>
 #include <sstream>
@@ -125,6 +127,12 @@
 INSTANTIATE_SINGLETON_1(World);
 
 extern void LoadGameObjectModelList();
+
+// SP-1: in-process browse fallback + house re-resolution, defined in
+// AuctionHouseHandler.cpp (next to the three async-proxy handlers). The world
+// thread calls these from the IPC_BROWSE_RESULT reply branch and the TTL sweep.
+void AhServeBrowseInProcess(WorldSession* session, const PendingBrowse& pb);
+AuctionHouseObject* AhResolveHouse(const PendingBrowse& pb);
 
 volatile bool World::m_stopEvent = false;
 uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
@@ -2041,6 +2049,27 @@ void World::Update(uint32 diff)
         {
             sAuctionIntentExecutor.PurgeExpiredUuids(uint32(nowSec));
             s_lastIntentPurge = nowSec;
+
+            // SP-1 (C1/M5): sweep timed-out browse requests on the SAME nowSec
+            // clock used to register them. The worker never replied (crash/lost
+            // frame); serve each in-process iff still the current search and the
+            // player is present (I4).
+            std::vector<PendingBrowse> timedOut;
+            m_browsePending.Sweep(uint32(nowSec), 10u, timedOut);
+            for (size_t i = 0; i < timedOut.size(); ++i)
+            {
+                if (!m_browsePending.IsCurrent(timedOut[i].playerGuidLow,
+                                               timedOut[i].kind, timedOut[i].seq))
+                {
+                    continue;
+                }
+                Player* p = sObjectAccessor.FindPlayer(
+                    ObjectGuid(HIGHGUID_PLAYER, timedOut[i].playerGuidLow));
+                if (p && p->IsInWorld() && p->GetSession())
+                {
+                    AhServeBrowseInProcess(p->GetSession(), timedOut[i]);
+                }
+            }
         }
     }
 
@@ -2210,6 +2239,153 @@ void World::HandleAhInbound(const IpcMessage& msg)
             // mangosd -> child direction; should never be received inbound.
             sLog.outError("[AHSupervisor] HandleAhInbound: unexpected"
                           " IPC_GMCMD inbound (ignored)");
+            break;
+        }
+        case IPC_BROWSE_RESULT:
+        {
+            ByteBuffer body(msg.body);
+            BrowseResult res;
+            if (!res.Decode(body))
+            {
+                sLog.outError("[AHSupervisor] IPC_BROWSE_RESULT decode failed");
+                break;
+            }
+            PendingBrowse pb;
+            if (!m_browsePending.Take(res.queryId, pb))
+            {
+                DETAIL_LOG("[AHSupervisor] IPC_BROWSE_RESULT unknown queryId %llu",
+                           (unsigned long long)res.queryId);
+                break;
+            }
+            // I4: ignore a reply for a search the player has since superseded.
+            if (!m_browsePending.IsCurrent(pb.playerGuidLow, pb.kind, pb.seq))
+            {
+                break;
+            }
+            Player* player = sObjectAccessor.FindPlayer(
+                ObjectGuid(HIGHGUID_PLAYER, pb.playerGuidLow));
+            if (!player || !player->IsInWorld())
+            {
+                break;   // logged out / different char (I4) -> drop cleanly
+            }
+            WorldSession* session = player->GetSession();
+            if (!session)
+            {
+                break;
+            }
+
+            // tooMany: the un-paginated defer set blew the cap -> full in-process.
+            // tooMany wins over elunaPending (the worker may set both).
+            if (res.tooMany)
+            {
+                AhServeBrowseInProcess(session, pb);   // helper (Step 7)
+                break;
+            }
+
+            std::vector<BrowseEntry> finalEntries;
+            uint32 totalcount = res.totalcount;
+
+            if (res.elunaPending)
+            {
+                // Deferred-Eluna pass (D5/V2): run ONLY the OnCanUseItem veto per
+                // entry via the thin Player::CanUseItemEluna accessor. The worker
+                // already enforced every non-Eluna sub-filter on the same profile
+                // and returned the FULL surviving set un-paginated (hard-capped at
+                // 1000 -> tooMany -> in-process above that). We run the hook over
+                // EVERY entry -- NO per-tick budget that keeps unchecked entries
+                // (V2: that broke parity by counting/showing Lua-vetoed items).
+                std::vector<BrowseEntry> survivors;
+                survivors.reserve(res.entries.size());
+                for (size_t i = 0; i < res.entries.size(); ++i)
+                {
+                    if (player->CanUseItemEluna(res.entries[i].itemEntry) != EQUIP_ERR_OK)
+                    {
+                        continue;   // Lua veto -> drop (exact parity)
+                    }
+                    survivors.push_back(res.entries[i]);
+                }
+                totalcount = uint32(survivors.size());
+                uint32 from = pb.listfrom;
+                for (uint32 i = from; i < survivors.size() && finalEntries.size() < 50u; ++i)
+                {
+                    finalEntries.push_back(survivors[i]);
+                }
+            }
+            else
+            {
+                finalEntries = res.entries;   // worker already paginated
+            }
+
+            uint16 opcode = SMSG_AUCTION_LIST_RESULT;
+            if (pb.kind == uint8(BROWSE_OWNER))
+            {
+                opcode = SMSG_AUCTION_OWNER_LIST_RESULT;
+            }
+            else if (pb.kind == uint8(BROWSE_BIDDER))
+            {
+                opcode = SMSG_AUCTION_BIDDER_LIST_RESULT;
+            }
+
+            if (pb.kind == uint8(BROWSE_BIDDER))
+            {
+                // I1: BIDDER prepends the client-supplied outbid entries in CLIENT
+                // ORDER (mirroring HandleAuctionListBidderItems) before the worker
+                // bidder-sweep entries. The client outbid rows are resolved live
+                // from the player's house via GetAuction(id)->BuildAuctionInfo.
+                AuctionHouseObject* house = AhResolveHouse(pb);
+                ByteBuffer rows;
+                uint32 prependCount = 0;
+                if (house)
+                {
+                    for (size_t i = 0; i < pb.clientOutbidIds.size(); ++i)
+                    {
+                        AuctionEntry* ae = house->GetAuction(pb.clientOutbidIds[i]);
+                        if (!ae)
+                        {
+                            continue;
+                        }
+                        WorldPacket one(opcode, 60);
+                        if (ae->BuildAuctionInfo(one))
+                        {
+                            rows.append(one.contents(), one.size());
+                            ++prependCount;
+                        }
+                    }
+                }
+                // Assemble: count(prepend+sweep) | client rows | sweep rows | total
+                WorldPacket data(opcode, 4 + rows.size() + finalEntries.size() * 60 + 4);
+                data << uint32(prependCount + uint32(finalEntries.size()));
+                if (rows.size())
+                {
+                    data.append(rows.contents(), rows.size());
+                }
+                ByteBuffer sweepRows;
+                for (size_t i = 0; i < finalEntries.size(); ++i)
+                {
+                    const BrowseEntry& e = finalEntries[i];
+                    sweepRows << uint32(e.id) << uint32(e.itemEntry) << uint32(e.enchantId)
+                              << uint32(e.randomPropId) << uint32(e.suffixFactor)
+                              << uint32(e.count) << uint32(e.charges)
+                              << ObjectGuid(HIGHGUID_PLAYER, e.ownerGuidLow)
+                              << uint32(e.startbid) << uint32(e.outbid) << uint32(e.buyout)
+                              << uint32(e.timeLeftMs)
+                              << ObjectGuid(HIGHGUID_PLAYER, e.bidderGuidLow)
+                              << uint32(e.curBid);
+                }
+                if (sweepRows.size())
+                {
+                    data.append(sweepRows.contents(), sweepRows.size());
+                }
+                data << uint32(totalcount + prependCount);
+                session->SendPacket(&data);
+                break;
+            }
+
+            WorldPacket data(opcode, 4 + 4 + finalEntries.size() * 60);
+            ByteBuffer assembled;
+            AhAssembleBrowseListBody(finalEntries, totalcount, assembled);
+            data.append(assembled.contents(), assembled.size());
+            session->SendPacket(&data);
             break;
         }
         default:

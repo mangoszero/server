@@ -597,7 +597,8 @@ void WorkerSupervisor::DrainInboundProtocol()
     // inbound BoundedQueue while this loop pops, so without a cap a flooding
     // child could feed m_pendingFrames unbounded. Protocol frames are always
     // consumed inline and do NOT count toward this budget.
-    uint32 appBudget = WS_DRAIN_APP_PER_CALL;
+    uint32 appBudget    = WS_DRAIN_APP_PER_CALL;
+    uint32 browseBudget = WS_DRAIN_BROWSE_PER_CALL;
 
     IpcMessage msg;
     while (m_ipc.PopInbound(msg))
@@ -657,9 +658,11 @@ void WorkerSupervisor::DrainInboundProtocol()
             default:
             {
                 // Application / consumer frame: stage for World::HandleAhInbound.
-                // Stop staging once this call's budget is spent so a
-                // concurrently-refilling reactor cannot feed us unbounded.
-                if (appBudget == 0)
+                // I6: browse replies have their own sub-budget so they cannot
+                // starve intent results (which share appBudget).
+                const bool isBrowse = (msg.op == IPC_BROWSE_RESULT);
+                uint32& budget = isBrowse ? browseBudget : appBudget;
+                if (budget == 0)
                 {
                     ++m_appDropped;
                     break;
@@ -676,7 +679,7 @@ void WorkerSupervisor::DrainInboundProtocol()
                 }
 
                 m_pendingFrames.push_back(msg);
-                --appBudget;
+                --budget;
                 break;
             }
         }

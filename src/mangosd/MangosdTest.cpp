@@ -12,6 +12,8 @@
 #include "AuctionHouseBot/CustodyService.h"
 #include "WorkerSupervisor.h"
 #include "Object/AhUsabilityRef.h"
+#include "AuctionHouseBot/BrowsePending.h"
+#include "BrowseMessages.h"
 #include <cstdio>
 #include <ctime>
 #include <memory>
@@ -1074,6 +1076,61 @@ static int RunAhBrowseHelperTest()
     return 0;
 }
 
+/// Self-test for the SP-1 browse pending-map + SMSG assembly: exercises
+/// Register/Take/Sweep, per-(char,kind) sequencing, and AhAssembleBrowseListBody.
+/// No DB / world data needed. Returns 0 on pass, non-zero on fail.
+static int RunAhBrowsePendingTest()
+{
+    BrowsePendingMap pend;
+    PendingBrowse a; a.accountId=1001u; a.playerGuidLow=5001u; a.kind=uint8(BROWSE_LIST);
+    a.seq = pend.NextSeqFor(5001u, uint8(BROWSE_LIST));
+    uint64 id1 = pend.Register(a, 100u);
+    PendingBrowse b; b.accountId=1002u; b.playerGuidLow=5002u; b.kind=uint8(BROWSE_OWNER);
+    b.seq = pend.NextSeqFor(5002u, uint8(BROWSE_OWNER));
+    uint64 id2 = pend.Register(b, 100u);
+    if (id1 == id2 || pend.Size() != 2u)
+    { printf("ahbrowsepending FAIL: register\n"); return 1; }
+
+    PendingBrowse got;
+    if (!pend.Take(id1, got) || got.accountId!=1001u || got.playerGuidLow!=5001u ||
+        got.kind != uint8(BROWSE_LIST))
+    { printf("ahbrowsepending FAIL: Take(id1)\n"); return 1; }
+    if (pend.Take(id1, got))
+    { printf("ahbrowsepending FAIL: Take twice\n"); return 1; }
+
+    // Per-(char,kind) sequencing: a newer search bumps the seq; the older seq
+    // is no longer current (a stale timeout for it must be ignored).
+    uint32 newSeq = pend.NextSeqFor(5002u, uint8(BROWSE_OWNER));   // newer than b.seq
+    if (pend.IsCurrent(5002u, uint8(BROWSE_OWNER), b.seq))
+    { printf("ahbrowsepending FAIL: stale seq still current\n"); return 1; }
+    if (!pend.IsCurrent(5002u, uint8(BROWSE_OWNER), newSeq))
+    { printf("ahbrowsepending FAIL: newest seq not current\n"); return 1; }
+
+    // TTL sweep collects the timed-out entry (id2) for in-process fallback.
+    std::vector<PendingBrowse> timedOut;
+    pend.Sweep(100u + 10u + 1u, 10u, timedOut);
+    if (pend.Size() != 0u || timedOut.size() != 1u || timedOut[0].accountId != 1002u)
+    { printf("ahbrowsepending FAIL: sweep\n"); return 1; }
+
+    // SMSG assembly: count, first entry id, totalcount appear in order.
+    {
+        std::vector<BrowseEntry> entries;
+        BrowseEntry e; e.id=42u; e.itemEntry=19019u; e.enchantId=0u; e.randomPropId=0u;
+        e.suffixFactor=0u; e.count=1u; e.charges=0; e.ownerGuidLow=4u; e.startbid=100u;
+        e.outbid=0u; e.buyout=5000u; e.timeLeftMs=720000u; e.bidderGuidLow=0u; e.curBid=100u;
+        entries.push_back(e);
+        ByteBuffer body;
+        AhAssembleBrowseListBody(entries, 3u, body);
+        uint32 c=0; body >> c;
+        if (c != 1u) { printf("ahbrowsepending FAIL: assembled count %u\n", unsigned(c)); return 1; }
+        uint32 firstId=0; body >> firstId;
+        if (firstId != 42u) { printf("ahbrowsepending FAIL: first id %u\n", unsigned(firstId)); return 1; }
+    }
+
+    printf("ahbrowsepending OK\n");
+    return 0;
+}
+
 int RunMangosdTest(std::string const& name)
 {
     if (name == "noop")
@@ -1110,6 +1167,11 @@ int RunMangosdTest(std::string const& name)
     if (name == "ahbrowsehelper")
     {
         return RunAhBrowseHelperTest();
+    }
+
+    if (name == "ahbrowsepending")
+    {
+        return RunAhBrowsePendingTest();
     }
 
     printf("%s FAIL: unknown test\n", name.c_str());

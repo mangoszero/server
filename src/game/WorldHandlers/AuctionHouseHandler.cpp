@@ -48,10 +48,22 @@
 #include "AuctionHouseMgr.h"
 #include "AuctionHouseBot/CustodyService.h"
 #include "AuctionHouseBot/CustodyLedger.h"
+#include "AuctionHouseBot/BrowsePending.h"
 #include "Mail.h"
 #include "Util.h"
 #include "Chat.h"
+#include "ReputationMgr.h"
+#include "SQLStorages.h"
+#include "DBCStores.h"
+#include "SpellMgr.h"
+#include "BrowseMessages.h"
+#include "IpcMessage.h"
+#include "IpcOpcodes.h"
+#include "WorkerSupervisor.h"
 #include <string>
+#include <vector>
+#include <map>
+#include <ctime>
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -1094,6 +1106,174 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
     }
 }
 
+// ===========================================================================
+// SP-1 async browse proxy: profile/recipe/house builders + in-process fallback
+// ===========================================================================
+
+// Map an AuctionHouseEntry to the BrowseQuery house code (0/1/2). The houseId
+// ranges mirror the live faction split (1..3 = Alliance, 4..6 = Horde, else
+// Neutral).
+static uint8 AhHouseToType(AuctionHouseEntry const* e)
+{
+    uint32 id = e->houseId;
+    if (id >= 1u && id <= 3u) { return 0u; }   // ALLIANCE
+    if (id >= 4u && id <= 6u) { return 1u; }   // HORDE
+    return 2u;                                  // NEUTRAL
+}
+
+// Snapshot the browsing player's usability inputs into the wire profile.
+static void AhBuildBrowseQueryProfile(Player* player, PlayerProfile& out)
+{
+    out.classId   = player->getClass();
+    out.raceId    = player->getRace();
+    out.level     = uint8(player->getLevel());
+    out.honorRank = player->GetHonorHighestRankInfo().rank;   // direct_action=true uses highest
+    // Known spells (open-c: full set; vanilla spellbooks are small).
+    PlayerSpellMap const& spells = player->GetSpellMap();
+    for (PlayerSpellMap::const_iterator it = spells.begin(); it != spells.end(); ++it)
+    {
+        if (it->second.state != PLAYERSPELL_REMOVED && !it->second.disabled)
+        {
+            out.knownSpells.push_back(it->first);
+        }
+    }
+    // Skills (D6): emit (skillId, GetSkillValue) for every known skill line by
+    // walking the PLAYER_SKILL_INFO update fields (3 uint32 per slot; the skill
+    // id is the low 16 bits of word 0). The worker gates BOTH RequiredSkill AND
+    // item proficiency against these.
+    for (uint32 i = 0; i < PLAYER_MAX_SKILLS; ++i)
+    {
+        uint32 w0 = player->GetUInt32Value(PLAYER_SKILL_INFO_1_1 + i * 3);
+        uint16 skillId = uint16(w0 & 0x0000FFFFu);
+        if (skillId == 0u)
+        {
+            continue;
+        }
+        SkillRank sr;
+        sr.skillId = skillId;
+        sr.rank    = player->GetSkillValue(skillId);
+        out.skills.push_back(sr);
+    }
+    // Reputations: emit (factionId, rank) for each faction the player has state.
+    FactionStateList const& reps = player->GetReputationMgr().GetStateList();
+    for (FactionStateList::const_iterator it = reps.begin(); it != reps.end(); ++it)
+    {
+        FactionEntry const* fe = sFactionStore.LookupEntry(it->second.ID);
+        if (!fe)
+        {
+            continue;
+        }
+        RepStanding rs;
+        rs.factionId = uint16(it->second.ID);
+        rs.rank = uint8(player->GetReputationMgr().GetRank(fe));
+        out.reps.push_back(rs);
+    }
+}
+
+// C2b/D9: sRecipeCastToTaught maps each recipe item's CAST spell (spellid_1) to
+// the spell it TEACHES (EffectTriggerSpell[0]). Built ONCE at world load.
+typedef std::map<uint32, uint32> RecipeCastMap;
+static RecipeCastMap sRecipeCastToTaught;
+static bool          sRecipeCastBuilt = false;
+
+// Build the recipe cast->taught map. Declared in AuctionHouseBot/BrowsePending.h
+// (V6). Call from the TOP of AuctionHouseMgr::LoadAuctionItems, BEFORE its
+// empty-AH early return (V6), at world load (single-threaded). Idempotent.
+void AhEnsureRecipeCastMap()
+{
+    if (sRecipeCastBuilt)
+    {
+        return;
+    }
+    sRecipeCastBuilt = true;
+    sRecipeCastToTaught.clear();
+    // Scan recipe-class item_template once; resolve spellid_1 -> trigger spell.
+    for (uint32 entry = 0; entry < sItemStorage.GetMaxEntry(); ++entry)
+    {
+        ItemPrototype const* proto = sItemStorage.LookupEntry<ItemPrototype>(entry);
+        if (!proto || proto->Class != ITEM_CLASS_RECIPE)
+        {
+            continue;
+        }
+        uint32 castSpell = proto->Spells[0].SpellId;
+        if (castSpell == 0u)
+        {
+            continue;
+        }
+        SpellEntry const* se = sSpellStore.LookupEntry(castSpell);
+        if (!se)
+        {
+            continue;
+        }
+        uint32 taught = se->EffectTriggerSpell[EFFECT_INDEX_0];
+        if (taught == 0u)
+        {
+            continue;   // no taught spell -> can't ever be "known"; skip
+        }
+        sRecipeCastToTaught[castSpell] = taught;
+    }
+}
+
+// The set of recipe CAST spell ids (spellid_1) whose TAUGHT spell the player
+// already knows. The worker matches each recipe item's spellid_1 against it.
+static void AhBuildKnownRecipeCastSpells(Player* player, std::vector<uint32>& out)
+{
+    for (RecipeCastMap::const_iterator it = sRecipeCastToTaught.begin();
+         it != sRecipeCastToTaught.end(); ++it)
+    {
+        if (player->HasSpell(it->second))
+        {
+            out.push_back(it->first);   // the player knows what this recipe teaches
+        }
+    }
+}
+
+// V8: re-resolve the AuctionHouseObject for a stored pending request, mirroring
+// GetAuctionsMap by team. pb.house: 0=ALLIANCE,1=HORDE,2=NEUTRAL (== the
+// AuctionHouseType values); allHouses => the neutral house. Non-static so the
+// world thread's IPC_BROWSE_RESULT reply branch can use it for BIDDER prepends.
+AuctionHouseObject* AhResolveHouse(const PendingBrowse& pb)
+{
+    AuctionHouseType t = AUCTION_HOUSE_NEUTRAL;
+    if (pb.allHouses == 0u)
+    {
+        t = (pb.house == 0u) ? AUCTION_HOUSE_ALLIANCE
+          : (pb.house == 1u) ? AUCTION_HOUSE_HORDE
+          :                    AUCTION_HOUSE_NEUTRAL;
+    }
+    return sAuctionMgr.GetAuctionsMap(t);
+}
+
+// In-process fallback for a stored pending request (C1). Serves the browse
+// exactly as the handler would via the Task-9 BuildListForKind dispatcher.
+// Non-static so the world thread (World.cpp) can call it from the reply branch
+// and the TTL sweep.
+void AhServeBrowseInProcess(WorldSession* session, const PendingBrowse& pb)
+{
+    Player* player = session->GetPlayer();
+    if (!player)
+    {
+        return;
+    }
+    AuctionHouseObject* house = AhResolveHouse(pb);
+    if (!house)
+    {
+        return;
+    }
+    uint16 opcode = (pb.kind == uint8(BROWSE_OWNER)) ? SMSG_AUCTION_OWNER_LIST_RESULT
+                  : (pb.kind == uint8(BROWSE_BIDDER)) ? SMSG_AUCTION_BIDDER_LIST_RESULT
+                  : SMSG_AUCTION_LIST_RESULT;
+    WorldPacket data(opcode, 4 + 4);
+    uint32 count = 0, totalcount = 0;
+    data << uint32(0);
+    house->BuildListForKind(pb.kind, data, player, pb.wname, pb.listfrom,
+        pb.levelmin, pb.levelmax, pb.usable, pb.inventoryType, pb.itemClass,
+        pb.itemSubClass, pb.quality, pb.clientOutbidIds, count, totalcount);
+    data.put<uint32>(0, count);
+    data << uint32(totalcount);
+    session->SendPacket(&data);
+}
+
 // called when player lists his bids
 void WorldSession::HandleAuctionListBidderItems(WorldPacket& recv_data)
 {
@@ -1127,17 +1307,101 @@ void WorldSession::HandleAuctionListBidderItems(WorldPacket& recv_data)
         GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
     }
 
-    WorldPacket data(SMSG_AUCTION_BIDDER_LIST_RESULT, (4 + 4 + 4));
     Player* pl = GetPlayer();
-    data << uint32(0);                                      // add 0 as count
-    uint32 count = 0;
-    uint32 totalcount = 0;
-    while (outbiddedCount > 0)                              // add all data, which client requires
+
+    // Read the client-supplied outbid ids in CLIENT ORDER (same loop as the
+    // legacy in-process path, after the size validation above).
+    std::vector<uint32> clientOutbidIds;
+    while (outbiddedCount > 0)
     {
         --outbiddedCount;
         uint32 outbiddedAuctionId;
         recv_data >> outbiddedAuctionId;
-        AuctionEntry* auction = auctionHouse->GetAuction(outbiddedAuctionId);
+        clientOutbidIds.push_back(outbiddedAuctionId);
+    }
+
+    // ----- SP-1 async proxy: hand the browse to the worker when active -----
+    WorkerSupervisor* sv = sWorld.GetAhSupervisor();
+    if (sv && sv->ServiceActive())
+    {
+        PendingBrowse pb;
+        pb.accountId      = GetAccountId();
+        pb.playerGuidLow  = pl->GetGUIDLow();
+        pb.kind           = uint8(BROWSE_BIDDER);
+        pb.house          = AhHouseToType(auctionHouseEntry);
+        pb.allHouses      = sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_AUCTION) ? 1u : 0u;
+        pb.itemClass      = 0xFFFFFFFFu;
+        pb.itemSubClass   = 0xFFFFFFFFu;
+        pb.inventoryType  = 0xFFFFFFFFu;
+        pb.quality        = 0xFFFFFFFFu;
+        pb.levelmin       = 0u;
+        pb.levelmax       = 0u;
+        pb.usable         = 0u;
+        pb.deferEluna     = 0u;
+        pb.listfrom       = listfrom;
+        pb.wname.clear();
+        pb.clientOutbidIds = clientOutbidIds;
+        pb.seq            = sWorld.GetBrowsePending().NextSeqFor(pb.playerGuidLow, pb.kind);
+
+        BrowseQuery q;
+        q.queryId          = 0;
+        q.kind             = pb.kind;
+        q.house            = pb.house;
+        q.allHouses        = pb.allHouses;
+        q.itemClass        = pb.itemClass;
+        q.itemSubClass     = pb.itemSubClass;
+        q.inventoryType    = pb.inventoryType;
+        q.quality          = pb.quality;
+        q.levelmin         = pb.levelmin;
+        q.levelmax         = pb.levelmax;
+        q.usable           = pb.usable;
+        q.deferEluna       = pb.deferEluna;
+        q.listfrom         = pb.listfrom;
+        {
+            int dbIdx = GetSessionDbLocaleIndex();
+            LocaleConstant lc = (dbIdx < 0) ? LOCALE_enUS
+                                            : sObjectMgr.GetLocaleForIndex(dbIdx);
+            q.localeIndex = int8(lc);
+        }
+        q.requesterGuidLow = pb.playerGuidLow;
+        q.minMountLevel    = sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL);
+        q.minEpicMountLevel= sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_EPIC_MOUNT_LEVEL);
+        q.searchedName.clear();
+        q.outbidIds        = clientOutbidIds;   // client order, mirrored on the wire
+        AhBuildBrowseQueryProfile(pl, q.profile);
+        AhBuildKnownRecipeCastSpells(pl, q.knownRecipeCastSpells);
+
+        uint32 nowSec = uint32(time(NULL));
+        q.queryId = sWorld.GetBrowsePending().Register(pb, nowSec);
+        if (q.queryId == 0u)
+        {
+            AhServeBrowseInProcess(this, pb);
+            return;
+        }
+
+        IpcMessage qm; qm.op = IPC_BROWSE_QUERY; q.Encode(qm.body);
+        if (qm.body.size() > BrowseQuery::MAX_WIRE)
+        {
+            PendingBrowse tmp; (void)sWorld.GetBrowsePending().Take(q.queryId, tmp);
+            AhServeBrowseInProcess(this, pb);
+            return;
+        }
+        if (!sv->Channel().SendFrame(qm))
+        {
+            PendingBrowse tmp; (void)sWorld.GetBrowsePending().Take(q.queryId, tmp);
+            AhServeBrowseInProcess(this, pb);
+        }
+        return;
+    }
+
+    // --- worker down: in-process path (unchanged) ---
+    WorldPacket data(SMSG_AUCTION_BIDDER_LIST_RESULT, (4 + 4 + 4));
+    data << uint32(0);                                      // add 0 as count
+    uint32 count = 0;
+    uint32 totalcount = 0;
+    for (size_t i = 0; i < clientOutbidIds.size(); ++i)    // add all data, which client requires
+    {
+        AuctionEntry* auction = auctionHouse->GetAuction(clientOutbidIds[i]);
         if (auction && auction->BuildAuctionInfo(data))
         {
             ++totalcount;
@@ -1177,6 +1441,79 @@ void WorldSession::HandleAuctionListOwnerItems(WorldPacket& recv_data)
         GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
     }
 
+    // ----- SP-1 async proxy: hand the browse to the worker when active -----
+    WorkerSupervisor* sv = sWorld.GetAhSupervisor();
+    if (sv && sv->ServiceActive())
+    {
+        PendingBrowse pb;
+        pb.accountId     = GetAccountId();
+        pb.playerGuidLow = GetPlayer()->GetGUIDLow();
+        pb.kind          = uint8(BROWSE_OWNER);
+        pb.house         = AhHouseToType(auctionHouseEntry);
+        pb.allHouses     = sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_AUCTION) ? 1u : 0u;
+        pb.itemClass     = 0xFFFFFFFFu;
+        pb.itemSubClass  = 0xFFFFFFFFu;
+        pb.inventoryType = 0xFFFFFFFFu;
+        pb.quality       = 0xFFFFFFFFu;
+        pb.levelmin      = 0u;
+        pb.levelmax      = 0u;
+        pb.usable        = 0u;
+        pb.deferEluna    = 0u;
+        pb.listfrom      = listfrom;
+        pb.wname.clear();
+        pb.seq           = sWorld.GetBrowsePending().NextSeqFor(pb.playerGuidLow, pb.kind);
+
+        BrowseQuery q;
+        q.queryId          = 0;
+        q.kind             = pb.kind;
+        q.house            = pb.house;
+        q.allHouses        = pb.allHouses;
+        q.itemClass        = pb.itemClass;
+        q.itemSubClass     = pb.itemSubClass;
+        q.inventoryType    = pb.inventoryType;
+        q.quality          = pb.quality;
+        q.levelmin         = pb.levelmin;
+        q.levelmax         = pb.levelmax;
+        q.usable           = pb.usable;
+        q.deferEluna       = pb.deferEluna;
+        q.listfrom         = pb.listfrom;
+        {
+            int dbIdx = GetSessionDbLocaleIndex();
+            LocaleConstant lc = (dbIdx < 0) ? LOCALE_enUS
+                                            : sObjectMgr.GetLocaleForIndex(dbIdx);
+            q.localeIndex = int8(lc);
+        }
+        q.requesterGuidLow = pb.playerGuidLow;
+        q.minMountLevel    = sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL);
+        q.minEpicMountLevel= sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_EPIC_MOUNT_LEVEL);
+        q.searchedName.clear();
+        AhBuildBrowseQueryProfile(GetPlayer(), q.profile);
+        AhBuildKnownRecipeCastSpells(GetPlayer(), q.knownRecipeCastSpells);
+
+        uint32 nowSec = uint32(time(NULL));
+        q.queryId = sWorld.GetBrowsePending().Register(pb, nowSec);
+        if (q.queryId == 0u)
+        {
+            AhServeBrowseInProcess(this, pb);
+            return;
+        }
+
+        IpcMessage qm; qm.op = IPC_BROWSE_QUERY; q.Encode(qm.body);
+        if (qm.body.size() > BrowseQuery::MAX_WIRE)
+        {
+            PendingBrowse tmp; (void)sWorld.GetBrowsePending().Take(q.queryId, tmp);
+            AhServeBrowseInProcess(this, pb);
+            return;
+        }
+        if (!sv->Channel().SendFrame(qm))
+        {
+            PendingBrowse tmp; (void)sWorld.GetBrowsePending().Take(q.queryId, tmp);
+            AhServeBrowseInProcess(this, pb);
+        }
+        return;
+    }
+
+    // --- worker down: in-process path (unchanged) ---
     WorldPacket data(SMSG_AUCTION_OWNER_LIST_RESULT, (4 + 4));
     data << (uint32) 0;                                     // amount place holder
 
@@ -1225,6 +1562,99 @@ void WorldSession::HandleAuctionListItems(WorldPacket& recv_data)
     // DEBUG_LOG("Auctionhouse search %s list from: %u, searchedname: %s, levelmin: %u, levelmax: %u, auctionSlotID: %u, auctionMainCategory: %u, auctionSubCategory: %u, quality: %u, usable: %u",
     //  auctioneerGuid.GetString().c_str(), listfrom, searchedname.c_str(), levelmin, levelmax, auctionSlotID, auctionMainCategory, auctionSubCategory, quality, usable);
 
+    // ----- SP-1 async proxy: hand the browse to the worker when active -----
+    WorkerSupervisor* sv = sWorld.GetAhSupervisor();
+    if (sv && sv->ServiceActive())
+    {
+        std::wstring wsearchedname;
+        if (!Utf8toWStr(searchedname, wsearchedname))
+        {
+            return;
+        }
+        wstrToLower(wsearchedname);
+        std::string nameLower;
+        WStrToUtf8(wsearchedname, nameLower);
+
+        PendingBrowse pb;
+        pb.accountId     = GetAccountId();
+        pb.playerGuidLow = GetPlayer()->GetGUIDLow();
+        pb.kind          = uint8(BROWSE_LIST);
+        pb.house         = AhHouseToType(auctionHouseEntry);
+        pb.allHouses     = sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_AUCTION) ? 1u : 0u;
+        pb.itemClass     = auctionMainCategory;
+        pb.itemSubClass  = auctionSubCategory;
+        pb.inventoryType = auctionSlotID;
+        pb.quality       = quality;
+        pb.levelmin      = levelmin;
+        pb.levelmax      = levelmax;
+        pb.usable        = usable;
+        pb.deferEluna    = 0u;
+#ifdef ENABLE_ELUNA
+        if (usable != 0u)
+        {
+            pb.deferEluna = 1u;   // defer OnCanUseItem to the reply handler
+        }
+#endif
+        pb.listfrom      = listfrom;
+        pb.wname         = wsearchedname;
+        pb.seq           = sWorld.GetBrowsePending().NextSeqFor(pb.playerGuidLow, pb.kind);
+
+        BrowseQuery q;
+        q.queryId          = 0;
+        q.kind             = pb.kind;
+        q.house            = pb.house;
+        q.allHouses        = pb.allHouses;
+        q.itemClass        = pb.itemClass;
+        q.itemSubClass     = pb.itemSubClass;
+        q.inventoryType    = pb.inventoryType;
+        q.quality          = pb.quality;
+        q.levelmin         = pb.levelmin;
+        q.levelmax         = pb.levelmax;
+        q.usable           = pb.usable;
+        q.deferEluna       = pb.deferEluna;
+        q.listfrom         = pb.listfrom;
+        // V3: send the LocaleConstant (NOT the internal session index).
+        {
+            int dbIdx = GetSessionDbLocaleIndex();   // -1 for enUS / default
+            LocaleConstant lc = (dbIdx < 0) ? LOCALE_enUS
+                                            : sObjectMgr.GetLocaleForIndex(dbIdx);
+            q.localeIndex = int8(lc);                // LOCALE_enUS(0) => no overlay
+        }
+        q.requesterGuidLow = pb.playerGuidLow;
+        q.minMountLevel    = sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL);
+        q.minEpicMountLevel= sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_EPIC_MOUNT_LEVEL);
+        q.searchedName     = nameLower;
+        AhBuildBrowseQueryProfile(GetPlayer(), q.profile);
+        AhBuildKnownRecipeCastSpells(GetPlayer(), q.knownRecipeCastSpells);
+
+        uint32 nowSec = uint32(time(NULL));
+        q.queryId = sWorld.GetBrowsePending().Register(pb, nowSec);
+        if (q.queryId == 0u)
+        {
+            // D3: pending-map at MAX_PENDING (browse flood). Serve in-process now.
+            AhServeBrowseInProcess(this, pb);
+            return;
+        }
+
+        IpcMessage qm; qm.op = IPC_BROWSE_QUERY; q.Encode(qm.body);
+        // open-c: oversize profile fallback. If encoding exceeds the cap, drop to
+        // in-process immediately (rare; a huge spellbook/rep set).
+        if (qm.body.size() > BrowseQuery::MAX_WIRE)
+        {
+            PendingBrowse tmp; (void)sWorld.GetBrowsePending().Take(q.queryId, tmp);
+            AhServeBrowseInProcess(this, pb);
+            return;
+        }
+        // C1: if the send itself fails, fall back in-process now and drop pending.
+        if (!sv->Channel().SendFrame(qm))
+        {
+            PendingBrowse tmp; (void)sWorld.GetBrowsePending().Take(q.queryId, tmp);
+            AhServeBrowseInProcess(this, pb);
+        }
+        return;   // async (or fell back synchronously above)
+    }
+
+    // --- worker down: in-process path (unchanged) ---
     WorldPacket data(SMSG_AUCTION_LIST_RESULT, (4 + 4));
     uint32 count = 0;
     uint32 totalcount = 0;

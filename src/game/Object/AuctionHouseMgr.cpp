@@ -42,6 +42,7 @@
 #include "AuctionHouseBot/CustodyService.h"
 #include "AuctionHouseBot/CustodyLedger.h"
 #include "AuctionHouseBot/CustodyDeferred.h"
+#include "AuctionHouseBot/BrowsePending.h"
 
 #include "Policies/Singleton.h"
 
@@ -697,6 +698,10 @@ void AuctionHouseMgr::SendAuctionWonMailInTransaction(AuctionEntry* auction, Cus
  */
 void AuctionHouseMgr::LoadAuctionItems()
 {
+    // V6/D9: build the recipe cast->taught map NOW (before the empty-AH early
+    // return so it is always populated, even on a fresh/empty AH).
+    AhEnsureRecipeCastMap();
+
     // data needs to be at first place for Item::LoadFromDB 0  1        2
     QueryResult* result = CharacterDatabase.Query("SELECT `data`,`itemguid`,`item_template` FROM `auction` JOIN `item_instance` ON `itemguid` = `guid`");
 
