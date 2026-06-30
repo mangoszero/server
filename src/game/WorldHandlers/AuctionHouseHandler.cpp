@@ -1250,34 +1250,23 @@ AuctionHouseObject* AhResolveHouse(const PendingBrowse& pb)
     return sAuctionMgr.GetAuctionsMap(t);
 }
 
-// In-process fallback for a stored pending request (C1). Serves the browse
-// exactly as the handler would via the Task-9 BuildListForKind dispatcher.
-// Non-static so the world thread (World.cpp) can call it from the reply branch
-// and the TTL sweep.
-void AhServeBrowseInProcess(WorldSession* session, const PendingBrowse& pb)
+// Coordinator model: the worker is the AH read authority. When it cannot serve
+// (down, a transient register/encode/send failure, queue-full, oversize, or a
+// reply timeout) mangosd serves NOTHING in-process. It sends an empty list so
+// the client does not hang, plus a red system line telling the player the AH is
+// temporarily unavailable. Non-static: the world thread (World.cpp) calls it
+// from the IPC_BROWSE_RESULT reply branch and the TTL sweep. (kind is a
+// BrowseKind; only the opcode depends on it.)
+void AhSendBrowseUnavailable(WorldSession* session, uint8 kind)
 {
-    Player* player = session->GetPlayer();
-    if (!player)
-    {
-        return;
-    }
-    AuctionHouseObject* house = AhResolveHouse(pb);
-    if (!house)
-    {
-        return;
-    }
-    uint16 opcode = (pb.kind == uint8(BROWSE_OWNER)) ? SMSG_AUCTION_OWNER_LIST_RESULT
-                  : (pb.kind == uint8(BROWSE_BIDDER)) ? SMSG_AUCTION_BIDDER_LIST_RESULT
+    uint16 opcode = (kind == uint8(BROWSE_OWNER)) ? SMSG_AUCTION_OWNER_LIST_RESULT
+                  : (kind == uint8(BROWSE_BIDDER)) ? SMSG_AUCTION_BIDDER_LIST_RESULT
                   : SMSG_AUCTION_LIST_RESULT;
     WorldPacket data(opcode, 4 + 4);
-    uint32 count = 0, totalcount = 0;
-    data << uint32(0);
-    house->BuildListForKind(pb.kind, data, player, pb.wname, pb.listfrom,
-        pb.levelmin, pb.levelmax, pb.usable, pb.inventoryType, pb.itemClass,
-        pb.itemSubClass, pb.quality, pb.clientOutbidIds, count, totalcount);
-    data.put<uint32>(0, count);
-    data << uint32(totalcount);
+    data << uint32(0);   // count
+    data << uint32(0);   // totalcount
     session->SendPacket(&data);
+    ChatHandler(session).SendSysMessage("|cffff0000The Auction House is temporarily unavailable.|r");
 }
 
 // called when player lists his bids
@@ -1381,7 +1370,7 @@ void WorldSession::HandleAuctionListBidderItems(WorldPacket& recv_data)
         q.queryId = sWorld.GetBrowsePending().Register(pb, nowSec);
         if (q.queryId == 0u)
         {
-            AhServeBrowseInProcess(this, pb);
+            AhSendBrowseUnavailable(this, pb.kind);
             return;
         }
 
@@ -1389,18 +1378,25 @@ void WorldSession::HandleAuctionListBidderItems(WorldPacket& recv_data)
         if (qm.body.size() > BrowseQuery::MAX_WIRE)
         {
             PendingBrowse tmp; (void)sWorld.GetBrowsePending().Take(q.queryId, tmp);
-            AhServeBrowseInProcess(this, pb);
+            AhSendBrowseUnavailable(this, pb.kind);
             return;
         }
         if (!sv->Channel().SendFrame(qm))
         {
             PendingBrowse tmp; (void)sWorld.GetBrowsePending().Take(q.queryId, tmp);
-            AhServeBrowseInProcess(this, pb);
+            AhSendBrowseUnavailable(this, pb.kind);
         }
         return;
     }
 
-    // --- worker down: in-process path (unchanged) ---
+    // Worker configured but DOWN -> coordinator: no in-process serving.
+    if (sv)
+    {
+        AhSendBrowseUnavailable(this, uint8(BROWSE_BIDDER));
+        return;
+    }
+
+    // --- no worker configured (legacy single-process): in-process path ---
     WorldPacket data(SMSG_AUCTION_BIDDER_LIST_RESULT, (4 + 4 + 4));
     data << uint32(0);                                      // add 0 as count
     uint32 count = 0;
@@ -1500,7 +1496,7 @@ void WorldSession::HandleAuctionListOwnerItems(WorldPacket& recv_data)
         q.queryId = sWorld.GetBrowsePending().Register(pb, nowSec);
         if (q.queryId == 0u)
         {
-            AhServeBrowseInProcess(this, pb);
+            AhSendBrowseUnavailable(this, pb.kind);
             return;
         }
 
@@ -1508,18 +1504,25 @@ void WorldSession::HandleAuctionListOwnerItems(WorldPacket& recv_data)
         if (qm.body.size() > BrowseQuery::MAX_WIRE)
         {
             PendingBrowse tmp; (void)sWorld.GetBrowsePending().Take(q.queryId, tmp);
-            AhServeBrowseInProcess(this, pb);
+            AhSendBrowseUnavailable(this, pb.kind);
             return;
         }
         if (!sv->Channel().SendFrame(qm))
         {
             PendingBrowse tmp; (void)sWorld.GetBrowsePending().Take(q.queryId, tmp);
-            AhServeBrowseInProcess(this, pb);
+            AhSendBrowseUnavailable(this, pb.kind);
         }
         return;
     }
 
-    // --- worker down: in-process path (unchanged) ---
+    // Worker configured but DOWN -> coordinator: no in-process serving.
+    if (sv)
+    {
+        AhSendBrowseUnavailable(this, uint8(BROWSE_OWNER));
+        return;
+    }
+
+    // --- no worker configured (legacy single-process): in-process path ---
     WorldPacket data(SMSG_AUCTION_OWNER_LIST_RESULT, (4 + 4));
     data << (uint32) 0;                                     // amount place holder
 
@@ -1638,7 +1641,7 @@ void WorldSession::HandleAuctionListItems(WorldPacket& recv_data)
         if (q.queryId == 0u)
         {
             // D3: pending-map at MAX_PENDING (browse flood). Serve in-process now.
-            AhServeBrowseInProcess(this, pb);
+            AhSendBrowseUnavailable(this, pb.kind);
             return;
         }
 
@@ -1648,19 +1651,26 @@ void WorldSession::HandleAuctionListItems(WorldPacket& recv_data)
         if (qm.body.size() > BrowseQuery::MAX_WIRE)
         {
             PendingBrowse tmp; (void)sWorld.GetBrowsePending().Take(q.queryId, tmp);
-            AhServeBrowseInProcess(this, pb);
+            AhSendBrowseUnavailable(this, pb.kind);
             return;
         }
         // C1: if the send itself fails, fall back in-process now and drop pending.
         if (!sv->Channel().SendFrame(qm))
         {
             PendingBrowse tmp; (void)sWorld.GetBrowsePending().Take(q.queryId, tmp);
-            AhServeBrowseInProcess(this, pb);
+            AhSendBrowseUnavailable(this, pb.kind);
         }
         return;   // async (or fell back synchronously above)
     }
 
-    // --- worker down: in-process path (unchanged) ---
+    // Worker configured but DOWN -> coordinator: no in-process serving.
+    if (sv)
+    {
+        AhSendBrowseUnavailable(this, uint8(BROWSE_LIST));
+        return;
+    }
+
+    // --- no worker configured (legacy single-process): in-process path ---
     WorldPacket data(SMSG_AUCTION_LIST_RESULT, (4 + 4));
     uint32 count = 0;
     uint32 totalcount = 0;

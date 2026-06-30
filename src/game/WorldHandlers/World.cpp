@@ -128,10 +128,11 @@ INSTANTIATE_SINGLETON_1(World);
 
 extern void LoadGameObjectModelList();
 
-// SP-1: in-process browse fallback + house re-resolution, defined in
-// AuctionHouseHandler.cpp (next to the three async-proxy handlers). The world
-// thread calls these from the IPC_BROWSE_RESULT reply branch and the TTL sweep.
-void AhServeBrowseInProcess(WorldSession* session, const PendingBrowse& pb);
+// SP-1 coordinator: the "AH unavailable" responder + house re-resolution (for
+// the BIDDER outbid-prepend), defined in AuctionHouseHandler.cpp (next to the
+// three async-proxy handlers). The world thread calls these from the
+// IPC_BROWSE_RESULT reply branch and the TTL sweep.
+void AhSendBrowseUnavailable(WorldSession* session, uint8 kind);
 AuctionHouseObject* AhResolveHouse(const PendingBrowse& pb);
 
 volatile bool World::m_stopEvent = false;
@@ -2050,10 +2051,10 @@ void World::Update(uint32 diff)
             sAuctionIntentExecutor.PurgeExpiredUuids(uint32(nowSec));
             s_lastIntentPurge = nowSec;
 
-            // SP-1 (C1/M5): sweep timed-out browse requests on the SAME nowSec
-            // clock used to register them. The worker never replied (crash/lost
-            // frame); serve each in-process iff still the current search and the
-            // player is present (I4).
+            // SP-1 (M5): sweep timed-out browse requests on the SAME nowSec clock
+            // used to register them. The worker never replied (crash/lost frame);
+            // coordinator model -> tell each player the AH is unavailable iff it
+            // is still the current search and the player is present (I4).
             std::vector<PendingBrowse> timedOut;
             m_browsePending.Sweep(uint32(nowSec), 10u, timedOut);
             for (size_t i = 0; i < timedOut.size(); ++i)
@@ -2067,7 +2068,7 @@ void World::Update(uint32 diff)
                     ObjectGuid(HIGHGUID_PLAYER, timedOut[i].playerGuidLow));
                 if (p && p->IsInWorld() && p->GetSession())
                 {
-                    AhServeBrowseInProcess(p->GetSession(), timedOut[i]);
+                    AhSendBrowseUnavailable(p->GetSession(), timedOut[i].kind);
                 }
             }
         }
@@ -2274,11 +2275,13 @@ void World::HandleAhInbound(const IpcMessage& msg)
                 break;
             }
 
-            // tooMany: the un-paginated defer set blew the cap -> full in-process.
-            // tooMany wins over elunaPending (the worker may set both).
+            // tooMany: the worker could not serve (queue saturated / oversize
+            // failsafe). Coordinator model: no in-process fallback -> the player
+            // gets "AH unavailable". (prePaginated, set instead for the >cap
+            // deferred-Eluna edge, is handled inside the elunaPending pass below.)
             if (res.tooMany)
             {
-                AhServeBrowseInProcess(session, pb);   // helper (Step 7)
+                AhSendBrowseUnavailable(session, pb.kind);
                 break;
             }
 
@@ -2289,11 +2292,10 @@ void World::HandleAhInbound(const IpcMessage& msg)
             {
                 // Deferred-Eluna pass (D5/V2): run ONLY the OnCanUseItem veto per
                 // entry via the thin Player::CanUseItemEluna accessor. The worker
-                // already enforced every non-Eluna sub-filter on the same profile
-                // and returned the FULL surviving set un-paginated (hard-capped at
-                // 1000 -> tooMany -> in-process above that). We run the hook over
-                // EVERY entry -- NO per-tick budget that keeps unchecked entries
-                // (V2: that broke parity by counting/showing Lua-vetoed items).
+                // already enforced every non-Eluna sub-filter on the same profile.
+                // Run the hook over EVERY entry -- NO per-tick budget that keeps
+                // unchecked entries (V2: that broke parity by counting/showing
+                // Lua-vetoed items).
                 std::vector<BrowseEntry> survivors;
                 survivors.reserve(res.entries.size());
                 for (size_t i = 0; i < res.entries.size(); ++i)
@@ -2304,11 +2306,27 @@ void World::HandleAhInbound(const IpcMessage& msg)
                     }
                     survivors.push_back(res.entries[i]);
                 }
-                totalcount = uint32(survivors.size());
-                uint32 from = pb.listfrom;
-                for (uint32 i = from; i < survivors.size() && finalEntries.size() < 50u; ++i)
+                if (res.prePaginated)
                 {
-                    finalEntries.push_back(survivors[i]);
+                    // >cap edge (decision #2): the worker already paginated to the
+                    // listfrom window, so `survivors` IS the page after the veto.
+                    // Do NOT re-paginate; keep the worker's pre-Eluna survivor
+                    // count as totalcount (off-page items are not veto-checked --
+                    // the accepted approximation for this rare edge).
+                    finalEntries = survivors;
+                    totalcount = res.totalcount;
+                }
+                else
+                {
+                    // Common case: the worker shipped the FULL surviving set
+                    // un-paginated. Run Eluna over all, then paginate here (exact
+                    // in-process parity).
+                    totalcount = uint32(survivors.size());
+                    uint32 from = pb.listfrom;
+                    for (uint32 i = from; i < survivors.size() && finalEntries.size() < 50u; ++i)
+                    {
+                        finalEntries.push_back(survivors[i]);
+                    }
                 }
             }
             else
