@@ -244,3 +244,18 @@ The ``ah repair`` command is available from the mangosd console for the player
 auction custody ledger. It reports custody drift by default, mutates only with
 ``ah repair apply`` or ``ah repair force-forfeit <idem_key>``, and never mints
 gold or sends replacement item mail from an orphan row.
+
+### SP-1: externalized AH browse (read path)
+
+When the ah-service worker is connected and healthy, mangosd forwards AH browse
+/ owner-list / bidder-list requests to it over IPC (IPC_BROWSE_QUERY) and
+assembles the client reply from IPC_BROWSE_RESULT on a later world tick. The
+worker reproduces the full CanUseItem usable filter and full entry data
+(enchant/suffix/charges decoded from item_instance). On ENABLE_ELUNA builds the
+OnCanUseItem Lua hook is deferred to mangosd's world thread (the worker returns
+the un-paginated usable set; mangosd runs the hook + paginates). Player
+mutations (sell/bid/buyout/cancel) remain fully in-process. If the worker is
+down, times out, errors, or the deferred set is too large, mangosd serves the
+browse in-process (no player-visible change). Set
+`CharacterDatabaseConnections >= 2` in ah-service.conf so the browse thread's
+SELECTs do not serialize behind the bot snapshot.

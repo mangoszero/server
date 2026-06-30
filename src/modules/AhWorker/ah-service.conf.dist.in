@@ -55,11 +55,15 @@ CharacterDatabaseInfo = ""
 
 #
 #    CharacterDatabaseConnections
-#        Number of additional asynchronous character-DB connections (a
-#        synchronous connection is always created on top of this count).
-#    Default: 1
+#        Number of additional asynchronous character-DB connections in the
+#        SHARED round-robin pool (a synchronous connection is always created on
+#        top). SP-1's dedicated browse thread runs its on-demand SELECTs through
+#        this pool (with its own per-thread mysql_thread_init), so a floor of 2
+#        gives the browse path headroom alongside the bot snapshot. This does
+#        NOT dedicate a connection to the browse thread; it sizes the pool.
+#    Default: 2
 
-CharacterDatabaseConnections = 1
+CharacterDatabaseConnections = 2
 
 #
 #    AhBot.ConfigPath
