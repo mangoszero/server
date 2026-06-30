@@ -856,6 +856,15 @@ static int RunAhOwnerTest()
         return 1;
     }
 
+    // Task 3: the forged system name is always reserved from players, even if
+    // the reserved_name table is empty (self-healing across wipes).
+    sObjectMgr.LoadReservedPlayersNames();
+    if (!sObjectMgr.IsReservedName(AHBOT_SYSTEM_OWNER_NAME))
+    {
+        printf("ahowner FAIL: \"AuctionHouse\" is not reserved after load\n");
+        return 1;
+    }
+
     printf("ahowner OK\n");
     return 0;
 }

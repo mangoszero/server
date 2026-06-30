@@ -7613,6 +7613,19 @@ void ObjectMgr::LoadReservedPlayersNames()
     {
         BarGoLink bar(1);
         bar.step();
+        // AH bot forged system owner: always reserve its name. In-memory only and
+        // run on every load/reload, so a wiped or never-seeded `reserved_name`
+        // table cannot free the name for players (enforcement is via IsReservedName,
+        // which reads m_ReservedNames).
+        std::wstring wsys;
+        if (Utf8toWStr(AHBOT_SYSTEM_OWNER_NAME, wsys))
+        {
+            wstrToLower(wsys);
+            if (m_ReservedNames.insert(wsys).second)
+            {
+                ++count;
+            }
+        }
         sLog.outString(">> Loaded %u reserved player names", count);
         sLog.outString();
         return;
@@ -7642,6 +7655,20 @@ void ObjectMgr::LoadReservedPlayersNames()
     while (result->NextRow());
 
     delete result;
+
+    // AH bot forged system owner: always reserve its name. In-memory only and
+    // run on every load/reload, so a wiped or never-seeded `reserved_name`
+    // table cannot free the name for players (enforcement is via IsReservedName,
+    // which reads m_ReservedNames).
+    std::wstring wsys;
+    if (Utf8toWStr(AHBOT_SYSTEM_OWNER_NAME, wsys))
+    {
+        wstrToLower(wsys);
+        if (m_ReservedNames.insert(wsys).second)
+        {
+            ++count;
+        }
+    }
 
     sLog.outString(">> Loaded %u reserved player names", count);
     sLog.outString();
