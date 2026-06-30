@@ -10,10 +10,21 @@ file(GLOB ah_service_SRC *.cpp *.h)
 list(REMOVE_ITEM ah_service_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/Console_win.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Console_posix.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Usability.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Usability.h"
 )
 
+# Usability is shared with the mangosd-side differential drift test (Task 8) via
+# a separate test exe, so it is its own small static library. Keep it free of
+# game headers (it includes only BrowseMessages.h / Common.h).
+add_library(ah_usability STATIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/Usability.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Usability.h")
+target_include_directories(ah_usability PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(ah_usability PUBLIC ah_ipc)   # BrowseMessages.h / Common.h
+
 add_executable(ah-service ${ah_service_SRC} ${ah_service_platform_SRC})
-target_link_libraries(ah-service PRIVATE ah_ipc shared Threads::Threads)
+target_link_libraries(ah-service PRIVATE ah_usability ah_ipc shared Threads::Threads)
 install(TARGETS ah-service DESTINATION ${BIN_DIR}/service-workers/ah-service)
 # Substitute @MANGOS_AHBOT_VER@ (the ConfVersion) like mangosd.conf, then
 # install the generated file (a raw copy would leave the placeholder literal).

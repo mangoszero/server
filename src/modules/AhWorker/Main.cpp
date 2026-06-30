@@ -62,6 +62,7 @@
 #include "AuctionIntents.h"
 #include "BrowseMessages.h"
 #include "BrowseHandler.h"
+#include "Usability.h"
 #include "Threading/Threading.h"
 #include "Console.h"
 #include "Config/Config.h"
@@ -611,6 +612,79 @@ static int RunIntentCodecSelfTest()
                     unsigned(ro.Count()));
             return 1;
         }
+    }
+
+    // --- AhUsability::IsUsable verdicts (full parity minus Eluna) ---
+    {
+        PlayerProfile warrior;
+        warrior.classId = 1u; warrior.raceId = 1u; warrior.level = 40u;
+        warrior.honorRank = 2u;
+        SkillRank swords; swords.skillId = 43u; swords.rank = 200u;
+        warrior.skills.push_back(swords);
+        RepStanding rep; rep.factionId = 609u; rep.rank = 5u; // Honored
+        warrior.reps.push_back(rep);
+
+        ItemUsabilityReq ok;
+        ok.itemClass = 2u; ok.allowableClass = 0xFFFFFFFFu; ok.allowableRace = 0xFFFFFFFFu;
+        ok.requiredLevel = 30u; ok.itemId = 12345u;
+        ok.requiredSkill = 43u; ok.requiredSkillRank = 150u; ok.requiredSpell = 0u;
+        ok.requiredHonorRank = 0u; ok.requiredRepFaction = 0u; ok.requiredRepRank = 0u;
+        ok.itemProficiencySkill = 43u;
+        const uint32 MM = 40u, EM = 60u;
+
+        if (!AhUsability::IsUsable(warrior, ok, MM, EM))
+        { fprintf(stderr, "usability FAILED: baseline\n"); return 1; }
+
+        ItemUsabilityReq c;
+        c = ok; c.allowableClass = 0x80u;       // mage-only
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: class gate\n"); return 1; }
+        c = ok; c.allowableRace = 0x02u;        // orc-only
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: race gate\n"); return 1; }
+        c = ok; c.requiredLevel = 60u;
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: level gate\n"); return 1; }
+        c = ok; c.requiredSkill = 44u;          // skill absent
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: skill-missing\n"); return 1; }
+        c = ok; c.requiredSkillRank = 300u;
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: skill-rank\n"); return 1; }
+        c = ok; c.requiredSpell = 999u;
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: required-spell\n"); return 1; }
+        c = ok; c.requiredHonorRank = 5u;       // player has rank 2
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: honor gate\n"); return 1; }
+        c = ok; c.itemProficiencySkill = 44u;   // proficiency absent
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: proficiency\n"); return 1; }
+        c = ok; c.requiredRepFaction = 609u; c.requiredRepRank = 7u; // need Exalted, have 5
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: reputation gate\n"); return 1; }
+        c = ok; c.requiredRepFaction = 609u; c.requiredRepRank = 4u; // need 4, have 5
+        if (!AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: reputation pass\n"); return 1; }
+
+        // Mount-level override: a regular-mount itemId (1132) with a high base
+        // RequiredLevel must drop to MM(40). Player level 40 -> usable.
+        c = ok; c.itemId = 1132u; c.requiredLevel = 60u;
+        if (!AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: regular-mount override\n"); return 1; }
+        // Epic-mount itemId (12302) -> EM(60). Player 40 -> not usable.
+        c = ok; c.itemId = 12302u; c.requiredLevel = 30u;
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: epic-mount override\n"); return 1; }
+
+        // D6/V1: proficiency-skill table mirrors Item::GetSkill().
+        if (AhUsability::GetItemProficiencySkill(2u, 7u) != 43u ||  // 1H sword
+            AhUsability::GetItemProficiencySkill(4u, 1u) != 415u || // cloth
+            AhUsability::GetItemProficiencySkill(4u, 6u) != 433u || // shield
+            AhUsability::GetItemProficiencySkill(2u, 17u) != 253u|| // V1: SPEAR->ASSASSINATION (not 633)
+            AhUsability::GetItemProficiencySkill(0u, 0u) != 0u   || // non-equip
+            AhUsability::GetItemProficiencySkill(2u, 99u) != 0u)    // OOB subclass
+        { fprintf(stderr, "usability FAILED: proficiency table\n"); return 1; }
     }
 
     printf("intent codec selftest OK\n");

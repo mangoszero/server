@@ -20,6 +20,7 @@
  */
 
 #include "BrowseHandler.h"
+#include "Usability.h"
 #include "Utilities/Util.h"   // Utf8FitTo / Utf8toWStr (src/shared; worker links `shared`)
 
 namespace
@@ -40,10 +41,42 @@ namespace
         return Utf8FitTo(rowName, needleLowerW);
     }
 
-    /// Usable verdict. Task 6 replaces the body with AhUsability::IsUsable +
-    /// the recipe-known check against q.knownRecipeCastSpells. Stub = true.
-    bool RowUsable(const BrowseRow& /*r*/, const BrowseQuery& /*q*/)
+    /// Usable verdict. Full parity with Player::CanUseItem(proto, direct_action=true)
+    /// plus the Item* overload extras (proficiency, reputation), minus the Eluna
+    /// OnCanUseItem hook (deferred to mangosd). Also filters known recipes (C2b).
+    bool RowUsable(const BrowseRow& r, const BrowseQuery& q)
     {
+        ItemUsabilityReq req;
+        req.itemClass            = r.itemClass;
+        req.allowableClass       = r.allowableClass;
+        req.allowableRace        = r.allowableRace;
+        req.requiredLevel        = r.requiredLevel;
+        req.itemId               = r.entry.itemEntry;
+        req.requiredSkill        = r.reqSkill;
+        req.requiredSkillRank    = r.reqSkillRank;
+        req.requiredSpell        = r.reqSpell;
+        req.requiredHonorRank    = r.reqHonorRank;
+        req.requiredRepFaction   = r.reqRepFaction;
+        req.requiredRepRank      = r.reqRepRank;
+        req.itemProficiencySkill = r.itemProficiencySkill;
+        if (!AhUsability::IsUsable(q.profile, req, q.minMountLevel, q.minEpicMountLevel))
+        {
+            return false;
+        }
+        // Recipe-known (C2b): a recipe whose CAST spell (spellid_1) is in the
+        // mangosd-derived known set is filtered out. The worker NEVER resolves
+        // the taught spell; mangosd already did the EffectTriggerSpell[0] ->
+        // HasSpell resolution to build knownRecipeCastSpells.
+        if (req.itemClass == AHW_ITEM_CLASS_RECIPE && r.castSpellId != 0u)
+        {
+            for (size_t i = 0; i < q.knownRecipeCastSpells.size(); ++i)
+            {
+                if (q.knownRecipeCastSpells[i] == r.castSpellId)
+                {
+                    return false;
+                }
+            }
+        }
         return true;
     }
 }
