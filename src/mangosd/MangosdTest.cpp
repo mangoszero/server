@@ -865,6 +865,18 @@ static int RunAhOwnerTest()
         return 1;
     }
 
+    // Task 4: the system-owner guid predicate the mail-gate keys on.
+    if (!IsAhBotSystemOwnerGuid(ObjectGuid(HIGHGUID_PLAYER, AHBOT_SYSTEM_OWNER_GUID)))
+    {
+        printf("ahowner FAIL: IsAhBotSystemOwnerGuid false for the sentinel\n");
+        return 1;
+    }
+    if (IsAhBotSystemOwnerGuid(ObjectGuid(HIGHGUID_PLAYER, 7u)))
+    {
+        printf("ahowner FAIL: IsAhBotSystemOwnerGuid true for a normal guid\n");
+        return 1;
+    }
+
     printf("ahowner OK\n");
     return 0;
 }
