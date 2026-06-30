@@ -34,8 +34,14 @@ endif()
 if(BUILD_MANGOSD)
     # Build the mangos world server
     add_subdirectory(mangosd)
+endif()
 
-    # Build the selected modules
+# The modules tree contains BOTH the game-linked scripts (SD3/Eluna, which
+# self-gate on SCRIPT_LIB_* AND require the `game` target) and the standalone
+# AhWorker (which links only ah_ipc + shared). Add it when EITHER mangosd or the
+# worker is being built; the SD3/Eluna add_subdirectory calls themselves stay
+# guarded so they never reference `game` when BUILD_MANGOSD is OFF.
+if(BUILD_MANGOSD OR BUILD_AH_SERVICE)
     add_subdirectory(modules)
 endif()
 
@@ -47,10 +53,6 @@ endif()
 # If we want the tools for map/vmap/mmap extraction
 if(BUILD_TOOLS)
     add_subdirectory(tools)
-endif()
-
-if(BUILD_AH_SERVICE)
-    add_subdirectory(ah-service)
 endif()
 
 if (BUILD_MANGOSD OR BUILD_REALMD)
