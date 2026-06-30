@@ -313,6 +313,20 @@ bool IpcClientHandler::IsClosing() const
 }
 
 // ---------------------------------------------------------------------------
+// InboundFrameAcceptable() - per-opcode size predicate (shared with tests)
+// ---------------------------------------------------------------------------
+
+bool IpcClientHandler::InboundFrameAcceptable(uint16 op, uint32 bodyLen)
+{
+    const IpcBodySizeRule rule = IpcExpectedBodySize(op);
+    if (!rule.known)
+    {
+        return false;
+    }
+    return rule.exact ? (bodyLen == rule.maxLen) : (bodyLen <= rule.maxLen);
+}
+
+// ---------------------------------------------------------------------------
 // SendHello() - initiate the handshake
 // ---------------------------------------------------------------------------
 
@@ -389,6 +403,15 @@ int IpcClientHandler::ProcessFrame(const IpcMessage& msg)
 
         case IPC_CLI_LIVE:
         {
+            if (!InboundFrameAcceptable(msg.op,
+                                        static_cast<uint32>(msg.body.size())))
+            {
+                fprintf(stderr, "IpcClientHandler: rejecting inbound frame"
+                                " 0x%04X (body=%u) - bad size/unknown opcode\n",
+                                static_cast<unsigned>(msg.op),
+                                static_cast<unsigned>(msg.body.size()));
+                break;
+            }
             if (m_inbound)
             {
                 if (!m_inbound->push(msg))

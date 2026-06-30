@@ -56,6 +56,7 @@
 
 #include "IpcVersion.h"
 #include "IpcChannel.h"
+#include "IpcClientHandler.h"
 #include "IpcMessage.h"
 #include "IpcOpcodes.h"
 #include "AuctionIntents.h"
@@ -448,6 +449,29 @@ static int RunIntentCodecSelfTest()
         if (b.Decode(bad))
         {
             fprintf(stderr, "intent codec selftest FAILED: invalid kind accepted\n");
+            return 1;
+        }
+    }
+
+    // --- I8: worker rejects oversize / unknown inbound frames before staging ---
+    {
+        // A BROWSE_QUERY just over its MAXLEN must be rejected.
+        if (IpcClientHandler::InboundFrameAcceptable(
+                IPC_BROWSE_QUERY, uint32(BrowseQuery::MAX_WIRE) + 1u))
+        {
+            fprintf(stderr, "intent codec selftest FAILED: oversize browse frame accepted\n");
+            return 1;
+        }
+        // A well-sized BROWSE_RESULT must be accepted.
+        if (!IpcClientHandler::InboundFrameAcceptable(IPC_BROWSE_RESULT, 64u))
+        {
+            fprintf(stderr, "intent codec selftest FAILED: valid browse frame rejected\n");
+            return 1;
+        }
+        // An unknown opcode must be rejected.
+        if (IpcClientHandler::InboundFrameAcceptable(0xFFFFu, 0u))
+        {
+            fprintf(stderr, "intent codec selftest FAILED: unknown opcode accepted\n");
             return 1;
         }
     }
