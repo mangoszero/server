@@ -80,11 +80,34 @@ like:
 Also, please place one space before opening parenthesis. Before, but not after
 (the `if ( blah )` style is a no-no!).
 
-Inline functions should also use symmetric bracket placement, even for short functions:
+Inline functions
+----------------
+Inline functions must use the same symmetric bracket placement as any other
+function, even when the body contains only a single statement.
 
     bool isArena() const
     {
         return m_IsArena;
+    }
+
+Do not write function, method, constructor, or destructor bodies on the same
+line as the declaration.
+
+Incorrect:
+
+    ~GroupReference() { unlink(); }
+    GroupReference const* next() const { return (GroupReference const*)Reference<Group, Player>::next(); }
+
+Correct:
+
+    ~GroupReference()
+    {
+        unlink();
+    }
+
+    GroupReference const* next() const
+    {
+        return (GroupReference const*)Reference<Group, Player>::next();
     }
 
 Class declaration and constructors
@@ -112,8 +135,7 @@ Please follow the following rules for classes:
 * next line and indent for class field initialization list
 * indent for public:/private:/protected: section with additional indent
   for section content
-* empty or short function body can be at same line with declaration in
-  in-class definition case
+* function bodies must start on the next line, even for short in-class definitions
 
 Code documentation with Doxygen
 -------------------------------
