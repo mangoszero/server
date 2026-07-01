@@ -244,6 +244,7 @@ World::World()
     // release/acquire pairing happens later between SetAhSupervisor() and the
     // world tick loop.
     m_ahSupervisor.store(NULL, std::memory_order_relaxed);
+    m_ahServiceConfigured.store(false, std::memory_order_relaxed);
 }
 
 /// World destructor
@@ -2275,10 +2276,9 @@ void World::HandleAhInbound(const IpcMessage& msg)
                 break;
             }
 
-            // tooMany: the worker could not serve (queue saturated / oversize
-            // failsafe). Coordinator model: no in-process fallback -> the player
-            // gets "AH unavailable". (prePaginated, set instead for the >cap
-            // deferred-Eluna edge, is handled inside the elunaPending pass below.)
+            // tooMany: the worker declined (queue saturated / oversize failsafe /
+            // over-cap deferred-Eluna). Coordinator model: no in-process fallback
+            // -> the player gets "AH unavailable".
             if (res.tooMany)
             {
                 AhSendBrowseUnavailable(session, pb.kind);
@@ -2306,27 +2306,15 @@ void World::HandleAhInbound(const IpcMessage& msg)
                     }
                     survivors.push_back(res.entries[i]);
                 }
-                if (res.prePaginated)
+                // The worker shipped the FULL surviving set un-paginated (the >cap
+                // deferred-Eluna case is declined with tooMany, above). Run the Lua
+                // veto over all survivors, then paginate here for exact in-process
+                // parity.
+                totalcount = uint32(survivors.size());
+                uint32 from = pb.listfrom;
+                for (uint32 i = from; i < survivors.size() && finalEntries.size() < 50u; ++i)
                 {
-                    // >cap edge (decision #2): the worker already paginated to the
-                    // listfrom window, so `survivors` IS the page after the veto.
-                    // Do NOT re-paginate; keep the worker's pre-Eluna survivor
-                    // count as totalcount (off-page items are not veto-checked --
-                    // the accepted approximation for this rare edge).
-                    finalEntries = survivors;
-                    totalcount = res.totalcount;
-                }
-                else
-                {
-                    // Common case: the worker shipped the FULL surviving set
-                    // un-paginated. Run Eluna over all, then paginate here (exact
-                    // in-process parity).
-                    totalcount = uint32(survivors.size());
-                    uint32 from = pb.listfrom;
-                    for (uint32 i = from; i < survivors.size() && finalEntries.size() < 50u; ++i)
-                    {
-                        finalEntries.push_back(survivors[i]);
-                    }
+                    finalEntries.push_back(survivors[i]);
                 }
             }
             else

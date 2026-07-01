@@ -271,11 +271,18 @@ at all, the legacy single-process in-process AH is used as before.)
 Set `CharacterDatabaseConnections >= 2` in ah-service.conf so the browse thread's
 SELECTs do not serialize behind the bot snapshot.
 
-**Known cosmetic edge (smoke note).** On an `ENABLE_ELUNA` realm with an active
-`OnCanUseItem` veto, a single "usable"-filtered search that yields more than ~1000
-matches falls into a worker-paginated path: mangosd runs the Lua veto on just the
-visible page. The browse stays correct (every item is reachable on exactly one
-page, no duplicates), but the client may show slightly **more page buttons than
-items justify** and the occasional **sparse or empty deep page**. This is the
-accepted approximation for that rare edge — **expected, not a regression** — so do
-not flag it during smoke testing.
+**Over-cap deferred-Eluna (decision #2).** On an `ENABLE_ELUNA` realm with an
+active `OnCanUseItem` veto, a single "usable"-filtered search that yields more
+than ~1000 matches cannot be veto-checked exactly out-of-process, so the worker
+**declines** it and mangosd returns "AH temporarily unavailable" rather than a
+short or mis-counted page. This is rare (needs both >1000 surviving matches and a
+bound Lua hook) and follows the coordinator's "correct-or-unavailable" contract —
+**expected, not a regression** — so do not flag it during smoke testing.
+
+**Known limitation — Eluna `Player:SendAuctionMenu`.** The window-open gate lives
+in `WorldSession::SendAuctionHello`. A Lua script that calls
+`Player:SendAuctionMenu` builds `MSG_AUCTION_HELLO` directly and so bypasses that
+gate: while the worker is down the window opens, but its first browse returns the
+unavailable reply (an empty window). This affects only realms whose scripts call
+that API, and the fix would mean patching the third-party Eluna module, so it is
+left as a documented limitation.

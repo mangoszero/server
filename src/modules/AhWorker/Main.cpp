@@ -391,7 +391,6 @@ static int RunIntentCodecSelfTest()
         a.kind         = static_cast<uint8>(BROWSE_LIST);
         a.elunaPending = 1u;
         a.tooMany      = 0u;
-        a.prePaginated = 1u;
         a.totalcount   = 7u;
         BrowseEntry e;
         e.id=5u; e.itemEntry=19019u; e.enchantId=2u; e.randomPropId=0u;
@@ -414,7 +413,7 @@ static int RunIntentCodecSelfTest()
             return 1;
         }
         if (b.queryId != a.queryId || b.kind != a.kind ||
-            b.elunaPending != 1u || b.tooMany != 0u || b.prePaginated != 1u ||
+            b.elunaPending != 1u || b.tooMany != 0u ||
             b.totalcount != 7u || b.entries.size() != 1u || b.Count() != 1u)
         {
             fprintf(stderr, "intent codec selftest FAILED: BrowseResult header mismatch\n");
@@ -614,8 +613,9 @@ static int RunIntentCodecSelfTest()
             return 1;
         }
 
-        // Over-cap deferred-Eluna pre-pagination (decision #2): >cap survivors ->
-        // worker ships just the listfrom page with prePaginated=1, NOT tooMany.
+        // Over-cap deferred-Eluna (decision #2): >cap survivors -> the worker
+        // declines with tooMany (no entries) so mangosd sends "AH unavailable",
+        // rather than serving an approximate short page.
         std::vector<BrowseRow> many;
         for (uint32 i = 0; i < 1200u; ++i)
         {
@@ -635,24 +635,13 @@ static int RunIntentCodecSelfTest()
         BrowseQuery qbig = q;          // LIST, searchedName "sword" (matches all)
         qbig.deferEluna = 1u; qbig.usable = 0u; qbig.listfrom = 100u;
         BrowseResult rbig = BrowseHandler::FilterAndPaginate(many, qbig);
-        if (rbig.prePaginated != 1u || rbig.tooMany != 0u || rbig.elunaPending != 1u)
+        if (rbig.tooMany != 1u || rbig.elunaPending != 0u ||
+            rbig.entries.size() != 0u || rbig.totalcount != 0u)
         {
-            fprintf(stderr, "browse selftest FAILED: prePaginated flags"
-                    " (pp=%u tm=%u ep=%u)\n", unsigned(rbig.prePaginated),
-                    unsigned(rbig.tooMany), unsigned(rbig.elunaPending));
-            return 1;
-        }
-        if (rbig.totalcount != 1200u || rbig.entries.size() != 50u)
-        {
-            fprintf(stderr, "browse selftest FAILED: prePaginated page size=%u"
-                    " total=%u (exp 50/1200)\n", unsigned(rbig.entries.size()),
-                    unsigned(rbig.totalcount));
-            return 1;
-        }
-        if (rbig.entries[0].id != 101u)   // survivor index 100 -> id 101
-        {
-            fprintf(stderr, "browse selftest FAILED: prePaginated first id=%u"
-                    " (exp 101)\n", unsigned(rbig.entries[0].id));
+            fprintf(stderr, "browse selftest FAILED: over-cap should decline with"
+                    " tooMany (tm=%u ep=%u n=%u total=%u)\n",
+                    unsigned(rbig.tooMany), unsigned(rbig.elunaPending),
+                    unsigned(rbig.entries.size()), unsigned(rbig.totalcount));
             return 1;
         }
     }

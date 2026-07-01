@@ -612,6 +612,13 @@ int main(int argc, char** argv)
     WorkerSupervisor* ahSupervisor = NULL;
     if (sConfig.GetBoolDefault("AH.Service.Enabled", false))
     {
+        // SP-1 coordinator authority: the worker is the configured AH read
+        // authority from here on. Set BEFORE Start() so that even if Start()
+        // fails (missing exe / port taken / bad bot GUID) and the supervisor is
+        // torn down below, the read handlers still send "AH unavailable" rather
+        // than silently reverting to in-process reads.
+        sWorld.SetAhServiceConfigured(true);
+
         ahSupervisor = new WorkerSupervisor(
             "ah-service",
             sConfig.GetStringDefault("AH.Service.Path", "service-workers/ah-service/ah-service"),

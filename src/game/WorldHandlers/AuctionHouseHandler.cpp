@@ -112,13 +112,16 @@ void WorldSession::HandleAuctionHelloOpcode(WorldPacket& recv_data)
 // this void causes that auction window is opened
 void WorldSession::SendAuctionHello(Unit* unit)
 {
-    // SP-1 coordinator: if a worker is the AH authority and it is down, do NOT
-    // open the auction window at all -- the AH is unavailable; tell the player
-    // (center flash + chat) and return. (sv == NULL = no worker configured =
-    // legacy single-process -> open normally.) This is the single chokepoint for
+    // SP-1 coordinator: if the worker is the CONFIGURED AH authority but not
+    // currently active (never started, or down), do NOT open the auction window
+    // at all -- the AH is unavailable; tell the player (center flash + chat) and
+    // return. The authority test is IsAhServiceConfigured(), NOT the supervisor
+    // pointer, so a configured-but-failed-start (sv == NULL) is still caught here
+    // rather than silently opening the window. When the worker is not configured,
+    // open normally (legacy single-process). This is the single chokepoint for
     // every open path (auctioneer click, gossip option, .auction GM commands).
     WorkerSupervisor* sv = sWorld.GetAhSupervisor();
-    if (sv && !sv->ServiceActive())
+    if (sWorld.IsAhServiceConfigured() && !(sv && sv->ServiceActive()))
     {
         AhSendUnavailableMessage(this);
         return;
@@ -1412,8 +1415,10 @@ void WorldSession::HandleAuctionListBidderItems(WorldPacket& recv_data)
         return;
     }
 
-    // Worker configured but DOWN -> coordinator: no in-process serving.
-    if (sv)
+    // Worker configured but DOWN (or failed to start) -> coordinator: no
+    // in-process serving. Key off IsAhServiceConfigured(), not the pointer, so a
+    // failed Start() (sv == NULL) still returns "unavailable" here.
+    if (sWorld.IsAhServiceConfigured())
     {
         AhSendBrowseUnavailable(this, uint8(BROWSE_BIDDER));
         return;
@@ -1538,8 +1543,10 @@ void WorldSession::HandleAuctionListOwnerItems(WorldPacket& recv_data)
         return;
     }
 
-    // Worker configured but DOWN -> coordinator: no in-process serving.
-    if (sv)
+    // Worker configured but DOWN (or failed to start) -> coordinator: no
+    // in-process serving. Key off IsAhServiceConfigured(), not the pointer, so a
+    // failed Start() (sv == NULL) still returns "unavailable" here.
+    if (sWorld.IsAhServiceConfigured())
     {
         AhSendBrowseUnavailable(this, uint8(BROWSE_OWNER));
         return;
@@ -1601,6 +1608,11 @@ void WorldSession::HandleAuctionListItems(WorldPacket& recv_data)
         std::wstring wsearchedname;
         if (!Utf8toWStr(searchedname, wsearchedname))
         {
+            // F5: malformed UTF-8 in the search name. The worker is the authority
+            // and this request never leaves -- send the terminal "unavailable"
+            // response (mirroring the sibling early-rejects below) so the client's
+            // browse panel does not hang waiting for a reply that never comes.
+            AhSendBrowseUnavailable(this, uint8(BROWSE_LIST));
             return;
         }
         wstrToLower(wsearchedname);
@@ -1686,8 +1698,10 @@ void WorldSession::HandleAuctionListItems(WorldPacket& recv_data)
         return;   // async (or fell back synchronously above)
     }
 
-    // Worker configured but DOWN -> coordinator: no in-process serving.
-    if (sv)
+    // Worker configured but DOWN (or failed to start) -> coordinator: no
+    // in-process serving. Key off IsAhServiceConfigured(), not the pointer, so a
+    // failed Start() (sv == NULL) still returns "unavailable" here.
+    if (sWorld.IsAhServiceConfigured())
     {
         AhSendBrowseUnavailable(this, uint8(BROWSE_LIST));
         return;
@@ -1703,6 +1717,12 @@ void WorldSession::HandleAuctionListItems(WorldPacket& recv_data)
     std::wstring wsearchedname;
     if (!Utf8toWStr(searchedname, wsearchedname))
     {
+        // F5: malformed UTF-8 -> send a well-formed empty list result (the AH is
+        // available on this legacy path) rather than a bare return that leaves the
+        // client's browse panel hung. count/totalcount are still 0 here.
+        data.put<uint32>(0, count);
+        data << uint32(totalcount);
+        SendPacket(&data);
         return;
     }
 

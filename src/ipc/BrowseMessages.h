@@ -356,8 +356,7 @@ struct BrowseResult
     uint64 queryId;
     uint8  kind;
     uint8  elunaPending; ///< 1 = un-paginated set; mangosd runs OnCanUseItem + paginate
-    uint8  tooMany;      ///< 1 = worker could not serve (queue full / oversize failsafe); no entries; mangosd sends "AH unavailable"
-    uint8  prePaginated; ///< 1 = over-cap deferred-Eluna: `entries` ARE the listfrom page; mangosd runs OnCanUseItem on the page only, no re-paginate
+    uint8  tooMany;      ///< 1 = worker declined (queue full / oversize failsafe / over-cap deferred-Eluna); no entries; mangosd sends "AH unavailable"
     uint32 totalcount;   ///< total matches (post-filter; pre-pagination)
     std::vector<BrowseEntry> entries;
 
@@ -365,7 +364,7 @@ struct BrowseResult
 
     void Encode(ByteBuffer& buf) const
     {
-        buf << queryId << kind << elunaPending << tooMany << prePaginated << totalcount;
+        buf << queryId << kind << elunaPending << tooMany << totalcount;
         buf << uint32(entries.size());
         for (size_t i = 0; i < entries.size(); ++i)
         {
@@ -375,11 +374,11 @@ struct BrowseResult
 
     bool Decode(ByteBuffer& buf)
     {
-        if (buf.rpos() + 8 + 1 + 1 + 1 + 1 + 4 + 4 > buf.size())
+        if (buf.rpos() + 8 + 1 + 1 + 1 + 4 + 4 > buf.size())
         {
             return false;
         }
-        buf >> queryId >> kind >> elunaPending >> tooMany >> prePaginated >> totalcount;
+        buf >> queryId >> kind >> elunaPending >> tooMany >> totalcount;
         if (kind >= static_cast<uint8>(BROWSE_KIND_MAX))
         {
             return false;
@@ -399,6 +398,18 @@ struct BrowseResult
                 return false;   // declared count exceeds available bytes (I7)
             }
             entries.push_back(e);
+        }
+        // F4: fail closed on semantically-invalid flag combinations so a corrupt
+        // frame is treated as "unavailable" rather than reinterpreted as a valid
+        // over-serve. The flags are booleans; a tooMany (declined) result is
+        // mutually exclusive with elunaPending and carries no entries.
+        if (elunaPending > 1u || tooMany > 1u)
+        {
+            return false;
+        }
+        if (tooMany != 0u && (elunaPending != 0u || !entries.empty()))
+        {
+            return false;
         }
         // V5/I7: reject trailing bytes (the declared count must consume the body
         // exactly). BrowseEntry::Decode does NOT check this -- it reads one entry

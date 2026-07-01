@@ -228,10 +228,16 @@ BrowseResult Fetch(ServiceDatabase& db, const BrowseQuery& q, FetchStatus& statu
         // query simply matched nothing -> serve an empty list. (Comparing a
         // filtered 0 against an unfiltered COUNT(*) false-positived on EVERY
         // empty filtered browse.)
+        // F3: probe the SAME schema surface the real query uses -- including the
+        // localized-name join/column when a locale overlay is active -- so a
+        // locale-specific schema fault (missing locales_item / name_locN) is
+        // reported as a DB error rather than slipping through as a false "empty".
         std::string probeSql =
-            "SELECT 1 FROM auction a"
+            "SELECT 1" + locCol +
+            " FROM auction a"
             " JOIN item_instance ii ON a.itemguid = ii.guid"
             " JOIN " + worldQual + "item_template it ON a.item_template = it.entry"
+            + locJoin +
             " LIMIT 1";
         QueryResult* joinProbe = db.Character().Query(probeSql.c_str());
         if (joinProbe)
@@ -254,7 +260,6 @@ BrowseResult Fetch(ServiceDatabase& db, const BrowseQuery& q, FetchStatus& statu
             empty.kind        = q.kind;
             empty.elunaPending = 0u;
             empty.tooMany     = 0u;
-            empty.prePaginated = 0u;
             empty.totalcount  = 0u;
             return empty;
         }
@@ -272,7 +277,6 @@ BrowseResult Fetch(ServiceDatabase& db, const BrowseQuery& q, FetchStatus& statu
             empty.kind        = q.kind;
             empty.elunaPending = 0u;
             empty.tooMany     = 0u;
-            empty.prePaginated = 0u;
             empty.totalcount  = 0u;
             return empty;
         }
@@ -406,7 +410,6 @@ bool BrowseThread::Submit(const BrowseQuery& q)
     full.kind         = q.kind;
     full.elunaPending = 0u;
     full.tooMany      = 1u;
-    full.prePaginated = 0u;
     full.totalcount   = 0u;
     IpcMessage rm;
     rm.op = IPC_BROWSE_RESULT;
@@ -448,7 +451,6 @@ void BrowseThread::run()
                 capped.kind         = res.kind;
                 capped.elunaPending = res.elunaPending;
                 capped.tooMany      = 1u;
-                capped.prePaginated = 0u;
                 capped.totalcount   = res.totalcount;
                 rm.body.clear();
                 capped.Encode(rm.body);
@@ -477,7 +479,6 @@ namespace BrowseHandler
         res.kind         = q.kind;
         res.elunaPending = 0u;
         res.tooMany      = 0u;
-        res.prePaginated = 0u;
         res.totalcount   = 0u;
 
         const bool isList = (q.kind == static_cast<uint8>(BROWSE_LIST));
@@ -494,12 +495,6 @@ namespace BrowseHandler
         {
             needleBad = !Utf8toWStr(q.searchedName, wneedle);
         }
-
-        // Over-cap deferred-Eluna pre-pagination (decision #2): while collecting
-        // the un-paginated defer set, ALSO collect the listfrom..+50 survivor
-        // window. Used only if the survivor count exceeds the cap, in which case
-        // we ship just this page and mangosd runs the Lua veto on it.
-        std::vector<BrowseEntry> pageWindow;
 
         for (size_t i = 0; i < rows.size(); ++i)
         {
@@ -531,16 +526,10 @@ namespace BrowseHandler
 
             if (defer)
             {
-                // Page window (listfrom..+50 slice of survivors): used only if we
-                // exceed the cap and must pre-paginate server-side (decision #2).
-                // res.totalcount is the 0-based survivor index before the bump.
-                if (res.totalcount >= q.listfrom && pageWindow.size() < 50u)
-                {
-                    pageWindow.push_back(r.entry);
-                }
                 // Un-paginated full set (capped): the common exact-parity path --
                 // mangosd runs Eluna over all of these, then paginates. totalcount
-                // counts all survivors even past the cap so mangosd can log it.
+                // counts all survivors even past the cap so the >cap edge below can
+                // detect it.
                 if (res.entries.size() < BROWSE_ELUNA_CAP)
                 {
                     res.entries.push_back(r.entry);
@@ -564,13 +553,17 @@ namespace BrowseHandler
             res.elunaPending = 1u;
             if (res.totalcount > BROWSE_ELUNA_CAP)
             {
-                // >cap: too many survivors to ship un-paginated. Send just the
-                // pre-collected page; mangosd runs the Lua veto on it (decision
-                // #2). NOT tooMany -- the browse still serves; it is only
-                // Eluna-approximate for this rare edge (totalcount stays the full
-                // pre-Eluna survivor count, off-page items aren't veto-checked).
-                res.prePaginated = 1u;
-                res.entries.swap(pageWindow);
+                // >cap (decision #2): too many survivors for an EXACT deferred-Eluna
+                // pass -- mangosd can only veto what the worker ships, so a
+                // pre-paginated page would be short (vetoed items not backfilled)
+                // with a pre-veto totalcount. The coordinator does not serve an
+                // approximate result: the worker declines (tooMany) and mangosd
+                // sends "AH unavailable". Rare: needs >cap survivors AND a bound
+                // OnCanUseItem Lua hook.
+                res.tooMany      = 1u;
+                res.elunaPending = 0u;
+                res.entries.clear();
+                res.totalcount   = 0u;
             }
         }
 
