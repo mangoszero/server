@@ -108,7 +108,7 @@ SET @clone_a := 'character0_custody_off';
 SET @clone_b := 'character0_custody_on';
 SET @compare_absolute_mail_times := 0;     -- 1 only if the clock was pinned
 SET @compare_absolute_auction_times := 0;  -- 1 only if the clock was pinned
-SOURCE E:/Mangos/WIP/Zero/AH_SubProcess/server/src/ah-service/tools/custody_diff.sql;
+SOURCE E:/Mangos/WIP/Zero/AH_SubProcess/database/Tools/custody_diff.sql;
 ```
 **Pass = every `*_DIFF` section returns zero rows.** If `MAIL_DIFF` is clean but
 `MAIL_ITEMS_DIFF` is not, `mail.id` drifted between clones — re-verify the idle-snapshot

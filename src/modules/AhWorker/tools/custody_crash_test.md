@@ -88,7 +88,7 @@ Run each matrix row twice, once with each crash phase.
      run before process death, and reboot/re-resolution reaches the same final
      player-visible projection as the no-crash custody run.
 6. Let the seam re-resolve with crash injection off.
-7. Run `src/ah-service/tools/custody_diff.sql` against the gate-off and gate-on
+7. Run the database repo's `Tools/custody_diff.sql` against the gate-off and gate-on
    clones, and compare `WorldLogFile` opcode order for:
    `SMSG_AUCTION_OWNER_NOTIFICATION`, `SMSG_AUCTION_BIDDER_NOTIFICATION`,
    `SMSG_AUCTION_REMOVED_NOTIFICATION`, and `SMSG_AUCTION_COMMAND_RESULT`.

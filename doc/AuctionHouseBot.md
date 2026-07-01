@@ -156,9 +156,9 @@ or item mail.
 
 Promotion checklist before considering a default flip:
 
-* Run the full gate-off/gate-on differential with
-  ``src/ah-service/tools/custody_diff.sql`` and get zero player-visible diffs.
-* Run ``src/ah-service/tools/custody_crash_test.md`` for every matrix row and
+* Run the full gate-off/gate-on differential with the database repo's
+  ``Tools/custody_diff.sql`` and get zero player-visible diffs.
+* Run ``src/modules/AhWorker/tools/custody_crash_test.md`` for every matrix row and
   both crash phases.
 * Pass the concurrent-observer checks for auction list/search/console views.
 * Complete a live soak with custody still default-off, showing zero divergence
