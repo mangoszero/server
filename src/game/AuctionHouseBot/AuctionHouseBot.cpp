@@ -661,13 +661,16 @@ bool AuctionBotConfig::Initialize()
 void AuctionBotConfig::SetAHBotId(const std::string& BotCharName)
 {
     m_BotId = 0;
-    if (!BotCharName.empty())
+    // F7: an upgraded ahbot.conf may still carry an explicit empty
+    // AuctionHouseBot.CharacterName (the pre-forged-owner default). An empty
+    // string would bypass the forged system owner and leave the bot GUID
+    // unresolved (0), so treat it as the forged AHBOT_SYSTEM_OWNER_NAME -- the
+    // name-intercept then resolves it to the reserved system GUID.
+    const std::string name = BotCharName.empty() ? AHBOT_SYSTEM_OWNER_NAME : BotCharName;
+    m_BotId = sObjectMgr.GetPlayerGuidByName(name.c_str()).GetCounter();
+    if (!m_BotId)
     {
-        m_BotId = sObjectMgr.GetPlayerGuidByName(BotCharName.c_str()).GetCounter();
-        if (!m_BotId)
-        {
-            sLog.outError("AHBot uses an invalid character name `%s`", BotCharName.c_str());
-        }
+        sLog.outError("AHBot uses an invalid character name `%s`", name.c_str());
     }
 }
 
