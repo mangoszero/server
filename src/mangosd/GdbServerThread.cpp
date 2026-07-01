@@ -53,7 +53,7 @@ class GdbSocketBase : public ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH >
 
         enum { GDB_BUFF_SIZE = 65536 };
 
-        GdbSocketBase() : Base(), outActive(false), outputBufferLen(0), outBufferLock()
+        GdbSocketBase() : Base(), outActive(false), outputBuffer{}, outputBufferLen(0), outBufferLock()
         {
             reference_counting_policy().value(ACE_Event_Handler::Reference_Counting_Policy::ENABLED);
         }
@@ -239,7 +239,7 @@ class GdbMonSocket : public GdbSocketBase
         friend class ACE_Acceptor<GdbMonSocket, ACE_SOCK_ACCEPTOR>;
 
     protected:
-        GdbMonSocket() : GdbSocketBase(), inputBufferLen(0) {}
+        GdbMonSocket() : GdbSocketBase(), inputBuffer{}, inputBufferLen(0) {}
 
         int open(void* /*unused*/) override
         {

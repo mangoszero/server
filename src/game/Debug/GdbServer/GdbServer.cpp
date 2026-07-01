@@ -219,7 +219,7 @@ void GdbServer::DrainAndServiceRsp()
     FlushRspOut();
 }
 
-bool GdbServer::CaptureContext(GdbRsp::RegSnapshot& out)
+void GdbServer::CaptureContext(GdbRsp::RegSnapshot& out)
 {
     out = GdbRsp::RegSnapshot{};
 #if defined(_WIN32) && (defined(_M_X64) || defined(__x86_64__))
@@ -232,12 +232,11 @@ bool GdbServer::CaptureContext(GdbRsp::RegSnapshot& out)
     out.rip = ctx.Rip; out.rflags = ctx.EFlags;
     out.cs = ctx.SegCs; out.ss = ctx.SegSs; out.ds = ctx.SegDs;
     out.es = ctx.SegEs; out.fs = ctx.SegFs; out.gs = ctx.SegGs;
-    return true;
 #elif defined(__x86_64__)
     ucontext_t uc;
     if (getcontext(&uc) != 0)
     {
-        return false;
+        return;
     }
     const greg_t* g = uc.uc_mcontext.gregs;
     out.rax = g[REG_RAX]; out.rbx = g[REG_RBX]; out.rcx = g[REG_RCX]; out.rdx = g[REG_RDX];
@@ -250,9 +249,8 @@ bool GdbServer::CaptureContext(GdbRsp::RegSnapshot& out)
     out.cs = static_cast<uint32>(csgsfs & 0xFFFF);
     out.gs = static_cast<uint32>((csgsfs >> 16) & 0xFFFF);
     out.fs = static_cast<uint32>((csgsfs >> 32) & 0xFFFF);
-    return true;
 #else
-    return false; // non-x86_64: registers stay zeroed (memory + monitor still work)
+    // non-x86_64: registers stay zeroed (memory + monitor still work)
 #endif
 }
 
@@ -267,11 +265,11 @@ void GdbServer::EnterStop(const char* reason)
     m_inStop = true;
 
     // Capture the live register context so the debugger can backtrace the real
-    // call stack (it reads stack memory through the 'm' packets).
-    if (CaptureContext(m_capturedRegs))
-    {
-        GdbRsp::PublishRegisters(&m_capturedRegs);
-    }
+    // call stack (it reads stack memory through the 'm' packets). On
+    // architectures without a capture path the snapshot is left zeroed; we
+    // publish it either way so the `g` reply is always well-formed.
+    CaptureContext(m_capturedRegs);
+    GdbRsp::PublishRegisters(&m_capturedRegs);
 
     // Discard any stale resume left by a 'c'/'s' issued while the target was
     // running, so this stop actually waits for a fresh resume command.
