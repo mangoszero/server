@@ -28,6 +28,8 @@ set(SRC_GRP_MAIN
   AFThread.h
   CliThread.cpp
   CliThread.h
+  MangosdTest.cpp
+  MangosdTest.h
   RAThread.cpp
   RAThread.h
   WorldThread.cpp

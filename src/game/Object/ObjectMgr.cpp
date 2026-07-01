@@ -23,6 +23,7 @@
  */
 
 #include "ObjectMgr.h"
+#include "AuctionHouseBot/AhBotSystemOwner.h"
 #include "LivingWorldAnchorPolicy.h"
 #include "MotionGenerators/MotionMaster.h"  // WAYPOINT_MOTION_TYPE
 #include "Database/DatabaseEnv.h"
@@ -1864,6 +1865,23 @@ void ObjectMgr::RemoveGameobjectFromGrid(uint32 guid, GameObjectData const* data
 // name must be checked to correctness (if received) before call this function
 ObjectGuid ObjectMgr::GetPlayerGuidByName(std::string name) const
 {
+    // AH bot forged system owner: resolve the reserved name to the sentinel
+    // GUID WITHOUT a characters row or a DB round-trip (case-insensitive, to
+    // match the DB collation used below).
+    {
+        std::wstring wname;
+        std::wstring wsys;
+        if (Utf8toWStr(name, wname) && Utf8toWStr(AHBOT_SYSTEM_OWNER_NAME, wsys))
+        {
+            wstrToLower(wname);
+            wstrToLower(wsys);
+            if (wname == wsys)
+            {
+                return ObjectGuid(HIGHGUID_PLAYER, AHBOT_SYSTEM_OWNER_GUID);
+            }
+        }
+    }
+
     ObjectGuid guid;
 
     CharacterDatabase.escape_string(name);
@@ -6323,7 +6341,10 @@ void ObjectMgr::SetHighestGuids()
     QueryResult* result = CharacterDatabase.Query("SELECT MAX(`guid`) FROM `characters`");
     if (result)
     {
-        m_CharGuids.Set((*result)[0].GetUInt32() + 1);
+        // Defensive: never let the allocator's next value land on the reserved
+        // AH-bot system GUID. (The overflow guard already makes 0xFFFFFFFE
+        // unreachable; this is belt-and-suspenders.)
+        m_CharGuids.Set(SkipAhBotSystemOwnerGuid((*result)[0].GetUInt32() + 1));
         delete result;
     }
 
@@ -6355,11 +6376,30 @@ void ObjectMgr::SetHighestGuids()
         delete result;
     }
 
-    result = CharacterDatabase.Query("SELECT MAX(`id`) FROM `auction`");
-    if (result)
+    // Seed the auction-id generator from the higher of the two live high-water
+    // marks: MAX(id) in the auction table, and MAX(auction_id) in the
+    // custody_ledger table.  Custody rows can outlive their auction row (the
+    // TTL sweep prunes them asynchronously), so a freshly reused auction id
+    // would collide the "item:<id>"/"dep:<id>" idempotency keys of any
+    // not-yet-pruned terminal custody rows for the old auction.
     {
-        m_AuctionIds.Set((*result)[0].GetUInt32() + 1);
-        delete result;
+        uint32 auctionMax = 0;
+        result = CharacterDatabase.Query("SELECT MAX(`id`) FROM `auction`");
+        if (result)
+        {
+            auctionMax = (*result)[0].GetUInt32();
+            delete result;
+        }
+
+        uint32 custodyMax = 0;
+        result = CharacterDatabase.Query("SELECT MAX(`auction_id`) FROM `custody_ledger`");
+        if (result)
+        {
+            custodyMax = (*result)[0].GetUInt32();
+            delete result;
+        }
+
+        m_AuctionIds.Set(std::max(auctionMax, custodyMax) + 1);
     }
 
     result = CharacterDatabase.Query("SELECT MAX(`id`) FROM `mail`");
@@ -7573,6 +7613,19 @@ void ObjectMgr::LoadReservedPlayersNames()
     {
         BarGoLink bar(1);
         bar.step();
+        // AH bot forged system owner: always reserve its name. In-memory only and
+        // run on every load/reload, so a wiped or never-seeded `reserved_name`
+        // table cannot free the name for players (enforcement is via IsReservedName,
+        // which reads m_ReservedNames).
+        std::wstring wsys;
+        if (Utf8toWStr(AHBOT_SYSTEM_OWNER_NAME, wsys))
+        {
+            wstrToLower(wsys);
+            if (m_ReservedNames.insert(wsys).second)
+            {
+                ++count;
+            }
+        }
         sLog.outString(">> Loaded %u reserved player names", count);
         sLog.outString();
         return;
@@ -7602,6 +7655,20 @@ void ObjectMgr::LoadReservedPlayersNames()
     while (result->NextRow());
 
     delete result;
+
+    // AH bot forged system owner: always reserve its name. In-memory only and
+    // run on every load/reload, so a wiped or never-seeded `reserved_name`
+    // table cannot free the name for players (enforcement is via IsReservedName,
+    // which reads m_ReservedNames).
+    std::wstring wsys;
+    if (Utf8toWStr(AHBOT_SYSTEM_OWNER_NAME, wsys))
+    {
+        wstrToLower(wsys);
+        if (m_ReservedNames.insert(wsys).second)
+        {
+            ++count;
+        }
+    }
 
     sLog.outString(">> Loaded %u reserved player names", count);
     sLog.outString();

@@ -22,6 +22,7 @@
 #include "IpcMessage.h"
 #include "IpcOpcodes.h"
 #include "AuctionIntents.h"
+#include "BrowseMessages.h"
 
 /**
  * @brief Small inclusive cap for the debug ECHO opcodes and free-text frames.
@@ -72,6 +73,10 @@ IpcBodySizeRule IpcExpectedBodySize(uint16 op)
             return IPC_RULE_EXACT(GmCmd::WIRE_SIZE);
         case IPC_GMCMD_RESULT:  // 2
             return IPC_RULE_EXACT(GmCmdResult::WIRE_SIZE);
+        case IPC_BROWSE_QUERY:
+            return IPC_RULE_MAXLEN(BrowseQuery::MAX_WIRE);
+        case IPC_BROWSE_RESULT:
+            return IPC_RULE_MAXLEN(BrowseResult::MAX_WIRE);
 
         default:                return IPC_RULE_UNKNOWN;
     }

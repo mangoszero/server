@@ -54,6 +54,8 @@ enum IpcOpcode : uint16
     IPC_QUEUE_FULL       = 0x1011,  ///< mangosd -> ah-service: AH queue full
     IPC_GMCMD            = 0x1020,  ///< mangosd -> ah-service: GM command relay
     IPC_GMCMD_RESULT     = 0x1021,  ///< ah-service -> mangosd: GM command result
+    IPC_BROWSE_QUERY     = 0x1030,  ///< mangosd -> ah-service: AH read/browse request
+    IPC_BROWSE_RESULT    = 0x1031,  ///< ah-service -> mangosd: AH read/browse reply
 };
 
 #endif // AH_IPC_OPCODES_H

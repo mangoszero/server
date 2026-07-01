@@ -99,6 +99,10 @@ class IpcClientHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
          */
         int SendFrame(const IpcMessage& msg);
 
+        /// True iff a frame with this opcode + body length is acceptable to
+        /// stage (per-opcode size rule). Shared by ProcessFrame and tests.
+        static bool InboundFrameAcceptable(uint16 op, uint32 bodyLen);
+
         /// True once the handshake is complete.
         bool IsLive() const;
 

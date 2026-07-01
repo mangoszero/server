@@ -255,6 +255,7 @@ class ChatHandler
 
         bool HandleAhServiceConsoleShowCommand(char* args);
         bool HandleAhServiceConsoleHideCommand(char* args);
+        bool HandleAhRepairCommand(char* args);
 
         bool HandleAuctionAllianceCommand(char* args);
         bool HandleAuctionGoblinCommand(char* args);
@@ -855,4 +856,3 @@ class CliHandler : public ChatHandler
 bool AddAuraToPlayer(const SpellEntry* spellInfo, Unit* target, WorldObject* caster);
 
 #endif
-

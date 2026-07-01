@@ -89,6 +89,13 @@ static constexpr uint32 WS_SHUTDOWN_GRACE_SEC      = 3;
 static constexpr uint32 WS_DRAIN_APP_PER_CALL      = 256;
 
 /**
+ * @brief Maximum browse result frames DrainInboundProtocol() moves into
+ *        m_pendingFrames in a single call (I6: browse replies do not starve
+ *        intent results).
+ */
+static constexpr uint32 WS_DRAIN_BROWSE_PER_CALL = 128;
+
+/**
  * @brief Supervises a single child-process worker.
  *
  * Lifecycle:

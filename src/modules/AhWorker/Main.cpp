@@ -56,9 +56,13 @@
 
 #include "IpcVersion.h"
 #include "IpcChannel.h"
+#include "IpcClientHandler.h"
 #include "IpcMessage.h"
 #include "IpcOpcodes.h"
 #include "AuctionIntents.h"
+#include "BrowseMessages.h"
+#include "BrowseHandler.h"
+#include "Usability.h"
 #include "Threading/Threading.h"
 #include "Console.h"
 #include "Config/Config.h"
@@ -67,6 +71,7 @@
 #include "ItemPool.h"
 #include "MarketSnapshot.h"
 #include "BotBrain.h"
+#include "ItemInstanceFields.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -304,6 +309,426 @@ static int RunIntentCodecSelfTest()
         }
     }
 
+    // --- BrowseQuery (variable-length: profile + name + lists + recipe set) ---
+    {
+        BrowseQuery a;
+        a.queryId          = UINT64_C(0x00000001DEADBEEF);
+        a.kind             = static_cast<uint8>(BROWSE_LIST);
+        a.house            = 2u;
+        a.allHouses        = 0u;
+        a.itemClass        = 4u;
+        a.itemSubClass     = 0xFFFFFFFFu;
+        a.inventoryType    = 0xFFFFFFFFu;
+        a.quality          = 3u;
+        a.levelmin         = 10u;
+        a.levelmax         = 60u;
+        a.usable           = 1u;
+        a.deferEluna       = 1u;
+        a.listfrom         = 50u;
+        a.localeIndex      = 2;             // V3: a real LocaleConstant (frFR) wire value (v4-verify R1)
+        a.requesterGuidLow = 777u;
+        a.minMountLevel    = 40u;
+        a.minEpicMountLevel= 60u;
+        a.searchedName     = "Thunderfury";
+        a.outbidIds.push_back(101u);
+        a.outbidIds.push_back(202u);
+        a.knownRecipeCastSpells.push_back(7411u);
+        a.profile.classId   = 1u;
+        a.profile.raceId    = 1u;
+        a.profile.level     = 60u;
+        a.profile.honorRank = 6u;
+        SkillRank sr; sr.skillId = 43u; sr.rank = 300u;
+        a.profile.skills.push_back(sr);
+        a.profile.knownSpells.push_back(12345u);
+        RepStanding rs; rs.factionId = 21u; rs.rank = 5u;
+        a.profile.reps.push_back(rs);
+
+        ByteBuffer buf;
+        a.Encode(buf);
+        BrowseQuery b;
+        if (!b.Decode(buf))
+        {
+            fprintf(stderr, "intent codec selftest FAILED: BrowseQuery::Decode false\n");
+            return 1;
+        }
+        if (buf.rpos() != buf.size())
+        {
+            fprintf(stderr, "intent codec selftest FAILED: BrowseQuery trailing bytes\n");
+            return 1;
+        }
+        if (b.queryId != a.queryId || b.kind != a.kind || b.house != a.house ||
+            b.allHouses != a.allHouses || b.itemClass != a.itemClass ||
+            b.itemSubClass != a.itemSubClass || b.inventoryType != a.inventoryType ||
+            b.quality != a.quality || b.levelmin != a.levelmin ||
+            b.levelmax != a.levelmax || b.usable != a.usable ||
+            b.deferEluna != a.deferEluna || b.listfrom != a.listfrom ||
+            b.localeIndex != a.localeIndex || b.requesterGuidLow != a.requesterGuidLow ||
+            b.minMountLevel != a.minMountLevel || b.minEpicMountLevel != a.minEpicMountLevel ||
+            b.searchedName != a.searchedName ||
+            b.outbidIds.size() != 2u || b.knownRecipeCastSpells.size() != 1u ||
+            b.profile.honorRank != a.profile.honorRank ||
+            b.profile.skills.size() != 1u || b.profile.knownSpells.size() != 1u ||
+            b.profile.reps.size() != 1u)
+        {
+            fprintf(stderr, "intent codec selftest FAILED: BrowseQuery field mismatch\n");
+            return 1;
+        }
+        if (b.outbidIds[0] != 101u || b.outbidIds[1] != 202u ||
+            b.knownRecipeCastSpells[0] != 7411u ||
+            b.profile.skills[0].skillId != 43u || b.profile.skills[0].rank != 300u ||
+            b.profile.knownSpells[0] != 12345u ||
+            b.profile.reps[0].factionId != 21u || b.profile.reps[0].rank != 5u)
+        {
+            fprintf(stderr, "intent codec selftest FAILED: BrowseQuery list-element mismatch\n");
+            return 1;
+        }
+    }
+
+    // --- BrowseResult (variable-length: N entries; elunaPending/tooMany) ---
+    {
+        BrowseResult a;
+        a.queryId      = UINT64_C(0x00000001DEADBEEF);
+        a.kind         = static_cast<uint8>(BROWSE_LIST);
+        a.elunaPending = 1u;
+        a.tooMany      = 0u;
+        a.totalcount   = 7u;
+        BrowseEntry e;
+        e.id=5u; e.itemEntry=19019u; e.enchantId=2u; e.randomPropId=0u;
+        e.suffixFactor=0u; e.count=1u; e.charges=-1; e.ownerGuidLow=4u;
+        e.startbid=100u; e.outbid=5u; e.buyout=5000u; e.timeLeftMs=720000u;
+        e.bidderGuidLow=9u; e.curBid=120u;
+        a.entries.push_back(e);
+
+        ByteBuffer buf;
+        a.Encode(buf);
+        BrowseResult b;
+        if (!b.Decode(buf))
+        {
+            fprintf(stderr, "intent codec selftest FAILED: BrowseResult::Decode false\n");
+            return 1;
+        }
+        if (buf.rpos() != buf.size())
+        {
+            fprintf(stderr, "intent codec selftest FAILED: BrowseResult trailing bytes\n");
+            return 1;
+        }
+        if (b.queryId != a.queryId || b.kind != a.kind ||
+            b.elunaPending != 1u || b.tooMany != 0u ||
+            b.totalcount != 7u || b.entries.size() != 1u || b.Count() != 1u)
+        {
+            fprintf(stderr, "intent codec selftest FAILED: BrowseResult header mismatch\n");
+            return 1;
+        }
+        const BrowseEntry& g = b.entries[0];
+        if (g.id!=5u || g.itemEntry!=19019u || g.enchantId!=2u || g.count!=1u ||
+            g.charges!=-1 || g.ownerGuidLow!=4u || g.startbid!=100u || g.outbid!=5u ||
+            g.buyout!=5000u || g.timeLeftMs!=720000u || g.bidderGuidLow!=9u || g.curBid!=120u)
+        {
+            fprintf(stderr, "intent codec selftest FAILED: BrowseEntry field mismatch\n");
+            return 1;
+        }
+    }
+
+    // --- Strict decode: declared entry-count exceeding the bytes present must
+    //     be rejected, not silently truncated (I7). ---
+    {
+        ByteBuffer bad;
+        bad << UINT64_C(1) << uint8(BROWSE_LIST) << uint8(0) << uint8(0) << uint8(0)
+            << uint32(0) /*totalcount*/ << uint32(3) /*claims 3, supplies 0*/;
+        BrowseResult b;
+        if (b.Decode(bad))
+        {
+            fprintf(stderr, "intent codec selftest FAILED: oversized entry-count accepted\n");
+            return 1;
+        }
+    }
+
+    // --- Strict decode: invalid kind rejected. ---
+    {
+        ByteBuffer bad;
+        bad << UINT64_C(1) << uint8(BROWSE_KIND_MAX) << uint8(0) << uint8(0) << uint8(0)
+            << uint32(0) << uint32(0);
+        BrowseResult b;
+        if (b.Decode(bad))
+        {
+            fprintf(stderr, "intent codec selftest FAILED: invalid kind accepted\n");
+            return 1;
+        }
+    }
+
+    // --- I8: worker rejects oversize / unknown inbound frames before staging ---
+    {
+        // A BROWSE_QUERY just over its MAXLEN must be rejected.
+        if (IpcClientHandler::InboundFrameAcceptable(
+                IPC_BROWSE_QUERY, uint32(BrowseQuery::MAX_WIRE) + 1u))
+        {
+            fprintf(stderr, "intent codec selftest FAILED: oversize browse frame accepted\n");
+            return 1;
+        }
+        // A well-sized BROWSE_RESULT must be accepted.
+        if (!IpcClientHandler::InboundFrameAcceptable(IPC_BROWSE_RESULT, 64u))
+        {
+            fprintf(stderr, "intent codec selftest FAILED: valid browse frame rejected\n");
+            return 1;
+        }
+        // An unknown opcode must be rejected.
+        if (IpcClientHandler::InboundFrameAcceptable(0xFFFFu, 0u))
+        {
+            fprintf(stderr, "intent codec selftest FAILED: unknown opcode accepted\n");
+            return 1;
+        }
+    }
+
+    // --- item_instance.data blob decode (full-parity seam) ---
+    {
+        // Build a synthetic blob long enough to index word 44. Fill ascending
+        // word values so each decoded field has a distinct, checkable number,
+        // then override the specific fields we read.
+        std::string blob;
+        for (uint32 w = 0; w < 60u; ++w)
+        {
+            char num[16];
+            // word value = w*1000 so it is unmistakable; overrides below.
+            snprintf(num, sizeof(num), "%u", w * 1000u);
+            if (w)
+            {
+                blob += ' ';
+            }
+            blob += num;
+        }
+        // Overrides at the exact offsets:
+        //   word 14 stack=5, 16 charges=-3, 22 enchant=2564, 43 suffix=77,
+        //   44 randomprop = (uint32)(-9) to test signed read.
+        // Rebuild with overrides for clarity.
+        std::string words[60];
+        for (uint32 w = 0; w < 60u; ++w)
+        {
+            char num[16];
+            snprintf(num, sizeof(num), "%u", w * 1000u);
+            words[w] = num;
+        }
+        words[14] = "5";
+        words[16] = "-3";
+        words[22] = "2564";
+        words[43] = "77";
+        words[44] = "-9";
+        blob.clear();
+        for (uint32 w = 0; w < 60u; ++w)
+        {
+            if (w)
+            {
+                blob += ' ';
+            }
+            blob += words[w];
+        }
+
+        ItemInstanceFields f = AhItemBlob::Decode(blob);
+        if (!f.valid || f.stackCount != 5u || f.charges != -3 ||
+            f.enchantId != 2564u || f.suffixFactor != 77u || f.randomPropId != -9)
+        {
+            fprintf(stderr, "item blob selftest FAILED:"
+                    " valid=%d stack=%u charges=%d ench=%u suffix=%u rand=%d\n",
+                    f.valid ? 1 : 0, unsigned(f.stackCount), int(f.charges),
+                    unsigned(f.enchantId), unsigned(f.suffixFactor),
+                    int(f.randomPropId));
+            return 1;
+        }
+        // A blob too short to reach word 44 must be marked invalid (no OOB).
+        ItemInstanceFields g = AhItemBlob::Decode("1 2 3");
+        if (g.valid)
+        {
+            fprintf(stderr, "item blob selftest FAILED: short blob marked valid\n");
+            return 1;
+        }
+    }
+
+    // --- FilterAndPaginate: name filter + page slice + totalcount + defer ---
+    {
+        std::vector<BrowseRow> rows;
+        for (uint32 i = 0; i < 120; ++i)
+        {
+            BrowseRow r;
+            r.entry = BrowseEntry();
+            r.entry.id        = i + 1;
+            r.entry.itemEntry = 1000u + i;
+            r.itemClass = 4u; r.itemSubClass = 0u; r.inventoryType = 0u;
+            r.quality = 2u; r.requiredLevel = 1u;
+            r.allowableClass = 0xFFFFFFFFu; r.allowableRace = 0xFFFFFFFFu;
+            r.name = (i % 2 == 0) ? "Iron Sword" : "Copper Axe";
+            r.reqSkill = 0u; r.reqSkillRank = 0u; r.reqSpell = 0u;
+            r.reqHonorRank = 0u; r.reqRepFaction = 0u; r.reqRepRank = 0u;
+            r.itemProficiencySkill = 0u; r.castSpellId = 0u;
+            rows.push_back(r);
+        }
+
+        BrowseQuery q;
+        q.queryId = 1u; q.kind = static_cast<uint8>(BROWSE_LIST);
+        q.house = 0u; q.allHouses = 0u;
+        q.itemClass = 0xFFFFFFFFu; q.itemSubClass = 0xFFFFFFFFu;
+        q.inventoryType = 0xFFFFFFFFu; q.quality = 0xFFFFFFFFu;
+        q.levelmin = 0u; q.levelmax = 0u; q.usable = 0u; q.deferEluna = 0u;
+        q.listfrom = 50u; q.localeIndex = 0; q.requesterGuidLow = 0u;   // 0 = enUS / no overlay (V3)
+        q.searchedName = "sword";
+        // A capable profile so the usable filter (RowUsable -> AhUsability::IsUsable)
+        // is deterministic. The test rows require only level 1 and allow all
+        // classes, so any valid class at level 60 makes every survivor usable.
+        // Without this the profile scalars + mount levels are read UNINITIALIZED on
+        // the usable=1 path -- harmless on MSVC, garbage on GCC/Clang (all rows
+        // filtered -> defer set size 0). (minMountLevel/minEpicMountLevel now
+        // default to 0 in BrowseQuery; the profile scalars default to 0 too.)
+        q.profile.classId = 1u;   // any valid class; rows are allowableClass = all
+        q.profile.raceId  = 1u;
+        q.profile.level   = 60u;
+
+        BrowseResult res = BrowseHandler::FilterAndPaginate(rows, q);
+        if (res.totalcount != 60u || res.elunaPending != 0u || res.tooMany != 0u)
+        {
+            fprintf(stderr, "browse selftest FAILED: totalcount=%u (exp 60)\n",
+                    unsigned(res.totalcount));
+            return 1;
+        }
+        if (res.Count() != 10u || res.entries.size() != 10u)
+        {
+            fprintf(stderr, "browse selftest FAILED: page count=%u (exp 10)\n",
+                    unsigned(res.Count()));
+            return 1;
+        }
+        if (res.entries[0].id != 101u)   // 51st "sword" row = even index 100, id 101
+        {
+            fprintf(stderr, "browse selftest FAILED: first paged id=%u (exp 101)\n",
+                    unsigned(res.entries[0].id));
+            return 1;
+        }
+
+        // deferEluna: all 60 survivors returned un-paginated, elunaPending=1.
+        BrowseQuery qd = q; qd.deferEluna = 1u; qd.usable = 1u; qd.listfrom = 0u;
+        BrowseResult rd = BrowseHandler::FilterAndPaginate(rows, qd);
+        if (rd.elunaPending != 1u || rd.tooMany != 0u ||
+            rd.totalcount != 60u || rd.entries.size() != 60u)
+        {
+            fprintf(stderr, "browse selftest FAILED: defer set size=%u (exp 60)\n",
+                    unsigned(rd.entries.size()));
+            return 1;
+        }
+
+        // OWNER: no filters/pagination -> all 120 rows.
+        BrowseQuery qo = q;
+        qo.kind = static_cast<uint8>(BROWSE_OWNER);
+        qo.searchedName.clear(); qo.listfrom = 0u;
+        BrowseResult ro = BrowseHandler::FilterAndPaginate(rows, qo);
+        if (ro.Count() != 120u || ro.totalcount != 120u || ro.entries.size() != 120u)
+        {
+            fprintf(stderr, "browse selftest FAILED: owner count=%u (exp 120)\n",
+                    unsigned(ro.Count()));
+            return 1;
+        }
+
+        // Over-cap deferred-Eluna (decision #2): >cap survivors -> the worker
+        // declines with tooMany (no entries) so mangosd sends "AH unavailable",
+        // rather than serving an approximate short page.
+        std::vector<BrowseRow> many;
+        for (uint32 i = 0; i < 1200u; ++i)
+        {
+            BrowseRow r;
+            r.entry = BrowseEntry();
+            r.entry.id        = i + 1;
+            r.entry.itemEntry = 1000u + i;
+            r.itemClass = 4u; r.itemSubClass = 0u; r.inventoryType = 0u;
+            r.quality = 2u; r.requiredLevel = 1u;
+            r.allowableClass = 0xFFFFFFFFu; r.allowableRace = 0xFFFFFFFFu;
+            r.name = "Iron Sword";
+            r.reqSkill = 0u; r.reqSkillRank = 0u; r.reqSpell = 0u;
+            r.reqHonorRank = 0u; r.reqRepFaction = 0u; r.reqRepRank = 0u;
+            r.itemProficiencySkill = 0u; r.castSpellId = 0u;
+            many.push_back(r);
+        }
+        BrowseQuery qbig = q;          // LIST, searchedName "sword" (matches all)
+        qbig.deferEluna = 1u; qbig.usable = 0u; qbig.listfrom = 100u;
+        BrowseResult rbig = BrowseHandler::FilterAndPaginate(many, qbig);
+        if (rbig.tooMany != 1u || rbig.elunaPending != 0u ||
+            rbig.entries.size() != 0u || rbig.totalcount != 0u)
+        {
+            fprintf(stderr, "browse selftest FAILED: over-cap should decline with"
+                    " tooMany (tm=%u ep=%u n=%u total=%u)\n",
+                    unsigned(rbig.tooMany), unsigned(rbig.elunaPending),
+                    unsigned(rbig.entries.size()), unsigned(rbig.totalcount));
+            return 1;
+        }
+    }
+
+    // --- AhUsability::IsUsable verdicts (full parity minus Eluna) ---
+    {
+        PlayerProfile warrior;
+        warrior.classId = 1u; warrior.raceId = 1u; warrior.level = 40u;
+        warrior.honorRank = 2u;
+        SkillRank swords; swords.skillId = 43u; swords.rank = 200u;
+        warrior.skills.push_back(swords);
+        RepStanding rep; rep.factionId = 609u; rep.rank = 5u; // Honored
+        warrior.reps.push_back(rep);
+
+        ItemUsabilityReq ok;
+        ok.itemClass = 2u; ok.allowableClass = 0xFFFFFFFFu; ok.allowableRace = 0xFFFFFFFFu;
+        ok.requiredLevel = 30u; ok.itemId = 12345u;
+        ok.requiredSkill = 43u; ok.requiredSkillRank = 150u; ok.requiredSpell = 0u;
+        ok.requiredHonorRank = 0u; ok.requiredRepFaction = 0u; ok.requiredRepRank = 0u;
+        ok.itemProficiencySkill = 43u;
+        const uint32 MM = 40u, EM = 60u;
+
+        if (!AhUsability::IsUsable(warrior, ok, MM, EM))
+        { fprintf(stderr, "usability FAILED: baseline\n"); return 1; }
+
+        ItemUsabilityReq c;
+        c = ok; c.allowableClass = 0x80u;       // mage-only
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: class gate\n"); return 1; }
+        c = ok; c.allowableRace = 0x02u;        // orc-only
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: race gate\n"); return 1; }
+        c = ok; c.requiredLevel = 60u;
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: level gate\n"); return 1; }
+        c = ok; c.requiredSkill = 44u;          // skill absent
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: skill-missing\n"); return 1; }
+        c = ok; c.requiredSkillRank = 300u;
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: skill-rank\n"); return 1; }
+        c = ok; c.requiredSpell = 999u;
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: required-spell\n"); return 1; }
+        c = ok; c.requiredHonorRank = 5u;       // player has rank 2
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: honor gate\n"); return 1; }
+        c = ok; c.itemProficiencySkill = 44u;   // proficiency absent
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: proficiency\n"); return 1; }
+        c = ok; c.requiredRepFaction = 609u; c.requiredRepRank = 7u; // need Exalted, have 5
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: reputation gate\n"); return 1; }
+        c = ok; c.requiredRepFaction = 609u; c.requiredRepRank = 4u; // need 4, have 5
+        if (!AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: reputation pass\n"); return 1; }
+
+        // Mount-level override: a regular-mount itemId (1132) with a high base
+        // RequiredLevel must drop to MM(40). Player level 40 -> usable.
+        c = ok; c.itemId = 1132u; c.requiredLevel = 60u;
+        if (!AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: regular-mount override\n"); return 1; }
+        // Epic-mount itemId (12302) -> EM(60). Player 40 -> not usable.
+        c = ok; c.itemId = 12302u; c.requiredLevel = 30u;
+        if (AhUsability::IsUsable(warrior, c, MM, EM))
+        { fprintf(stderr, "usability FAILED: epic-mount override\n"); return 1; }
+
+        // D6/V1: proficiency-skill table mirrors Item::GetSkill().
+        if (AhUsability::GetItemProficiencySkill(2u, 7u) != 43u ||  // 1H sword
+            AhUsability::GetItemProficiencySkill(4u, 1u) != 415u || // cloth
+            AhUsability::GetItemProficiencySkill(4u, 6u) != 433u || // shield
+            AhUsability::GetItemProficiencySkill(2u, 17u) != 253u|| // V1: SPEAR->ASSASSINATION (not 633)
+            AhUsability::GetItemProficiencySkill(0u, 0u) != 0u   || // non-equip
+            AhUsability::GetItemProficiencySkill(2u, 99u) != 0u)    // OOB subclass
+        { fprintf(stderr, "usability FAILED: proficiency table\n"); return 1; }
+    }
+
     printf("intent codec selftest OK\n");
     fflush(stdout);
     return 0;
@@ -440,6 +865,47 @@ static int RunSelfTest()
         fprintf(stderr, "selftest FAILED: no IPC_ECHO_REPLY after %d ms\n",
                 echoWaitMs);
         return 1;
+    }
+
+    // --- Browse dispatch wiring: query decode -> empty fetch result encode ---
+    {
+        BrowseQuery q;
+        q.queryId = UINT64_C(0x00000002CAFEF00D);
+        q.kind = static_cast<uint8>(BROWSE_LIST);
+        q.house = 0u; q.allHouses = 0u;
+        q.itemClass = 0xFFFFFFFFu; q.itemSubClass = 0xFFFFFFFFu;
+        q.inventoryType = 0xFFFFFFFFu; q.quality = 0xFFFFFFFFu;
+        q.levelmin = 0u; q.levelmax = 0u; q.usable = 0u; q.deferEluna = 0u;
+        q.listfrom = 0u; q.localeIndex = 0; q.requesterGuidLow = 0u;
+        q.minMountLevel = 40u; q.minEpicMountLevel = 60u;
+        q.profile.classId = 1u; q.profile.raceId = 1u;
+        q.profile.level = 1u; q.profile.honorRank = 0u;
+
+        IpcMessage qm; qm.op = IPC_BROWSE_QUERY; q.Encode(qm.body);
+        BrowseQuery decoded;
+        if (!decoded.Decode(qm.body))
+        {
+            fprintf(stderr, "selftest FAILED: BrowseQuery loopback decode\n");
+            cli.Stop(); srv.Stop(); return 1;
+        }
+
+        std::vector<BrowseRow> none;
+        BrowseResult rr = BrowseHandler::FilterAndPaginate(none, decoded);
+        IpcMessage rm; rm.op = IPC_BROWSE_RESULT; rr.Encode(rm.body);
+        BrowseResult back;
+        if (!back.Decode(rm.body) || back.queryId != q.queryId ||
+            back.Count() != 0u || back.totalcount != 0u)
+        {
+            fprintf(stderr, "selftest FAILED: BrowseResult loopback mismatch\n");
+            cli.Stop(); srv.Stop(); return 1;
+        }
+
+        // Fetch must exist with the (ServiceDatabase&, BrowseQuery, FetchStatus&)
+        // signature. This cast is a compile-time symbol guard; never called in
+        // --selftest (no live DB), so we suppress the unused-variable warning
+        // by voiding it.
+        (void)static_cast<BrowseResult(*)(ServiceDatabase&, const BrowseQuery&,
+            FetchStatus&)>(&BrowseHandler::Fetch);
     }
 
     printf("ipc selftest OK\n");
@@ -1044,6 +1510,11 @@ int main(int argc, char** argv)
            botBrain->BuyerEnabled() ? "on" : "off",
            emitDryRun ? "on" : "off", tickIntervalMs);
 
+    // SP-1: dedicated browse thread (owns per-thread MySQL init in run()).
+    BrowseThread* browseRunnable = new BrowseThread(botDb, cli);
+    browseRunnable->incReference();
+    ACE_Based::Thread browseThread(browseRunnable);
+
     // --- Service loop ---
     volatile bool stop = false;
     uint32 sinceTickMs = 0;       ///< Accumulator toward the bot cadence.
@@ -1120,6 +1591,25 @@ int main(int argc, char** argv)
                     printf("ah-service: IPC_QUEUE_FULL - backing off one"
                            " bot cycle\n");
                     backoffNext = true;
+                    break;
+                }
+                case IPC_BROWSE_QUERY:
+                {
+                    BrowseQuery bq;
+                    if (bq.Decode(msg.body))
+                    {
+                        if (!browseRunnable->Submit(bq))
+                        {
+                            // D4: Submit already replied tooMany=1; mangosd
+                            // serves the in-process fallback NOW (no ~10s TTL).
+                            printf("ah-service: browse queue full -"
+                                   " sent tooMany (mangosd in-process)\n");
+                        }
+                    }
+                    else
+                    {
+                        printf("ah-service: IPC_BROWSE_QUERY decode failed\n");
+                    }
                     break;
                 }
                 case IPC_GAMETIME:
@@ -1247,6 +1737,12 @@ int main(int argc, char** argv)
 
         ACE_Based::Thread::Sleep(10);
     }
+
+    // C4: stop the browse thread and JOIN before DB/client teardown so the
+    // thread's per-thread MySQL handle (ThreadEnd) is released cleanly.
+    browseRunnable->Stop();
+    browseThread.wait();             // guaranteed join
+    browseRunnable->decReference();  // may delete
 
     delete botBrain;
     delete botSnap;

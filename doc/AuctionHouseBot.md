@@ -21,6 +21,13 @@ The following rules apply when using the auction house bot:
 * the bot will not buy its own items, and will not receive mail from the AH or
   receive returned mails.
 
+The AH bot runs as a reserved *system* character named "AuctionHouse" (low-GUID
+0xFFFFFFFE) -- there is NO real character to create or maintain, and it
+regenerates automatically after a database wipe. The name is reserved from
+players and cannot be mailed. Do not create a real character named
+"AuctionHouse". To use a real character instead, set
+AuctionHouseBot.CharacterName to that character's name in ahbot.conf.
+
 Out-of-Process Run Mode (ah-service)
 -------------------------------------
 The auction house bot can be run in one of two modes:
@@ -117,6 +124,46 @@ These keys are only active when `AH.Service.Enabled = 1`:
 * ``AH.Service.IntentTtlSec``  - How long (seconds) the executor retains UUID
   records for deduplication. Default: 900.
 
+Player-auction custody escrow
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Player auction custody is an in-process escrow ledger for player auction gold
+and items. It is independent of the out-of-process bot switch above:
+``AH.Service.Custody`` can remain off while ``AH.Service.Enabled`` is on, and
+can be enabled for player seams even when the bot still runs in-process.
+
+The relevant ``mangosd.conf`` keys are:
+
+* ``AH.Service.Custody`` - Default: 0. When 0, player auctions use today's
+  direct legacy path. When 1, only auctions that already carry custody ledger
+  rows use the custody path.
+* ``AH.Service.CustodyCrashAt`` - Default: empty. Test-only crash injection for
+  disposable realms. Values are ``pre-commit`` and ``pre-deferred``; never set
+  this on a live realm.
+
+The custody gate is per-auction. ``CustodyLedger::HasRows(auction_id)`` marks
+an auction as custody-managed, so existing pre-gate auctions and bot-created
+auctions with no custody rows continue through the legacy path. This lets a
+realm drain old auctions while the feature remains default-off and reversible.
+
+If reconciliation reports custody drift, use the server console command
+``ah repair``. It is console-only and scoped to custody-ledger drift; it does
+not repair legacy auction tears. The default form is dry-run. ``ah repair
+apply`` terminalizes supported orphan custody rows without disbursing gold or
+re-mailing items, which avoids minting value from a row whose live auction is
+gone. ``ah repair force-forfeit <idem_key>`` is the explicit escape hatch after
+manual verification; it terminalizes the named drift row without disbursement
+or item mail.
+
+Promotion checklist before considering a default flip:
+
+* Run the full gate-off/gate-on differential with the database repo's
+  ``Tools/custody_diff.sql`` and get zero player-visible diffs.
+* Run ``src/modules/AhWorker/tools/custody_crash_test.md`` for every matrix row and
+  both crash phases.
+* Pass the concurrent-observer checks for auction list/search/console views.
+* Complete a live soak with custody still default-off, showing zero divergence
+  and no unresolved custody drift.
+
 ah-service.conf keys
 ~~~~~~~~~~~~~~~~~~~~~
 The child process uses its own configuration file (``ah-service.conf``):
@@ -190,3 +237,52 @@ The `ahbot` GM command set is extended when the service is running:
   filters (item level, quality, class, bind type, and include/exclude lists)
   take effect only after a full service restart.
 * ``ahbot rebuild``  - Rebuilds the item pool, as in in-process mode.
+
+Custody repair command
+~~~~~~~~~~~~~~~~~~~~~~
+The ``ah repair`` command is available from the mangosd console for the player
+auction custody ledger. It reports custody drift by default, mutates only with
+``ah repair apply`` or ``ah repair force-forfeit <idem_key>``, and never mints
+gold or sends replacement item mail from an orphan row.
+
+### SP-1: externalized AH browse (read path)
+
+When the ah-service worker is connected and healthy, mangosd forwards AH browse
+/ owner-list / bidder-list requests to it over IPC (IPC_BROWSE_QUERY) and
+assembles the client reply from IPC_BROWSE_RESULT on a later world tick. The
+worker reproduces the full CanUseItem usable filter and full entry data
+(enchant/suffix/charges decoded from item_instance). On ENABLE_ELUNA builds the
+OnCanUseItem Lua hook is deferred to mangosd's world thread (the worker returns
+the un-paginated usable set; mangosd runs the hook + paginates). Player
+mutations (sell/bid/buyout/cancel) remain fully in-process.
+
+**Coordinator model (worker-mandatory reads).** Once an ah-service worker is the
+configured AH authority, mangosd holds no AH read state of its own. If the worker
+is down, times out, errors, or is overloaded (queue-full / oversize), mangosd
+returns **"AH temporarily unavailable"** — a center-screen notification flash plus
+a red system chat line, and an empty list on any in-flight browse so the client
+does not hang — and serves **nothing** in-process. While the worker is down the
+auction **window will not open** at all: the open path (auctioneer click, gossip
+option, `.auction` GM commands) is gated, so the player just gets the message. (A
+window already open when the worker dies stays open — 1.12 has no close-window
+opcode — and its next browse returns the unavailable reply.) A worker fault
+therefore degrades only the AH, never the realm. (If **no** worker is configured
+at all, the legacy single-process in-process AH is used as before.)
+Set `CharacterDatabaseConnections >= 2` in ah-service.conf so the browse thread's
+SELECTs do not serialize behind the bot snapshot.
+
+**Over-cap deferred-Eluna (decision #2).** On an `ENABLE_ELUNA` realm with an
+active `OnCanUseItem` veto, a single "usable"-filtered search that yields more
+than ~1000 matches cannot be veto-checked exactly out-of-process, so the worker
+**declines** it and mangosd returns "AH temporarily unavailable" rather than a
+short or mis-counted page. This is rare (needs both >1000 surviving matches and a
+bound Lua hook) and follows the coordinator's "correct-or-unavailable" contract —
+**expected, not a regression** — so do not flag it during smoke testing.
+
+**Known limitation — Eluna `Player:SendAuctionMenu`.** The window-open gate lives
+in `WorldSession::SendAuctionHello`. A Lua script that calls
+`Player:SendAuctionMenu` builds `MSG_AUCTION_HELLO` directly and so bypasses that
+gate: while the worker is down the window opens, but its first browse returns the
+unavailable reply (an empty window). This affects only realms whose scripts call
+that API, and the fix would mean patching the third-party Eluna module, so it is
+left as a documented limitation.

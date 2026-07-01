@@ -71,12 +71,14 @@
 #include "AFThread.h"
 #include "RAThread.h"
 #include "WorkerSupervisor.h"
+#include "MangosdTest.h"
 
 #ifdef ENABLE_SOAP
 #include "SOAP/SoapThread.h"
 #endif
 
 #ifdef _WIN32
+#include <process.h>
 #include "ServiceWin32.h"
 #include "WheatyExceptionReport.h"
 
@@ -331,13 +333,14 @@ int main(int argc, char** argv)
     ///- Command line parsing
     char const* cfg_file = MANGOSD_CONFIG_LOCATION;
 
-    char const* options = ":a:c:s:";
+    char const* options = ":a:c:s:t:";
 
     ACE_Get_Opt cmd_opts(argc, argv, options);
     cmd_opts.long_option("version", 'v', ACE_Get_Opt::NO_ARG);
     cmd_opts.long_option("ahbot", 'a', ACE_Get_Opt::ARG_REQUIRED);
 
     char serviceDaemonMode = '\0';
+    std::string testMode;
 
     int option;
     while ((option = cmd_opts()) != EOF)
@@ -385,6 +388,9 @@ int main(int argc, char** argv)
                 }
                 break;
             }
+            case 't':
+                testMode = cmd_opts.opt_arg();
+                break;
             case ':':
                 sLog.outError("Runtime-Error: -%c option requires an input argument", cmd_opts.opt_opt());
                 usage(argv[0]);
@@ -495,6 +501,14 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    if (!testMode.empty())
+    {
+        int rc = RunMangosdTest(testMode);
+        sLog.outString("mangosd test '%s' exit %d", testMode.c_str(), rc);
+        fflush(stdout);
+        _exit(rc);
+    }
+
     // Move the console emit off the world/map-update threads. Started only after
     // the fallible init above (OpenSSL / PID file / DB) so the early-return error
     // paths never leave a writer thread running into stdio teardown; still placed
@@ -598,6 +612,13 @@ int main(int argc, char** argv)
     WorkerSupervisor* ahSupervisor = NULL;
     if (sConfig.GetBoolDefault("AH.Service.Enabled", false))
     {
+        // SP-1 coordinator authority: the worker is the configured AH read
+        // authority from here on. Set BEFORE Start() so that even if Start()
+        // fails (missing exe / port taken / bad bot GUID) and the supervisor is
+        // torn down below, the read handlers still send "AH unavailable" rather
+        // than silently reverting to in-process reads.
+        sWorld.SetAhServiceConfigured(true);
+
         ahSupervisor = new WorkerSupervisor(
             "ah-service",
             sConfig.GetStringDefault("AH.Service.Path", "service-workers/ah-service/ah-service"),

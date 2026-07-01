@@ -35,6 +35,7 @@
 #include "Timer.h"
 #include "Policies/Singleton.h"
 #include "SharedDefines.h"
+#include "AuctionHouseBot/BrowsePending.h"
 #include <set>
 #include <list>
 #include <vector>
@@ -386,6 +387,9 @@ enum eConfigBoolValues
     // Recommended Or New Flag
     CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW_ENABLED,
     CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW,
+
+    // AH Service custody escrow ledger
+    CONFIG_BOOL_AH_CUSTODY,
     CONFIG_BOOL_VALUE_COUNT
 };
 
@@ -609,6 +613,9 @@ class World
             return getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_FFA_PVP;
         }
 
+        /// Is the AH custody escrow ledger enabled?
+        bool IsAhCustodyEnabled() const { return getConfig(CONFIG_BOOL_AH_CUSTODY); }
+
         void KickAll();
         void KickAllLess(AccountTypes sec);
         BanReturn BanAccount(BanMode mode, std::string nameOrIP, uint32 duration_secs, std::string reason, const std::string &author);
@@ -669,7 +676,9 @@ class World
 
         // AH subprocess supervisor (Task 5+).
         // Set by mangosd.cpp after WorkerSupervisor::Start() succeeds.
-        // Returns NULL if AH.Service.Enabled=0 or startup failed.
+        // Returns NULL if AH.Service.Enabled=0 OR startup failed -- a NULL
+        // supervisor does NOT distinguish "not configured" from "configured but
+        // failed to start". Use IsAhServiceConfigured() for that distinction.
         //
         // PF3-A: published with a RELEASE store and read with ACQUIRE loads.
         // SetAhSupervisor() runs AFTER worldThread->open(0) has already started
@@ -686,6 +695,25 @@ class World
         {
             return m_ahSupervisor.load(std::memory_order_acquire);
         }
+
+        // SP-1 coordinator authority: TRUE iff the AH worker is the CONFIGURED
+        // read authority (AH.Service.Enabled=1), independent of whether the
+        // supervisor object is currently live. A failed WorkerSupervisor::Start()
+        // nulls m_ahSupervisor but MUST leave this flag set, so the read handlers
+        // send "AH unavailable" instead of silently reverting to in-process reads.
+        void SetAhServiceConfigured(bool v)
+        {
+            m_ahServiceConfigured.store(v, std::memory_order_release);
+        }
+        bool IsAhServiceConfigured() const
+        {
+            return m_ahServiceConfigured.load(std::memory_order_acquire);
+        }
+
+        // SP-1: outstanding async browse requests awaiting a worker reply.
+        // Owned by the world thread; the handlers Register, the reply branch
+        // Takes, and the once-per-second sweep collects timed-out entries.
+        BrowsePendingMap& GetBrowsePending() { return m_browsePending; }
 
     protected:
         void _UpdateGameTime();
@@ -807,6 +835,14 @@ class World
         // PF3-A: atomic so the publishing release store in SetAhSupervisor()
         // synchronises-with the acquire loads in the world tick loop.
         std::atomic<WorkerSupervisor*> m_ahSupervisor;
+
+        // SP-1 coordinator authority flag (see SetAhServiceConfigured). Persists
+        // for the process lifetime once AH.Service.Enabled=1, even if the
+        // supervisor object is torn down after a failed Start().
+        std::atomic<bool> m_ahServiceConfigured;
+
+        // SP-1: pending-map for async browse proxying (world-thread owned).
+        BrowsePendingMap m_browsePending;
 
         /**
          * @brief Dispatch one inbound frame from the AH subprocess.
