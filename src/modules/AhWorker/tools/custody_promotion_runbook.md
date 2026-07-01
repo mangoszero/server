@@ -27,14 +27,17 @@ another realm.
 
 ### 1b. Database
 - **Character DB:** `character0.custody_ledger` is already present and empty — no action.
-- **World DB (`mangos0`) — apply the two pending AH command migrations** (idempotent,
-  version-gated; current tip `22/5/1`):
+- **World DB (`mangos0`) — apply the pending World migrations in order** (idempotent,
+  version-gated; each is chained, so apply the full sequence up to `22/5/5`. `Rel22_05_003`
+  and `Rel22_05_004` are upstream master content that `Rel22_05_005` gates on):
   ```
   mysql -umangos -pmangos mangos0 < "E:/Mangos/WIP/Zero/AH_SubProcess/database/World/Updates/Rel22/Rel22_05_002_AH_Console_Commands.sql"
-  mysql -umangos -pmangos mangos0 < "E:/Mangos/WIP/Zero/AH_SubProcess/database/World/Updates/Rel22/Rel22_05_003_AH_Repair_Command.sql"
+  mysql -umangos -pmangos mangos0 < "E:/Mangos/WIP/Zero/AH_SubProcess/database/World/Updates/Rel22/Rel22_05_003_ItemAndSkinGroupFix.sql"
+  mysql -umangos -pmangos mangos0 < "E:/Mangos/WIP/Zero/AH_SubProcess/database/World/Updates/Rel22/Rel22_05_004_Scheduled_Exit_Mangos_Strings.sql"
+  mysql -umangos -pmangos mangos0 < "E:/Mangos/WIP/Zero/AH_SubProcess/database/World/Updates/Rel22/Rel22_05_005_AH_Repair_Command.sql"
   ```
   Each prints `* UPDATE COMPLETE *`; re-running prints `* UPDATE SKIPPED *`. Confirm tip is
-  now `22/5/3`.
+  now `22/5/5`.
 - **Create the two differential clones from `character0`** (both inherit `custody_ledger`):
   ```
   mysqladmin -umangos -pmangos create character0_custody_off
