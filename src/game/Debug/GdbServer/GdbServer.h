@@ -114,7 +114,7 @@ class GdbServer
         void DrainAndServiceRsp();
         void FlushRspOut();
         void EnterStop(const char* reason);
-        bool CaptureContext(GdbRsp::RegSnapshot& out);
+        void CaptureContext(GdbRsp::RegSnapshot& out);
 
         struct MonitorReq
         {
