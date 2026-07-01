@@ -22,6 +22,7 @@
 #include "ReadyCheckAction.h"
 #include "LfgActions.h"
 #include "SecurityCheckAction.h"
+#include "PetitionSignAction.h"
 #include "GuildAcceptAction.h"
 #include "ReleaseSpiritWithMasterAction.h"
 #include "SpiritHealerWithMasterAction.h"
@@ -61,12 +62,14 @@ namespace ai
                 creators["ready check finished"] = &WorldPacketActionContext::ready_check_finished;
                 creators["uninvite"] = &WorldPacketActionContext::uninvite;
                 creators["security check"] = &WorldPacketActionContext::security_check;
+                creators["petition sign"] = &WorldPacketActionContext::petition_sign;
                 creators["guild accept"] = &WorldPacketActionContext::guild_accept;
                 creators["release spirit with master"] = &WorldPacketActionContext::release_spirit_with_master;
                 creators["spirit healer with master"] = &WorldPacketActionContext::spirit_healer_with_master;
             }
 
         private:
+            static Action* petition_sign(PlayerbotAI* ai) { return new PetitionSignAction(ai); }
             static Action* guild_accept(PlayerbotAI* ai) { return new GuildAcceptAction(ai); }
             static Action* release_spirit_with_master(PlayerbotAI* ai) { return new ReleaseSpiritWithMasterAction(ai); }
             static Action* spirit_healer_with_master(PlayerbotAI* ai) { return new SpiritHealerWithMasterAction(ai); }

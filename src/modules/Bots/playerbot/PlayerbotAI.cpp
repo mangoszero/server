@@ -134,6 +134,7 @@ PlayerbotAI::PlayerbotAI(Player* bot)
 
     botOutgoingPacketHandlers.AddHandler(SMSG_GUILD_INVITE, "guild invite");
     botOutgoingPacketHandlers.AddHandler(SMSG_GROUP_INVITE, "group invite");
+    botOutgoingPacketHandlers.AddHandler(SMSG_PETITION_SHOW_SIGNATURES, "petition sign");
     botOutgoingPacketHandlers.AddHandler(BUY_ERR_NOT_ENOUGHT_MONEY, "not enough money");
     botOutgoingPacketHandlers.AddHandler(BUY_ERR_REPUTATION_REQUIRE, "not enough reputation");
     botOutgoingPacketHandlers.AddHandler(SMSG_GROUP_SET_LEADER, "group set leader");
