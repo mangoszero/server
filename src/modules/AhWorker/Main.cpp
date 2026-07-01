@@ -569,6 +569,16 @@ static int RunIntentCodecSelfTest()
         q.levelmin = 0u; q.levelmax = 0u; q.usable = 0u; q.deferEluna = 0u;
         q.listfrom = 50u; q.localeIndex = 0; q.requesterGuidLow = 0u;   // 0 = enUS / no overlay (V3)
         q.searchedName = "sword";
+        // A capable profile so the usable filter (RowUsable -> AhUsability::IsUsable)
+        // is deterministic. The test rows require only level 1 and allow all
+        // classes, so any valid class at level 60 makes every survivor usable.
+        // Without this the profile scalars + mount levels are read UNINITIALIZED on
+        // the usable=1 path -- harmless on MSVC, garbage on GCC/Clang (all rows
+        // filtered -> defer set size 0). (minMountLevel/minEpicMountLevel now
+        // default to 0 in BrowseQuery; the profile scalars default to 0 too.)
+        q.profile.classId = 1u;   // any valid class; rows are allowableClass = all
+        q.profile.raceId  = 1u;
+        q.profile.level   = 60u;
 
         BrowseResult res = BrowseHandler::FilterAndPaginate(rows, q);
         if (res.totalcount != 60u || res.elunaPending != 0u || res.tooMany != 0u)

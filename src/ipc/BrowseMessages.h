@@ -104,10 +104,10 @@ namespace BrowseWire
 /// Flat snapshot of the browsing player's usability inputs.
 struct PlayerProfile
 {
-    uint8  classId;
-    uint8  raceId;
-    uint8  level;
-    uint8  honorRank;                    ///< GetHonorHighestRankInfo().rank (0..18)
+    uint8  classId   = 0;
+    uint8  raceId    = 0;
+    uint8  level     = 0;
+    uint8  honorRank = 0;                 ///< GetHonorHighestRankInfo().rank (0..18)
     std::vector<SkillRank>   skills;     ///< (skillId, GetSkillValue)
     std::vector<uint32>      knownSpells;///< HasSpell set
     std::vector<RepStanding> reps;       ///< faction -> ReputationRank
@@ -218,8 +218,8 @@ struct BrowseQuery
     uint32 listfrom;        ///< page offset (LIST only)
     int8   localeIndex;     ///< V3: LocaleConstant (0=enUS/default=no overlay; 1..MAX_LOCALE-1 = name_locN)
     uint32 requesterGuidLow;///< OWNER/BIDDER: the requesting character low GUID
-    uint32 minMountLevel;       ///< CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL (mount override; populated Task 6/11)
-    uint32 minEpicMountLevel;   ///< CONFIG_UINT32_MIN_TRAIN_EPIC_MOUNT_LEVEL (populated Task 6/11)
+    uint32 minMountLevel     = 0;   ///< CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL (mount override; populated Task 6/11)
+    uint32 minEpicMountLevel = 0;   ///< CONFIG_UINT32_MIN_TRAIN_EPIC_MOUNT_LEVEL (populated Task 6/11)
     std::string searchedName;             ///< lower-cased UTF-8 name fragment ("" = any)
     std::vector<uint32> outbidIds;        ///< BIDDER only: client outbid auction ids (client order)
     std::vector<uint32> knownRecipeCastSpells; ///< derived spellid_1 set the player already knows (C2b)
