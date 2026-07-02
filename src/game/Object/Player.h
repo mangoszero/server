@@ -66,6 +66,8 @@
 #include "MapReference.h"
 #include "Util.h"                                           // for Tokens typedef
 #include "ReputationMgr.h"
+#include "SpellCooldownMgr.h"                                // held by value on Player; brings in SpellCooldown struct + owns the cooldown map
+#include "PetMgr.h"                                          // held by value on Player; owns stable-slot count + temp-unsummon pet number
 #include "BattleGround.h"
 #include "DBCStores.h"
 #include "SharedDefines.h"
@@ -241,16 +243,7 @@ struct SpellModifier
 
 typedef std::list<SpellModifier*> SpellModList;
 
-/**
- * @brief Structure to hold spell cooldown information
- */
-struct SpellCooldown
-{
-    time_t end;    ///< End time of the cooldown
-    uint16 itemid; ///< Item ID associated with the cooldown
-};
-
-typedef std::map<uint32, SpellCooldown> SpellCooldowns;
+// SpellCooldown struct and SpellCooldowns typedef moved to SpellCooldownMgr.h.
 
 /**
  * @brief Trainer spell state enumeration
@@ -1374,7 +1367,7 @@ class Player : public Unit
         }
 
         // Remove the player's pet
-        void RemovePet(PetSaveMode mode);
+        void RemovePet(PetSaveMode mode) { m_petMgr.Remove(mode); }
 
         // Remove the player's mini pet
         void RemoveMiniPet();
@@ -1764,7 +1757,7 @@ class Player : public Unit
         // Load the player's pet
         void LoadPet();
 
-        uint32 m_stableSlots; // Number of stable slots
+        // Stable-slot count now owned by m_petMgr (see GetStableSlots/SetStableSlots).
 
         /*********************************************************/
         /***                    GOSSIP SYSTEM                  ***/
@@ -2242,7 +2235,7 @@ class Player : public Unit
         void PossessSpellInitialize();
 
         // Remove the pet action bar
-        void RemovePetActionBar();
+        void RemovePetActionBar() { m_petMgr.RemoveActionBar(); }
 
         // Check if the player has a specific spell
         bool HasSpell(uint32 spell) const override;
@@ -2346,10 +2339,7 @@ class Player : public Unit
         }
 
         // Get the player's spell cooldown map
-        SpellCooldowns const& GetSpellCooldownMap() const
-        {
-            return m_spellCooldowns;
-        }
+        SpellCooldowns const& GetSpellCooldownMap() const { return m_spellCooldownMgr.GetSpellCooldownMap(); }
 
         // Add a spell modifier to the player
         void AddSpellMod(SpellModifier* mod, bool apply);
@@ -2372,38 +2362,23 @@ class Player : public Unit
         static uint32 const infinityCooldownDelay = MONTH; // used for set "infinity cooldowns" for spells and check
         static uint32 const infinityCooldownDelayCheck = MONTH / 2;
 
-        // Check if the player has a spell cooldown
-        bool HasSpellCooldown(uint32 spell_id) const
-        {
-            SpellCooldowns::const_iterator itr = m_spellCooldowns.find(spell_id);
-            return itr != m_spellCooldowns.end() && itr->second.end > time(NULL);
-        }
+        // Spell-cooldown API — thin delegating wrappers around m_spellCooldownMgr.
+        bool HasSpellCooldown(uint32 spell_id) const { return m_spellCooldownMgr.HasSpellCooldown(spell_id); }
 
-        // Get the delay for a spell cooldown
-        time_t GetSpellCooldownDelay(uint32 spell_id) const
-        {
-            SpellCooldowns::const_iterator itr = m_spellCooldowns.find(spell_id);
-            time_t t = time(NULL);
-            return itr != m_spellCooldowns.end() && itr->second.end > t ? itr->second.end - t : 0;
-        }
+        time_t GetSpellCooldownDelay(uint32 spell_id) const { return m_spellCooldownMgr.GetSpellCooldownDelay(spell_id); }
 
-        // Add spell and category cooldowns
-        void AddSpellAndCategoryCooldowns(SpellEntry const* spellInfo, uint32 itemId, Spell* spell = NULL, bool infinityCooldown = false);
+        void AddSpellAndCategoryCooldowns(SpellEntry const* spellInfo, uint32 itemId, Spell* spell = NULL, bool infinityCooldown = false) { m_spellCooldownMgr.AddSpellAndCategoryCooldowns(spellInfo, itemId, spell, infinityCooldown); }
 
-        // Add a spell cooldown
-        void AddSpellCooldown(uint32 spell_id, uint32 itemid, time_t end_time);
+        void AddSpellCooldown(uint32 spell_id, uint32 itemid, time_t end_time) { m_spellCooldownMgr.AddSpellCooldown(spell_id, itemid, end_time); }
 
-        // Send a cooldown event to the client
-        void SendCooldownEvent(SpellEntry const* spellInfo, uint32 itemId = 0, Spell* spell = NULL);
+        void SendCooldownEvent(SpellEntry const* spellInfo, uint32 itemId = 0, Spell* spell = NULL) { m_spellCooldownMgr.SendCooldownEvent(spellInfo, itemId, spell); }
 
         // Prohibit a spell school for a specific duration
         void ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs) override;
 
-        // Remove a spell cooldown
-        void RemoveSpellCooldown(uint32 spell_id, bool update = false);
+        void RemoveSpellCooldown(uint32 spell_id, bool update = false) { m_spellCooldownMgr.RemoveSpellCooldown(spell_id, update); }
 
-        // Remove a spell category cooldown
-        void RemoveSpellCategoryCooldown(uint32 cat, bool update = false);
+        void RemoveSpellCategoryCooldown(uint32 cat, bool update = false) { m_spellCooldownMgr.RemoveSpellCategoryCooldown(cat, update); }
 
         // Send a clear cooldown message to the client
         void SendClearCooldown(uint32 spell_id, Unit* target);
@@ -2414,13 +2389,11 @@ class Player : public Unit
             return m_GlobalCooldownMgr;
         }
 
-        void RemoveAllSpellCooldown();
+        void RemoveAllSpellCooldown() { m_spellCooldownMgr.RemoveAllSpellCooldown(); }
 
-        // Load spell cooldowns from the database
-        void _LoadSpellCooldowns(QueryResult* result);
+        void _LoadSpellCooldowns(QueryResult* result) { m_spellCooldownMgr.LoadFromDB(result); }
 
-        // Save spell cooldowns to the database
-        void _SaveSpellCooldowns();
+        void _SaveSpellCooldowns() { m_spellCooldownMgr.SaveToDB(); }
 
         // Set resurrect request data
         void setResurrectRequestData(ObjectGuid guid, uint32 mapId, float X, float Y, float Z, uint32 health, uint32 mana)
@@ -3552,11 +3525,13 @@ class Player : public Unit
         // Remove an at-login flag for the player
         void RemoveAtLoginFlag(AtLoginFlags f, bool in_db_also = false);
 
-        // Temporarily removed pet cache
-        uint32 GetTemporaryUnsummonedPetNumber() const { return m_temporaryUnsummonedPetNumber; }
-        void SetTemporaryUnsummonedPetNumber(uint32 petnumber) { m_temporaryUnsummonedPetNumber = petnumber; }
-        void UnsummonPetTemporaryIfAny();
-        void ResummonPetTemporaryUnSummonedIfAny();
+        // Pet-metadata API — thin delegating wrappers around m_petMgr.
+        uint32 GetStableSlots() const { return m_petMgr.GetStableSlots(); }
+        void SetStableSlots(uint32 slots) { m_petMgr.SetStableSlots(slots); }
+        uint32 GetTemporaryUnsummonedPetNumber() const { return m_petMgr.GetTemporaryUnsummonedPetNumber(); }
+        void SetTemporaryUnsummonedPetNumber(uint32 petnumber) { m_petMgr.SetTemporaryUnsummonedPetNumber(petnumber); }
+        void UnsummonPetTemporaryIfAny() { m_petMgr.UnsummonTemporaryIfAny(); }
+        void ResummonPetTemporaryUnSummonedIfAny() { m_petMgr.ResummonTemporaryUnsummonedIfAny(); }
         bool IsPetNeedBeTemporaryUnsummoned() const { return !IsInWorld() || !IsAlive() || IsMounted() /*+in flight*/; }
 
         // Send cinematic start to the client
@@ -3898,7 +3873,7 @@ class Player : public Unit
 
         PlayerMails m_mail; // Player mails
         PlayerSpellMap m_spells; // Player spells
-        SpellCooldowns m_spellCooldowns; // Spell cooldowns
+        // Spell-cooldown map now owned by m_spellCooldownMgr.
 
         GlobalCooldownMgr m_GlobalCooldownMgr; // Global cooldown manager
 
@@ -4099,11 +4074,16 @@ class Player : public Unit
         // Detect invisibility timer
         uint32 m_DetectInvTimer;
 
-        // Temporary removed pet cache
-        uint32 m_temporaryUnsummonedPetNumber;
+        // Temporary-removed pet cache and stable-slot count now owned by m_petMgr.
 
         // Reputation manager for the player
         ReputationMgr  m_reputationMgr;
+
+        // Owns the spell-cooldown map + load/save/apply lifecycle
+        SpellCooldownMgr m_spellCooldownMgr;
+
+        // Owns stable-slot count + temp-unsummon pet number
+        PetMgr m_petMgr;
 };
 
 /**

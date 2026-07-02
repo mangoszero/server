@@ -535,12 +535,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
 
     uint32 extraflags = fields[31].GetUInt32();
 
-    m_stableSlots = fields[32].GetUInt32();
-    if (m_stableSlots > MAX_PET_STABLES)
-    {
-        sLog.outError("Player can have not more %u stable slots, but have in DB %u", MAX_PET_STABLES, uint32(m_stableSlots));
-        m_stableSlots = MAX_PET_STABLES;
-    }
+    m_petMgr.LoadStableSlotsFromField(fields[32].GetUInt32());
 
     m_atLoginFlags = fields[33].GetUInt32();
 
