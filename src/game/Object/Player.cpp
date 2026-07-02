@@ -29,6 +29,8 @@
 #include "Opcodes.h"
 #include "SpellMgr.h"
 #include "World.h"
+#include "AntiCheatMgr.h"
+#include "MovementAnticheat.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "UpdateMask.h"
@@ -148,10 +150,6 @@ void PlayerTaxi::InitTaxiNodes(uint32 race, uint32 /*level*/)
     ChrRacesEntry const* rEntry = sChrRacesStore.LookupEntry(race);
     m_taximask[0] = rEntry->startingTaxiMask;
 }
-
-
-
-
 
 
 /**
@@ -406,6 +404,9 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
     m_playerbotMgr = 0;
 #endif
 
+    m_movementAnticheat = NULL;
+    m_acPosTimer = 5000;
+
     m_transport = 0;
 
     m_speakTime = 0;
@@ -631,6 +632,14 @@ Player::~Player()
     // Perform cleanup before deleting the player object
     CleanupsBeforeDelete();
 
+    // Anti-Cheat: free the per-player movement validator and drop the score entry
+    if (m_movementAnticheat)
+    {
+        delete m_movementAnticheat;
+        m_movementAnticheat = NULL;
+    }
+    sAntiCheatMgr->RemovePlayer(GetGUIDLow());
+
     // Ensure the social object is unloaded (should already be done in PlayerLogout)
     // m_social = NULL;
 
@@ -689,6 +698,14 @@ Player::~Player()
     {
         itr->second.state->RemovePlayer(this);
     }
+}
+
+// Anti-Cheat: lazily create the per-player movement validator on first use.
+MovementAnticheat* Player::GetMovementAnticheat()
+{
+    if (!m_movementAnticheat)
+        m_movementAnticheat = new MovementAnticheat(this);
+    return m_movementAnticheat;
 }
 
 /**
@@ -1041,14 +1058,6 @@ Item* Player::StoreNewItemInInventorySlot(uint32 itemEntry, uint32 amount)
 }
 
 
-
-
-
-
-
-
-
-
 /**
  * @brief Updates player state, timers, combat, saving, and delayed actions.
  *
@@ -1061,6 +1070,21 @@ void Player::Update(uint32 update_diff, uint32 p_time)
     if (!IsInWorld())
     {
         return;
+    }
+
+    // Anti-Cheat: periodic idle-position re-validation (second cadence). Only if a
+    // movement validator exists (created on first movement); gating is inside.
+    if (m_movementAnticheat)
+    {
+        if (m_acPosTimer <= update_diff)
+        {
+            m_acPosTimer = 5000;
+            m_movementAnticheat->PeriodicCheck();
+        }
+        else
+        {
+            m_acPosTimer -= update_diff;
+        }
     }
 
     // Handle undelivered mail
@@ -2020,9 +2044,6 @@ void Player::RemoveFromWorld()
 }
 
 
-
-
-
 /**
  * @brief Gets an NPC the player can currently interact with.
  *
@@ -2091,6 +2112,24 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
     // not too far
     if (!unit->IsWithinDistInMap(this, INTERACTION_DISTANCE))
     {
+        // Anti-Cheat: the core already blocks this interaction; a request to talk to
+        // an NPC well beyond interaction range (vendor/gossip/trainer/banker/...) is
+        // a remote-interaction attempt worth attributing. Score only, generous slack
+        // vs latency so a player who just walked up isn't flagged.
+        if (sAntiCheatMgr->IsEnabled() && !sAntiCheatMgr->IsExempt(this))
+        {
+            uint32 lat = GetSession() ? GetSession()->GetLatencyEWMA() : 0;
+            float slack = INTERACTION_DISTANCE + 8.0f + GetSpeed(MOVE_RUN) * (float(lat) / 1000.0f);
+            if (GetDistance(unit) > slack)
+            {
+                AntiCheatContext ctx;
+                ctx.mapId = GetMapId();
+                ctx.x = GetPositionX(); ctx.y = GetPositionY(); ctx.z = GetPositionZ();
+                ctx.latency = lat;
+                ctx.detail = "npc interaction beyond range";
+                sAntiCheatMgr->RecordViolation(this, AC_VIOLATION_INTERACT, 15.0f, ctx);
+            }
+        }
         return NULL;
     }
 
@@ -2296,9 +2335,6 @@ void Player::SetGMVisible(bool on)
         SetVisibility(VISIBILITY_OFF);
     }
 }
-
-
-
 
 
 /**
@@ -2824,14 +2860,6 @@ void Player::SendInitialSpells()
 }
 
 
-
-
-
-
-
-
-
-
 /**
  * @brief Removes a cooldown entry for a specific spell.
  *
@@ -2970,16 +2998,6 @@ void Player::_SaveSpellCooldowns()
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
 
 
 /**
@@ -3267,30 +3285,6 @@ void Player::DeleteOldCharacters(uint32 keepDays)
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  * @brief Attempts to improve defense skill and refresh defense-derived bonuses.
  */
@@ -3306,39 +3300,7 @@ void Player::UpdateDefense()
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* Called from Player::SendInitialPacketsBeforeAddToMap */
-
-
-
 
 
 /**
@@ -3580,9 +3542,6 @@ void Player::setFactionForRace(uint8 race)
     m_team = TeamForRace(race);
     setFaction(getFactionForRace(race));
 }
-
-
-
 
 
 // Update honor fields , cleanKills is only used during char saving
@@ -3906,10 +3865,6 @@ bool Player::AddHonorCP(float honor, uint8 type, uint32 victim, uint8 victimType
 }
 
 
-
-
-
-
 /**
  * @brief Checks whether the player is eligible to interact with a capture point.
  *
@@ -3927,30 +3882,11 @@ bool Player::CanUseCapturePoint()
 }
 
 
-
-
 //---------------------------------------------------------//
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 /**  If in a battleground a player dies, and an enemy removes the insignia, the player's bones is lootable
  *   Called by remove insignia spell effect    */
-
-
-
-
 
 
 /**
@@ -4067,8 +4003,6 @@ void Player::SendPetSkillWipeConfirm()
 /*********************************************************/
 /***                    STORAGE SYSTEM                 ***/
 /*********************************************************/
-
-
 
 
 /**
@@ -4274,20 +4208,6 @@ bool Player::ViableEquipSlots(ItemPrototype const* proto, uint8 *viable_slots) c
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  * @brief Checks whether the player has a required quantity of an item equipped.
  *
@@ -4337,30 +4257,6 @@ InventoryResult Player::CanUseItemEluna(uint32 itemEntry) const
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  * @brief Sends the main container open packet to the client.
  */
@@ -4373,19 +4269,6 @@ void Player::SendOpenContainer()
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 /*********************************************************/
 
 /***                    GOSSIP SYSTEM                  ***/
@@ -4393,28 +4276,11 @@ void Player::SendOpenContainer()
 /*********************************************************/
 
 
-
-
-
-
-
 /*********************************************************/
 
 /***                    QUEST SYSTEM                   ***/
 
 /*********************************************************/
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 /**
@@ -4427,29 +4293,6 @@ Quest const* Player::GetQuestTemplate(uint32 quest_id)
 {
     return sObjectMgr.GetQuestTemplate(quest_id);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 /**
@@ -4471,21 +4314,6 @@ void Player::SetQuestRewarded(uint32 quest_id, bool rewarded)
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /// Sent when a quest is failed to be given off at questtaker. Specifically handled reasons:
 /// INVALIDREASON_QUEST_FAILED_INVENTORY_FULL=4 (or 50)
 /// INVALIDREASON_QUEST_FAILED_DUPLICATE_ITEM=17
@@ -4502,18 +4330,9 @@ void Player::SendQuestFailedAtTaker(uint32 quest_id, uint32 reason)
 }
 
 
-
-
-
-
-
-
 /*********************************************************/
 /***                   LOAD SYSTEM                     ***/
 /*********************************************************/
-
-
-
 
 
 /**
@@ -4570,10 +4389,6 @@ bool Player::IsTappedByMeOrMyGroup(Creature* creature)
 }
 
 
-
-
-
-
 /**
  * @brief Loads stored honor contribution points from the database.
  *
@@ -4607,30 +4422,9 @@ void Player::_LoadHonorCP(QueryResult* result)
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /*********************************************************/
 /***                   SAVE SYSTEM                     ***/
 /*********************************************************/
-
-
-
-
-
 
 
 /**
@@ -4747,21 +4541,14 @@ void Player::SaveMail()
 }
 
 
-
-
-
-
 /*********************************************************/
 /***               FLOOD FILTER SYSTEM                 ***/
 /*********************************************************/
 
 
-
 /*********************************************************/
 /***              LOW LEVEL FUNCTIONS:Notifiers        ***/
 /*********************************************************/
-
-
 
 
 /**
@@ -4774,19 +4561,9 @@ void Player::SendAttackSwingNotStanding()
 }
 
 
-
-
-
-
-
-
-
-
-
 /*********************************************************/
 /***              Update timers                        ***/
 /*********************************************************/
-
 
 
 /**
@@ -4845,13 +4622,6 @@ Pet* Player::GetMiniPet() const
 
     return GetMap()->GetPet(m_miniPetGuid);
 }
-
-
-
-
-
-
-
 
 
 /**
@@ -4989,12 +4759,6 @@ void Player::ResetSpellModsDueToCanceledSpell(Spell const* spell)
         }
     }
 }
-
-
-
-
-
-
 
 
 /**
@@ -5412,7 +5176,6 @@ bool Player::BuyItemFromVendor(ObjectGuid vendorGuid, uint32 item, uint8 count, 
 }
 
 
-
 /**
  * @brief Applies personal and category cooldowns for a spell cast.
  *
@@ -5570,13 +5333,6 @@ void Player::SendCooldownEvent(SpellEntry const* spellInfo, uint32 itemId, Spell
 }
 
 
-
-
-
-
-
-
-
 /**
  * @brief Initializes the number of primary professions the player may learn.
  */
@@ -5606,8 +5362,6 @@ void Player::SetComboPoints()
         GetSession()->SendPacket(&data);
     }*/
 }
-
-
 
 
 /* Called by WorldSession::HandlePlayerLogin */
@@ -5702,8 +5456,6 @@ void Player::SendInitialPacketsAfterAddToMap()
 }
 
 
-
-
 /**
  * @brief Applies the default equip cooldown for item use spells.
  *
@@ -5749,10 +5501,6 @@ void Player::ApplyEquipCooldown(Item* pItem)
 }
 
 
-
-
-
-
 /**
  * @brief Sends visible aura duration updates for a target to the player.
  *
@@ -5773,7 +5521,6 @@ void Player::SendAuraDurationsForTarget(Unit* target)
         holder->SendAuraDurationForCaster(this);
     }
 }
-
 
 
 /**
@@ -5964,7 +5711,6 @@ bool Player::IsSpellFitByClassAndRace(uint32 spell_id, uint32* pReqlevel /*= NUL
 
     return false;
 }
-
 
 
 /**
@@ -6254,10 +6000,6 @@ uint32 Player::GetResurrectionSpellId()
 }
 
 
-
-
-
-
 /**
  * @brief Gets the player's base weapon skill for an attack type.
  *
@@ -6352,15 +6094,6 @@ void Player::SetClientControl(Unit* target, uint8 allowMove)
     data << uint8(allowMove);
     GetSession()->SendPacket(&data);
 }
-
-
-
-
-
-
-
-
-
 
 
 /**
@@ -6874,7 +6607,6 @@ void Player::HandleFall(MovementInfo const& movementInfo)
 }
 
 
-
 /**
  * @brief Temporarily unsummons the current pet when the player's state requires it.
  */
@@ -6929,7 +6661,6 @@ void Player::ResummonPetTemporaryUnSummonedIfAny()
 
     m_temporaryUnsummonedPetNumber = 0;
 }
-
 
 
 /**
@@ -7097,7 +6828,6 @@ Object* Player::GetObjectByTypeMask(ObjectGuid guid, TypeMask typemask)
 
     return NULL;
 }
-
 
 
 /**
