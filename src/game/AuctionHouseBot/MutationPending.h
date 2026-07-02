@@ -131,4 +131,27 @@ class MutationPendingMap
 /// World-thread only.
 uint64 AhMintMutationUuid();
 
+/// SP-2 Task 10: classify a CMSG_AUCTION_BID forward using mangosd's OWN
+/// ledger -- the only bid state mangosd holds under WriteAuthority (the book,
+/// including each auction's buyout, is worker-owned). Defined in
+/// AuctionHouseHandler.cpp.
+///
+/// Returns the IPC opcode to forward on and sets @p reserveAmount:
+///  - IPC_PLAYER_BID    same-bidder raise proven by exactly one live ROLE_BID
+///                      row owned by @p bidderGuidLow; reserveAmount = the
+///                      delta (spec I9), the intent carries the full price.
+///  - IPC_PLAYER_BUYOUT everything else (fresh bid, displacing bid, ambiguous
+///                      rows); reserveAmount = @p price reserved in full as
+///                      maxPrice -- the worker computes effectiveBid =
+///                      min(maxPrice, buyout) (spec 4.1 value math), so this
+///                      covers both a normal bid and a buyout win; the
+///                      finalize releases maxPrice - effectiveBid.
+///  - 0                 inline reject: the player's own live bid is already
+///                      >= price (legacy `price <= auction->bid` =>
+///                      AUCTION_ERR_HIGHER_BID). Non-holder stale bids are NOT
+///                      pre-rejected here: those guards moved to the worker
+///                      (spec I6) and bot-held bids have no ledger row.
+uint16 AhClassifyBidForward(uint32 auctionId, uint32 bidderGuidLow, uint32 price,
+                            uint32& reserveAmount);
+
 #endif // MANGOS_AH_MUTATION_PENDING_H

@@ -1282,6 +1282,171 @@ static int RunAhMutPendingTest()
     return 0;
 }
 
+/// DB-level self-test for the SP-2 forward-path reserve shapes (Task 10), no
+/// live worker and no Player: owner guid 1 is offline so ReserveGold takes the
+/// ledger-only path. Covers (a) the sell reserve pair item:<id> + dep:<id> in
+/// ONE checked txn plus its pending registration, and (b) the bid classifier
+/// AhClassifyBidForward against real ledger rows: no row -> IPC_PLAYER_BUYOUT
+/// full reserve; own live row -> IPC_PLAYER_BID delta; price <= own live bid
+/// -> 0 (inline ERR_HIGHER_BID); another owner's row -> BUYOUT full;
+/// ambiguous (two live rows) -> BUYOUT full. Returns 0 on pass.
+static int RunAhForwardReserveTest()
+{
+    bool pass = true;
+
+    CharacterDatabase.AllowAsyncTransactions();
+
+    uint32 const sellId = 990001u;   // synthetic ids far above live data
+    uint32 const bidId  = 990002u;
+
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (990001, 990002)");
+
+    // ---- (a) sell shape: escrow + deposit reserve, one checked txn ----
+    MutationPendingMap pend;
+    if (!pend.CanRegister(1u))
+    {
+        printf("ahforwardreserve FAIL: CanRegister(empty)\n");
+        pass = false;
+    }
+
+    std::string const sellIdStr = std::to_string(sellId);
+    CharacterDatabase.BeginTransaction();
+    CustodyService::EscrowItem(1u, 424242u, "item:" + sellIdStr, sellId);
+    CustodyService::ReserveGoldAlreadyDebited(1u, 77u, "dep:" + sellIdStr, sellId, ROLE_DEPOSIT);
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        printf("ahforwardreserve FAIL: sell reserve txn\n");
+        pass = false;
+    }
+
+    CustodyRow row;
+    if (!CustodyLedger::Get("item:" + sellIdStr, row) ||
+        row.kind != CUSTODY_ITEM || row.state != CST_RESERVED ||
+        row.itemGuid != 424242u || row.auctionId != sellId)
+    {
+        printf("ahforwardreserve FAIL: item row shape\n");
+        pass = false;
+    }
+    if (!CustodyLedger::Get("dep:" + sellIdStr, row) ||
+        row.kind != CUSTODY_GOLD || row.role != ROLE_DEPOSIT ||
+        row.state != CST_RESERVED || row.amount != 77u)
+    {
+        printf("ahforwardreserve FAIL: dep row shape\n");
+        pass = false;
+    }
+
+    uint64 const sellUuid = AhMintMutationUuid();
+    PendingMutation pm;
+    pm.uuid           = sellUuid;
+    pm.playerGuidLow  = 1u;
+    pm.op             = uint16(IPC_PLAYER_SELL);
+    pm.auctionId      = sellId;
+    pm.state          = uint8(PMUT_AWAIT_RESULT);
+    pm.sentSec        = uint32(time(NULL));
+    pm.reservedAmount = 0u;
+    pm.reserveKey.clear();
+    pm.itemKey        = "item:" + sellIdStr;
+    pm.depKey         = "dep:" + sellIdStr;
+    pend.Register(pm);
+
+    PendingMutation got;
+    if (!pend.Take(sellUuid, got) || got.itemKey != "item:" + sellIdStr ||
+        got.depKey != "dep:" + sellIdStr || got.op != uint16(IPC_PLAYER_SELL))
+    {
+        printf("ahforwardreserve FAIL: sell pending registration\n");
+        pass = false;
+    }
+
+    // ---- (b) bid classifier: no live row -> BUYOUT, full reserve ----
+    uint32 reserveAmount = 0u;
+    if (AhClassifyBidForward(bidId, 1u, 500u, reserveAmount) != uint16(IPC_PLAYER_BUYOUT) ||
+        reserveAmount != 500u)
+    {
+        printf("ahforwardreserve FAIL: classify(no row)\n");
+        pass = false;
+    }
+
+    // Seed guid 1's live bid of 500 with the handler's key scheme, one txn.
+    std::string const bidKey = "bid:" + std::to_string(bidId) + ":" +
+                               std::to_string(CustodyLedger::NextBidSeq(bidId));
+    {
+        CustodyDeferred def;
+        CharacterDatabase.BeginTransaction();
+        CustodyService::ReserveGold(def, 1u, NULL, 500u, bidKey, bidId, ROLE_BID);
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahforwardreserve FAIL: bid reserve txn\n");
+            pass = false;
+        }
+    }
+    if (!CustodyLedger::GetSingleLiveBidRow(bidId, row) ||
+        row.idemKey != bidKey || row.ownerGuid != 1u || row.amount != 500u)
+    {
+        printf("ahforwardreserve FAIL: single live bid row\n");
+        pass = false;
+    }
+
+    // Holder raise 500 -> 600: IPC_PLAYER_BID, delta 100 (spec I9).
+    if (AhClassifyBidForward(bidId, 1u, 600u, reserveAmount) != uint16(IPC_PLAYER_BID) ||
+        reserveAmount != 100u)
+    {
+        printf("ahforwardreserve FAIL: classify(raise delta)\n");
+        pass = false;
+    }
+    // Holder "raise" to own bid: 0 -> inline legacy ERR_HIGHER_BID.
+    if (AhClassifyBidForward(bidId, 1u, 500u, reserveAmount) != 0u)
+    {
+        printf("ahforwardreserve FAIL: classify(price <= own bid)\n");
+        pass = false;
+    }
+    // Another player: BUYOUT, full reserve (worker adjudicates, spec I6).
+    if (AhClassifyBidForward(bidId, 2u, 600u, reserveAmount) != uint16(IPC_PLAYER_BUYOUT) ||
+        reserveAmount != 600u)
+    {
+        printf("ahforwardreserve FAIL: classify(other bidder)\n");
+        pass = false;
+    }
+
+    // A raise-in-flight adds a SECOND live ROLE_BID row (the delta reserve);
+    // exactly-one is then violated and the classifier falls back to BUYOUT
+    // full reserve -- a value-safe over-reserve (transient, spec 12).
+    std::string const deltaKey = "bid:" + std::to_string(bidId) + ":" +
+                                 std::to_string(CustodyLedger::NextBidSeq(bidId));
+    {
+        CustodyDeferred def;
+        CharacterDatabase.BeginTransaction();
+        CustodyService::ReserveGold(def, 1u, NULL, 100u, deltaKey, bidId, ROLE_BID);
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahforwardreserve FAIL: delta reserve txn\n");
+            pass = false;
+        }
+    }
+    if (CustodyLedger::GetSingleLiveBidRow(bidId, row))
+    {
+        printf("ahforwardreserve FAIL: two live rows not rejected\n");
+        pass = false;
+    }
+    if (AhClassifyBidForward(bidId, 1u, 700u, reserveAmount) != uint16(IPC_PLAYER_BUYOUT) ||
+        reserveAmount != 700u)
+    {
+        printf("ahforwardreserve FAIL: classify(ambiguous rows)\n");
+        pass = false;
+    }
+
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (990001, 990002)");
+
+    if (pass)
+    {
+        printf("ahforwardreserve OK\n");
+        return 0;
+    }
+
+    return 2;
+}
+
 /// SP-2: ReleaseGoldToWallet (online + offline re-credit) and the
 /// applied-record idempotency helpers (WriteResolutionApplied / ResolutionApplied).
 static int RunAhReleaseTest()
@@ -1426,6 +1591,11 @@ int RunMangosdTest(std::string const& name)
     if (name == "ahmutpending")
     {
         return RunAhMutPendingTest();
+    }
+
+    if (name == "ahforwardreserve")
+    {
+        return RunAhForwardReserveTest();
     }
 
     if (name == "ahrelease")

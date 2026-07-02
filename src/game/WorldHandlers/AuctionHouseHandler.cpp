@@ -49,6 +49,7 @@
 #include "AuctionHouseBot/CustodyService.h"
 #include "AuctionHouseBot/CustodyLedger.h"
 #include "AuctionHouseBot/BrowsePending.h"
+#include "AuctionHouseBot/MutationPending.h"
 #include "Mail.h"
 #include "Util.h"
 #include "Chat.h"
@@ -59,6 +60,7 @@
 #include "BrowseMessages.h"
 #include "IpcMessage.h"
 #include "IpcOpcodes.h"
+#include "PlayerMutations.h"
 #include "WorkerSupervisor.h"
 #include <string>
 #include <vector>
@@ -85,6 +87,38 @@ static void AhSendUnavailableMessage(WorldSession* session)
 {
     session->SendNotification("The Auction House is temporarily unavailable.");
     ChatHandler(session).SendSysMessage("|cffff0000The Auction House is temporarily unavailable.|r");
+}
+
+// SP-2 Task 10: bid-forward classifier. See MutationPending.h for the full
+// contract. Kept as a free function so `mangosd -t ahforwardreserve` can
+// exercise the real classification logic against seeded ledger rows without a
+// live Player or worker.
+uint16 AhClassifyBidForward(uint32 auctionId, uint32 bidderGuidLow, uint32 price,
+                            uint32& reserveAmount)
+{
+    reserveAmount = price;
+
+    CustodyRow liveRow;
+    if (!CustodyLedger::GetSingleLiveBidRow(auctionId, liveRow) ||
+        liveRow.ownerGuid != bidderGuidLow)
+    {
+        // Not provably this player's live bid (no row, ambiguous rows, or
+        // another player's row): reserve the full submitted price as maxPrice
+        // and let the worker adjudicate against the book (spec I6 / 4.1).
+        return uint16(IPC_PLAYER_BUYOUT);
+    }
+
+    if (price <= liveRow.amount)
+    {
+        // Raising to at-or-below the player's own live bid: legacy rejects
+        // inline (`price <= auction->bid` -> AUCTION_ERR_HIGHER_BID).
+        return 0u;
+    }
+
+    // Same-bidder raise (spec I9): only the delta is reserved; the finalize
+    // applies the top-up. The intent still carries the full new price.
+    reserveAmount = price - liveRow.amount;
+    return uint16(IPC_PLAYER_BID);
 }
 
 // void called when player click on auctioneer npc
