@@ -9452,78 +9452,7 @@ void Player::SetComboPoints()
     }*/
 }
 
-/**
- * @brief Adds combo points on a target and updates combo point ownership.
- *
- * @param target The unit receiving combo points.
- * @param count The number of combo points to add.
- */
-void Player::AddComboPoints(Unit* target, int8 count)
-{
-    if (!count)
-    {
-        return;
-    }
 
-    // without combo points lost (duration checked in aura)
-    RemoveSpellsCausingAura(SPELL_AURA_RETAIN_COMBO_POINTS);
-
-    if (target->GetObjectGuid() == m_comboTargetGuid)
-    {
-        m_comboPoints += count;
-    }
-    else
-    {
-        if (m_comboTargetGuid)
-        {
-            if (Unit* target2 = sObjectAccessor.GetUnit(*this, m_comboTargetGuid))
-            {
-                target2->RemoveComboPointHolder(GetGUIDLow());
-            }
-        }
-
-        m_comboTargetGuid = target->GetObjectGuid();
-        m_comboPoints = count;
-
-        target->AddComboPointHolder(GetGUIDLow());
-    }
-
-    if (m_comboPoints > 5)
-    {
-        m_comboPoints = 5;
-    }
-    if (m_comboPoints < 0)
-    {
-        m_comboPoints = 0;
-    }
-
-    SetComboPoints();
-}
-
-/**
- * @brief Clears the player's combo points and current combo target.
- */
-void Player::ClearComboPoints()
-{
-    if (!m_comboTargetGuid)
-    {
-        return;
-    }
-
-    // without combopoints lost (duration checked in aura)
-    RemoveSpellsCausingAura(SPELL_AURA_RETAIN_COMBO_POINTS);
-
-    m_comboPoints = 0;
-
-    SetComboPoints();
-
-    if (Unit* target = sObjectAccessor.GetUnit(*this, m_comboTargetGuid))
-    {
-        target->RemoveComboPointHolder(GetGUIDLow());
-    }
-
-    m_comboTargetGuid.Clear();
-}
 
 /**
  * @brief Assigns the player to a group and subgroup.
