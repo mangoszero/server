@@ -2155,79 +2155,7 @@ void Aura::PeriodicDummyTick()
     }
 }
 
-/**
- * @brief Applies or removes prevention of fleeing on feared targets.
- *
- * @param apply True to prevent fleeing; false to restore it.
- * @param Real True when processing the real aura state change.
- */
-void Aura::HandlePreventFleeing(bool apply, bool Real)
-{
-    if (!Real)
-    {
-        return;
-    }
 
-    Unit::AuraList const& fearAuras = GetTarget()->GetAurasByType(SPELL_AURA_MOD_FEAR);
-    if (!fearAuras.empty())
-    {
-        const Aura *first = fearAuras.front();
-
-        if (apply)
-        {
-            GetTarget()->SetFeared(false, first->GetCasterGuid());
-        }
-        else
-        {
-            GetTarget()->SetFeared(true, first->GetCasterGuid(), first->GetId());
-        }
-    }
-    else if (apply && GetTarget()->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING))
-    {
-        GetTarget()->SetFeared(false, GetCasterGuid());
-    }
-}
-
-/**
- * @brief Calculates bonus absorb values for mana shield effects.
- *
- * @param apply True to apply the shield; false to remove it.
- * @param Real True when processing the real aura state change.
- */
-void Aura::HandleManaShield(bool apply, bool Real)
-{
-    if (!Real)
-    {
-        return;
-    }
-
-    // prevent double apply bonuses
-    if (apply && (GetTarget()->GetTypeId() != TYPEID_PLAYER || !((Player*)GetTarget())->GetSession()->PlayerLoading()))
-    {
-        if (Unit* caster = GetCaster())
-        {
-            float DoneActualBenefit = 0.0f;
-            switch (GetSpellProto()->SpellFamilyName)
-            {
-                case SPELLFAMILY_MAGE:
-                    if (GetSpellProto()->SpellFamilyFlags & UI64LIT(0x0000000000008000))
-                    {
-                        // Mana Shield
-                        // +50% from +spd bonus
-                        DoneActualBenefit = caster->SpellBaseDamageBonusDone(GetSpellSchoolMask(GetSpellProto())) * 0.5f;
-                        break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-
-            DoneActualBenefit *= caster->CalculateLevelPenalty(GetSpellProto());
-
-            m_modifier.m_amount += (int32)DoneActualBenefit;
-        }
-    }
-}
 
 /**
  * @brief Checks whether this aura is the last remaining effect on its holder.
@@ -2978,16 +2906,6 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
     SetInUse(false);
 }
 
-/**
- * @brief Placeholder handler for safe fall aura effects.
- *
- * @param Apply True to apply the aura; false to remove it.
- * @param Real True when processing the real aura state change.
- */
-void Aura::HandleAuraSafeFall(bool Apply, bool Real)
-{
-    // implemented in WorldSession::HandleMovementOpcodes
-}
 
 SpellAuraHolder::~SpellAuraHolder()
 {
