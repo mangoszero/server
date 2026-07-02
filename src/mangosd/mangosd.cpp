@@ -71,6 +71,7 @@
 #include "AFThread.h"
 #include "RAThread.h"
 #include "WorkerSupervisor.h"
+#include "IpcServerHandler.h"
 #include "MangosdTest.h"
 
 #ifdef ENABLE_SOAP
@@ -618,6 +619,13 @@ int main(int argc, char** argv)
         // torn down below, the read handlers still send "AH unavailable" rather
         // than silently reverting to in-process reads.
         sWorld.SetAhServiceConfigured(true);
+
+        // SP-2: arm the write-authority bit for the IPC handshake BEFORE
+        // Start() -- IPC_HELLO_ACK carries {runId, writeAuthority} to the
+        // worker (spec decision 7: the worker never reads it from its own
+        // conf). The flag is boot-latched and the setter is static, so this
+        // one call covers every child respawn.
+        IpcServerHandler::SetPendingWriteAuthority(sWorld.IsAhWriteAuthority());
 
         ahSupervisor = new WorkerSupervisor(
             "ah-service",
