@@ -63,6 +63,7 @@
 #include "Weather.h"
 #include "Transports.h"
 #include "ObjectGridLoader.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "LivingWorldCellEnvelope.h"
 
 #ifdef ENABLE_ELUNA
@@ -189,6 +190,9 @@ Map::Map(uint32 id, time_t expiry, uint32 InstanceId)
     i_gridExpiry(expiry), m_TerrainData(sTerrainMgr.LoadTerrain(id)),
     i_data(NULL)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(MapCreate, i_id);
+
 #ifdef ENABLE_ELUNA
     // lua state begins uninitialized
     eluna = nullptr;
@@ -583,6 +587,8 @@ Map::EnsureGridLoadedAtEnter(const Cell& cell, Player* player)
  */
 bool Map::EnsureGridLoaded(const Cell& cell)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(GridLoad, i_id);
     EnsureGridCreated(GridPair(cell.GridX(), cell.GridY()));
     NGridType* grid = getNGrid(cell.GridX(), cell.GridY());
 
@@ -2422,6 +2428,9 @@ DungeonMap::DungeonMap(uint32 id, time_t expiry, uint32 InstanceId)
     : Map(id, expiry, InstanceId),
     m_resetAfterUnload(false), m_unloadWhenEmpty(false)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(InstanceCreate, id);
+
     MANGOS_ASSERT(i_mapEntry->IsDungeon());
 
     // lets initialize visibility distance for dungeons
@@ -2620,6 +2629,8 @@ void DungeonMap::Remove(Player* player, bool remove)
  */
 bool DungeonMap::Reset(InstanceResetMethod method)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(InstanceReset, GetId());
     // note: since the map may not be loaded when the instance needs to be reset
     // the instance must be deleted from the DB by InstanceSaveManager
 

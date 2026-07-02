@@ -45,6 +45,7 @@
 #include "Opcodes.h"
 #include "ObjectMgr.h"
 #include "Chat.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "ChannelMgr.h"
 #include "Group.h"
 #include "Guild.h"
@@ -110,6 +111,9 @@ bool WorldSession::processChatmessageFurtherAfterSecurityChecks(std::string& msg
  */
 void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 {
+    // GDB-server game breakpoint: pause when a chat message is handled.
+    GDB_BREAK(Chat, 0);
+
     uint32 type;
     uint32 lang;
 

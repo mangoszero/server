@@ -34,6 +34,7 @@
 #include "Spell.h"
 #include "SocialMgr.h"
 #include "DBCStores.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 
 /**
  * @brief Sends a trade status packet to the client.
@@ -300,6 +301,8 @@ static void clearAcceptTradeMode(Item** myItems, Item** hisItems)
  */
 void WorldSession::HandleAcceptTradeOpcode(WorldPacket& recvPacket)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(Trade, 0);
     recvPacket.read_skip<uint32>();
 
     TradeData* my_trade = _player->m_trade;

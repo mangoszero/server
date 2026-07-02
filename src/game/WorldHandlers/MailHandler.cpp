@@ -52,6 +52,7 @@
 #include "WorldSession.h"
 #include "Opcodes.h"
 #include "Chat.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "AuctionHouseBot/AhBotSystemOwner.h"
 
 /**
@@ -108,6 +109,8 @@ bool WorldSession::CheckMailBox(ObjectGuid guid)
  */
 void WorldSession::HandleSendMail(WorldPacket& recv_data)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(MailSend, 0);
     ObjectGuid mailboxGuid;
     ObjectGuid itemGuid;
     uint64 unk3;
@@ -476,6 +479,8 @@ void WorldSession::HandleMailReturnToSender(WorldPacket& recv_data)
  */
 void WorldSession::HandleMailTakeItem(WorldPacket& recv_data)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(MailReceive, 0);
     ObjectGuid mailboxGuid;
     uint32 mailId;
     recv_data >> mailboxGuid;

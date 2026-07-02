@@ -52,6 +52,7 @@
 #include "Mail.h"
 #include "Util.h"
 #include "Chat.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "ReputationMgr.h"
 #include "SQLStorages.h"
 #include "DBCStores.h"
@@ -480,6 +481,8 @@ AuctionHouseEntry const* WorldSession::GetCheckedAuctionHouseForAuctioneer(Objec
 // this void creates new auction and adds auction to some auctionhouse
 void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(AuctionAdd, 0);
     DEBUG_LOG("WORLD: HandleAuctionSellItem");
 
     ObjectGuid auctioneerGuid;
@@ -704,6 +707,8 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
 // this function is called when client bids or buys out auction
 void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(AuctionBuy, 0);
     DEBUG_LOG("WORLD: HandleAuctionPlaceBid");
 
     ObjectGuid auctioneerGuid;

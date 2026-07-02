@@ -48,6 +48,7 @@
 #include "Log.h"
 #include "World.h"
 #include "ObjectMgr.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "Player.h"
 #include "CinematicFlyover.h"
 #include "Guild.h"
@@ -635,6 +636,9 @@ void WorldSession::HandleCharDeleteOpcode(WorldPacket& recv_data)
  */
 void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recv_data)
 {
+    // GDB-server game breakpoint: pause on player login.
+    GDB_BREAK(Login, GetAccountId());
+
     ObjectGuid playerGuid;
     recv_data >> playerGuid;
 

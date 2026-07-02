@@ -23,6 +23,7 @@
  */
 
 #include "Unit.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "Log.h"
 #include "Opcodes.h"
 #include "WorldPacket.h"
@@ -697,6 +698,9 @@ void Unit::DealDamageMods(Unit* pVictim, uint32& damage, uint32* absorb)
  */
 uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDamage, DamageEffectType damagetype, SpellSchoolMask damageSchoolMask, SpellEntry const* spellProto, bool durabilityLoss)
 {
+    // GDB-server game breakpoint: pause on damage to a given victim entry.
+    GDB_BREAK(Damage, pVictim ? pVictim->GetEntry() : 0);
+
     // remove affects from attacker at any non-DoT damage (including 0 damage)
     if (damagetype != DOT)
     {
@@ -8905,6 +8909,9 @@ void Unit::SetInCombatState(bool PvP, Unit* enemy)
         return;
     }
 
+    // GDB-server game breakpoint
+    GDB_BREAK(AiCombat, (GetTypeId() == TYPEID_UNIT) ? ((Creature*)this)->GetEntry() : 0);
+
     if (PvP)
     {
         m_CombatTimer = 5000;
@@ -8984,6 +8991,8 @@ void Unit::SetInCombatState(bool PvP, Unit* enemy)
 void Unit::ClearInCombat()
 {
     m_CombatTimer = 0;
+    // GDB-server game breakpoint
+    GDB_BREAK(AiCombatEnd, (GetTypeId() == TYPEID_UNIT) ? ((Creature*)this)->GetEntry() : 0);
     RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT);
 
     if (IsCharmed() || (GetTypeId() != TYPEID_PLAYER && ((Creature*)this)->IsPet()))
@@ -9678,6 +9687,12 @@ void Unit::SetSpeedRate(UnitMoveType mtype, float rate, bool forced)
  */
 void Unit::SetDeathState(DeathState s)
 {
+    // GDB-server game breakpoint: pause when a unit of a given entry dies.
+    if (s == JUST_DIED)
+    {
+        GDB_BREAK(Death, GetEntry());
+    }
+
     if (s != ALIVE && s != JUST_ALIVED)
     {
         CombatStop();

@@ -42,6 +42,7 @@
  */
 
 #include "Chat.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
@@ -1619,6 +1620,9 @@ bool ChatHandler::ParseCommands(const char* text)
 {
     MANGOS_ASSERT(text);
     MANGOS_ASSERT(*text);
+
+    // GDB-server game breakpoint: pause when a chat/console command is parsed.
+    GDB_BREAK(GmCommand, 0);
 
     /// chat case (.command or !command format)
     if (m_session)

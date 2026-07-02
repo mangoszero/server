@@ -58,6 +58,7 @@
 #include "Group.h"
 #include "InstanceData.h"
 #include "ProgressBar.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include <vector>
 
 INSTANTIATE_SINGLETON_1(MapPersistentStateManager);
@@ -1070,6 +1071,8 @@ void MapPersistentStateManager::_ResetSave(PersistentStateMap& holder, Persisten
  */
 void MapPersistentStateManager::_ResetInstance(uint32 mapid, uint32 instanceId)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(InstanceReset, mapid);
     DEBUG_LOG("MapPersistentStateManager::_ResetInstance %u, %u", mapid, instanceId);
 
     PersistentStateMap::iterator itr = m_instanceSaveByInstanceId.find(instanceId);

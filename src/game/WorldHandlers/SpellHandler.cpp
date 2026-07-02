@@ -47,6 +47,7 @@
 #include "Log.h"
 #include "Opcodes.h"
 #include "Spell.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "ScriptMgr.h"
 #include "Totem.h"
 #include "SpellAuras.h"
@@ -58,6 +59,9 @@
  */
 void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
 {
+    // GDB-server game breakpoint: pause when an item is used.
+    GDB_BREAK(ItemUse, 0);
+
     uint8 bagIndex, slot;
     uint8 spell_count;                                      // number of spells at item, not used
 

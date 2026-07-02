@@ -69,6 +69,7 @@
 #include "Auth/Sha1.h"
 #include "WorldSession.h"
 #include "WorldSocketMgr.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "Log.h"
 #include "DBCStores.h"
 #ifdef ENABLE_ELUNA
@@ -217,6 +218,8 @@ const std::string& WorldSocket::GetRemoteAddress(void) const
 int WorldSocket::SendPacket(const WorldPacket& pkt)
 {
     ACE_GUARD_RETURN(LockType, Guard, m_OutBufferLock, -1);
+    // GDB-server game breakpoint
+    GDB_BREAK(PacketSend, (uint32)pkt.GetOpcode());
 
     if (closing_)
     {
@@ -279,6 +282,8 @@ long WorldSocket::RemoveReference(void)
 int WorldSocket::open(void* a)
 {
     ACE_UNUSED_ARG(a);
+    // GDB-server game breakpoint
+    GDB_BREAK(NetAccept, 0);
 
     // Prevent double call to this func.
     if (m_OutBuffer)
@@ -331,6 +336,8 @@ int WorldSocket::open(void* a)
 int WorldSocket::close(u_long)
 {
     shutdown();
+    // GDB-server game breakpoint
+    GDB_BREAK(NetClose, 0);
 
     closing_ = true;
 
@@ -749,6 +756,8 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
 int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 {
     // NOTE: ATM the socket is singlethread, have this in mind ...
+    // GDB-server game breakpoint
+    GDB_BREAK(AuthSession, 0);
     uint8 digest[SHA_DIGEST_LENGTH];
     uint32 clientSeed;
     uint32 unk2;

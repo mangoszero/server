@@ -60,6 +60,7 @@
 #include "GuildMgr.h"
 #include "World.h"
 #include "ObjectAccessor.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "BattleGround/BattleGroundMgr.h"
 #include "SocialMgr.h"
 #ifdef ENABLE_ELUNA
@@ -316,6 +317,10 @@ bool WorldSession::Update(PacketFilter& updater)
          * #endif*/
 
         OpcodeHandler const& opHandle = opcodeTable[packet->GetOpcode()];
+
+        // GDB-server game breakpoint: pause here when this opcode is armed.
+        GDB_BREAK(Opcode, packet->GetOpcode());
+
         try
         {
             switch (opHandle.status)
@@ -487,6 +492,9 @@ void WorldSession::HandleBotPackets()
 /// %Log the player out
 void WorldSession::LogoutPlayer(bool Save)
 {
+    // GDB-server game breakpoint: pause on player logout.
+    GDB_BREAK(Logout, GetAccountId());
+
     // finish pending transfers before starting the logout
     while (_player && _player->IsBeingTeleportedFar())
     {
