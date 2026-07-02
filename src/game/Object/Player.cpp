@@ -533,6 +533,9 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
     m_playerbotMgr = 0;
 #endif
 
+    m_lastMoveRelayMs = 0;
+    m_lastMoveHeartbeatMs = 0;
+
     m_transport = 0;
 
     m_speakTime = 0;
@@ -1558,6 +1561,72 @@ void Player::Update(uint32 update_diff, uint32 p_time)
     if (!IsInWorld())
     {
         return;
+    }
+
+    // Movement smoothing (Movement.Smoothing, OFF by default): if this player was
+    // moving on the ground but their client has gone quiet (lag/packet loss),
+    // observers would see them freeze then warp. Inject extrapolated MSG_MOVE_HEARTBEAT
+    // packets — dead-reckoned along their current heading, capped to a short window —
+    // so nearby clients interpolate smoothly until real packets resume. Broadcast only;
+    // the server's authoritative position is NOT changed (the next real packet corrects).
+    if (sWorld.getConfig(CONFIG_BOOL_MOVEMENT_SMOOTHING) && IsInWorld() && GetSession() &&
+        !IsBeingTeleported() && !GetTransport() && m_lastMoveRelayMs)
+    {
+        uint32 now = getMSTime();
+        uint32 stale = getMSTimeDiff(m_lastMoveRelayMs, now);
+        uint32 maxExt = sWorld.getConfig(CONFIG_UINT32_MOVEMENT_MAX_EXTRAPOLATE_MS);
+        uint32 hbMs   = sWorld.getConfig(CONFIG_UINT32_MOVEMENT_HEARTBEAT_MS);
+
+        uint32 mflags = m_movementInfo.GetMovementFlags();
+        bool ground = !(mflags & (MOVEFLAG_FALLING | MOVEFLAG_FALLINGFAR | MOVEFLAG_SWIMMING |
+                                  MOVEFLAG_ONTRANSPORT | MOVEFLAG_FLYING | MOVEFLAG_CAN_FLY));
+        bool moving = (mflags & (MOVEFLAG_FORWARD | MOVEFLAG_BACKWARD |
+                                 MOVEFLAG_STRAFE_LEFT | MOVEFLAG_STRAFE_RIGHT)) != 0;
+
+        if (ground && moving && stale >= hbMs && stale <= maxExt &&
+            getMSTimeDiff(m_lastMoveHeartbeatMs, now) >= hbMs)
+        {
+            // Resolve the actual movement direction from the keypress flags in the
+            // body-local frame (x = forward, y = left), then rotate into world space.
+            float lx = 0.0f, ly = 0.0f;
+            if (mflags & MOVEFLAG_FORWARD)      lx += 1.0f;
+            if (mflags & MOVEFLAG_BACKWARD)     lx -= 1.0f;
+            if (mflags & MOVEFLAG_STRAFE_LEFT)  ly += 1.0f;
+            if (mflags & MOVEFLAG_STRAFE_RIGHT) ly -= 1.0f;
+            if (lx != 0.0f || ly != 0.0f)
+            {
+                float o = GetOrientation();
+                float dir = o + atan2(ly, lx);
+                float speed = (mflags & MOVEFLAG_WALK_MODE) ? GetSpeed(MOVE_WALK)
+                            : (lx < 0.0f ? GetSpeed(MOVE_RUN_BACK) : GetSpeed(MOVE_RUN));
+                float dt = float(stale) / 1000.0f;
+                float cx = GetPositionX(), cy = GetPositionY(), cz = GetPositionZ();
+                float nx = cx + cos(dir) * speed * dt;
+                float ny = cy + sin(dir) * speed * dt;
+
+                // Collision-aware: never extrapolate THROUGH geometry. If the
+                // predicted path crosses a wall, clamp the heartbeat to just before
+                // it (GetHitPosition pulls back 0.5yd) so the mover visually stops at
+                // the wall instead of clipping through and snapping back on reconcile.
+                float hx = nx, hy = ny, hz = cz + 1.5f;
+                if (GetMap()->GetHitPosition(cx, cy, cz + 1.5f, hx, hy, hz, -0.5f))
+                {
+                    nx = hx; ny = hy;
+                }
+                float nz = GetMap()->GetHeight(nx, ny, cz + 2.0f);
+                if (nz < -50000.0f)
+                    nz = cz;
+
+                MovementInfo hb = m_movementInfo;
+                hb.ChangePosition(nx, ny, nz, o);
+                hb.UpdateTime(now);
+                WorldPacket data(MSG_MOVE_HEARTBEAT, 32);
+                data << GetPackGUID();
+                data << hb;
+                SendMessageToSetExcept(&data, this);
+                m_lastMoveHeartbeatMs = now;
+            }
+        }
     }
 
     // Handle undelivered mail

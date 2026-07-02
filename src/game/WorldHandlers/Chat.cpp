@@ -169,6 +169,14 @@ ChatCommand* ChatHandler::getCommandTable()
         { NULL,             0,                  true,  NULL,                                            "", NULL }
     };
 
+    static ChatCommand movementCommandTable[] =
+    {
+        { "status",         SEC_GAMEMASTER,     true,  &ChatHandler::HandleMovementStatusCommand,           "", NULL },
+        { "config",         SEC_GAMEMASTER,     true,  &ChatHandler::HandleMovementConfigCommand,           "", NULL },
+        { "set",            SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleMovementSetCommand,              "", NULL },
+        { NULL,             0,                  false, NULL,                                                "", NULL }
+    };
+
     static ChatCommand auctionCommandTable[] =
     {
         { "alliance",       SEC_ADMINISTRATOR,  false, &ChatHandler::HandleAuctionAllianceCommand,     "", NULL },
@@ -772,6 +780,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "ah",             SEC_ADMINISTRATOR,  true,  NULL,                                           "", ahCommandTable       },
         { "auction",        SEC_ADMINISTRATOR,  false, NULL,                                           "", auctionCommandTable  },
         { "ahbot",          SEC_ADMINISTRATOR,  true,  NULL,                                           "", ahbotCommandTable    },
+        { "movement",       SEC_GAMEMASTER,     true,  NULL,                                           "", movementCommandTable },
         { "cast",           SEC_ADMINISTRATOR,  true,  NULL,                                           "", castCommandTable     },
         { "character",      SEC_GAMEMASTER,     true,  NULL,                                           "", characterCommandTable},
         { "debug",          SEC_MODERATOR,      true,  NULL,                                           "", debugCommandTable    },
