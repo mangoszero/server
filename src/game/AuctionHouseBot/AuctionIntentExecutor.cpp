@@ -156,6 +156,8 @@ static void MakeResult(IpcMessage& out, uint64 uuid, uint8 status,
     res.uuid = uuid;
     res.status = status;
     res.reason = reason;
+    res.itemGuid = 0u;    // [SP-2] no materialization on this legacy reply path
+    res.auctionId = 0u;   // [SP-2] (Task 13 owns the materialization producer)
 
     out.op = IPC_INTENT_RESULT;
     out.body.clear();

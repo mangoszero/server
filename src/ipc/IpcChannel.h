@@ -140,6 +140,12 @@ class IpcServer
          */
         void SetRunId(uint32 runId);
 
+        /**
+         * @brief Set the SP-2 write-authority bit sent in IPC_HELLO_ACK.
+         * Supervisor thread, before SpawnChild(); atomic store.
+         */
+        void SetWriteAuthority(bool on);
+
     private:
         BoundedQueue<IpcMessage>    m_inbound;
         IpcServerLink*              m_link;       ///< Shared link (refcounted).
@@ -205,6 +211,12 @@ class IpcClient
          * Returns 0 until the handshake completes.
          */
         uint32 RunId() const;
+
+        /**
+         * @brief [SP-2] Write-authority bit received in IPC_HELLO_ACK.
+         * Returns false until the handshake completes (and for a legacy ACK).
+         */
+        bool WriteAuthority() const;
 
     private:
         BoundedQueue<IpcMessage>    m_inbound;

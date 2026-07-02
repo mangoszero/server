@@ -312,26 +312,28 @@ struct GmCmdResult
  *
  * Opcode: IPC_INTENT_RESULT (0x1010), direction: mangosd -> ah-service.
  *
- * Wire size: 10 bytes.
+ * Wire size: 18 bytes.
  */
 struct IntentResult
 {
-    static const size_t WIRE_SIZE = 10u;  ///< Fixed wire size in bytes.
+    static const size_t WIRE_SIZE = 18u;  ///< 8+1+1+4+4; SP-2 adds itemGuid+auctionId.
 
-    uint64 uuid;    ///< Echoes the uuid from the triggering intent
-    uint8  status;  ///< IntentStatus value
-    uint8  reason;  ///< IntentReason value (REASON_NONE when status == INTENT_OK)
+    uint64 uuid;       ///< Echoes the uuid from the triggering intent
+    uint8  status;     ///< IntentStatus value
+    uint8  reason;     ///< IntentReason value (REASON_NONE when status == INTENT_OK)
+    uint32 itemGuid;   ///< [SP-2] materialized item low GUID (0 for bid/buyout/legacy)
+    uint32 auctionId;  ///< [SP-2] allocated auction id (0 for bid/buyout/legacy)
 
     /** @brief Append all fields to @p buf in wire order. */
     void Encode(ByteBuffer& buf) const
     {
-        buf << uuid << status << reason;
+        buf << uuid << status << reason << itemGuid << auctionId;
     }
 
     /**
      * @brief Read all fields from @p buf in wire order.
      *
-     * @return true on success, false if fewer than 10 bytes remain.
+     * @return true on success, false if fewer than 18 bytes remain.
      */
     bool Decode(ByteBuffer& buf)
     {
@@ -339,7 +341,7 @@ struct IntentResult
         {
             return false;
         }
-        buf >> uuid >> status >> reason;
+        buf >> uuid >> status >> reason >> itemGuid >> auctionId;
         return true;
     }
 };

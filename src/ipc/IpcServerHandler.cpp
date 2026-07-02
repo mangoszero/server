@@ -36,6 +36,7 @@ BoundedQueue<IpcMessage>* IpcServerHandler::s_pendingInbound = nullptr;
 std::string               IpcServerHandler::s_pendingSecret;
 IpcServerLink*            IpcServerHandler::s_pendingLink    = nullptr;
 std::atomic<uint32>       IpcServerHandler::s_pendingRunId(0);
+std::atomic<uint8>        IpcServerHandler::s_pendingWriteAuthority(0);
 
 void IpcServerHandler::SetPendingContext(BoundedQueue<IpcMessage>* inbound,
                                          const std::string& secret,
@@ -51,6 +52,11 @@ void IpcServerHandler::SetPendingRunId(uint32 runId)
     s_pendingRunId.store(runId, std::memory_order_release);
 }
 
+void IpcServerHandler::SetPendingWriteAuthority(bool on)
+{
+    s_pendingWriteAuthority.store(on ? 1u : 0u, std::memory_order_release);
+}
+
 // ---------------------------------------------------------------------------
 // Constructor / destructor
 // ---------------------------------------------------------------------------
@@ -63,6 +69,7 @@ IpcServerHandler::IpcServerHandler()
       m_closing(false),
       m_isOwner(false),
       m_runId(s_pendingRunId.load(std::memory_order_acquire))
+      , m_writeAuthority(s_pendingWriteAuthority.load(std::memory_order_acquire))
 {
     reference_counting_policy().value(
         ACE_Event_Handler::Reference_Counting_Policy::ENABLED);
@@ -492,7 +499,7 @@ int IpcServerHandler::ProcessFrame(const IpcMessage& msg)
             // Reply IPC_HELLO_ACK { run-id: per-spawn uuid seed }
             IpcMessage ack;
             ack.op = IPC_HELLO_ACK;
-            ack.body << m_runId; // per-spawn run-id
+            ack.body << m_runId << m_writeAuthority; // per-spawn run-id + SP-2 authority
             if (SendFrame(ack) == -1)
             {
                 return -1;

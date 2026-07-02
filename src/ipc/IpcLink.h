@@ -85,6 +85,7 @@ struct IpcLink
         : outbound(IPC_OUTBOUND_QUEUE_CAP),
           live(false),
           runId(0),
+          writeAuthority(0),
           handlerActive(false),
           handler(nullptr),
           reactor(nullptr),
@@ -105,6 +106,9 @@ struct IpcLink
     /// Per-spawn run-id received in IPC_HELLO_ACK (set by handler, read by
     /// IpcClient::RunId()). Zero until the handshake completes.
     std::atomic<uint32> runId;
+
+    /// [SP-2] Write-authority bit received in IPC_HELLO_ACK (0 until then).
+    std::atomic<uint8> writeAuthority;
 
     /// Single-owner guard. Set true (test-and-set) by the FIRST handler that
     /// opens on the reactor thread; any additional accepted connection finds

@@ -22,6 +22,7 @@
 #include "IpcMessage.h"
 #include "IpcOpcodes.h"
 #include "AuctionIntents.h"
+#include "PlayerMutations.h"
 #include "BrowseMessages.h"
 
 /**
@@ -48,7 +49,7 @@ IpcBodySizeRule IpcExpectedBodySize(uint16 op)
         // --- protocol / handshake frames (fixed tiny bodies) ---
         // proto + pid + secret
         case IPC_HELLO:         return IPC_RULE_MAXLEN(IPC_ECHO_MAX_BODY);
-        case IPC_HELLO_ACK:     return IPC_RULE_EXACT(4);   // uint32 run-id
+        case IPC_HELLO_ACK:     return IPC_RULE_EXACT(5);   // uint32 run-id + uint8 write-authority
         case IPC_READY:         return IPC_RULE_EXACT(0);
         case IPC_HEARTBEAT:     return IPC_RULE_EXACT(0);
         case IPC_HEARTBEAT_ACK: return IPC_RULE_EXACT(1);   // uint8 health flag
@@ -73,6 +74,18 @@ IpcBodySizeRule IpcExpectedBodySize(uint16 op)
             return IPC_RULE_EXACT(GmCmd::WIRE_SIZE);
         case IPC_GMCMD_RESULT:  // 2
             return IPC_RULE_EXACT(GmCmdResult::WIRE_SIZE);
+
+        // --- SP-2 player-mutation frames (fixed wire layouts) ---
+        case IPC_PLAYER_SELL:           return IPC_RULE_EXACT(PlayerSellIntent::WIRE_SIZE);
+        case IPC_PLAYER_BID:            return IPC_RULE_EXACT(PlayerBidIntent::WIRE_SIZE);
+        case IPC_PLAYER_BUYOUT:         return IPC_RULE_EXACT(PlayerBuyoutIntent::WIRE_SIZE);
+        case IPC_PLAYER_CANCEL:         return IPC_RULE_EXACT(PlayerCancelPrepare::WIRE_SIZE);
+        case IPC_PLAYER_RESULT:         return IPC_RULE_EXACT(PlayerMutationResult::WIRE_SIZE);
+        case IPC_RESOLVE_APPLY:         return IPC_RULE_EXACT(ResolveApply::WIRE_SIZE);
+        case IPC_RESOLVE_ACK:           return IPC_RULE_EXACT(ResolveAck::WIRE_SIZE);
+        case IPC_PLAYER_CANCEL_CONFIRM: return IPC_RULE_EXACT(PlayerCancelDecide::WIRE_SIZE);
+        case IPC_PLAYER_CANCEL_ABORT:   return IPC_RULE_EXACT(PlayerCancelDecide::WIRE_SIZE);
+
         case IPC_BROWSE_QUERY:
             return IPC_RULE_MAXLEN(BrowseQuery::MAX_WIRE);
         case IPC_BROWSE_RESULT:

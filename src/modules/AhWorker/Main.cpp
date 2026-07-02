@@ -60,6 +60,7 @@
 #include "IpcMessage.h"
 #include "IpcOpcodes.h"
 #include "AuctionIntents.h"
+#include "PlayerMutations.h"
 #include "BrowseMessages.h"
 #include "BrowseHandler.h"
 #include "Usability.h"
@@ -270,9 +271,11 @@ static int RunIntentCodecSelfTest()
     // --- IntentResult ---
     {
         IntentResult a;
-        a.uuid   = UINT64_C(0xDEADBEEF00000004);
-        a.status = static_cast<uint8>(INTENT_REJECTED);
-        a.reason = static_cast<uint8>(REASON_NO_FUNDS);
+        a.uuid     = UINT64_C(0xDEADBEEF00000004);
+        a.status   = static_cast<uint8>(INTENT_REJECTED);
+        a.reason   = static_cast<uint8>(REASON_NO_FUNDS);
+        a.itemGuid = 0u;
+        a.auctionId = 0u;
 
         ByteBuffer buf;
         a.Encode(buf);
@@ -730,6 +733,165 @@ static int RunIntentCodecSelfTest()
     }
 
     printf("intent codec selftest OK\n");
+    fflush(stdout);
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Self-test: SP-2 wire codecs (PlayerMutations.h round-trips + truncation)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Encode each SP-2 wire struct, decode it back, and assert field
+ *        equality; then assert a one-byte-short buffer fails Decode.
+ * @return 0 on success, 1 on any mismatch.
+ */
+static int RunWireSelfTest()
+{
+    // MutationFacts round-trip (the shared value-snapshot payload).
+    MutationFacts f;
+    f.auctionId = 42u; f.houseId = 7u; f.itemGuid = 9000u; f.itemTemplate = 2589u;
+    f.randomPropertyId = -3; f.itemCount = 20u; f.sellerGuid = 100u; f.deposit = 15u;
+    f.effectiveBid = 500u; f.priorBidderGuid = 200u; f.priorBidAmount = 100u;
+    f.curBidderGuid = 201u; f.curBid = 500u; f.buyout = 50000u;
+
+    PlayerMutationResult res;
+    res.uuid = UINT64_C(0x0000000100000002); res.op = 0x41u;
+    res.status = MUT_OK; res.reason = 0u; res.facts = f;
+    {
+        ByteBuffer bb; res.Encode(bb);
+        if (bb.size() != PlayerMutationResult::WIRE_SIZE)
+        {
+            fprintf(stderr, "wire selftest FAILED: result size %u\n",
+                    static_cast<unsigned>(bb.size()));
+            return 1;
+        }
+        PlayerMutationResult back;
+        if (!back.Decode(bb) || back.uuid != res.uuid || back.op != res.op ||
+            back.status != res.status || back.facts.effectiveBid != 500u ||
+            back.facts.randomPropertyId != -3 || back.facts.buyout != 50000u ||
+            back.facts.priorBidderGuid != 200u)
+        {
+            fprintf(stderr, "wire selftest FAILED: result round-trip\n");
+            return 1;
+        }
+    }
+
+    // Sell/bid/buyout/cancel intents.
+    {
+        PlayerSellIntent s;
+        s.uuid = 1u; s.auctionId = 10u; s.sellerGuid = 100u; s.house = 7u;
+        s.itemGuid = 9000u; s.itemTemplate = 2589u; s.itemCount = 20u;
+        s.randomPropertyId = 5; s.startbid = 100u; s.buyout = 50000u;
+        s.deposit = 15u; s.expireTime = 2000000000u;
+        ByteBuffer bb; s.Encode(bb);
+        PlayerSellIntent b;
+        if (bb.size() != PlayerSellIntent::WIRE_SIZE || !b.Decode(bb) ||
+            b.expireTime != s.expireTime || b.randomPropertyId != 5 ||
+            b.house != 7u || b.deposit != 15u)
+        {
+            fprintf(stderr, "wire selftest FAILED: sell round-trip\n");
+            return 1;
+        }
+    }
+    {
+        PlayerBidIntent bi; bi.uuid = 2u; bi.auctionId = 10u;
+        bi.bidderGuid = 200u; bi.bidAmount = 250u;
+        ByteBuffer bb; bi.Encode(bb);
+        PlayerBidIntent b;
+        if (bb.size() != PlayerBidIntent::WIRE_SIZE || !b.Decode(bb) ||
+            b.bidAmount != 250u || b.bidderGuid != 200u)
+        {
+            fprintf(stderr, "wire selftest FAILED: bid round-trip\n");
+            return 1;
+        }
+    }
+    {
+        PlayerBuyoutIntent bo; bo.uuid = 3u; bo.auctionId = 10u;
+        bo.bidderGuid = 202u; bo.maxPrice = 60000u;
+        ByteBuffer bb; bo.Encode(bb);
+        PlayerBuyoutIntent b;
+        if (bb.size() != PlayerBuyoutIntent::WIRE_SIZE || !b.Decode(bb) ||
+            b.maxPrice != 60000u)
+        {
+            fprintf(stderr, "wire selftest FAILED: buyout round-trip\n");
+            return 1;
+        }
+    }
+    {
+        PlayerCancelPrepare cp; cp.uuid = 4u; cp.auctionId = 10u; cp.sellerGuid = 100u;
+        ByteBuffer bb; cp.Encode(bb);
+        PlayerCancelPrepare b;
+        if (bb.size() != PlayerCancelPrepare::WIRE_SIZE || !b.Decode(bb) ||
+            b.sellerGuid != 100u)
+        {
+            fprintf(stderr, "wire selftest FAILED: cancel-prepare round-trip\n");
+            return 1;
+        }
+    }
+    {
+        PlayerCancelDecide cd; cd.uuid = 5u; cd.auctionId = 10u;
+        ByteBuffer bb; cd.Encode(bb);
+        PlayerCancelDecide b;
+        if (bb.size() != PlayerCancelDecide::WIRE_SIZE || !b.Decode(bb) ||
+            b.auctionId != 10u)
+        {
+            fprintf(stderr, "wire selftest FAILED: cancel-decide round-trip\n");
+            return 1;
+        }
+    }
+
+    // Resolve leg.
+    {
+        ResolveApply ra; ra.uuid = UINT64_C(0x0000000100000080); ra.kind = RESOLVE_WON;
+        ra.facts = f;
+        ByteBuffer bb; ra.Encode(bb);
+        ResolveApply b;
+        if (bb.size() != ResolveApply::WIRE_SIZE || !b.Decode(bb) ||
+            b.kind != RESOLVE_WON || b.facts.auctionId != 42u)
+        {
+            fprintf(stderr, "wire selftest FAILED: resolve-apply round-trip\n");
+            return 1;
+        }
+        ResolveAck ack; ack.uuid = ra.uuid; ack.status = RES_DUPLICATE;
+        ByteBuffer ab; ack.Encode(ab);
+        ResolveAck ba;
+        if (ab.size() != ResolveAck::WIRE_SIZE || !ba.Decode(ab) ||
+            ba.status != RES_DUPLICATE)
+        {
+            fprintf(stderr, "wire selftest FAILED: resolve-ack round-trip\n");
+            return 1;
+        }
+    }
+
+    // Extended IntentResult (bot materialization reply): itemGuid/auctionId.
+    {
+        IntentResult ir; ir.uuid = 9u; ir.status = INTENT_OK; ir.reason = REASON_NONE;
+        ir.itemGuid = 12345u; ir.auctionId = 777u;
+        ByteBuffer bb; ir.Encode(bb);
+        IntentResult b;
+        if (bb.size() != 18u || IntentResult::WIRE_SIZE != 18u || !b.Decode(bb) ||
+            b.itemGuid != 12345u || b.auctionId != 777u)
+        {
+            fprintf(stderr, "wire selftest FAILED: extended IntentResult\n");
+            return 1;
+        }
+    }
+
+    // Truncation guard: a one-byte-short buffer must fail Decode.
+    {
+        ByteBuffer bb; res.Encode(bb);
+        ByteBuffer truncated;
+        truncated.append(bb.contents(), bb.size() - 1u);
+        PlayerMutationResult back;
+        if (back.Decode(truncated))
+        {
+            fprintf(stderr, "wire selftest FAILED: truncation not caught\n");
+            return 1;
+        }
+    }
+
+    printf("wire selftest OK\n");
     fflush(stdout);
     return 0;
 }
@@ -1308,7 +1470,12 @@ int main(int argc, char** argv)
 
     if (selfTest)
     {
-        int rc = RunIntentCodecSelfTest();
+        int rc = RunWireSelfTest();
+        if (rc != 0)
+        {
+            return rc;
+        }
+        rc = RunIntentCodecSelfTest();
         if (rc != 0)
         {
             return rc;

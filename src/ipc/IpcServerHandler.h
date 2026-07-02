@@ -85,6 +85,11 @@ class IpcServerHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
 
         static void SetPendingRunId(uint32 runId);
 
+        /// Set the write-authority bit sent in IPC_HELLO_ACK (supervisor
+        /// thread, before SpawnChild). SP-2: the worker only becomes the
+        /// auction write-authority when this is true.
+        static void SetPendingWriteAuthority(bool on);
+
         // --- ACE framework callbacks ---
 
         IpcServerHandler();
@@ -137,6 +142,7 @@ class IpcServerHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
         std::string                 m_secret;
 
         uint32                      m_runId;  ///< Per-spawn run-id from handshake.
+        uint8                       m_writeAuthority;  ///< Snapshot at ctor.
 
         // Inbound queue shared with IpcServer facade.
         BoundedQueue<IpcMessage>*   m_inbound;
@@ -160,6 +166,7 @@ class IpcServerHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
         static std::string                s_pendingSecret;
         static IpcServerLink*             s_pendingLink;
         static std::atomic<uint32>        s_pendingRunId;
+        static std::atomic<uint8>         s_pendingWriteAuthority;
 
         // Helpers.
         int ProcessFrame(const IpcMessage& msg);

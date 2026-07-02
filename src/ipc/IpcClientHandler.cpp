@@ -363,20 +363,31 @@ int IpcClientHandler::ProcessFrame(const IpcMessage& msg)
                                     ACE_Event_Handler::ALL_EVENTS_MASK);
             }
 
-            // Body: uint32 run-id (per-spawn uuid seed assigned by supervisor)
+            // Body: uint32 run-id + (SP-2) uint8 write-authority. A legacy
+            // 4-byte body decodes authority=0 (never granted).
             uint32 runId = 0;
-            if (msg.body.size() >= sizeof(uint32))
+            uint8  writeAuthority = 0;
             {
                 ByteBuffer b;
                 b.append(msg.body.contents(), msg.body.size());
-                b >> runId;
+                if (b.size() >= sizeof(uint32))
+                {
+                    b >> runId;
+                }
+                if (b.rpos() + sizeof(uint8) <= b.size())
+                {
+                    b >> writeAuthority;
+                }
             }
             if (m_link)
             {
-                m_link->runId.store(runId,
-                                    std::memory_order_release);
+                m_link->runId.store(runId, std::memory_order_release);
+                m_link->writeAuthority.store(writeAuthority,
+                                             std::memory_order_release);
             }
-            fprintf(stdout, "IpcClientHandler: received run-id %u\n", runId);
+            fprintf(stdout, "IpcClientHandler: received run-id %u,"
+                            " write-authority %u\n", runId,
+                            static_cast<unsigned>(writeAuthority));
             fflush(stdout);
             // Send IPC_READY
             IpcMessage ready;

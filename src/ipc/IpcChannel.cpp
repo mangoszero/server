@@ -165,6 +165,11 @@ void IpcServer::SetRunId(uint32 runId)
     IpcServerHandler::SetPendingRunId(runId);
 }
 
+void IpcServer::SetWriteAuthority(bool on)
+{
+    IpcServerHandler::SetPendingWriteAuthority(on);
+}
+
 // ===========================================================================
 // IpcClient
 // ===========================================================================
@@ -276,4 +281,13 @@ uint32 IpcClient::RunId() const
         return 0;
     }
     return m_link->runId.load(std::memory_order_acquire);
+}
+
+bool IpcClient::WriteAuthority() const
+{
+    if (!m_link)
+    {
+        return false;
+    }
+    return m_link->writeAuthority.load(std::memory_order_acquire) != 0u;
 }

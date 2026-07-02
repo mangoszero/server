@@ -56,6 +56,17 @@ enum IpcOpcode : uint16
     IPC_GMCMD_RESULT     = 0x1021,  ///< ah-service -> mangosd: GM command result
     IPC_BROWSE_QUERY     = 0x1030,  ///< mangosd -> ah-service: AH read/browse request
     IPC_BROWSE_RESULT    = 0x1031,  ///< ah-service -> mangosd: AH read/browse reply
+
+    // --- SP-2 player-mutation + resolve frames (write-authority worker) ---
+    IPC_PLAYER_SELL           = 0x1040,  ///< mangosd -> worker: player listing
+    IPC_PLAYER_BID            = 0x1041,  ///< mangosd -> worker: player bid
+    IPC_PLAYER_BUYOUT         = 0x1042,  ///< mangosd -> worker: player buyout
+    IPC_PLAYER_CANCEL         = 0x1043,  ///< mangosd -> worker: cancel PREPARE
+    IPC_PLAYER_RESULT         = 0x1044,  ///< worker -> mangosd: mutation outcome + facts
+    IPC_RESOLVE_APPLY         = 0x1045,  ///< worker -> mangosd: worker-initiated resolution
+    IPC_RESOLVE_ACK           = 0x1046,  ///< mangosd -> worker: APPLIED|FAILED|DUPLICATE
+    IPC_PLAYER_CANCEL_CONFIRM = 0x1047,  ///< mangosd -> worker: cancel commit
+    IPC_PLAYER_CANCEL_ABORT   = 0x1048,  ///< mangosd -> worker: cancel abort/unlock
 };
 
 #endif // AH_IPC_OPCODES_H
