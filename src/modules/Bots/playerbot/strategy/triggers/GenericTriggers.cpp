@@ -11,6 +11,24 @@ bool LowManaTrigger::IsActive()
     return AI_VALUE2(bool, "has mana", "self target") && AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.lowMana;
 }
 
+bool LowManaHasAggroTrigger::IsActive()
+{
+    if (!AI_VALUE2(bool, "has mana", "self target") ||
+        AI_VALUE2(uint8, "mana", "self target") >= sPlayerbotAIConfig.lowMana ||
+        !AI_VALUE2(bool, "has aggro", "current target"))
+    {
+        return false;
+    }
+
+    time_t now = time(nullptr);
+    if (lastLowManaFlee_ == 0 || (now - lastLowManaFlee_) >= LOW_MANA_FLEE_COOLDOWN)
+    {
+        lastLowManaFlee_ = now;
+        return true;
+    }
+    return false;
+}
+
 bool MediumManaTrigger::IsActive()
 {
     return AI_VALUE2(bool, "has mana", "self target") && AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.mediumMana;
@@ -70,6 +88,11 @@ Value<Unit*>* BuffOnPartyTrigger::GetTargetValue()
 Value<Unit*>* DebuffOnAttackerTrigger::GetTargetValue()
 {
     return context->GetValue<Unit*>("attacker without aura", spell);
+}
+
+bool HasThreatTrigger::IsActive()
+{
+    return !bot->getAttackers().empty();
 }
 
 bool NoAttackersTrigger::IsActive()

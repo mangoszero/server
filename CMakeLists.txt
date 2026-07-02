@@ -63,6 +63,7 @@ option(SOAP                 "Enable remote access via SOAP"                 OFF)
 option(PCH                  "Enable precompiled headers"                    ON)
 option(DEBUG                "Enable debug build (only on non IDEs)"         OFF)
 option(WITHOUT_GIT          "Disable Git revision detection"                OFF)
+option(BUILD_AH_SERVICE     "Build the out-of-process auction-house service" ON)
 #==================================================================================
 message("")
 message(

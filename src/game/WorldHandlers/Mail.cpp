@@ -59,6 +59,7 @@
 #include "BattleGround/BattleGroundMgr.h"
 #include "Item.h"
 #include "AuctionHouseMgr.h"
+#include "AuctionHouseBot/CustodyDeferred.h"
 
 /**
  * Creates a new MailSender object.
@@ -341,23 +342,8 @@ void MailDraft::SendMailTo(MailReceiver const& receiver, MailSender const& sende
     time_t expire_time = deliver_time + expire_delay;
 
     // Add to DB
-    std::string safe_subject = GetSubject();
-    CharacterDatabase.escape_string(safe_subject);
-
-    std::string safe_body = GetBody();
-    CharacterDatabase.escape_string(safe_body);
-
     CharacterDatabase.BeginTransaction();
-    CharacterDatabase.PExecute("INSERT INTO `mail` (`id`,`messageType`,`stationery`,`mailTemplateId`,`sender`,`receiver`,`subject`,`body`,`has_items`,`expire_time`,`deliver_time`,`money`,`cod`,`checked`) "
-        "VALUES ('%u', '%u', '%u', '%u', '%u', '%u', '%s', '%s', '%u', '" UI64FMTD "','" UI64FMTD "', '%u', '%u', '%u')",
-        mailId, sender.GetMailMessageType(), sender.GetStationery(), GetMailTemplateId(), sender.GetSenderId(), receiver.GetPlayerGuid().GetCounter(), safe_subject.c_str(), safe_body.c_str(), (has_items ? 1 : 0), (uint64)expire_time, (uint64)deliver_time, m_money, m_COD, checked);
-
-    for (MailItemMap::const_iterator mailItemIter = m_items.begin(); mailItemIter != m_items.end(); ++mailItemIter)
-    {
-        Item* item = mailItemIter->second;
-        CharacterDatabase.PExecute("INSERT INTO `mail_items` (`mail_id`,`item_guid`,`item_template`,`receiver`) VALUES ('%u', '%u', '%u','%u')",
-            mailId, item->GetGUIDLow(), item->GetEntry(), receiver.GetPlayerGuid().GetCounter());
-    }
+    writeMailRows(mailId, receiver, sender, checked, deliver_time, expire_time, has_items);
     CharacterDatabase.CommitTransaction();
 
     // For online receiver update in game mail status and data
@@ -401,6 +387,265 @@ void MailDraft::SendMailTo(MailReceiver const& receiver, MailSender const& sende
     else if (!m_items.empty())
     {
         deleteIncludedItems();
+    }
+}
+
+/**
+ * Emits the two mail rows (`mail` then `mail_items`) into the CURRENT
+ * CharacterDatabase transaction. Shared by SendMailTo (between its own
+ * Begin/Commit) and SendMailToInTransaction (appended to the caller's open
+ * transaction) so both senders write byte-identical rows.
+ *
+ * @param mailId               The generated mail id.
+ * @param receiver             The MailReceiver to which this mail is sent.
+ * @param sender               The MailSender from which this mail is originated.
+ * @param checked              The check mask of the mail.
+ * @param deliver_time         The computed delivery time.
+ * @param expire_time          The computed expiry time.
+ * @param has_items            Whether the mail carries items.
+ */
+void MailDraft::writeMailRows(uint32 mailId, MailReceiver const& receiver, MailSender const& sender,
+                              MailCheckMask checked, time_t deliver_time, time_t expire_time,
+                              bool has_items)
+{
+    std::string safe_subject = GetSubject();
+    CharacterDatabase.escape_string(safe_subject);
+
+    std::string safe_body = GetBody();
+    CharacterDatabase.escape_string(safe_body);
+
+    CharacterDatabase.PExecute("INSERT INTO `mail` (`id`,`messageType`,`stationery`,`mailTemplateId`,`sender`,`receiver`,`subject`,`body`,`has_items`,`expire_time`,`deliver_time`,`money`,`cod`,`checked`) "
+        "VALUES ('%u', '%u', '%u', '%u', '%u', '%u', '%s', '%s', '%u', '" UI64FMTD "','" UI64FMTD "', '%u', '%u', '%u')",
+        mailId, sender.GetMailMessageType(), sender.GetStationery(), GetMailTemplateId(), sender.GetSenderId(), receiver.GetPlayerGuid().GetCounter(), safe_subject.c_str(), safe_body.c_str(), (has_items ? 1 : 0), (uint64)expire_time, (uint64)deliver_time, m_money, m_COD, checked);
+
+    for (MailItemMap::const_iterator mailItemIter = m_items.begin(); mailItemIter != m_items.end(); ++mailItemIter)
+    {
+        Item* item = mailItemIter->second;
+        CharacterDatabase.PExecute("INSERT INTO `mail_items` (`mail_id`,`item_guid`,`item_template`,`receiver`) VALUES ('%u', '%u', '%u','%u')",
+            mailId, item->GetGUIDLow(), item->GetEntry(), receiver.GetPlayerGuid().GetCounter());
+    }
+}
+
+/**
+ * Custody co-commit variant of SendMailTo.
+ *
+ * Mirrors SendMailTo's metadata/expiry computation and row writes EXACTLY, but
+ * does NOT open or close a transaction: its INSERTs append to the caller's
+ * already-open CharacterDatabase transaction so the mail co-commits atomically
+ * with the caller's other writes. Every side effect that mutates live world
+ * state or destroys a live Item* is queued into @p deferred instead of run
+ * inline, so it only happens after the caller's checked commit succeeds.
+ *
+ * Item lifetime invariant (spec I5): the deferred effects run in the SAME call
+ * stack right after the checked commit (no yield/tick in between), so the
+ * captured Player and Item pointers are still valid when the closure executes.
+ *
+ * @param receiver             The MailReceiver to which this mail is sent.
+ * @param sender               The MailSender from which this mail is originated.
+ * @param deferred             Ordered queue for the deferred online push / item destruction.
+ * @param checked              The mask used to specify the mail.
+ * @param deliver_delay        The delay after which the mail is delivered in seconds.
+ */
+void MailDraft::SendMailToInTransaction(MailReceiver const& receiver, MailSender const& sender,
+                                        CustodyDeferred& deferred, MailCheckMask checked,
+                                        uint32 deliver_delay)
+{
+    Player* pReceiver = receiver.GetPlayer();               // can be NULL
+
+    uint32 pReceiverAccount = 0;
+    if (!pReceiver)
+    {
+        pReceiverAccount = sObjectMgr.GetPlayerAccountIdByGUID(receiver.GetPlayerGuid());
+    }
+
+    if (!pReceiver && !pReceiverAccount)                    // receiver not exist
+    {
+        // Delete the item_instance rows in the caller's transaction, but DEFER
+        // the live Item* destruction into a SUCCESS-ONLY effect (do not delete
+        // inside the open transaction). On rollback the closure never runs, the
+        // item_instance DELETE is reverted, and the live Item* survives in the
+        // AH cache (mAitems) for the next-tick re-resolution.
+        std::vector<Item*> invalidItems;
+        for (MailItemMap::iterator mailItemIter = m_items.begin(); mailItemIter != m_items.end(); ++mailItemIter)
+        {
+            Item* item = mailItemIter->second;
+            CharacterDatabase.PExecute("DELETE FROM `item_instance` WHERE `guid`='%u'", item->GetGUIDLow());
+            invalidItems.push_back(item);
+        }
+        m_items.clear();
+
+        if (!invalidItems.empty())
+        {
+            deferred.effects.push_back([invalidItems]()
+            {
+                for (size_t i = 0; i < invalidItems.size(); ++i)
+                {
+                    delete invalidItems[i];
+                }
+            });
+        }
+        return;
+    }
+
+    bool has_items = !m_items.empty();
+
+    // generate mail template items for online player, for offline player items will generated at open
+    if (pReceiver)
+    {
+        if (prepareItems(pReceiver))
+        {
+            has_items = true;
+        }
+    }
+
+    uint32 mailId = sObjectMgr.GenerateMailID();
+
+    time_t deliver_time = time(NULL) + deliver_delay;
+
+    // expire time if COD 3 days, if no COD 30 days, if auction sale pending 1 hour
+    uint32 expire_delay;
+
+    // Normal Mail Expire Timer
+    expire_delay = 30 * DAY;
+
+    // auction mail without any items and money (auction sale note) pending 1 hour
+    if (sender.GetMailMessageType() == MAIL_AUCTION && m_items.empty() && !m_money)
+    {
+        expire_delay = HOUR;
+    }
+    // mail from battlemaster (rewardmarks) should last only one day
+    else if (sender.GetMailMessageType() == MAIL_CREATURE && sBattleGroundMgr.GetBattleMasterBG(sender.GetSenderId()) != BATTLEGROUND_TYPE_NONE)
+    {
+        expire_delay = DAY;
+    }
+    else if (m_COD)
+    {
+        // COD Mail Expire Timer
+        expire_delay = 3 * DAY;
+    }
+    //Mail from GM
+    else if (sender.GetStationery() == MAIL_STATIONERY_GM)
+    {
+        expire_delay = 90 * DAY;
+    }
+
+    time_t expire_time = deliver_time + expire_delay;
+
+    // Append the mail rows to the caller's OPEN transaction (no Begin/Commit).
+    writeMailRows(mailId, receiver, sender, checked, deliver_time, expire_time, has_items);
+
+    // For online receiver, DEFER the in-game mail status/data push until the
+    // caller's checked commit has succeeded. Capture everything by value so the
+    // closure never aliases this (possibly destroyed) MailDraft.
+    if (pReceiver)
+    {
+        DeferredMailPush push;
+        push.mailId = mailId;
+        push.receiverGuid = receiver.GetPlayerGuid().GetCounter();
+        push.senderId = sender.GetSenderId();
+        push.messageType = sender.GetMailMessageType();
+        push.stationery = sender.GetStationery();
+        push.mailTemplateId = GetMailTemplateId();
+        push.subject = GetSubject();
+        push.body = GetBody();
+        push.money = GetMoney();
+        push.cod = GetCOD();
+        push.checked = checked;
+        push.deliverTime = (uint64)deliver_time;
+        push.expireTime = (uint64)expire_time;
+
+        for (MailItemMap::const_iterator mailItemIter = m_items.begin(); mailItemIter != m_items.end(); ++mailItemIter)
+        {
+            Item* item = mailItemIter->second;
+            push.items.push_back(std::make_pair(item->GetGUIDLow(), item->GetEntry()));
+            // The live Item* is disposed by the success push closure (AddMItem,
+            // transferring ownership to the receiving Player). On rollback the
+            // closure never runs and the item survives in the AH cache (mAitems)
+            // for the next-tick re-resolution -- it is NOT freed on rollback.
+            push.liveItems.push_back(item);
+        }
+
+        // The live Item* are now handled by the deferred success push; clear the
+        // draft's item map so its destructor path no longer touches them.
+        m_items.clear();
+
+        // Replays SendMailTo's online push (Mail.cpp online branch) identically.
+        // Re-resolves the receiver by GUID at run time (scalar-only closure, I2 invariant).
+        deferred.effects.push_back([push]()
+        {
+            // Re-resolve the receiver by GUID — no raw Player* captured.
+            Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, push.receiverGuid));
+            if (p)
+            {
+                p->AddNewMailDeliverTime((time_t)push.deliverTime);
+
+                Mail* m = new Mail;
+                m->messageID = push.mailId;
+                m->mailTemplateId = push.mailTemplateId;
+                m->subject = push.subject;
+                m->body = push.body;
+                m->money = push.money;
+                m->COD = push.cod;
+
+                for (std::vector<std::pair<uint32, uint32>>::const_iterator it = push.items.begin();
+                     it != push.items.end(); ++it)
+                {
+                    m->AddItem(it->first, it->second);
+                }
+
+                m->messageType = push.messageType;
+                m->stationery = push.stationery;
+                m->sender = push.senderId;
+                m->receiverGuid = ObjectGuid(HIGHGUID_PLAYER, push.receiverGuid);
+                m->expire_time = (time_t)push.expireTime;
+                m->deliver_time = (time_t)push.deliverTime;
+                m->checked = push.checked;
+                m->state = MAIL_STATE_UNCHANGED;
+
+                p->AddMail(m);                               // to insert new mail to beginning of maillist
+
+                for (std::vector<Item*>::const_iterator it = push.liveItems.begin();
+                     it != push.liveItems.end(); ++it)
+                {
+                    p->AddMItem(*it);
+                }
+            }
+            else
+            {
+                // Defensive only — cannot happen with the no-yield same-call-stack run: the
+                // receiver was online at SendMailToInTransaction time and there is no yield
+                // before def.run(). If somehow offline, the durable mail row is authoritative;
+                // free the captured live items so they don't leak.
+                for (size_t i = 0; i < push.liveItems.size(); ++i)
+                {
+                    delete push.liveItems[i];
+                }
+            }
+        });
+    }
+    else if (!m_items.empty())
+    {
+        // Offline-with-account: the mail_items rows are already written to the
+        // caller's transaction; DEFER the live Item* destruction into a
+        // SUCCESS-ONLY effect instead of deleting inside the open transaction.
+        // On success the item lives on only as the DB item_instance + mail_items
+        // rows, so the live object is deleted. On rollback the closure never
+        // runs, the rows are reverted, and the live Item* survives in the AH
+        // cache (mAitems) for the next-tick re-resolution.
+        std::vector<Item*> offlineItems;
+        for (MailItemMap::iterator mailItemIter = m_items.begin(); mailItemIter != m_items.end(); ++mailItemIter)
+        {
+            offlineItems.push_back(mailItemIter->second);
+        }
+        m_items.clear();
+
+        deferred.effects.push_back([offlineItems]()
+        {
+            for (size_t i = 0; i < offlineItems.size(); ++i)
+            {
+                delete offlineItems[i];
+            }
+        });
     }
 }
 

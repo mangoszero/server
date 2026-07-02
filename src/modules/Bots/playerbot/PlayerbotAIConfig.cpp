@@ -75,7 +75,9 @@ PlayerbotAIConfig::PlayerbotAIConfig()
     randomBotMaxLevel(0),
     randomChangeMultiplier(0.0f),
     commandServerPort(0),
-    iterationsPerTick(0)
+    iterationsPerTick(0),
+    tankDelaySeconds(0),
+    tankThreatPct(0.0f)
 {}
 
 /**
@@ -156,6 +158,8 @@ bool PlayerbotAIConfig::Initialize()
     randomBotMaxLevelChance = config.GetFloatDefault("AiPlayerbot.RandomBotMaxLevelChance", 0.4f);
 
     iterationsPerTick = config.GetIntDefault("AiPlayerbot.IterationsPerTick", 4);
+    tankDelaySeconds = config.GetIntDefault("AiPlayerbot.TankDelaySeconds", 3);
+    tankThreatPct = config.GetFloatDefault("AiPlayerbot.TankThreatPct", 2.0f);
 
     allowGuildBots = config.GetBoolDefault("AiPlayerbot.AllowGuildBots", true);
 

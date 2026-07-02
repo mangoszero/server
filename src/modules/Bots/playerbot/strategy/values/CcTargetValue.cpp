@@ -13,12 +13,25 @@ class FindTargetForCcStrategy : public FindTargetStrategy
         {
             this->spell = spell;
             maxDistance = 0;
+            moonFound = false;
         }
 
     public:
         virtual void CheckAttacker(Unit* creature, ThreatManager* threatManager)
         {
+            if (moonFound)
+            {
+                return;
+            }
             Player* bot = ai->GetBot();
+            Group* group = bot->GetGroup();
+            if (group && group->GetTargetIcon(4) == creature->GetObjectGuid())
+            {
+                result = creature;
+                moonFound = true;
+                return;
+            }
+
             if (*ai->GetAiObjectContext()->GetValue<Unit*>("current target") == creature)
             {
                 return;
@@ -42,15 +55,8 @@ class FindTargetForCcStrategy : public FindTargetStrategy
             }
 
             float minDistance = sPlayerbotAIConfig.spellDistance;
-            Group* group = bot->GetGroup();
             if (!group)
             {
-                return;
-            }
-
-            if (group->GetTargetIcon(4) == creature->GetObjectGuid())
-            {
-                result = creature;
                 return;
             }
 
@@ -93,6 +99,7 @@ class FindTargetForCcStrategy : public FindTargetStrategy
     private:
         string spell;
         float maxDistance;
+        bool moonFound;
 };
 
 Unit* CcTargetValue::Calculate()
