@@ -7,9 +7,11 @@
 #include "ObjectGuid.h"
 #include "AuctionHouseMgr.h"
 #include "AuctionHouseBot/AhBotSystemOwner.h"
+#include "AuctionHouseBot/AuctionIntentExecutor.h"
 #include "AuctionHouseBot/CustodyDeferred.h"
 #include "AuctionHouseBot/CustodyLedger.h"
 #include "AuctionHouseBot/CustodyService.h"
+#include "AuctionIntents.h"
 #include "WorkerSupervisor.h"
 #include "Object/AhUsabilityRef.h"
 #include "AuctionHouseBot/BrowsePending.h"
@@ -2299,6 +2301,224 @@ static int RunAhResolveTest()
     return 2;
 }
 
+/// SP-2 Task 13 self-test for the bot-sell materialization leg. Drives
+/// AuctionIntentExecutor::TestMaterializeSell directly -- the live path reaches
+/// it through Apply() -> ApplySell(), but that re-validation chain needs a fully
+/// loaded world (item store, AH DBC, bot config) unavailable under -t, so the
+/// seam exercises the durable leg in isolation. Asserts the durable contract:
+///   * status INTENT_OK with nonzero itemGuid + auctionId,
+///   * an item_instance row is minted with owner_guid == the bot lister,
+///   * a botlist:<uuid> custody row (kind ITEM, role RESOLUTION, RESERVED)
+///     records BOTH ids,
+///   * NO `auction` row is inserted (the worker owns the book),
+///   * a redelivered uuid replays the SAME ids and mints no second item.
+/// Then exercises SweepOrphanMaterializations: a stranded bot-owned mint (no
+/// auction row) is reaped, while an item that reached the book and was delivered
+/// to a buyer (owner changed) is preserved. Returns 0 on pass.
+static int RunAhMaterializeTest()
+{
+    bool pass = true;
+    CharacterDatabase.AllowAsyncTransactions();
+
+    // -t does not load the world; Item::CreateItem needs item prototypes.
+    sObjectMgr.LoadItemPrototypes();
+
+    const uint32 botGuid   = 990113u;   // synthetic bot lister low-guid
+    const uint32 buyerGuid = 990199u;   // synthetic "delivered to" owner
+    const uint64 uuid      = 0xD13ull;  // Task 13 test intent uuid
+    std::string const key  = "botlist:" + std::to_string(uuid);
+
+    // Synthetic sweep fixtures (huge guids so they never collide with real data
+    // and are not reused as freshly-minted ids after SetHighestGuids).
+    const uint32 orphanItem = 99911301u;   // still bot-owned -> reaped
+    const uint32 soldItem   = 99911302u;   // delivered (owner changed) -> kept
+    const uint32 orphanAuc  = 99900001u;
+    const uint32 soldAuc    = 99900002u;
+
+    // Clean slate BEFORE SetHighestGuids so leftover synthetic rows do not
+    // inflate the auction-id / item-guid generators.
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `custody_ledger` WHERE `idem_key` IN "
+        "('%s','botlist:test:orphan','botlist:test:sold')", key.c_str());
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `item_instance` WHERE `owner_guid` IN (%u,%u)",
+        botGuid, buyerGuid);
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `item_instance` WHERE `guid` IN (%u,%u)",
+        orphanItem, soldItem);
+
+    sObjectMgr.SetHighestGuids();   // GenerateItemLowGuid / GenerateAuctionID
+
+    // A valid, simple stackable non-equip item to mint. Fall back to a DB probe
+    // so the test does not hardcode a build-specific id.
+    uint32 itemId = 2589u;          // Linen Cloth (universal 1.12 item)
+    if (!ObjectMgr::GetItemPrototype(itemId))
+    {
+        std::unique_ptr<QueryResult> r(WorldDatabase.PQuery(
+            "SELECT `entry` FROM `item_template` "
+            "WHERE `InventoryType`=0 AND `stackable`>1 ORDER BY `entry` LIMIT 1"));
+        if (r)
+        {
+            itemId = r->Fetch()[0].GetUInt32();
+        }
+    }
+    if (!ObjectMgr::GetItemPrototype(itemId))
+    {
+        printf("ahmaterialize FAIL: no usable item prototype"
+               " (item_template empty?)\n");
+        return 2;
+    }
+
+    SellIntent si;
+    si.uuid = uuid;
+    si.botGuid = botGuid;
+    si.house = 2;               // not re-validated by the durable leg
+    si.itemId = itemId;
+    si.stack = 1;
+    si.bid = 100u;
+    si.buyout = 1000u;
+    si.durationHrs = 24u;
+
+    // ---- Part 1: first materialization mints + records + replies ids ----
+    IpcMessage out;
+    sAuctionIntentExecutor.TestMaterializeSell(si, out, uint32(time(NULL)));
+
+    IntentResult res;
+    if (out.op != IPC_INTENT_RESULT || !res.Decode(out.body))
+    {
+        printf("ahmaterialize FAIL: no IPC_INTENT_RESULT reply\n");
+        return 2;
+    }
+    if (res.status != INTENT_OK)
+    { printf("ahmaterialize FAIL: status %u != INTENT_OK\n", res.status); pass = false; }
+    if (res.itemGuid == 0u)
+    { printf("ahmaterialize FAIL: itemGuid is zero\n"); pass = false; }
+    if (res.auctionId == 0u)
+    { printf("ahmaterialize FAIL: auctionId is zero\n"); pass = false; }
+
+    uint32 const itemGuid  = res.itemGuid;
+    uint32 const auctionId = res.auctionId;
+
+    // item_instance row minted with owner == bot lister.
+    {
+        std::unique_ptr<QueryResult> q(CharacterDatabase.PQuery(
+            "SELECT `owner_guid` FROM `item_instance` WHERE `guid`=%u", itemGuid));
+        if (!q)
+        { printf("ahmaterialize FAIL: item_instance row missing\n"); pass = false; }
+        else if (q->Fetch()[0].GetUInt32() != botGuid)
+        { printf("ahmaterialize FAIL: item owner_guid != bot\n"); pass = false; }
+    }
+
+    // Durable botlist row records both ids in the expected shape.
+    {
+        CustodyRow row;
+        if (!CustodyLedger::Get(key, row))
+        { printf("ahmaterialize FAIL: botlist row missing\n"); pass = false; }
+        else
+        {
+            if (row.itemGuid != itemGuid)
+            { printf("ahmaterialize FAIL: botlist item_guid mismatch\n"); pass = false; }
+            if (row.auctionId != auctionId)
+            { printf("ahmaterialize FAIL: botlist auction_id mismatch\n"); pass = false; }
+            if (row.kind != CUSTODY_ITEM)
+            { printf("ahmaterialize FAIL: botlist kind != CUSTODY_ITEM\n"); pass = false; }
+            if (row.role != ROLE_RESOLUTION)
+            { printf("ahmaterialize FAIL: botlist role != ROLE_RESOLUTION\n"); pass = false; }
+            if (row.state != CST_RESERVED)
+            { printf("ahmaterialize FAIL: botlist state != CST_RESERVED\n"); pass = false; }
+        }
+    }
+
+    // No `auction` row -- the worker is the sole book writer.
+    {
+        std::unique_ptr<QueryResult> q(CharacterDatabase.PQuery(
+            "SELECT 1 FROM `auction` WHERE `id`=%u", auctionId));
+        if (q)
+        { printf("ahmaterialize FAIL: unexpected auction row inserted\n"); pass = false; }
+    }
+
+    // ---- Part 2: redelivered uuid replays the SAME ids, no second mint ----
+    {
+        IpcMessage out2;
+        sAuctionIntentExecutor.TestMaterializeSell(si, out2, uint32(time(NULL)));
+        IntentResult res2;
+        if (out2.op != IPC_INTENT_RESULT || !res2.Decode(out2.body))
+        { printf("ahmaterialize FAIL: replay produced no reply\n"); pass = false; }
+        else
+        {
+            if (res2.status != INTENT_OK)
+            { printf("ahmaterialize FAIL: replay status != INTENT_OK\n"); pass = false; }
+            if (res2.itemGuid != itemGuid)
+            { printf("ahmaterialize FAIL: replay itemGuid changed\n"); pass = false; }
+            if (res2.auctionId != auctionId)
+            { printf("ahmaterialize FAIL: replay auctionId changed\n"); pass = false; }
+        }
+        std::unique_ptr<QueryResult> q(CharacterDatabase.PQuery(
+            "SELECT COUNT(*) FROM `item_instance` WHERE `owner_guid`=%u", botGuid));
+        if (q && q->Fetch()[0].GetUInt64() != 1u)
+        { printf("ahmaterialize FAIL: replay minted a second item\n"); pass = false; }
+    }
+
+    // ---- Part 3: orphan sweep reaps strays but spares delivered items ----
+    {
+        // Seed synthetic item_instance + botlist rows AFTER SetHighestGuids so
+        // they never influence the generators. Both are "old" (past the 300s
+        // grace) and have no `auction` row. The orphan item is still bot-owned;
+        // the "sold" item's owner is the buyer (its listing reached the book and
+        // later resolved) -- it must survive the sweep.
+        CharacterDatabase.DirectPExecute(
+            "INSERT INTO `item_instance` (`guid`,`owner_guid`,`data`,`text`) "
+            "VALUES (%u,%u,'0',''),(%u,%u,'0','')",
+            orphanItem, botGuid, soldItem, buyerGuid);
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('botlist:test:orphan',1,4,0,%u,0,0,%u,%u,100,0),"
+            "       ('botlist:test:sold',1,4,0,%u,0,0,%u,%u,100,0)",
+            botGuid, orphanItem, orphanAuc, botGuid, soldItem, soldAuc);
+        if (!CharacterDatabase.CommitTransactionChecked())
+        { printf("ahmaterialize FAIL: sweep seed commit\n"); return 2; }
+
+        sAuctionIntentExecutor.SweepOrphanMaterializations(uint32(time(NULL)));
+
+        std::unique_ptr<QueryResult> qo(CharacterDatabase.PQuery(
+            "SELECT 1 FROM `item_instance` WHERE `guid`=%u", orphanItem));
+        if (qo)
+        { printf("ahmaterialize FAIL: orphan item not swept\n"); pass = false; }
+
+        std::unique_ptr<QueryResult> qs(CharacterDatabase.PQuery(
+            "SELECT 1 FROM `item_instance` WHERE `guid`=%u", soldItem));
+        if (!qs)
+        { printf("ahmaterialize FAIL: delivered item wrongly destroyed\n"); pass = false; }
+
+        CustodyRow tmp;
+        if (CustodyLedger::Get("botlist:test:orphan", tmp))
+        { printf("ahmaterialize FAIL: orphan botlist row not deleted\n"); pass = false; }
+        if (CustodyLedger::Get("botlist:test:sold", tmp))
+        { printf("ahmaterialize FAIL: sold botlist row not deleted\n"); pass = false; }
+    }
+
+    // Clean up (Part-1 minted item survives the sweep; drop it + fixtures).
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `custody_ledger` WHERE `idem_key` IN "
+        "('%s','botlist:test:orphan','botlist:test:sold')", key.c_str());
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `item_instance` WHERE `owner_guid` IN (%u,%u)",
+        botGuid, buyerGuid);
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `item_instance` WHERE `guid` IN (%u,%u)",
+        orphanItem, soldItem);
+
+    if (pass)
+    {
+        printf("ahmaterialize OK\n");
+        return 0;
+    }
+    return 1;
+}
+
 int RunMangosdTest(std::string const& name)
 {
     if (name == "noop")
@@ -2365,6 +2585,11 @@ int RunMangosdTest(std::string const& name)
     if (name == "ahresolve")
     {
         return RunAhResolveTest();
+    }
+
+    if (name == "ahmaterialize")
+    {
+        return RunAhMaterializeTest();
     }
 
     printf("%s FAIL: unknown test\n", name.c_str());

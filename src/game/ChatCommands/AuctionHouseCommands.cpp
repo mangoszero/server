@@ -35,6 +35,7 @@
 #include "Chat.h"
 #include "Language.h"
 #include "ObjectMgr.h"
+#include "World.h"
 
 /**
  * @brief Opens the auction house interface for the player.
@@ -154,6 +155,31 @@ bool ChatHandler::HandleAuctionItemCommand(char* args)
     if (item_count < 1 || (item_proto->MaxCount > 0 && item_count > uint32(item_proto->MaxCount)))
     {
         PSendSysMessage(LANG_COMMAND_INVALID_ITEM_COUNT, item_count, item_id);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    // [SP-2] Under WriteAuthority the out-of-process AH worker is the SOLE
+    // writer of the shared `auction` book; mangosd must never insert an auction
+    // row directly (that would break the single-writer invariant and collide
+    // when the worker restarts). The worker only writes books in response to
+    // sells IT initiated (BotSellBegin -> materialize -> OnBotSellResult); there
+    // is no GM->worker listing-injection channel, so a manual `.auction item`
+    // cannot be safely materialized through the worker here. Refuse cleanly
+    // rather than mint an item the orphan sweep would later reap, or strand a
+    // half-written listing. (Default-off legacy path below is byte-identical.)
+    if (sWorld.IsAhWriteAuthority())
+    {
+        if (sWorld.IsAhServiceConfigured())
+        {
+            SendSysMessage("The out-of-process AH worker owns the auction book;"
+                           " `.auction item` is unavailable in this mode. Bot"
+                           " listings are placed by the worker.");
+        }
+        else
+        {
+            SendSysMessage("Auction service unavailable.");
+        }
         SetSentErrorMessage(true);
         return false;
     }

@@ -29,6 +29,11 @@
 #include <unordered_map>
 #include <map>
 
+/// Fwd-decl: the wire struct lives in src/ipc/AuctionIntents.h. Only the .cpp
+/// (and the -t ahmaterialize test) need the full definition; declaring it here
+/// keeps the ipc header out of every TU that includes this executor.
+struct SellIntent;
+
 /**
  * @file AuctionIntentExecutor.h
  * @brief mangosd-side (authority) executor for AH subprocess intents.
@@ -106,6 +111,39 @@ class AuctionIntentExecutor
 
         /// @return Number of live uuid entries currently held in the cache.
         size_t GetCacheSize() const { return m_dedup.Size(); }
+
+        /**
+         * @brief [SP-2] Reap materialized bot-listing items whose auction never
+         *        reached the shared `auction` table.
+         *
+         * Selects durable @c botlist:<uuid> custody rows older than a grace
+         * window (a worker that died between the materialize reply and the
+         * book-commit). For each, the minted @c item_instance row is deleted
+         * ONLY while it is still bot-owned AND not attached to any mail (so a
+         * listing that DID reach the book and later sold/returned -- its item
+         * now the buyer's or sitting in the bot's return mail -- is never
+         * destroyed), and the stale @c botlist row is always removed (bounding
+         * custody_ledger growth for resolved listings too). Runs on the AHBot
+         * update tick under WriteAuthority.
+         *
+         * @param nowSec Current game-time second (unix epoch; == time(NULL)).
+         */
+        void SweepOrphanMaterializations(uint32 nowSec);
+
+        /**
+         * @brief [SP-2] Test-only seam for @c mangosd -t ahmaterialize.
+         *
+         * Invokes the durable materialization leg directly, bypassing the
+         * ApplySell re-validation chain (which needs a fully loaded world that
+         * is unavailable under @c -t). Not for production callers -- the live
+         * path reaches materialization through Apply() -> ApplySell().
+         *
+         * @param s         Decoded sell intent.
+         * @param resultOut Result frame (IPC_INTENT_RESULT) to fill.
+         * @param now       Current game-time in seconds.
+         */
+        void TestMaterializeSell(SellIntent const& s, IpcMessage& resultOut,
+                                 uint32 now);
 
     private:
         /**
@@ -256,6 +294,27 @@ class AuctionIntentExecutor
         /// Re-validate-and-apply for IPC_INTENT_BUYOUT. Returns the outcome.
         void ApplyBuyout(const IpcMessage& in, IpcMessage& resultOut,
                          uint32 now);
+
+        /**
+         * @brief [SP-2] WriteAuthority materialization leg of IPC_INTENT_SELL.
+         *
+         * Mints + persists (owner = bot lister) + escrows the listing item,
+         * allocates the auction id, records the durable @c botlist:<uuid>
+         * idempotency row (kind CUSTODY_ITEM, role ROLE_RESOLUTION, state
+         * CST_RESERVED) and fills @p resultOut with
+         * IntentResult{INTENT_OK, itemGuid, auctionId} -- the worker then writes
+         * the auction book. mangosd does NOT insert the `auction` row. A
+         * redelivered uuid replays the recorded ids (survives restart, unlike
+         * the in-memory dedup window) and never double-mints. On any failure
+         * that cannot yield nonzero ids the reply is INTENT_REJECTED (never
+         * INTENT_OK with zero ids).
+         *
+         * @param s         Decoded, already-validated sell intent.
+         * @param resultOut Result frame (IPC_INTENT_RESULT) to fill.
+         * @param now       Current game-time in seconds.
+         */
+        void MaterializeSell(SellIntent const& s, IpcMessage& resultOut,
+                             uint32 now);
 
         /// At most one malformed-frame error log per this many seconds.
         static const uint32 MALFORMED_LOG_INTERVAL = 10u;

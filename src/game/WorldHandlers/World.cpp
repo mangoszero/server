@@ -1241,6 +1241,16 @@ void World::Update(uint32 diff)
                 CustodyLedger::DeleteTerminalOlderThan(now - custodyTerminalRetention);
             }
 
+            // SP-2 Task 13: reap bot-listing materializations whose auction
+            // never reached the shared `auction` table (a worker that died
+            // between the materialize reply and the book-commit). Only under
+            // WriteAuthority -- the legacy in-process bot owns its own book and
+            // never mints via this path.
+            if (IsAhWriteAuthority())
+            {
+                sAuctionIntentExecutor.SweepOrphanMaterializations(uint32(now));
+            }
+
             s_nextCustodyReconcileTime = now + HOUR;
         }
 

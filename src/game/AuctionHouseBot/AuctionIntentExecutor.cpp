@@ -24,13 +24,17 @@
 #include "AuctionIntents.h"
 #include "AuctionHouseMgr.h"
 #include "AuctionHouseBot.h"
+#include "CustodyLedger.h"
 #include "ObjectMgr.h"
 #include "ItemPrototype.h"
 #include "Item.h"
 #include "DBCStores.h"
 #include "Config/Config.h"
+#include "Database/DatabaseEnv.h"
 #include "Log.h"
 #include "World.h"
+
+#include <ctime>    // time
 
 #include <algorithm>  // std::max
 
@@ -354,11 +358,29 @@ void AuctionIntentExecutor::Apply(const IpcMessage& in, IpcMessage& resultOut)
         }
         case IPC_INTENT_BID:
         {
+            // [SP-2] Under WriteAuthority the worker owns bids (it applies the
+            // value effect in-process, bidder=0) and no longer sends
+            // IPC_INTENT_BID. A frame arriving here is stray/stale: log+ignore
+            // (no reply) rather than mutate a live auction from a stale snapshot.
+            if (sWorld.IsAhWriteAuthority())
+            {
+                sLog.outError("[AHExecutor] IPC_INTENT_BID under WriteAuthority"
+                              " (worker owns bids) - ignored");
+                break;
+            }
             ApplyBid(in, resultOut, now);
             break;
         }
         case IPC_INTENT_BUYOUT:
         {
+            // [SP-2] Same as IPC_INTENT_BID: buyouts are worker-owned under
+            // WriteAuthority. A stray frame is logged and ignored.
+            if (sWorld.IsAhWriteAuthority())
+            {
+                sLog.outError("[AHExecutor] IPC_INTENT_BUYOUT under"
+                              " WriteAuthority (worker owns buyouts) - ignored");
+                break;
+            }
             ApplyBuyout(in, resultOut, now);
             break;
         }
@@ -395,7 +417,17 @@ void AuctionIntentExecutor::ApplySell(const IpcMessage& in,
     // the dedup expiry on every hit so an actively-redelivering uuid (whose
     // INTENT_RESULT reply was lost) keeps its sliding window open and never
     // ages out into a second apply.
-    if (IsDuplicate(s.uuid))
+    //
+    // [SP-2] EXCEPTION under WriteAuthority: a sell's idempotency is DURABLE
+    // (the botlist:<uuid> row) and a redelivered *materialized* sell must replay
+    // the REAL minted ids so the worker can finally write the book (its first
+    // IPC_INTENT_RESULT was lost). The volatile dedup would instead answer
+    // INTENT_DUPLICATE carrying zero ids, which the worker's OnBotSellResult
+    // treats as a rejection and drops -- stranding the minted item for the
+    // orphan sweep. So skip the in-memory dedup here under authority and let
+    // MaterializeSell's durable replay own idempotency (it never double-mints:
+    // Get("botlist:<uuid>") replays the recorded ids on a redelivery).
+    if (!sWorld.IsAhWriteAuthority() && IsDuplicate(s.uuid))
     {
         ++m_duplicate;
         Remember(s.uuid, now);
@@ -534,6 +566,17 @@ void AuctionIntentExecutor::ApplySell(const IpcMessage& in,
         return;
     }
 
+    // [SP-2] WriteAuthority: mangosd no longer owns the book. The worker is the
+    // sole `auction`-table writer; mangosd's job is to mint+persist+escrow the
+    // item, allocate the id and record the durable idempotency row, then reply
+    // the ids for the worker to write the book. All validations above still ran.
+    if (sWorld.IsAhWriteAuthority())
+    {
+        MaterializeSell(s, resultOut, now);
+        return;
+    }
+
+    // --- legacy (WriteAuthority off): mangosd owns the book -----------------
     // Materialise the listing item. CreateItem also clamps stack to the
     // prototype max and returns NULL for a bad item/zero count.
     Item* it = Item::CreateItem(s.itemId, s.stack);
@@ -557,6 +600,183 @@ void AuctionIntentExecutor::ApplySell(const IpcMessage& in,
     ++m_applied;
     Remember(s.uuid, now);
     MakeResult(resultOut, s.uuid, INTENT_OK, REASON_NONE);
+}
+
+void AuctionIntentExecutor::MaterializeSell(SellIntent const& s,
+                                            IpcMessage& resultOut, uint32 now)
+{
+    // Durable id-replay: a redelivered uuid returns the SAME ids, never a
+    // second item. This survives a restart (the in-memory dedup window does
+    // not), so a lost IPC_INTENT_RESULT can never cause a double-materialize.
+    std::string const key = "botlist:" + std::to_string(s.uuid);
+    CustodyRow prior;
+    if (CustodyLedger::Get(key, prior))
+    {
+        IntentResult res;
+        res.uuid = s.uuid;
+        res.status = INTENT_OK;
+        res.reason = REASON_NONE;
+        res.itemGuid = prior.itemGuid;
+        res.auctionId = prior.auctionId;
+        resultOut.op = IPC_INTENT_RESULT;
+        resultOut.body.clear();
+        res.Encode(resultOut.body);
+        return;
+    }
+
+    // Mint the listing item (owner = bot lister). CreateItem clamps stack to
+    // the prototype max and returns NULL for a bad item / zero count.
+    Item* it = Item::CreateItem(s.itemId, s.stack);
+    if (!it)
+    {
+        ++m_rejected;
+        Remember(s.uuid, now);
+        MakeResult(resultOut, s.uuid, INTENT_REJECTED, REASON_BAD_ITEM);
+        return;
+    }
+    // Stamp the bot as the on-disk owner so the orphan sweep can safely tell a
+    // still-stranded mint (owner == bot) from an item that reached the book and
+    // was later delivered to a buyer (owner changed) -- see
+    // SweepOrphanMaterializations.
+    it->SetOwnerGuid(ObjectGuid(HIGHGUID_PLAYER, s.botGuid));
+
+    uint32 const auctionId   = sObjectMgr.GenerateAuctionID();
+    uint32 const itemGuidLow = it->GetGUIDLow();
+
+    // FAIL-SAFE: never reply INTENT_OK carrying a zero id. A zero item guid or
+    // auction id would have the worker write a book row keyed on 0. If the id
+    // allocator cannot produce nonzero ids, reject (the worker re-sends).
+    if (auctionId == 0u || itemGuidLow == 0u)
+    {
+        sLog.outError("[AHExecutor] materialize produced a zero id"
+                      " (item %u auc %u) uuid %llu - rejecting",
+                      itemGuidLow, auctionId,
+                      static_cast<unsigned long long>(s.uuid));
+        delete it;
+        ++m_rejected;
+        Remember(s.uuid, now);
+        MakeResult(resultOut, s.uuid, INTENT_REJECTED, REASON_BAD_ITEM);
+        return;
+    }
+
+    // In-memory escrow BEFORE the txn (mirrors the custody player-sell path):
+    // the worker's win / return leg finds the item via sAuctionMgr.GetAItem.
+    sAuctionMgr.AddAItem(it);
+
+    // ONE checked txn: persist the item_instance row + the durable botlist
+    // idempotency row. NO `auction` row -- the worker inserts the book at its
+    // own commit.
+    CharacterDatabase.BeginTransaction();
+    it->SaveToDB();                       // item_instance (owner = botGuid)
+    CustodyRow r;
+    r.id = 0;
+    r.idemKey = key;
+    r.kind = CUSTODY_ITEM;
+    r.role = ROLE_RESOLUTION;
+    r.state = CST_RESERVED;
+    r.ownerGuid = s.botGuid;
+    r.beneficiaryGuid = 0;
+    r.amount = 0;
+    r.itemGuid = itemGuidLow;
+    r.auctionId = auctionId;
+    r.createdTime = static_cast<uint64>(time(NULL));
+    r.resolvedTime = 0;
+    CustodyLedger::Insert(r);
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        // Nothing persisted -> undo the in-memory escrow, drop the minted item
+        // and reject. The worker re-sends its still-PENDING intent.
+        sLog.outError("[AHExecutor] materialize commit failed (uuid %llu)",
+                      static_cast<unsigned long long>(s.uuid));
+        sAuctionMgr.RemoveAItem(itemGuidLow);
+        delete it;
+        ++m_rejected;
+        Remember(s.uuid, now);
+        MakeResult(resultOut, s.uuid, INTENT_REJECTED, REASON_BAD_ITEM);
+        return;
+    }
+
+    ++m_applied;
+    Remember(s.uuid, now);
+    IntentResult res;
+    res.uuid = s.uuid;
+    res.status = INTENT_OK;
+    res.reason = REASON_NONE;
+    res.itemGuid = itemGuidLow;
+    res.auctionId = auctionId;
+    resultOut.op = IPC_INTENT_RESULT;
+    resultOut.body.clear();
+    res.Encode(resultOut.body);
+}
+
+void AuctionIntentExecutor::TestMaterializeSell(SellIntent const& s,
+                                                IpcMessage& resultOut,
+                                                uint32 now)
+{
+    // Test-only seam (see header): drive the durable leg directly, bypassing
+    // the ApplySell re-validation chain that needs a fully loaded world.
+    MaterializeSell(s, resultOut, now);
+}
+
+void AuctionIntentExecutor::SweepOrphanMaterializations(uint32 nowSec)
+{
+    // Grace window: only rows older than T are candidates, so a materialize
+    // whose book-commit is still in flight on the worker is never reaped.
+    static const uint32 ORPHAN_GRACE_SEC = 300u;
+    uint64 const cutoff = (nowSec > ORPHAN_GRACE_SEC)
+                              ? uint64(nowSec) - ORPHAN_GRACE_SEC
+                              : 0u;
+
+    // Candidates: durable botlist rows, past the grace window, whose auction id
+    // is absent from the shared `auction` table (worker never wrote / already
+    // removed the book row).
+    QueryResult* q = CharacterDatabase.PQuery(
+        "SELECT `idem_key`, `item_guid`, `auction_id`, `owner_guid` "
+        "FROM `custody_ledger` "
+        "WHERE `idem_key` LIKE 'botlist:%%' AND `created_time` < " UI64FMTD " "
+        "AND `auction_id` NOT IN (SELECT `id` FROM `auction`)",
+        cutoff);
+    if (q == NULL)
+    {
+        return;
+    }
+
+    do
+    {
+        Field* f = q->Fetch();
+        std::string idemKey    = f[0].GetCppString();
+        uint32 const itemGuid  = f[1].GetUInt32();
+        uint32 const ownerGuid = f[3].GetUInt32();
+        CharacterDatabase.escape_string(idemKey);
+
+        // Delete the minted item ONLY while it is still the bot's AND is not
+        // attached to any mail. This is the safety that distinguishes a
+        // genuinely stranded mint (crashed before book-commit: still bot-owned,
+        // never mailed) from a listing that DID reach the book and later
+        // sold/returned -- whose item is now the buyer's (owner changed) or is
+        // sitting in the bot's return mail (mail_items ref). The stale botlist
+        // row itself is always removed, bounding custody_ledger growth for
+        // resolved listings too.
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "DELETE FROM `item_instance` WHERE `guid` = %u "
+            "AND `owner_guid` = %u "
+            "AND `guid` NOT IN (SELECT `item_guid` FROM `mail_items`)",
+            itemGuid, ownerGuid);
+        CharacterDatabase.PExecute(
+            "DELETE FROM `custody_ledger` WHERE `idem_key` = '%s'",
+            idemKey.c_str());
+        CharacterDatabase.CommitTransactionChecked();
+
+        // Drop the in-memory escrow (harmless no-op after a restart, where the
+        // orphaned item was never re-loaded into mAitems).
+        sAuctionMgr.RemoveAItem(itemGuid);
+        sLog.outString("[AHExecutor] swept orphan materialization %s (item %u)",
+                       f[0].GetCppString().c_str(), itemGuid);
+    }
+    while (q->NextRow());
+
+    delete q;
 }
 
 void AuctionIntentExecutor::ApplyBid(const IpcMessage& in,
