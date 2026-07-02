@@ -1156,80 +1156,9 @@ bool Item::IsTargetValidForItemUse(Unit* pUnitTarget)
     return false;
 }
 
-/**
- * @brief Sets enchantment data for a slot.
- *
- * @param slot The enchantment slot.
- * @param id The enchantment id.
- * @param duration The enchantment duration.
- * @param charges The remaining enchantment charges.
- */
-void Item::SetEnchantment(EnchantmentSlot slot, uint32 id, uint32 duration, uint32 charges)
-{
-    // Better lost small time at check in comparison lost time at item save to DB.
-    if ((GetEnchantmentId(slot) == id) && (GetEnchantmentDuration(slot) == duration) && (GetEnchantmentCharges(slot) == charges))
-    {
-        return;
-    }
 
-    SetUInt32Value(ITEM_FIELD_ENCHANTMENT + slot * MAX_ENCHANTMENT_OFFSET + ENCHANTMENT_ID_OFFSET, id);
-    SetUInt32Value(ITEM_FIELD_ENCHANTMENT + slot * MAX_ENCHANTMENT_OFFSET + ENCHANTMENT_DURATION_OFFSET, duration);
-    SetUInt32Value(ITEM_FIELD_ENCHANTMENT + slot * MAX_ENCHANTMENT_OFFSET + ENCHANTMENT_CHARGES_OFFSET, charges);
-    SetState(ITEM_CHANGED);
-}
 
-/**
- * @brief Updates the duration for an enchantment slot.
- *
- * @param slot The enchantment slot.
- * @param duration The new duration.
- */
-void Item::SetEnchantmentDuration(EnchantmentSlot slot, uint32 duration)
-{
-    if (GetEnchantmentDuration(slot) == duration)
-    {
-        return;
-    }
 
-    SetUInt32Value(ITEM_FIELD_ENCHANTMENT + slot * MAX_ENCHANTMENT_OFFSET + ENCHANTMENT_DURATION_OFFSET, duration);
-    SetState(ITEM_CHANGED);
-}
-
-/**
- * @brief Updates the charges for an enchantment slot.
- *
- * @param slot The enchantment slot.
- * @param charges The new charge count.
- */
-void Item::SetEnchantmentCharges(EnchantmentSlot slot, uint32 charges)
-{
-    if (GetEnchantmentCharges(slot) == charges)
-    {
-        return;
-    }
-
-    SetUInt32Value(ITEM_FIELD_ENCHANTMENT + slot * MAX_ENCHANTMENT_OFFSET + ENCHANTMENT_CHARGES_OFFSET, charges);
-    SetState(ITEM_CHANGED);
-}
-
-/**
- * @brief Clears all enchantment data from a slot.
- *
- * @param slot The enchantment slot.
- */
-void Item::ClearEnchantment(EnchantmentSlot slot)
-{
-    if (!GetEnchantmentId(slot))
-    {
-        return;
-    }
-
-    for (uint8 x = 0; x < 3; ++x)
-    {
-        SetUInt32Value(ITEM_FIELD_ENCHANTMENT + slot * MAX_ENCHANTMENT_OFFSET + x, 0);
-    }
-    SetState(ITEM_CHANGED);
-}
 
 /**
  * @brief Checks whether the item is restricted to a different map or zone.
