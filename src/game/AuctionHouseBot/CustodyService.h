@@ -137,6 +137,32 @@ namespace CustodyService
                             MailSender const& from);
 
     /**
+     * @brief [SP-2] Silently re-credit @p amount to @p ownerGuid's wallet for a
+     *        REJECTED/aborted reservation, then flip @p key's row to
+     *        CST_TERMINAL_BACK. Online: ModifyMoney(+amount) + save. Offline:
+     *        a direct `UPDATE characters SET money = money + amount` appended to
+     *        the caller's OPEN transaction. NO mail (legacy never mailed on a
+     *        rejection). Idempotency is the caller's (the row must be RESERVED).
+     */
+    void ReleaseGoldToWallet(CustodyDeferred& d, uint32 ownerGuid,
+                             Player* ownerOnline, uint32 amount,
+                             std::string const& key);
+
+    /**
+     * @brief [SP-2] Append the applied-record for a worker resolution:
+     *        a CST_TERMINAL_OK ROLE_RESOLUTION CUSTODY_GOLD row keyed
+     *        "resolve:<uuid>". Written INSIDE the finalize txn so applying value
+     *        and recording "done" commit atomically (spec 4.3-C1).
+     */
+    void WriteResolutionApplied(uint32 auctionId, uint64 uuid);
+
+    /**
+     * @brief [SP-2] True if the applied-record for @p uuid exists (the
+     *        RESOLVE_ACK DUPLICATE test; DUPLICATE == APPLIED).
+     */
+    bool ResolutionApplied(uint64 uuid);
+
+    /**
      * @brief Raise the held bid amount for an existing CST_RESERVED gold row.
      *
      * If `bidderOnline` is non-NULL, debits `delta` copper from the bidder's

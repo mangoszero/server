@@ -296,6 +296,60 @@ void CustodyService::RollbackGoldRefund(CustodyDeferred& d,
     refundMail.SendMailToInTransaction(to, from, d);
 }
 
+void CustodyService::ReleaseGoldToWallet(CustodyDeferred& d, uint32 ownerGuid,
+                                         Player* ownerOnline, uint32 amount,
+                                         std::string const& key)
+{
+    if (ownerOnline)
+    {
+        ownerOnline->ModifyMoney(int32(amount));
+        ownerOnline->SaveInventoryAndGoldToDB();
+    }
+    else
+    {
+        // Offline: credit the persisted wallet inside the caller's open txn.
+        // This releases previously-reserved copper, so it cannot exceed what
+        // the holder could legitimately carry -- no cap check needed.
+        CharacterDatabase.PExecute(
+            "UPDATE `characters` SET `money` = `money` + %u WHERE `guid` = %u",
+            amount, ownerGuid);
+    }
+    CustodyLedger::SetState(key, CST_TERMINAL_BACK,
+                            static_cast<uint64>(time(NULL)));
+    (void)d;   // ordered-effects context; no mail effect is pushed here
+}
+
+void CustodyService::WriteResolutionApplied(uint32 auctionId, uint64 uuid)
+{
+    char key[32];
+    snprintf(key, sizeof(key), "resolve:%llu",
+             static_cast<unsigned long long>(uuid));
+
+    CustodyRow r;
+    r.id              = 0;
+    r.idemKey         = key;
+    r.kind            = CUSTODY_GOLD;
+    r.role            = ROLE_RESOLUTION;
+    r.state           = CST_TERMINAL_OK;
+    r.ownerGuid       = 0;
+    r.beneficiaryGuid = 0;
+    r.amount          = 0;
+    r.itemGuid        = 0;
+    r.auctionId       = auctionId;
+    r.createdTime     = static_cast<uint64>(time(NULL));
+    r.resolvedTime    = static_cast<uint64>(time(NULL));
+    CustodyLedger::Insert(r);
+}
+
+bool CustodyService::ResolutionApplied(uint64 uuid)
+{
+    char key[32];
+    snprintf(key, sizeof(key), "resolve:%llu",
+             static_cast<unsigned long long>(uuid));
+    CustodyRow row;
+    return CustodyLedger::Get(key, row);
+}
+
 void CustodyService::TopUpBid(std::string const& key, uint32 newAmount,
                               uint32 delta, Player* bidderOnline)
 {

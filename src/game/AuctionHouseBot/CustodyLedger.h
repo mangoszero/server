@@ -59,6 +59,7 @@ enum CustodyRole : uint8
     ROLE_BID      = 1, ///< Bidder's held bid amount.
     ROLE_PROCEEDS = 2, ///< Sale proceeds to be paid to seller.
     ROLE_ITEM     = 3, ///< Item custody (held for delivery).
+    ROLE_RESOLUTION = 4, ///< [SP-2] worker-resolution applied-record ("resolve:<uuid>").
 };
 
 /// Lifecycle state of a custody row.

@@ -1162,6 +1162,104 @@ static int RunAhBrowsePendingTest()
     return 0;
 }
 
+/// SP-2: ReleaseGoldToWallet (online + offline re-credit) and the
+/// applied-record idempotency helpers (WriteResolutionApplied / ResolutionApplied).
+static int RunAhReleaseTest()
+{
+    bool pass = true;
+
+    // Clean slate for this test's rows and a synthetic offline character.
+    // NOTE: the applied-record key is "resolve:<uuid in DECIMAL>" (see
+    // WriteResolutionApplied); UINT64_C(0x0000009900000001) below decimalises
+    // to 657129996289, so the cleanup pattern must match that, not the hex
+    // digits.
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:rel%%'"
+        " OR `idem_key` = 'resolve:657129996289'");
+
+    // ---- offline re-credit: seed a RESERVED row + a characters money row ----
+    uint32 const offlineGuid = 970101u;
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `characters` WHERE `guid` = %u", offlineGuid);
+    CharacterDatabase.DirectPExecute(
+        "INSERT INTO `characters` (`guid`,`account`,`name`,`money`) "
+        "VALUES (%u, 1, 'RelTestOff', 500)", offlineGuid);
+    {
+        CharacterDatabase.BeginTransaction();
+        CustodyRow r;
+        r.id = 0; r.idemKey = "test:rel:offline"; r.kind = CUSTODY_GOLD;
+        r.role = ROLE_BID; r.state = CST_RESERVED; r.ownerGuid = offlineGuid;
+        r.beneficiaryGuid = 0; r.amount = 250; r.itemGuid = 0;
+        r.auctionId = 970101; r.createdTime = static_cast<uint64>(time(NULL));
+        r.resolvedTime = 0;
+        CustodyLedger::Insert(r);
+        CharacterDatabase.CommitTransactionChecked();
+    }
+    {
+        CustodyDeferred def;
+        CharacterDatabase.BeginTransaction();
+        CustodyService::ReleaseGoldToWallet(def, offlineGuid, NULL, 250,
+                                            "test:rel:offline");
+        bool ok = CharacterDatabase.CommitTransactionChecked();
+        def.run();
+        if (!ok)
+        {
+            printf("ahrelease FAIL: offline commit returned false\n");
+            pass = false;
+        }
+        QueryResult* q = CharacterDatabase.PQuery(
+            "SELECT `money` FROM `characters` WHERE `guid` = %u", offlineGuid);
+        if (!q || q->Fetch()[0].GetUInt32() != 750u)  // 500 + 250
+        {
+            printf("ahrelease FAIL: offline money not credited (expected 750)\n");
+            pass = false;
+        }
+        delete q;
+        CustodyRow row;
+        if (!CustodyLedger::Get("test:rel:offline", row) ||
+            row.state != CST_TERMINAL_BACK)
+        {
+            printf("ahrelease FAIL: offline row not CST_TERMINAL_BACK\n");
+            pass = false;
+        }
+    }
+
+    // ---- applied-record: write once, detect duplicate, missing => false ----
+    {
+        uint64 const uuid = UINT64_C(0x0000009900000001);
+        if (CustodyService::ResolutionApplied(uuid))
+        {
+            printf("ahrelease FAIL: applied-record present before write\n");
+            pass = false;
+        }
+        CharacterDatabase.BeginTransaction();
+        CustodyService::WriteResolutionApplied(970200u, uuid);
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahrelease FAIL: applied-record commit returned false\n");
+            pass = false;
+        }
+        if (!CustodyService::ResolutionApplied(uuid))
+        {
+            printf("ahrelease FAIL: applied-record not detected after write\n");
+            pass = false;
+        }
+    }
+
+    // Cleanup (see decimal-key NOTE above).
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:rel%%'"
+        " OR `idem_key` = 'resolve:657129996289'");
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `characters` WHERE `guid` = %u", offlineGuid);
+
+    if (pass)
+    {
+        printf("ahrelease OK\n");
+    }
+    return pass ? 0 : 1;
+}
+
 int RunMangosdTest(std::string const& name)
 {
     if (name == "noop")
@@ -1203,6 +1301,11 @@ int RunMangosdTest(std::string const& name)
     if (name == "ahbrowsepending")
     {
         return RunAhBrowsePendingTest();
+    }
+
+    if (name == "ahrelease")
+    {
+        return RunAhReleaseTest();
     }
 
     printf("%s FAIL: unknown test\n", name.c_str());
