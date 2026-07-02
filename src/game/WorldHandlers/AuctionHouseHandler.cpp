@@ -883,6 +883,117 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
     }
 
+    // ----- SP-2 write-authority forward path: reserve -> forward (spec 4.1) -----
+    // Placed BEFORE the local-map GetAuction: mangosd's AuctionsMap is dead
+    // under WriteAuthority (spec 5.7). Existence/state/min-increment/bid-own/
+    // same-account guards move to the worker (spec I6); mangosd validates only
+    // what it owns -- session, gold, and its own ledger (spec 4.1 step 1).
+    if (sWorld.IsAhWriteAuthority())
+    {
+        Player* pl = GetPlayer();
+
+        WorkerSupervisor* sv = sWorld.GetAhSupervisor();
+        if (!sv || !sv->ServiceActive())
+        {
+            AhSendUnavailableMessage(this);
+            SendAuctionCommandResult(NULL, AUCTION_BID_PLACED, AUCTION_ERR_DATABASE);
+            return;
+        }
+
+        // Cap check BEFORE any reserve (spec 5.5).
+        if (!sWorld.GetMutationPending().CanRegister(pl->GetGUIDLow()))
+        {
+            SendAuctionCommandResult(NULL, AUCTION_BID_PLACED, AUCTION_ERR_DATABASE);
+            return;
+        }
+
+        // Full-price affordability guard at legacy parity (silent return, no
+        // result) -- legacy gates the FULL price even for a same-bidder raise,
+        // so a raise legacy accepts is never rejected here (spec I9).
+        if (price > pl->GetMoney())
+        {
+            return;
+        }
+
+        // Classify against mangosd's OWN ledger: raise -> IPC_PLAYER_BID with
+        // delta reserve; everything else -> IPC_PLAYER_BUYOUT with the full
+        // price reserved as maxPrice (worker: effectiveBid = min(maxPrice,
+        // buyout), spec 4.1); 0 -> inline legacy ERR_HIGHER_BID.
+        uint32 reserveAmount = 0u;
+        uint16 const fwdOp = AhClassifyBidForward(auctionId, pl->GetGUIDLow(), price, reserveAmount);
+        if (fwdOp == 0u)
+        {
+            SendAuctionCommandResultData(auctionId, AUCTION_BID_PLACED, AUCTION_ERR_HIGHER_BID, EQUIP_ERR_OK, 0);
+            return;
+        }
+
+        uint64 const uuid = AhMintMutationUuid();
+        std::string const reserveKey = "bid:" + std::to_string(auctionId) + ":" +
+                                       std::to_string(CustodyLedger::NextBidSeq(auctionId));
+
+        // Durable reserve in ONE checked txn (spec decision 9). ReserveGold
+        // debits the wallet + saves gold inline (legacy debit timing) and
+        // appends the CST_RESERVED row to this open transaction.
+        CustodyDeferred def;
+        CharacterDatabase.BeginTransaction();
+        CustodyService::ReserveGold(def, pl->GetGUIDLow(), pl, reserveAmount, reserveKey, auctionId, ROLE_BID);
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            // DB rolled back -> restore ReserveGold's in-memory debit.
+            pl->ModifyMoney(int32(reserveAmount));
+            SendAuctionCommandResultData(auctionId, AUCTION_BID_PLACED, AUCTION_ERR_DATABASE, EQUIP_ERR_OK, 0);
+            sLog.outError("SP-2 bid: reserve txn rolled back for auction %u", auctionId);
+            return;
+        }
+
+        // Register BEFORE the send (reply can never race an unknown uuid).
+        PendingMutation pm;
+        pm.uuid           = uuid;
+        pm.playerGuidLow  = pl->GetGUIDLow();
+        pm.op             = fwdOp;
+        pm.auctionId      = auctionId;
+        pm.state          = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec        = uint32(time(NULL));
+        pm.reservedAmount = reserveAmount;
+        pm.reserveKey     = reserveKey;
+        pm.itemKey.clear();
+        pm.depKey.clear();
+        sWorld.GetMutationPending().Register(pm);
+
+        IpcMessage m;
+        if (fwdOp == uint16(IPC_PLAYER_BID))
+        {
+            PlayerBidIntent pbi;
+            pbi.uuid       = uuid;
+            pbi.auctionId  = auctionId;
+            pbi.bidderGuid = pl->GetGUIDLow();
+            pbi.bidAmount  = price;    // full new price; the finalize tops up by the delta
+            m.op = IPC_PLAYER_BID;
+            pbi.Encode(m.body);
+        }
+        else
+        {
+            PlayerBuyoutIntent pbo;
+            pbo.uuid       = uuid;
+            pbo.auctionId  = auctionId;
+            pbo.bidderGuid = pl->GetGUIDLow();
+            pbo.maxPrice   = price;    // worker: effectiveBid = min(maxPrice, buyout) (spec 4.1)
+            m.op = IPC_PLAYER_BUYOUT;
+            pbo.Encode(m.body);
+        }
+
+        if (!sv->Channel().SendFrame(m))
+        {
+            // Never roll a durable reserve back unilaterally (decision 10):
+            // tombstone as in-doubt; reconcile resolves it via the journal.
+            sWorld.GetMutationPending().Tombstone(uuid);
+            SendAuctionCommandResultData(auctionId, AUCTION_BID_PLACED, AUCTION_ERR_DATABASE, EQUIP_ERR_OK, 0);
+            sLog.outError("SP-2 bid: forward send failed for auction %u uuid " UI64FMTD "; reservation in doubt",
+                          auctionId, uuid);
+        }
+        return;
+    }
+
     AuctionEntry* auction = auctionHouse->GetAuction(auctionId);
     Player* pl = GetPlayer();
 
