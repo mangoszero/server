@@ -567,6 +567,29 @@ void World::LoadConfigSettings(bool reload)
     // AH Service custody escrow ledger
     setConfig(CONFIG_BOOL_AH_CUSTODY, "AH.Service.Custody", false);
 
+    // AH Service worker write-authority (SP-2). BOOT-LATCHED (spec decision 7):
+    // configNoReload returns true only when !reload; on `.reload config` it
+    // logs and keeps the boot value, so the flag is immutable for the run.
+    if (configNoReload(reload, CONFIG_BOOL_AH_WRITE_AUTHORITY, "AH.Service.WriteAuthority", false))
+    {
+        setConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY, "AH.Service.WriteAuthority", false);
+
+        // Startup invariant (spec I2): WriteAuthority hard-requires the custody
+        // ledger -- every WriteAuthority mutation is reservation-anchored.
+        if (getConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY) && !getConfig(CONFIG_BOOL_AH_CUSTODY))
+        {
+            sLog.outError("AH.Service.WriteAuthority = 1 requires AH.Service.Custody = 1; forcing WriteAuthority OFF.");
+            setConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY, false);
+        }
+
+        // Advisory only: with no worker configured, every AH mutation will
+        // report unavailable (spec 5.5: no in-process fallback).
+        if (getConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY) && !sConfig.GetBoolDefault("AH.Service.Enabled", false))
+        {
+            sLog.outError("AH.Service.WriteAuthority = 1 but AH.Service.Enabled = 0: no worker will start; all AH mutations will be unavailable.");
+        }
+    }
+
     m_relocation_ai_notify_delay = sConfig.GetIntDefault("Visibility.AIRelocationNotifyDelay", 1000u);
     m_relocation_lower_limit_sq  = pow(sConfig.GetFloatDefault("Visibility.RelocationLowerLimit", 10), 2);
 
