@@ -286,6 +286,9 @@ namespace ai
             virtual Value<Unit*>* GetTargetValue();
     };
 
+    BEGIN_TRIGGER(HasThreatTrigger, Trigger)
+    END_TRIGGER()
+
     BEGIN_TRIGGER(NoAttackersTrigger, Trigger)
     END_TRIGGER()
 
@@ -423,6 +426,17 @@ namespace ai
             LowManaTrigger(PlayerbotAI* ai) : Trigger(ai, "low mana") {}
 
             virtual bool IsActive();
+    };
+
+    class LowManaHasAggroTrigger : public Trigger
+    {
+        public:
+            LowManaHasAggroTrigger(PlayerbotAI* ai) : Trigger(ai, "low mana has aggro"), lastLowManaFlee_(0) {}
+
+            virtual bool IsActive();
+        private:
+            time_t lastLowManaFlee_;
+            static const time_t LOW_MANA_FLEE_COOLDOWN = 6;
     };
 
     class MediumManaTrigger : public Trigger

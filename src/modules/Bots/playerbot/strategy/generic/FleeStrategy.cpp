@@ -15,7 +15,7 @@ void FleeStrategy::InitTriggers(list<TriggerNode*> &triggers)
         NextAction::array(0, new NextAction("flee", ACTION_MOVE + 9), NULL)));
 
     triggers.push_back(new TriggerNode(
-            "low mana",
+            "low mana has aggro",
         NextAction::array(0,  new NextAction("flee", ACTION_MOVE + 9), NULL)));}
 
 void FleeFromAddsStrategy::InitTriggers(list<TriggerNode*> &triggers)

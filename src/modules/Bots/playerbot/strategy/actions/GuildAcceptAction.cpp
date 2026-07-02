@@ -33,7 +33,6 @@ bool GuildAcceptAction::Execute(Event event)
     WorldPacket packet;
     if (accept)
     {
-        bot->SetGuildIdInvited(guildId);
         bot->GetSession()->HandleGuildAcceptOpcode(packet);
     }
     else

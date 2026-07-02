@@ -40,16 +40,14 @@ namespace ai
     {
         public:
             CastFlamestrikeAction(PlayerbotAI* ai) : CastSpellAction(ai, "flamestrike") {}
+            virtual bool isUseful();
     };
 
     class CastFrostNovaAction : public CastSpellAction
     {
         public:
             CastFrostNovaAction(PlayerbotAI* ai) : CastSpellAction(ai, "frost nova") {}
-            virtual bool isUseful()
-            {
-                return AI_VALUE2(float, "distance", GetTargetName()) <= sPlayerbotAIConfig.tooCloseDistance;
-            }
+            virtual bool isUseful();
     };
 
     class CastFrostboltAction : public CastSpellAction
@@ -62,6 +60,7 @@ namespace ai
     {
         public:
             CastBlizzardAction(PlayerbotAI* ai) : CastSpellAction(ai, "blizzard") {}
+            virtual bool isUseful();
     };
 
     class CastArcaneIntellectAction : public CastBuffSpellAction
@@ -183,6 +182,7 @@ namespace ai
     {
         public:
             CastBlastWaveAction(PlayerbotAI* ai) : CastSpellAction(ai, "blast wave") {}
+            virtual bool isUseful();
     };
 
     class CastEvocationAction : public CastSpellAction

@@ -18,7 +18,7 @@ bool InventoryChangeFailureAction::Execute(Event event)
     switch (err)
     {
         case EQUIP_ERR_CANT_CARRY_MORE_OF_THIS:
-            ai->TellMaster("I can't carry anymore of those.");
+            ai->TellMaster("I can't carry any more of those.");
             break;
         case EQUIP_ERR_MISSING_REAGENT:
             ai->TellMaster("I'm missing some reagents for that.");

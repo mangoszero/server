@@ -150,14 +150,16 @@ class PlayerbotAI : public PlayerbotAIBase
         void DoSpecificAction(string name);
         void ChangeStrategy(string name, BotState type);
         bool ContainsStrategy(StrategyType type);
-        bool HasStrategy(string name, BotState type);
-        bool HasStrategy(string name) { return HasStrategy(name, currentState); }
+        bool HasStrategy(const string& name, BotState type);
+        bool HasStrategy(const string& name) { return HasStrategy(name, currentState); }
         BotState GetState() const { return currentState; }
         void ResetStrategies();
         void ReInitCurrentEngine();
         void Reset();
         bool IsTank(Player* player);
         Player* GetGroupTank(Player* except);
+        bool HasNonCombatantInRange(float range, float centerX=0, float centerY=0, float centerZ=0);
+        bool HasBreakableCrowdControl(Unit* unit);
         bool IsHeal(Player* player);
         bool IsRanged(Player* player);
         Creature* GetCreature(ObjectGuid guid);

@@ -751,9 +751,7 @@ void WorldSession::SendPetitionShowList(ObjectGuid guid)
         GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
     }
 
-    uint8 count = 1;
-
-    WorldPacket data(SMSG_PETITION_SHOWLIST, 8 + 1 + 4 * 6);
+    WorldPacket data(SMSG_PETITION_SHOWLIST, 8 + 1 + 4 * 5);
     data << guid;                           // npc guid
 
     if (pCreature->IsTabardDesigner())
@@ -763,8 +761,7 @@ void WorldSession::SendPetitionShowList(ObjectGuid guid)
         data << uint32(GUILD_CHARTER);      // charter entry
         data << uint32(CHARTER_DISPLAY_ID); // charter display id
         data << uint32(sWorld.getConfig(CONFIG_UNIT32_GUILD_PETITION_COST)); // charter cost
-        data << uint32(0);                  // unknown
-        data << uint32(4);                  // required signs
+        data << uint32(1);                  // [-ZERO] unknown
     }
 
     SendPacket(&data);

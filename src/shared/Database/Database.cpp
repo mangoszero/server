@@ -30,6 +30,7 @@
 #include <ctime>
 #include <iostream>
 #include <fstream>
+#include <future>
 #include <memory>
 
 #define MIN_CONNECTION_POOL_SIZE 1
@@ -513,6 +514,65 @@ bool Database::CommitTransactionDirect()
     delete pTrans;
 
     return true;
+}
+
+bool Database::CommitTransactionChecked()
+{
+    if (!m_pAsyncConn)
+    {
+        return false;
+    }
+
+    // check if we have pending transaction
+    if (!(*m_TransStorage)->get())
+    {
+        return false;
+    }
+
+    // if async execution is not available (startup / -t), execute synchronously
+    // on the async connection and return the REAL Execute() result. We do NOT
+    // call CommitTransactionDirect() because it discards that bool. detach()
+    // clears the TSS slot so the next BeginTransaction() does not trip the
+    // MANGOS_ASSERT(!m_pTrans) in TransHelper::init().
+    if (!m_bAllowAsyncTransactions)
+    {
+        SqlTransaction* pTrans = (*m_TransStorage)->detach();
+        bool res = pTrans->Execute(m_pAsyncConn);
+        delete pTrans;
+        return res;
+    }
+
+    // If the delay thread has stopped (server shutdown), enqueuing a blocking
+    // transaction onto it would block this caller forever - the worker loop is
+    // gone and will never drain the queue or fulfil the promise. Gate BEFORE we
+    // build the promise/enqueue: run the transaction synchronously on the async
+    // connection the (stopped) delay thread is no longer using, and return the
+    // real result. We must NOT instead add a post-enqueue timeout: abandoning
+    // the stack-frame promise while a queued op still holds &prom is a
+    // use-after-free.
+    /// Residual TOCTOU (thread stops between this check and Delay() below) is
+    /// closed in practice by shutdown sequencing: the world thread is torn down
+    /// before the DB delay thread is stopped, so no world-thread caller reaches
+    /// this commit path concurrently with the delay thread stopping.
+    if (!m_threadBody->IsRunning())
+    {
+        SqlTransaction* t = (*m_TransStorage)->detach();
+        bool r = t->Execute(m_pAsyncConn);
+        delete t;
+        return r;
+    }
+
+    // async enabled (runtime): FIFO-queue the transaction through the delay
+    // thread and block until the worker has run it, then return the real
+    // result. The promise/future live on THIS (blocked) stack frame, so they
+    // outlive the queued op - that is the correctness invariant: the worker
+    // calls set_value() before deleting the op, while this frame is parked on
+    // fut.get(). detach() clears the TSS slot (same as CommitTransaction()).
+    std::promise<bool> prom;
+    std::future<bool> fut = prom.get_future();
+    SqlTransaction* pTrans = (*m_TransStorage)->detach();
+    m_threadBody->Delay(new SqlTransactionResultSignal(pTrans, &prom));
+    return fut.get();
 }
 
 bool Database::RollbackTransaction()

@@ -17,11 +17,20 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-# Build the mangos script library if enabled
-if(SCRIPT_LIB_SD3)
+# SD3 and Eluna link the `game` library, which only exists when BUILD_MANGOSD.
+# Guard on BOTH the script-lib option AND BUILD_MANGOSD so a worker-only
+# configure (BUILD_MANGOSD=OFF, BUILD_AH_SERVICE=ON) does not try to build them.
+if(BUILD_MANGOSD AND SCRIPT_LIB_SD3)
     add_subdirectory(SD3)
 endif()
 
-if(SCRIPT_LIB_ELUNA)
+if(BUILD_MANGOSD AND SCRIPT_LIB_ELUNA)
     add_subdirectory(Eluna)
+endif()
+
+# The out-of-process auction-house worker. Self-contained: links only the IPC
+# wire contract (ah_ipc) + shared; never the mangosd game library. Gated by the
+# existing BUILD_AH_SERVICE option.
+if(BUILD_AH_SERVICE)
+    add_subdirectory(AhWorker)
 endif()

@@ -476,7 +476,9 @@ bool MovementAction::Flee(Unit *target)
 float MovementAction::CalculateAggroFreeDistance(float bx, float by,
     float angle, float maxDist)
 {
-    if( !ai->HasStrategy("cautious"))
+    if (!ai->HasStrategy("cautious") ||
+        bot->HasAuraType(SPELL_AURA_MOD_STEALTH) ||
+        bot->HasAuraType(SPELL_AURA_MOD_INVISIBILITY))
     {
         return maxDist;
     }

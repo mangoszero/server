@@ -67,6 +67,7 @@ namespace ai
                 creators["runaway"] = &ChatTriggerContext::runaway;
                 creators["warning"] = &ChatTriggerContext::warning;
                 creators["position"] = &ChatTriggerContext::position;
+                creators["goto"] = &ChatTriggerContext::goto_action;
                 creators["summon"] = &ChatTriggerContext::summon;
                 creators["who"] = &ChatTriggerContext::who;
                 creators["save mana"] = &ChatTriggerContext::save_mana;
@@ -83,6 +84,7 @@ namespace ai
             static Trigger* who(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "who"); }
             static Trigger* summon(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "summon"); }
             static Trigger* position(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "position"); }
+            static Trigger* goto_action(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "goto"); }
             static Trigger* runaway(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "runaway"); }
             static Trigger* warning(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "warning"); }
             static Trigger* revive(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "revive"); }

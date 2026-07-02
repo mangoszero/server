@@ -23,6 +23,7 @@
  */
 
 #include "AuctionHouseBot.h"
+#include "AhBotSystemOwner.h"
 #include "ProgressBar.h"
 #include "Log.h"
 #include "ObjectMgr.h"
@@ -660,13 +661,16 @@ bool AuctionBotConfig::Initialize()
 void AuctionBotConfig::SetAHBotId(const std::string& BotCharName)
 {
     m_BotId = 0;
-    if (!BotCharName.empty())
+    // F7: an upgraded ahbot.conf may still carry an explicit empty
+    // AuctionHouseBot.CharacterName (the pre-forged-owner default). An empty
+    // string would bypass the forged system owner and leave the bot GUID
+    // unresolved (0), so treat it as the forged AHBOT_SYSTEM_OWNER_NAME -- the
+    // name-intercept then resolves it to the reserved system GUID.
+    const std::string name = BotCharName.empty() ? AHBOT_SYSTEM_OWNER_NAME : BotCharName;
+    m_BotId = sObjectMgr.GetPlayerGuidByName(name.c_str()).GetCounter();
+    if (!m_BotId)
     {
-        m_BotId = sObjectMgr.GetPlayerGuidByName(BotCharName.c_str()).GetCounter();
-        if (!m_BotId)
-        {
-            sLog.outError("AHBot uses an invalid character name `%s`", BotCharName.c_str());
-        }
+        sLog.outError("AHBot uses an invalid character name `%s`", name.c_str());
     }
 }
 
@@ -754,7 +758,7 @@ void AuctionBotConfig::GetConfigFromFile()
 
     SetAHBotIncludes(m_AhBotCfg.GetStringDefault("AuctionHouseBot.forceIncludeItems", ""));
     SetAHBotExcludes(m_AhBotCfg.GetStringDefault("AuctionHouseBot.forceExcludeItems", ""));
-    SetAHBotId(m_AhBotCfg.GetStringDefault("AuctionHouseBot.CharacterName", ""));
+    SetAHBotId(m_AhBotCfg.GetStringDefault("AuctionHouseBot.CharacterName", AHBOT_SYSTEM_OWNER_NAME));
 
     setConfig(CONFIG_BOOL_AHBOT_BUYER_ALLIANCE_ENABLED       , "AuctionHouseBot.Buyer.Alliance.Enabled"      , false);
     setConfig(CONFIG_BOOL_AHBOT_BUYER_HORDE_ENABLED          , "AuctionHouseBot.Buyer.Horde.Enabled"         , false);
@@ -2806,7 +2810,20 @@ void AuctionHouseBot::Update()
             break;
         }
     }
-    PurgeMailedItems(); // Check if its time to cleanup mailed items
+    // NOTE: PurgeMailedItems() is intentionally NOT called here. Update() is
+    // gated out when the out-of-process AH service is active, so driving the
+    // mail cleanup from here would skip it entirely on a service realm. It is
+    // now driven UNCONDITIONALLY from World::Update on the WUPDATE_AHBOT timer
+    // (via PurgeMailedItemsTick()), so it runs in both modes.
+}
+
+void AuctionHouseBot::PurgeMailedItemsTick()
+{
+    // Public, mode-agnostic entry point driven from World::Update on the
+    // WUPDATE_AHBOT timer. PurgeMailedItems() is internally throttled to once
+    // per hour and depends only on the configured bot GUID (not on any
+    // in-process bot cycle state), so it is safe to call in both bot modes.
+    PurgeMailedItems();
 }
 
 /**
