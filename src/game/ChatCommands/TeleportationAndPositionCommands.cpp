@@ -963,7 +963,29 @@ bool ChatHandler::HandleGoXYCommand(char* args)
         return false;
     }
 
-    return HandleGoHelper(_player, mapid, x, y);
+    // Resolve ground height so a z-less ".go xy" lands on the surface instead
+    // of at z=0. Validate the coordinates FIRST: GetWaterOrGroundLevel indexes
+    // the terrain grid by x/y and crashes on out-of-range values -- this is the
+    // very reason HandleGoHelper checks IsValidMapCoord before any Z work. The
+    // shared helper no longer ground-snaps (disabled in b4e2348e so explicit
+    // negative z on ".go xyz" is preserved), so we do it here, guarded twice:
+    // valid coords, then a valid height (GetWaterOrGroundLevel returns
+    // < INVALID_HEIGHT when there is no map data). Otherwise keep the previous
+    // z=0 fallback and let HandleGoHelper reject the bad input with its message.
+    float z = 0.0f;
+    if (MapManager::IsValidMapCoord(mapid, x, y))
+    {
+        if (TerrainInfo const* terrain = sTerrainMgr.LoadTerrain(mapid))
+        {
+            float ground = terrain->GetWaterOrGroundLevel(x, y, MAX_HEIGHT);
+            if (ground > INVALID_HEIGHT)
+            {
+                z = ground;
+            }
+        }
+    }
+
+    return HandleGoHelper(_player, mapid, x, y, z);
 }
 
 /**
