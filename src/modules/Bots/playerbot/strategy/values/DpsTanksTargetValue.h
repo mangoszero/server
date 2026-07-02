@@ -15,7 +15,7 @@ namespace ai
                 Player* tank = ai->GetGroupTank(bot);
                 if (!tank || !tank->IsAlive())
                 {
-                    return NULL;
+                    return AI_VALUE(Unit*, "least hp target");
                 }
                 return tank->getVictim();
             }
