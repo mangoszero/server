@@ -80,6 +80,7 @@
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
 
+template<typename T>
 /**
  * @brief Finds a nearby corpse-like world object matching the search predicate.
  *

@@ -522,8 +522,6 @@ SpellEntry const* Spell::GetSpellBonusLevelPenaltySpell(SpellEntry const* spellP
     return spellProto;
 }
 
-template<typename T>
-
 
 
 

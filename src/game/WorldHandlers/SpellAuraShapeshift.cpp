@@ -78,6 +78,10 @@
 #include "TemporarySummon.h"
 #include "MapManager.h"
 
+enum SpellCreatedItems {
+    ITEM_SOUL_SHARD = 6265
+};
+
 /**
  * @brief Applies or removes a mounted display from the target.
  *
