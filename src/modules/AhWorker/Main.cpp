@@ -1745,6 +1745,382 @@ static int RunJournalSelfTest()
 }
 
 // ---------------------------------------------------------------------------
+// Self-test: SP-2 resolve outbox (worker expiry/win tick, Task 7)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Recording double for MutationHandler: the DB seams append to an
+ *        ordered trace instead of touching a live character DB, so the outbox
+ *        state machine (mark-before-send, ack transitions, window, resend) is
+ *        testable inside --selftest.
+ */
+class TestMutationHandler : public MutationHandler
+{
+    public:
+        TestMutationHandler(AuctionBook& book, ServiceDatabase* db,
+                            uint32 runId)
+            : MutationHandler(book, db, runId),
+              failJournalInsert(false), failTerminalApply(false)
+        {
+        }
+
+        std::vector<std::string> trace; ///< Ordered record of DB/send effects.
+        bool failJournalInsert;         ///< Simulate a failed RESOLVING insert.
+        bool failTerminalApply;         ///< Simulate a failed terminal txn.
+
+    protected:
+        virtual bool JournalInsertResolving(AhJournal::JournalRow const& row)
+        {
+            if (failJournalInsert)
+            {
+                return false;
+            }
+            char buf[48];
+            snprintf(buf, sizeof(buf), "jrn-resolving:%u:k%u", row.auctionId,
+                     static_cast<unsigned>(row.kind));
+            trace.push_back(buf);
+            return true;
+        }
+
+        virtual bool CommitTerminalApply(uint64 /*uuid*/, uint32 auctionId)
+        {
+            if (failTerminalApply)
+            {
+                return false;
+            }
+            char buf[48];
+            snprintf(buf, sizeof(buf), "terminal-apply:%u", auctionId);
+            trace.push_back(buf);
+            return true;
+        }
+
+        virtual bool JournalMarkApplied(uint64 /*uuid*/)
+        {
+            trace.push_back("jrn-applied");
+            return true;
+        }
+
+        virtual void QueueSend(IpcMessage const& msg)
+        {
+            std::string tag = "send:?";
+            if (msg.op == IPC_RESOLVE_APPLY)
+            {
+                IpcMessage copy = msg;
+                ResolveApply ra;
+                if (ra.Decode(copy.body))
+                {
+                    char buf[32];
+                    snprintf(buf, sizeof(buf), "send:%u", ra.facts.auctionId);
+                    tag = buf;
+                }
+            }
+            trace.push_back(tag);
+            MutationHandler::QueueSend(msg);
+        }
+};
+
+/// Build a LIVE book row for outbox tests.
+static BookRow MakeBookRow(uint32 id, uint64 expireTime, uint32 bidder,
+                           uint32 bid)
+{
+    BookRow r;
+    r.id               = id;
+    r.houseId          = 7u;
+    r.itemGuid         = 100000u + id;
+    r.itemTemplate     = 2589u;
+    r.itemCount        = 1u;
+    r.randomPropertyId = 0;
+    r.owner            = 42u;
+    r.buyout           = 5000u;
+    r.expireTime       = expireTime;
+    r.bidder           = bidder;
+    r.bid              = bid;
+    r.startbid         = 100u;
+    r.deposit          = 15u;
+    r.state            = static_cast<uint8>(BOOK_LIVE);
+    return r;
+}
+
+static int OutboxFail(const char* what)
+{
+    fprintf(stderr, "resolve outbox selftest FAILED: %s\n", what);
+    return 1;
+}
+
+static int RunResolveOutboxSelfTest()
+{
+    ServiceDatabase dummyDb;   // ctor opens nothing; DB seams are overridden
+
+    // --- A: mark-before-send ordering, kind selection, tick guards ---
+    {
+        AuctionBook book(NULL);
+        book.TestSeedRow(MakeBookRow(1u, 1000u, 77u, 250u)); // player bid -> WON
+        book.TestSeedRow(MakeBookRow(2u, 1000u, 0u, 0u));    // no bid -> EXPIRED_NOBID
+        book.TestSeedRow(MakeBookRow(3u, 5000u, 0u, 0u));    // not yet expired
+
+        TestMutationHandler h(book, &dummyDb, 0xAB000000u);
+        h.Tick(2000u);
+
+        std::vector<IpcMessage> out;
+        h.TakeOutbound(out);
+
+        // Per-row order is journal-mark THEN send (spec M1), ascending id.
+        if (h.trace.size() != 4u ||
+            h.trace[0] != "jrn-resolving:1:k0" || h.trace[1] != "send:1" ||
+            h.trace[2] != "jrn-resolving:2:k1" || h.trace[3] != "send:2")
+        {
+            return OutboxFail("mark-before-send trace order");
+        }
+        if (out.size() != 2u || out[0].op != IPC_RESOLVE_APPLY ||
+            out[1].op != IPC_RESOLVE_APPLY)
+        {
+            return OutboxFail("expected exactly 2 RESOLVE_APPLY frames");
+        }
+        ResolveApply ra;
+        if (!ra.Decode(out[0].body) ||
+            ra.kind != static_cast<uint8>(RESOLVE_WON) ||
+            ra.facts.auctionId != 1u || ra.facts.curBidderGuid != 77u ||
+            ra.facts.curBid != 250u || ra.facts.sellerGuid != 42u ||
+            ra.facts.deposit != 15u || ra.facts.effectiveBid != 250u)
+        {
+            return OutboxFail("WON facts snapshot");
+        }
+        ResolveApply rb;
+        if (!rb.Decode(out[1].body) ||
+            rb.kind != static_cast<uint8>(RESOLVE_EXPIRED_NOBID) ||
+            rb.facts.auctionId != 2u || rb.facts.curBid != 0u)
+        {
+            return OutboxFail("EXPIRED_NOBID facts snapshot");
+        }
+        if (book.Find(1u)->state != static_cast<uint8>(BOOK_RESOLVING) ||
+            book.Find(2u)->state != static_cast<uint8>(BOOK_RESOLVING) ||
+            book.Find(3u)->state != static_cast<uint8>(BOOK_LIVE))
+        {
+            return OutboxFail("row-state marks after tick");
+        }
+        if (h.ResolvingCount() != 2u || !h.HasActiveResolution(1u) ||
+            h.HasActiveResolution(3u))
+        {
+            return OutboxFail("tracking after tick");
+        }
+
+        // A second tick mints nothing: both rows are already RESOLVING.
+        h.Tick(2001u);
+        out.clear();
+        h.TakeOutbound(out);
+        if (!out.empty())
+        {
+            return OutboxFail("re-mint on marked rows");
+        }
+
+        // A failed journal insert must suppress BOTH the send and the mark.
+        book.TestSeedRow(MakeBookRow(4u, 1000u, 0u, 0u));
+        h.failJournalInsert = true;
+        h.Tick(2002u);
+        h.failJournalInsert = false;
+        out.clear();
+        h.TakeOutbound(out);
+        if (!out.empty() ||
+            book.Find(4u)->state != static_cast<uint8>(BOOK_LIVE) ||
+            h.HasActiveResolution(4u))
+        {
+            return OutboxFail("journal-fail must suppress send+mark");
+        }
+    }
+
+    // --- A2: per-tick budget + un-acked window clamp (decision 10) ---
+    {
+        AuctionBook book(NULL);
+        for (uint32 id = 1u; id <= 100u; ++id)
+        {
+            book.TestSeedRow(MakeBookRow(id, 1000u, 0u, 0u));
+        }
+        TestMutationHandler h(book, &dummyDb, 0xAB000000u);
+
+        std::vector<IpcMessage> out;
+        h.Tick(2000u);
+        h.TakeOutbound(out);
+        if (out.size() != 16u)   // RESOLVE_BUDGET_PER_TICK
+        {
+            return OutboxFail("per-tick budget clamp (expected 16)");
+        }
+        h.Tick(2001u);
+        h.Tick(2002u);
+        h.Tick(2003u);
+        out.clear();
+        h.TakeOutbound(out);
+        if (out.size() != 48u || h.ResolvingCount() != 64u)
+        {
+            return OutboxFail("window fill (expected 64 un-acked)");
+        }
+        h.Tick(2004u);
+        out.clear();
+        h.TakeOutbound(out);
+        if (!out.empty())
+        {
+            return OutboxFail("window clamp (no mints past 64 un-acked)");
+        }
+    }
+
+    // --- B: ack transitions (APPLIED/DUPLICATE terminal + non-terminal,
+    //        FAILED stays RESOLVING) ---
+    {
+        AuctionBook book(NULL);
+        book.TestSeedRow(MakeBookRow(1u, 1000u, 77u, 250u));   // -> WON
+        book.TestSeedRow(MakeBookRow(3u, 9999u, 55u, 300u));   // stays live
+        TestMutationHandler h(book, &dummyDb, 0xAB000000u);
+        h.Tick(2000u);                                          // mints WON:1
+
+        // A non-terminal resolution (a bot-outbid refund shape) on row 3.
+        MutationFacts f = MutationHandler::FactsFromRow(*book.Find(3u));
+        const uint64 refundUuid = h.QueueResolution(
+            3u, static_cast<uint8>(RESOLVE_REPAIR_RETURN), f, 2000u);
+        if (refundUuid == 0u ||
+            book.Find(3u)->state != static_cast<uint8>(BOOK_LIVE))
+        {
+            return OutboxFail("non-terminal queue must not mark the row");
+        }
+
+        std::vector<IpcMessage> out;
+        h.TakeOutbound(out);
+        ResolveApply won;
+        if (out.size() != 2u || !won.Decode(out[0].body) ||
+            won.kind != static_cast<uint8>(RESOLVE_WON))
+        {
+            return OutboxFail("expected WON + REPAIR_RETURN frames");
+        }
+
+        // FAILED: entry stays RESOLVING, book row untouched (never deleted).
+        ResolveAck ack;
+        ack.uuid   = won.uuid;
+        ack.status = static_cast<uint8>(RES_FAILED);
+        h.OnResolveAck(ack);
+        if (h.ResolvingCount() != 2u ||
+            book.Find(1u)->state != static_cast<uint8>(BOOK_RESOLVING))
+        {
+            return OutboxFail("FAILED ack must keep the entry RESOLVING");
+        }
+
+        // A failed LOCAL terminal txn also keeps the entry for retry.
+        h.failTerminalApply = true;
+        ack.status = static_cast<uint8>(RES_APPLIED);
+        h.OnResolveAck(ack);
+        h.failTerminalApply = false;
+        if (h.ResolvingCount() != 2u || book.Find(1u) == nullptr)
+        {
+            return OutboxFail("failed terminal txn must keep the entry");
+        }
+
+        // APPLIED on a terminal kind: one txn (journal APPLIED + row DELETE),
+        // then the in-memory row goes away.
+        h.OnResolveAck(ack);
+        if (h.trace.back() != "terminal-apply:1" || book.Find(1u) != nullptr ||
+            h.ResolvingCount() != 1u || h.HasActiveResolution(1u))
+        {
+            return OutboxFail("APPLIED terminal transition");
+        }
+
+        // A second APPLIED for the same uuid is unknown now: loud log, no-op.
+        h.OnResolveAck(ack);
+        if (h.ResolvingCount() != 1u)
+        {
+            return OutboxFail("late duplicate ack must be a no-op");
+        }
+
+        // DUPLICATE on the non-terminal kind: journal-only, listing persists.
+        ack.uuid   = refundUuid;
+        ack.status = static_cast<uint8>(RES_DUPLICATE);
+        h.OnResolveAck(ack);
+        if (h.trace.back() != "jrn-applied" || book.Find(3u) == nullptr ||
+            book.Find(3u)->state != static_cast<uint8>(BOOK_LIVE) ||
+            h.ResolvingCount() != 0u || h.HasActiveResolution(3u))
+        {
+            return OutboxFail("DUPLICATE non-terminal transition");
+        }
+    }
+
+    // --- C: resend-after-T + boot replay of RESOLVING journal rows ---
+    {
+        AuctionBook book(NULL);
+        book.TestSeedRow(MakeBookRow(1u, 1000u, 0u, 0u));
+        TestMutationHandler h(book, &dummyDb, 0xAB000000u);
+        h.Tick(2000u);
+        std::vector<IpcMessage> out;
+        h.TakeOutbound(out);
+        if (out.size() != 1u)
+        {
+            return OutboxFail("resend precondition mint");
+        }
+
+        h.ResendStaleResolving(2029u);   // age 29 < RESOLVE_RESEND_SEC
+        out.clear();
+        h.TakeOutbound(out);
+        if (!out.empty())
+        {
+            return OutboxFail("no re-send before T");
+        }
+
+        h.ResendStaleResolving(2030u);   // age 30 >= RESOLVE_RESEND_SEC
+        out.clear();
+        h.TakeOutbound(out);
+        if (out.size() != 1u || out[0].op != IPC_RESOLVE_APPLY)
+        {
+            return OutboxFail("re-send after T");
+        }
+        h.ResendStaleResolving(2031u);   // refreshed: age 1 -> nothing
+        out.clear();
+        h.TakeOutbound(out);
+        if (!out.empty())
+        {
+            return OutboxFail("re-send must refresh lastSentSec");
+        }
+
+        // Boot priming: a fresh handler re-sends journal RESOLVING rows
+        // immediately, byte-identical to the stored facts blob.
+        ResolveApply src;
+        src.uuid  = UINT64_C(0x0000000700000001);
+        src.kind  = static_cast<uint8>(RESOLVE_WON);
+        src.facts = MutationHandler::FactsFromRow(MakeBookRow(9u, 1000u,
+                                                              77u, 250u));
+        ByteBuffer blobBuf;
+        src.Encode(blobBuf);
+        std::string blob(reinterpret_cast<const char*>(blobBuf.contents()),
+                         blobBuf.size());
+
+        AhJournal::JournalRow jr;
+        jr.uuid         = src.uuid;
+        jr.auctionId    = 9u;
+        jr.kind         = src.kind;
+        jr.state        = static_cast<uint8>(AhJournal::JRN_RESOLVING);
+        jr.facts        = blob;
+        jr.createdTime  = 1500u;
+        jr.resolvedTime = 0u;
+        std::vector<AhJournal::JournalRow> active;
+        active.push_back(jr);
+
+        AuctionBook book2(NULL);
+        TestMutationHandler h2(book2, &dummyDb, 0xAB000001u);
+        h2.PrimeResolvingFromJournal(active);
+        out.clear();
+        h2.TakeOutbound(out);
+        if (out.size() != 1u || out[0].op != IPC_RESOLVE_APPLY ||
+            out[0].body.size() != blob.size() ||
+            memcmp(out[0].body.contents(), blob.data(), blob.size()) != 0)
+        {
+            return OutboxFail("boot re-send must replay the blob verbatim");
+        }
+        if (h2.ResolvingCount() != 1u || !h2.HasActiveResolution(9u))
+        {
+            return OutboxFail("boot priming tracking");
+        }
+    }
+
+    printf("resolve outbox selftest OK\n");
+    fflush(stdout);
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
 // Self-test: in-process loopback
 // ---------------------------------------------------------------------------
 
@@ -2348,6 +2724,11 @@ int main(int argc, char** argv)
         {
             return rc;
         }
+        rc = RunResolveOutboxSelfTest();
+        if (rc != 0)
+        {
+            return rc;
+        }
         return RunSelfTest();
     }
 
@@ -2571,6 +2952,9 @@ int main(int argc, char** argv)
         }
         ahHandler = new MutationHandler(*ahBook, &botDb, cli.RunId());
         ahHandler->AdoptActiveJournal(activeJournal);
+        // SP-2 Task 7 (spec 4.3 at-least-once): re-send EVERY RESOLVING
+        // journal entry immediately; the first loop pass drains the frames.
+        ahHandler->PrimeResolvingFromJournal(activeJournal);
         printf("ah-service: WRITE AUTHORITY active - book %u listing(s),"
                " %u orphan(s)\n",
                static_cast<unsigned>(ahBook->Size()),
@@ -2586,6 +2970,19 @@ int main(int argc, char** argv)
     volatile bool stop = false;
     uint32 sinceTickMs = 0;       ///< Accumulator toward the bot cadence.
     bool   backoffNext = false;   ///< Skip next tick after IPC_QUEUE_FULL.
+
+    // SP-2 Task 7: game-time clock + mutation-tick cadence. The tick runs on
+    // IPC_GAMETIME-synced game time (spec 7/M1) and pauses while the link is
+    // down: this loop exits on disconnect and the supervisor restarts the
+    // process, so "paused" is structural. lastGametime advances only on
+    // IPC_GAMETIME (sent with every supervisor heartbeat, uint32 LE body -
+    // WorkerSupervisor.cpp), so expiry detection lags by at most one
+    // heartbeat interval; acceptable vs the legacy minute-class sweep.
+    uint32 lastGametime   = 0;
+    bool   gametimeKnown  = false;
+    uint32 sinceMutTickMs = 0;
+    const uint32 mutTickMs = static_cast<uint32>(
+        sConfig.GetIntDefault("AH.Service.TickMs", 1000));
 
     while (!stop)
     {
@@ -2652,6 +3049,21 @@ int main(int argc, char** argv)
                     }
                     break;
                 }
+                case IPC_RESOLVE_ACK:
+                {
+                    // SP-2 Task 7: outbox ack (spec 4.3 / decision 10).
+                    ResolveAck ra;
+                    if (ahHandler != nullptr && ra.Decode(msg.body))
+                    {
+                        ahHandler->OnResolveAck(ra);
+                    }
+                    else if (ahHandler == nullptr)
+                    {
+                        printf("ah-service: IPC_RESOLVE_ACK without write"
+                               " authority - ignored\n");
+                    }
+                    break;
+                }
                 case IPC_QUEUE_FULL:
                 {
                     // mangosd's apply queue is full: back off one tick.
@@ -2680,11 +3092,22 @@ int main(int argc, char** argv)
                     break;
                 }
                 case IPC_GAMETIME:
-                    // Deliberate no-op: mangosd sends gametime each heartbeat;
-                    // BotBrain uses time(NULL) directly, so we intentionally
-                    // ignore this opcode.  An explicit case keeps the default
-                    // warning reserved for genuinely unknown opcodes.
+                {
+                    // SP-2: feeds the expiry tick's clock (spec 7/M1). The
+                    // bot brain still uses time(NULL) directly, unchanged.
+                    uint32 gt = 0;
+                    if (msg.body.size() >= 4u)
+                    {
+                        msg.body >> gt;
+                        lastGametime  = gt;
+                        gametimeKnown = true;
+                        if (ahHandler != nullptr)
+                        {
+                            ahHandler->SetGameTime(gt);
+                        }
+                    }
                     break;
+                }
                 case IPC_GMCMD:
                 {
                     GmCmd gc;
@@ -2910,6 +3333,29 @@ int main(int argc, char** argv)
                                 botSnap->ConsecutiveFailures());
                     }
                 }
+            }
+        }
+
+        // --- SP-2: expiry/win tick + resolve outbox cadence (Task 7) ---
+        if (ahHandler != nullptr && !stop)
+        {
+            sinceMutTickMs += 10;
+            if (sinceMutTickMs >= mutTickMs)
+            {
+                sinceMutTickMs = 0;
+                if (gametimeKnown)
+                {
+                    ahHandler->Tick(lastGametime);
+                    ahHandler->ResendStaleResolving(lastGametime);
+                }
+            }
+            // Drain handler-queued frames (tick resolutions, re-sends, boot
+            // replay, and Task-6 prepare-timeout unlocks) to the reliable lane.
+            std::vector<IpcMessage> outFrames;
+            ahHandler->TakeOutbound(outFrames);
+            for (size_t i = 0; i < outFrames.size(); ++i)
+            {
+                cli.SendFrame(outFrames[i]);
             }
         }
 

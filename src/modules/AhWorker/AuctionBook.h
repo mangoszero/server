@@ -156,6 +156,16 @@ class AuctionBook
         /// (mirrors AuctionEntry::DeleteFromDB, AuctionHouseMgr.cpp:1515-1519).
         void Remove(uint32 auctionId);
 
+        /**
+         * @brief Memory-only erase, no DB side effect (SP-2 Task 7).
+         *
+         * Used after a caller-owned DELETE has ALREADY committed in its own
+         * checked transaction (MutationHandler::CommitTerminalApply) -- unlike
+         * Remove(), which issues its own DELETE for callers that rely on it
+         * joining an already-open BeginCommit()/FinishCommit() transaction.
+         */
+        void RemoveMemoryOnly(uint32 auctionId);
+
         // Memory-only compensation when CommitTransactionChecked fails: the DB
         // rolled back, so the in-memory image must be restored to match.
         void RollbackInsert(uint32 auctionId);
@@ -202,6 +212,21 @@ class AuctionBook
          *           BOOK_ERR_DATABASE (AuctionHouseHandler.cpp:921-925)
          */
         static uint8 Admit(uint8 op, BookRow const* row);
+
+        /**
+         * @brief Collect ids of LIVE rows whose expireTime has passed.
+         *
+         * 4.3b: CANCEL_PREPARED and RESOLVING rows are skipped by state.
+         * Ascending id (deterministic mint order for the tick budget).
+         */
+        void VisitExpired(uint64 now, std::vector<uint32>& outIds) const;
+
+        /**
+         * @brief SELFTEST-ONLY: seed a row in memory with no auction INSERT
+         *        and no journal write. Production inserts go through Insert()
+         *        inside a caller-owned transaction.
+         */
+        void TestSeedRow(BookRow const& row);
 
     private:
         typedef std::map<uint32, BookRow> BookMap;

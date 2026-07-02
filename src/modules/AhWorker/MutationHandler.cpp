@@ -26,7 +26,8 @@
 #include <ctime>
 
 MutationHandler::MutationHandler(AuctionBook& book, ServiceDatabase* db, uint32 runId)
-    : m_book(book), m_db(db), m_runId(runId), m_nextSeq(0x80000000u)
+    : m_book(book), m_db(db), m_runId(runId), m_nextSeq(0x80000000u),
+      m_gameTimeNow(0)
 {
 }
 
@@ -711,4 +712,391 @@ bool MutationHandler::PopQueuedResolve(ResolveApply& out)
     out = m_resolveQueue.front();
     m_resolveQueue.pop_front();
     return true;
+}
+
+// ---------------------------------------------------------------------------
+// SP-2 Task 7: expiry/win tick + resolve outbox
+// ---------------------------------------------------------------------------
+
+uint64 MutationHandler::NextUuid()
+{
+    // Shares NextWorkerUuid()'s counter (m_nextSeq, already based at
+    // 0x80000000u): both mint uuids in the same worker-minted half of this
+    // run-id's sequence space, so they must never diverge into two counters.
+    return NextWorkerUuid();
+}
+
+void MutationHandler::SetGameTime(uint64 now)
+{
+    m_gameTimeNow = now;
+}
+
+uint64 MutationHandler::GameTime() const
+{
+    return m_gameTimeNow;
+}
+
+size_t MutationHandler::ResolvingCount() const
+{
+    return m_resolving.size();
+}
+
+bool MutationHandler::HasActiveResolution(uint32 auctionId) const
+{
+    return m_resolvingAuctions.find(auctionId) != m_resolvingAuctions.end();
+}
+
+bool MutationHandler::IsTerminalResolveKind(uint8 kind)
+{
+    return kind == static_cast<uint8>(RESOLVE_WON)
+        || kind == static_cast<uint8>(RESOLVE_EXPIRED_NOBID);
+}
+
+MutationFacts MutationHandler::FactsFromRow(BookRow const& row)
+{
+    MutationFacts f;
+    f.auctionId        = row.id;
+    f.houseId          = row.houseId;
+    f.itemGuid         = row.itemGuid;
+    f.itemTemplate     = row.itemTemplate;
+    f.randomPropertyId = row.randomPropertyId;
+    f.itemCount        = row.itemCount;
+    f.sellerGuid       = row.owner;
+    f.deposit          = row.deposit;
+    f.effectiveBid     = row.bid;
+    f.priorBidderGuid  = 0;
+    f.priorBidAmount   = 0;
+    f.curBidderGuid    = row.bidder;
+    f.curBid           = row.bid;
+    f.buyout           = row.buyout;
+    return f;
+}
+
+void MutationHandler::QueueSend(IpcMessage const& msg)
+{
+    m_outbound.push_back(msg);
+}
+
+void MutationHandler::TakeOutbound(std::vector<IpcMessage>& out)
+{
+    out.insert(out.end(), m_outbound.begin(), m_outbound.end());
+    m_outbound.clear();
+}
+
+bool MutationHandler::JournalInsertResolving(AhJournal::JournalRow const& row)
+{
+    if (m_db == NULL)
+    {
+        return true;   // selftest mode (TestMutationHandler overrides this)
+    }
+
+    // AhJournal::Insert() only APPENDS a PExecute to whatever transaction is
+    // currently open on this connection (Journal.h contract); with no caller
+    // transaction that PExecute is delay-thread ASYNC, not durable. Wrap it in
+    // its own checked commit -- the OnCancelPrepare standalone-durable idiom
+    // -- so the RESOLVING mark is truly on disk BEFORE any send (M1).
+    if (!m_db->Character().BeginTransaction())
+    {
+        return false;
+    }
+    AhJournal::Insert(*m_db, row);
+    return m_db->Character().CommitTransactionChecked();
+}
+
+bool MutationHandler::CommitTerminalApply(uint64 uuid, uint32 auctionId)
+{
+    if (m_db == NULL)
+    {
+        return true;   // selftest mode (TestMutationHandler overrides this)
+    }
+
+    DatabaseType& db = m_db->Character();
+    if (!db.BeginTransaction())
+    {
+        return false;
+    }
+    db.PExecute("DELETE FROM `auction` WHERE `id` = '%u'", auctionId);
+    AhJournal::SetState(*m_db, uuid,
+                        static_cast<uint8>(AhJournal::JRN_APPLIED),
+                        m_gameTimeNow);
+    return db.CommitTransactionChecked();
+}
+
+bool MutationHandler::JournalMarkApplied(uint64 uuid)
+{
+    if (m_db == NULL)
+    {
+        return true;   // selftest mode (TestMutationHandler overrides this)
+    }
+
+    if (!m_db->Character().BeginTransaction())
+    {
+        return false;
+    }
+    AhJournal::SetState(*m_db, uuid,
+                        static_cast<uint8>(AhJournal::JRN_APPLIED),
+                        m_gameTimeNow);
+    return m_db->Character().CommitTransactionChecked();
+}
+
+void MutationHandler::TrackAndSend(uint64 uuid, uint32 auctionId, uint8 kind,
+                                   std::string const& wire, uint64 now)
+{
+    ResolvingEntry e;
+    e.auctionId   = auctionId;
+    e.kind        = kind;
+    e.attempts    = 1u;
+    e.lastSentSec = now;
+    e.wire        = wire;
+    m_resolving[uuid] = e;
+    m_resolvingAuctions.insert(auctionId);
+
+    IpcMessage msg;
+    msg.op = IPC_RESOLVE_APPLY;
+    msg.body.append(reinterpret_cast<const uint8*>(wire.data()), wire.size());
+    QueueSend(msg);
+}
+
+uint64 MutationHandler::QueueResolution(uint32 auctionId, uint8 kind,
+                                        MutationFacts const& facts, uint64 now)
+{
+    if (HasActiveResolution(auctionId))
+    {
+        return 0;   // invariant: at most one ACTIVE journal row per auction
+    }
+    if (m_resolving.size() >= RESOLVE_WINDOW)
+    {
+        return 0;   // window closed (decision-10 flow control)
+    }
+
+    ResolveApply ra;
+    ra.uuid  = NextUuid();
+    ra.kind  = kind;
+    ra.facts = facts;
+
+    ByteBuffer wireBuf;
+    ra.Encode(wireBuf);
+    std::string wire(reinterpret_cast<const char*>(wireBuf.contents()),
+                     wireBuf.size());
+
+    AhJournal::JournalRow jr;
+    jr.uuid         = ra.uuid;
+    jr.auctionId    = auctionId;
+    jr.kind         = kind;
+    jr.state        = static_cast<uint8>(AhJournal::JRN_RESOLVING);
+    jr.facts        = wire;
+    jr.createdTime  = now;
+    jr.resolvedTime = 0;
+
+    // M1: the RESOLVING mark is a STANDALONE durable write BEFORE the send.
+    if (!JournalInsertResolving(jr))
+    {
+        return 0;
+    }
+
+    if (IsTerminalResolveKind(kind))
+    {
+        BookRow* row = m_book.Find(auctionId);
+        if (row != nullptr)
+        {
+            row->state = static_cast<uint8>(BOOK_RESOLVING);
+        }
+    }
+
+    TrackAndSend(ra.uuid, auctionId, kind, wire, now);
+    return ra.uuid;
+}
+
+void MutationHandler::Tick(uint64 gameTimeNow)
+{
+    SetGameTime(gameTimeNow);
+
+    // Task 6/7 handoff: prepare-timeout unlocks (RESOLVE_CANCELLED_UNLOCK)
+    // are minted -- and already journaled JRN_RESOLVING, inside
+    // CheckPrepareTimeouts's own txn -- via the m_resolveQueue seam. Hand
+    // each to the SAME outbox tracking so OnResolveAck can retire it exactly
+    // like a tick-minted resolution; no re-journal (already durable).
+    ResolveApply queued;
+    while (PopQueuedResolve(queued))
+    {
+        ByteBuffer wireBuf;
+        queued.Encode(wireBuf);
+        std::string wire(reinterpret_cast<const char*>(wireBuf.contents()),
+                         wireBuf.size());
+        TrackAndSend(queued.uuid, queued.facts.auctionId, queued.kind, wire,
+                    gameTimeNow);
+    }
+
+    std::vector<uint32> expired;
+    m_book.VisitExpired(gameTimeNow, expired);
+
+    uint32 minted = 0;
+    for (size_t i = 0; i < expired.size(); ++i)
+    {
+        if (minted >= RESOLVE_BUDGET_PER_TICK)
+        {
+            break;   // per-tick resolution budget (decision 10)
+        }
+        if (m_resolving.size() >= RESOLVE_WINDOW)
+        {
+            break;   // un-acked window closed; a later tick resumes
+        }
+
+        BookRow* row = m_book.Find(expired[i]);
+        if (row == nullptr || row->state != static_cast<uint8>(BOOK_LIVE))
+        {
+            continue;
+        }
+        if (HasActiveResolution(row->id))
+        {
+            continue;   // e.g. an un-acked bot-outbid refund on a LIVE row
+        }
+
+        // bidder==0 with bid!=0 is a BOT-held bid (contract 3): still WON;
+        // mangosd's finalize takes the legacy destroy branch for it.
+        MutationFacts facts = FactsFromRow(*row);
+        const uint8 kind = (row->bid != 0u)
+            ? static_cast<uint8>(RESOLVE_WON)
+            : static_cast<uint8>(RESOLVE_EXPIRED_NOBID);
+
+        if (QueueResolution(row->id, kind, facts, gameTimeNow) != 0u)
+        {
+            ++minted;
+        }
+    }
+}
+
+void MutationHandler::OnResolveAck(ResolveAck const& ack)
+{
+    std::map<uint64, ResolvingEntry>::iterator it = m_resolving.find(ack.uuid);
+    if (it == m_resolving.end())
+    {
+        fprintf(stderr, "ah-service: PROTOCOL FAULT - IPC_RESOLVE_ACK for"
+                        " unknown uuid=%08x:%08x (status=%u) - ignored\n",
+                static_cast<unsigned>(ack.uuid >> 32),
+                static_cast<unsigned>(ack.uuid & 0xFFFFFFFFu),
+                static_cast<unsigned>(ack.status));
+        return;
+    }
+
+    ResolvingEntry& e = it->second;
+
+    if (ack.status == static_cast<uint8>(RES_FAILED))
+    {
+        // mangosd's finalize failed durably: the entry STAYS RESOLVING and
+        // the book row is never deleted on FAILED (spec 4.3); the resend
+        // cadence retries it. Distinct from a fact-mismatch protocol fault,
+        // which mangosd never acks FAILED (decision 10).
+        fprintf(stderr, "ah-service: resolve uuid=%08x:%08x auction=%u acked"
+                        " FAILED - will retry on the cadence\n",
+                static_cast<unsigned>(ack.uuid >> 32),
+                static_cast<unsigned>(ack.uuid & 0xFFFFFFFFu), e.auctionId);
+        return;
+    }
+
+    if (ack.status != static_cast<uint8>(RES_APPLIED) &&
+        ack.status != static_cast<uint8>(RES_DUPLICATE))
+    {
+        fprintf(stderr, "ah-service: PROTOCOL FAULT - unknown ResolveAckStatus"
+                        " %u for uuid=%08x:%08x - ignored\n",
+                static_cast<unsigned>(ack.status),
+                static_cast<unsigned>(ack.uuid >> 32),
+                static_cast<unsigned>(ack.uuid & 0xFFFFFFFFu));
+        return;
+    }
+
+    // APPLIED and DUPLICATE are equivalent (spec 4.3: DUPLICATE just means
+    // the first APPLIED ack was lost).
+    if (IsTerminalResolveKind(e.kind))
+    {
+        // Terminal kinds: journal APPLIED + auction-row DELETE in ONE txn.
+        if (!CommitTerminalApply(ack.uuid, e.auctionId))
+        {
+            // Local durable apply failed: keep RESOLVING; the cadence
+            // re-sends, mangosd answers DUPLICATE, and we retry this commit.
+            fprintf(stderr, "ah-service: terminal apply txn FAILED for"
+                            " uuid=%08x:%08x auction=%u - kept RESOLVING\n",
+                    static_cast<unsigned>(ack.uuid >> 32),
+                    static_cast<unsigned>(ack.uuid & 0xFFFFFFFFu),
+                    e.auctionId);
+            return;
+        }
+        m_book.RemoveMemoryOnly(e.auctionId);
+    }
+    else
+    {
+        // Non-terminal kinds (CANCELLED_UNLOCK, REPAIR_RETURN): journal-only;
+        // the book row persists (spec 4.3 [v3 I2/I3]).
+        if (!JournalMarkApplied(ack.uuid))
+        {
+            fprintf(stderr, "ah-service: journal APPLIED mark FAILED for"
+                            " uuid=%08x:%08x - kept RESOLVING\n",
+                    static_cast<unsigned>(ack.uuid >> 32),
+                    static_cast<unsigned>(ack.uuid & 0xFFFFFFFFu));
+            return;
+        }
+    }
+
+    m_resolvingAuctions.erase(e.auctionId);
+    m_resolving.erase(it);
+}
+
+void MutationHandler::ResendStaleResolving(uint64 now)
+{
+    std::map<uint64, ResolvingEntry>::iterator it = m_resolving.begin();
+    for (; it != m_resolving.end(); ++it)
+    {
+        ResolvingEntry& e = it->second;
+        const uint64 age =
+            (now > e.lastSentSec) ? (now - e.lastSentSec) : 0u;
+        if (age < RESOLVE_RESEND_SEC)
+        {
+            continue;
+        }
+
+        // Safe: mangosd's resolve:<uuid> applied-record makes re-delivery
+        // idempotent (spec 4.3 [v3 C1]).
+        IpcMessage msg;
+        msg.op = IPC_RESOLVE_APPLY;
+        msg.body.append(reinterpret_cast<const uint8*>(e.wire.data()),
+                        e.wire.size());
+        QueueSend(msg);
+        e.lastSentSec = now;
+        ++e.attempts;
+
+        if (e.attempts > RESOLVE_STUCK_ALARM_ATTEMPTS)
+        {
+            fprintf(stderr, "ah-service: STUCK RESOLUTION uuid=%08x:%08x"
+                            " auction=%u attempts=%u - mangosd is not"
+                            " acking\n",
+                    static_cast<unsigned>(it->first >> 32),
+                    static_cast<unsigned>(it->first & 0xFFFFFFFFu),
+                    e.auctionId, e.attempts);
+        }
+    }
+}
+
+void MutationHandler::PrimeResolvingFromJournal(
+    std::vector<AhJournal::JournalRow> const& activeJournal)
+{
+    uint32 primed = 0;
+    for (size_t i = 0; i < activeJournal.size(); ++i)
+    {
+        AhJournal::JournalRow const& jr = activeJournal[i];
+        if (jr.state != static_cast<uint8>(AhJournal::JRN_RESOLVING))
+        {
+            continue;
+        }
+
+        // 4.3 at-least-once: track it and re-send the stored ResolveApply
+        // blob verbatim, immediately (the first loop pass drains it).
+        TrackAndSend(jr.uuid, jr.auctionId, jr.kind, jr.facts,
+                     0u /* lastSentSec: pre-clock boot send */);
+        ++primed;
+    }
+    if (primed != 0u)
+    {
+        printf("ah-service: boot re-sent %u RESOLVING journal entrie(s)\n",
+               primed);
+    }
 }

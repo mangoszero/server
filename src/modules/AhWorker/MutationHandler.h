@@ -26,9 +26,13 @@
 #include "AuctionBook.h"
 #include "Journal.h"
 #include "PlayerMutations.h"
+#include "IpcMessage.h"
 
 #include <deque>
 #include <map>
+#include <set>
+#include <string>
+#include <vector>
 
 class ServiceDatabase;
 
@@ -65,6 +69,93 @@ class MutationHandler
 {
     public:
         MutationHandler(AuctionBook& book, ServiceDatabase* db, uint32 runId);
+
+        virtual ~MutationHandler() {}
+
+        // --- SP-2 Task 7: expiry/win tick + resolve outbox ------------------
+        // (spec 4.3 / 4.3b / 7 / decision 10)
+
+        /// Per-tick cap on freshly minted resolutions (flow control).
+        static const uint32 RESOLVE_BUDGET_PER_TICK = 16u;
+        /// Max un-acked RESOLVE_APPLY frames in flight (window).
+        static const uint32 RESOLVE_WINDOW = 64u;
+        /// Re-send a RESOLVING entry older than this many game-seconds.
+        static const uint32 RESOLVE_RESEND_SEC = 30u;
+        /// Log a stuck-resolution alarm once attempts exceed this.
+        static const uint32 RESOLVE_STUCK_ALARM_ATTEMPTS = 10u;
+
+        /**
+         * @brief Expiry/win scan (spec 4.3b): mint resolutions for LIVE rows
+         *        past expireTime, bounded by the per-tick budget and the
+         *        un-acked window. Also hands off any Task-6 prepare-timeout
+         *        unlock queued via CheckPrepareTimeouts to the same outbox
+         *        tracking (PopQueuedResolve/TrackAndSend) so OnResolveAck can
+         *        retire it identically to a tick-minted resolution.
+         */
+        void Tick(uint64 gameTimeNow);
+
+        /**
+         * @brief Process a mangosd IPC_RESOLVE_ACK. Terminal kinds (WON,
+         *        EXPIRED_NOBID) commit journal-APPLIED + auction-row DELETE
+         *        in one checked txn on APPLIED/DUPLICATE and drop the book
+         *        row; non-terminal kinds are journal-only and the row
+         *        persists. FAILED and failed local txns keep the entry
+         *        RESOLVING for the resend cadence.
+         */
+        void OnResolveAck(ResolveAck const& ack);
+
+        /// Channel-up retry driver (decision 10): re-send RESOLVING entries
+        /// older than RESOLVE_RESEND_SEC verbatim; logs a stuck alarm past
+        /// RESOLVE_STUCK_ALARM_ATTEMPTS.
+        void ResendStaleResolving(uint64 now);
+
+        /**
+         * @brief Journal a resolution (JRN_RESOLVING, standalone durable),
+         *        mark the row BOOK_RESOLVING for terminal kinds, queue the
+         *        IPC_RESOLVE_APPLY frame and track it against the window.
+         *
+         * @return the worker-minted resolution uuid, or 0 if refused
+         *         (active resolution on the auction / window closed /
+         *         journal write failed).
+         */
+        uint64 QueueResolution(uint32 auctionId, uint8 kind,
+                               MutationFacts const& facts, uint64 now);
+
+        /// True while auctionId has an un-acked RESOLVING entry in flight.
+        bool HasActiveResolution(uint32 auctionId) const;
+
+        /**
+         * @brief Boot replay (spec 4.3 at-least-once): track + immediately
+         *        re-queue every JRN_RESOLVING journal row, replaying the
+         *        stored facts blob verbatim. Call once after LoadFromDb.
+         */
+        void PrimeResolvingFromJournal(
+            std::vector<AhJournal::JournalRow> const& activeJournal);
+
+        /// Drain handler-queued outbound frames (caller sends them).
+        void TakeOutbound(std::vector<IpcMessage>& out);
+
+        /// IPC_GAMETIME-synced clock (spec 7/M1).
+        void SetGameTime(uint64 now);
+        uint64 GameTime() const;
+
+        /// Number of un-acked RESOLVING entries in flight.
+        size_t ResolvingCount() const;
+
+        /**
+         * @brief Worker-minted uuid = (runId << 32) | seq (contract 3).
+         *
+         * Shares NextWorkerUuid()'s sequence space (same m_nextSeq counter,
+         * already based at 0x80000000u) so the two minters can never collide.
+         */
+        uint64 NextUuid();
+
+        /// WON and EXPIRED_NOBID delete the book row on APPLIED; all other
+        /// kinds are journal-only at ack time (spec 4.3 [v3 I2/I3]).
+        static bool IsTerminalResolveKind(uint8 kind);
+
+        /// Book-facts snapshot: prior* zeroed, cur* = the row's live values.
+        static MutationFacts FactsFromRow(BookRow const& row);
 
         PlayerMutationResult OnSell(PlayerSellIntent const& in);
         PlayerMutationResult OnBid(PlayerBidIntent const& in);
@@ -139,6 +230,25 @@ class MutationHandler
         /// row's bidder/bid; effectiveBid is left 0 for the caller to set.
         static void FillFacts(BookRow const& row, MutationFacts& out);
 
+    protected:
+        // --- DB/send seams (virtual so --selftest can record instead) -------
+
+        /// Standalone durable RESOLVING insert (M1: BEFORE the send).
+        virtual bool JournalInsertResolving(AhJournal::JournalRow const& row);
+
+        /// One txn: DELETE auction row + journal -> JRN_APPLIED (terminal ack).
+        virtual bool CommitTerminalApply(uint64 uuid, uint32 auctionId);
+
+        /// Journal -> JRN_APPLIED only (non-terminal ack).
+        virtual bool JournalMarkApplied(uint64 uuid);
+
+        /// Append one frame to the outbound queue (reliable lane on send).
+        virtual void QueueSend(IpcMessage const& msg);
+
+        /// Track a freshly journalled resolution and queue its APPLY frame.
+        void TrackAndSend(uint64 uuid, uint32 auctionId, uint8 kind,
+                          std::string const& wire, uint64 now);
+
     private:
         PlayerMutationResult MakeResult(uint64 uuid, uint8 op, uint8 status,
                                         uint8 reason) const;
@@ -178,6 +288,23 @@ class MutationHandler
         /// 0x00000001+ half of this run-id's sequence space (BotBrain.cpp:106),
         /// so the two minters can never collide.
         uint32           m_nextSeq;
+
+        // --- SP-2 Task 7: expiry/win tick + resolve outbox state ------------
+
+        /// One un-acked outbound resolution (decision-10 window bookkeeping).
+        struct ResolvingEntry
+        {
+            uint32      auctionId;   ///< Book row this resolves.
+            uint8       kind;        ///< ResolveKind (drives ack terminality).
+            uint32      attempts;    ///< Send attempts (1 = first send).
+            uint64      lastSentSec; ///< Game-time of the last send (0 = boot).
+            std::string wire;        ///< Encoded ResolveApply body (verbatim re-send).
+        };
+
+        std::map<uint64, ResolvingEntry> m_resolving;         ///< By uuid.
+        std::set<uint32>                 m_resolvingAuctions; ///< Invariant guard.
+        std::vector<IpcMessage>          m_outbound;          ///< Drained by the loop.
+        uint64                           m_gameTimeNow;       ///< Latest game time.
 
         // Non-copyable: single-owner main-thread state.
         MutationHandler(const MutationHandler&);

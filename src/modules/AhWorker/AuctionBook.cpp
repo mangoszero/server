@@ -348,6 +348,11 @@ void AuctionBook::RollbackRemove(BookRow const& row)
     m_rows[row.id] = row;
 }
 
+void AuctionBook::RemoveMemoryOnly(uint32 auctionId)
+{
+    m_rows.erase(auctionId);
+}
+
 uint32 AuctionBook::CountOwned(uint32 ownerGuid, uint8 houseId) const
 {
     uint8 const group = HouseGroup(houseId);
@@ -361,4 +366,27 @@ uint32 AuctionBook::CountOwned(uint32 ownerGuid, uint8 houseId) const
         }
     }
     return count;
+}
+
+void AuctionBook::VisitExpired(uint64 now, std::vector<uint32>& outIds) const
+{
+    outIds.clear();
+    BookMap::const_iterator it = m_rows.begin();
+    for (; it != m_rows.end(); ++it)
+    {
+        if (it->second.state != static_cast<uint8>(BOOK_LIVE))
+        {
+            continue;
+        }
+        if (it->second.expireTime > now)
+        {
+            continue;
+        }
+        outIds.push_back(it->first);
+    }
+}
+
+void AuctionBook::TestSeedRow(BookRow const& row)
+{
+    m_rows[row.id] = row;
 }
