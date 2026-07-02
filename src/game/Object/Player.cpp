@@ -29,6 +29,8 @@
 #include "Opcodes.h"
 #include "SpellMgr.h"
 #include "World.h"
+#include "AntiCheatMgr.h"
+#include "MovementAnticheat.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "UpdateMask.h"
@@ -533,6 +535,9 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
     m_playerbotMgr = 0;
 #endif
 
+    m_movementAnticheat = NULL;
+    m_acPosTimer = 5000;
+
     m_transport = 0;
 
     m_speakTime = 0;
@@ -758,6 +763,14 @@ Player::~Player()
     // Perform cleanup before deleting the player object
     CleanupsBeforeDelete();
 
+    // Anti-Cheat: free the per-player movement validator and drop the score entry
+    if (m_movementAnticheat)
+    {
+        delete m_movementAnticheat;
+        m_movementAnticheat = NULL;
+    }
+    sAntiCheatMgr->RemovePlayer(GetGUIDLow());
+
     // Ensure the social object is unloaded (should already be done in PlayerLogout)
     // m_social = NULL;
 
@@ -816,6 +829,14 @@ Player::~Player()
     {
         itr->second.state->RemovePlayer(this);
     }
+}
+
+// Anti-Cheat: lazily create the per-player movement validator on first use.
+MovementAnticheat* Player::GetMovementAnticheat()
+{
+    if (!m_movementAnticheat)
+        m_movementAnticheat = new MovementAnticheat(this);
+    return m_movementAnticheat;
 }
 
 /**
@@ -1558,6 +1579,21 @@ void Player::Update(uint32 update_diff, uint32 p_time)
     if (!IsInWorld())
     {
         return;
+    }
+
+    // Anti-Cheat: periodic idle-position re-validation (second cadence). Only if a
+    // movement validator exists (created on first movement); gating is inside.
+    if (m_movementAnticheat)
+    {
+        if (m_acPosTimer <= update_diff)
+        {
+            m_acPosTimer = 5000;
+            m_movementAnticheat->PeriodicCheck();
+        }
+        else
+        {
+            m_acPosTimer -= update_diff;
+        }
     }
 
     // Handle undelivered mail
@@ -2797,6 +2833,24 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
     // not too far
     if (!unit->IsWithinDistInMap(this, INTERACTION_DISTANCE))
     {
+        // Anti-Cheat: the core already blocks this interaction; a request to talk to
+        // an NPC well beyond interaction range (vendor/gossip/trainer/banker/...) is
+        // a remote-interaction attempt worth attributing. Score only, generous slack
+        // vs latency so a player who just walked up isn't flagged.
+        if (sAntiCheatMgr->IsEnabled() && !sAntiCheatMgr->IsExempt(this))
+        {
+            uint32 lat = GetSession() ? GetSession()->GetLatencyEWMA() : 0;
+            float slack = INTERACTION_DISTANCE + 8.0f + GetSpeed(MOVE_RUN) * (float(lat) / 1000.0f);
+            if (GetDistance(unit) > slack)
+            {
+                AntiCheatContext ctx;
+                ctx.mapId = GetMapId();
+                ctx.x = GetPositionX(); ctx.y = GetPositionY(); ctx.z = GetPositionZ();
+                ctx.latency = lat;
+                ctx.detail = "npc interaction beyond range";
+                sAntiCheatMgr->RecordViolation(this, AC_VIOLATION_INTERACT, 15.0f, ctx);
+            }
+        }
         return NULL;
     }
 
@@ -5350,6 +5404,10 @@ void Player::SetWaterWalk(bool enable)
     data << GetPackGUID();
     data << uint32(0);
     GetSession()->SendPacket(&data);
+    // Record the server grant so the anti-cheat treats the client asserting the
+    // water-walk flag as legitimate (single source of truth for all callers:
+    // GM commands, spell auras, scripts).
+    GetMovementAnticheat()->SetGrantedFlag(MOVEFLAG_WATERWALKING, enable);
 }
 
 /**
@@ -5394,6 +5452,7 @@ void Player::SetCanFly(bool enable)
     }
 
     SendHeartBeat();
+    GetMovementAnticheat()->SetGrantedFlag(MOVEFLAG_FLYING | MOVEFLAG_CAN_FLY, enable);
 }
 
 /**
@@ -5422,6 +5481,7 @@ void Player::SetFeatherFall(bool enable)
     {
         SetFallInformation(0, GetPositionZ());
     }
+    GetMovementAnticheat()->SetGrantedFlag(MOVEFLAG_SAFE_FALL, enable);
 }
 
 /**
@@ -5444,6 +5504,7 @@ void Player::SetHover(bool enable)
     data << GetPackGUID();
     data << uint32(0);
     SendMessageToSet(&data, true);
+    GetMovementAnticheat()->SetGrantedFlag(MOVEFLAG_HOVER, enable);
 }
 
 /** Preconditions:

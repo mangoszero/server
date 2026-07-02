@@ -257,6 +257,30 @@ class ChatHandler
         bool HandleAhServiceConsoleHideCommand(char* args);
         bool HandleAhRepairCommand(char* args);
 
+        // Anti-Cheat framework commands
+        bool HandleAntiCheatStatusCommand(char* args);
+        bool HandleAntiCheatReportCommand(char* args);
+        bool HandleAntiCheatReloadCommand(char* args);
+        bool HandleAntiCheatWarnCommand(char* args);
+        bool HandleAntiCheatJailCommand(char* args);
+        bool HandleAntiCheatUnjailCommand(char* args);
+        bool HandleAntiCheatDeleteCommand(char* args);
+        // Anti-Cheat GM test tooling
+        bool HandleAntiCheatTopCommand(char* args);
+        bool HandleAntiCheatSetCommand(char* args);
+        bool HandleAntiCheatScoreCommand(char* args);
+        bool HandleAntiCheatTestCommand(char* args);
+        bool HandleAntiCheatRubberbandCommand(char* args);
+        bool HandleSpoofCommand(char* args);
+
+        // Anti-Cheat time-sync subsystem commands
+        bool HandleTimeSyncStatusCommand(char* args);
+        bool HandleTimeSyncConfigCommand(char* args);
+        bool HandleTimeSyncSetCommand(char* args);
+        bool HandleTimeSyncResyncCommand(char* args);
+        bool HandleTimeSyncSkipCommand(char* args);
+        bool HandleTimeSyncDesyncCommand(char* args);
+
         bool HandleAuctionAllianceCommand(char* args);
         bool HandleAuctionGoblinCommand(char* args);
         bool HandleAuctionHordeCommand(char* args);
