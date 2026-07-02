@@ -2614,7 +2614,7 @@ Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, floa
  * @param despwtime The despawn time in milliseconds.
  * @return The summoned game object, or null on failure.
  */
-GameObject* WorldObject::SummonGameObject(uint32 id, float x, float y, float z, float angle, uint32 despwtime)
+GameObject* WorldObject::SummonGameObject(uint32 id, float x, float y, float z, float angle, uint32 despwtime, uint32 displayId, float scale)
 {
     GameObject* pGameObj = new GameObject;
 
@@ -2632,6 +2632,14 @@ GameObject* WorldObject::SummonGameObject(uint32 id, float x, float y, float z, 
     }
 
     pGameObj->SetRespawnTime(despwtime/IN_MILLISECONDS);
+
+    // Optional per-instance model/colour override (used by the debug visualizer
+    // so one pooled template can render any category colour). Set before Add so
+    // the create packet carries the right display id.
+    if (displayId)
+        pGameObj->SetDisplayId(displayId);
+    if (scale > 0.0f)
+        pGameObj->SetObjectScale(scale);
 
     map->Add(pGameObj);
     pGameObj->AIM_Initialize();
@@ -2986,6 +2994,21 @@ void WorldObject::PlayDirectSound(uint32 sound_id, Player const* target /*= NULL
 {
     WorldPacket data(SMSG_PLAY_SOUND, 4);
     data << uint32(sound_id);
+    if (target)
+    {
+        target->SendDirectMessage(&data);
+    }
+    else
+    {
+        SendMessageToSet(&data, true);
+    }
+}
+
+void WorldObject::PlaySpellVisual(uint32 kitId, Player const* target /*= NULL*/) const
+{
+    WorldPacket data(SMSG_PLAY_SPELL_VISUAL, 8 + 4);
+    data << GetObjectGuid();
+    data << uint32(kitId);                                   // index from SpellVisualKit.dbc
     if (target)
     {
         target->SendDirectMessage(&data);

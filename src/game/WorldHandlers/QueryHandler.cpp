@@ -52,6 +52,7 @@
 #include "Player.h"
 #include "NPCHandler.h"
 #include "SQLStorages.h"
+#include "DebugVis.h"
 
 /**
  * @brief Sends an in-memory name query response for a player.
@@ -261,6 +262,14 @@ void WorldSession::HandleGameObjectQueryOpcode(WorldPacket& recv_data)
                     Name = gl->Name[loc_idx];
                 }
             }
+        }
+        // Debug visualizer: pooled marker entries carry a per-instance tooltip so
+        // mousing over a marker shows that marker's own captured debug values.
+        if (DebugVis::IsDebugEntry(entryID))
+        {
+            std::string dbgLabel;
+            if (DebugVis::GetEntryLabel(entryID, dbgLabel))
+                Name = dbgLabel;
         }
         DETAIL_LOG("WORLD: CMSG_GAMEOBJECT_QUERY '%s' - Entry: %u. ", info->name, entryID);
         WorldPacket data(SMSG_GAMEOBJECT_QUERY_RESPONSE, 150);
