@@ -1147,18 +1147,45 @@ static int RunMutationSelfTest()
             fprintf(stderr, "mutation selftest FAILED: self-buy\n");
             return 1;
         }
-        if (MutationHandler::ValidateBuyout(&live, 200u, 49999u, 1u, 2u, reason) != VALIDATE_REJECT_SILENT)
+        // spec 4.1: a below-buyout IPC_PLAYER_BUYOUT is a NORMAL BID at maxPrice,
+        // not a silent forwarder defect. 49999 beats bid 1000 and clears the
+        // min-increment/startbid, so it admits (caller commits it as a bid).
+        if (MutationHandler::ValidateBuyout(&live, 200u, 49999u, 1u, 2u, reason) != VALIDATE_ADMIT)
         {
-            fprintf(stderr, "mutation selftest FAILED: buyout below price must be silent\n");
+            fprintf(stderr, "mutation selftest FAILED: below-buyout buyout must admit as bid\n");
             return 1;
         }
+        // Below the min-increment on the bid leg -> BID_INCREMENT (bid 1000,
+        // outbid 50, threshold 1050).
+        if (MutationHandler::ValidateBuyout(&live, 200u, 1049u, 1u, 2u, reason) != VALIDATE_REJECT ||
+            reason != BOOK_ERR_BID_INCREMENT)
+        {
+            fprintf(stderr, "mutation selftest FAILED: below-buyout buyout increment\n");
+            return 1;
+        }
+        if (MutationHandler::ValidateBuyout(&live, 200u, 1050u, 1u, 2u, reason) != VALIDATE_ADMIT)
+        {
+            fprintf(stderr, "mutation selftest FAILED: below-buyout buyout at-increment must admit\n");
+            return 1;
+        }
+        // Buyout-less row: maxPrice is always a bid (never a win); 60000 clears
+        // the increment/startbid -> admit as bid.
         BookRow noBuyout = live;
         noBuyout.buyout = 0u;
-        if (MutationHandler::ValidateBuyout(&noBuyout, 200u, 60000u, 1u, 2u, reason) != VALIDATE_REJECT_SILENT)
+        if (MutationHandler::ValidateBuyout(&noBuyout, 200u, 60000u, 1u, 2u, reason) != VALIDATE_ADMIT)
         {
-            fprintf(stderr, "mutation selftest FAILED: buyout-less must be silent\n");
+            fprintf(stderr, "mutation selftest FAILED: buyout-less must admit as bid\n");
             return 1;
         }
+        // Below-startbid on the bid leg is a legacy silent reject (fresh row:
+        // bid 0, startbid 100, buyout 50000).
+        BookRow freshBuyout = MakeRawRow(4u, 1u, 100u).row;
+        if (MutationHandler::ValidateBuyout(&freshBuyout, 200u, 50u, 1u, 2u, reason) != VALIDATE_REJECT_SILENT)
+        {
+            fprintf(stderr, "mutation selftest FAILED: below-buyout below-startbid must be silent\n");
+            return 1;
+        }
+        // At/over buyout is the removing WIN -> admit.
         if (MutationHandler::ValidateBuyout(&live, 200u, 50000u, 1u, 2u, reason) != VALIDATE_ADMIT)
         {
             fprintf(stderr, "mutation selftest FAILED: valid buyout rejected\n");
@@ -1282,6 +1309,70 @@ static int RunMutationSelfTest()
             r.facts.auctionId != 41u || r.facts.buyout != 50000u)
         {
             fprintf(stderr, "mutation selftest FAILED: REJECTED facts\n");
+            return 1;
+        }
+
+        // OnBuyout below-buyout (spec 4.1): IPC_PLAYER_BUYOUT with maxPrice <
+        // buyout is a NORMAL BID at maxPrice, NOT a silent reject. Auction 41 is
+        // LIVE (owner 100, bid 0, buyout 50000, startbid 100).
+        PlayerBuyoutIntent bbo;
+        bbo.uuid = UINT64_C(0x0000000200000300);
+        bbo.auctionId = 41u;
+        bbo.bidderGuid = 205u;
+        bbo.maxPrice = 5000u;   // below buyout 50000, above startbid 100
+        r = handler.OnBuyout(bbo);
+        if (r.status != MUT_OK || r.op != 0x42u || book.Find(41u) == NULL ||
+            book.Find(41u)->state != BOOK_LIVE ||
+            r.facts.effectiveBid != 5000u || r.facts.curBid != 5000u ||
+            r.facts.curBidderGuid != 205u || r.facts.buyout != 50000u ||
+            r.facts.priorBidderGuid != 0u || r.facts.priorBidAmount != 0u ||
+            book.Find(41u)->bid != 5000u || book.Find(41u)->bidder != 205u)
+        {
+            fprintf(stderr, "mutation selftest FAILED: OnBuyout below-buyout commits as bid\n");
+            return 1;
+        }
+
+        // Below-buyout buyout that also fails min-increment (bid 5000, outbid
+        // 250, threshold 5250) -> BID_INCREMENT reject, row untouched.
+        bbo.uuid += 1u;
+        bbo.bidderGuid = 206u;
+        bbo.maxPrice = 5100u;
+        r = handler.OnBuyout(bbo);
+        if (r.status != MUT_REJECTED || r.reason != BOOK_ERR_BID_INCREMENT ||
+            book.Find(41u) == NULL || book.Find(41u)->bid != 5000u)
+        {
+            fprintf(stderr, "mutation selftest FAILED: OnBuyout below-buyout min-increment reject\n");
+            return 1;
+        }
+
+        // Below-buyout buyout that beats the current bid -> commits as a bid,
+        // displacing bidder 205 into the prior* refund facts.
+        bbo.uuid += 1u;
+        bbo.bidderGuid = 207u;
+        bbo.maxPrice = 6000u;
+        r = handler.OnBuyout(bbo);
+        if (r.status != MUT_OK || book.Find(41u) == NULL ||
+            book.Find(41u)->state != BOOK_LIVE ||
+            r.facts.effectiveBid != 6000u || r.facts.curBid != 6000u ||
+            r.facts.curBidderGuid != 207u || r.facts.buyout != 50000u ||
+            r.facts.priorBidderGuid != 205u || r.facts.priorBidAmount != 5000u)
+        {
+            fprintf(stderr, "mutation selftest FAILED: OnBuyout below-buyout outbid commits as bid\n");
+            return 1;
+        }
+
+        // A genuine win now (maxPrice >= buyout) removes the row; effectiveBid ==
+        // buyout is the win signal, prior* carry displaced bidder 207.
+        bbo.uuid += 1u;
+        bbo.bidderGuid = 208u;
+        bbo.maxPrice = 55000u;
+        r = handler.OnBuyout(bbo);
+        if (r.status != MUT_OK || r.op != 0x42u || book.Find(41u) != NULL ||
+            r.facts.effectiveBid != 50000u || r.facts.curBid != 50000u ||
+            r.facts.curBidderGuid != 208u ||
+            r.facts.priorBidderGuid != 207u || r.facts.priorBidAmount != 6000u)
+        {
+            fprintf(stderr, "mutation selftest FAILED: OnBuyout win after below-buyout bids\n");
             return 1;
         }
     }

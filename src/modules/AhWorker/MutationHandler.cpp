@@ -223,16 +223,36 @@ ValidationOutcome MutationHandler::ValidateBuyout(BookRow const* row, uint32 bid
         return VALIDATE_REJECT;
     }
 
-    // Legacy price<=bid guard (:756-762) applies to the buyout path too.
+    // Legacy price<=bid guard (:756-762) applies to both the win and the
+    // below-buyout bid leg.
     if (maxPrice <= row->bid)
     {
         reasonOut = BOOK_ERR_HIGHER_BID;
         return VALIDATE_REJECT;
     }
 
-    // No buyout on the row, or price below it: mangosd should have routed this
-    // as a plain bid. Forwarder defect -> silent reject (caller logs).
-    if (row->buyout == 0u || maxPrice < row->buyout)
+    // At/over buyout on a row that HAS a buyout -> BUYOUT WIN: admit; the caller
+    // removes the row and reports effectiveBid == buyout.
+    if (row->buyout != 0u && maxPrice >= row->buyout)
+    {
+        reasonOut = BOOK_ERR_OK;
+        return VALIDATE_ADMIT;
+    }
+
+    // Below buyout (or buyout-less): mangosd fully reserved maxPrice and the
+    // worker adjudicates it as a NORMAL BID at maxPrice (spec 4.1: "buy out if
+    // maxPrice >= buyout, else place a normal bid at maxPrice"). Apply the
+    // remaining legacy bid checks to maxPrice; the caller commits it as a bid.
+
+    // Minimum increment (:764-771) -- unconditional here (always below buyout).
+    if (maxPrice < row->bid + OutBidAmount(row->bid))
+    {
+        reasonOut = BOOK_ERR_BID_INCREMENT;
+        return VALIDATE_REJECT;
+    }
+
+    // Below the start bid: legacy returns with NO result packet (:780-784).
+    if (maxPrice < row->startbid)
     {
         reasonOut = BOOK_ERR_OK;
         return VALIDATE_REJECT_SILENT;
@@ -343,33 +363,49 @@ PlayerMutationResult MutationHandler::OnBid(PlayerBidIntent const& in)
         return res;
     }
 
+    // Commit the bid (shared with the below-buyout IPC_PLAYER_BUYOUT leg).
+    return CommitBidAt(in.auctionId, in.bidderGuid, in.bidAmount, 0x41u, in.uuid);
+}
+
+PlayerMutationResult MutationHandler::CommitBidAt(uint32 auctionId, uint32 bidder,
+                                                  uint32 amount, uint8 op, uint64 uuid)
+{
+    PlayerMutationResult res = MakeResult(uuid, op, MUT_REJECTED, BOOK_ERR_DATABASE);
+
+    // Caller guarantees the row is present and LIVE (validation ran to ADMIT).
+    BookRow* row = m_book.Find(auctionId);
+    if (row != NULL)
+    {
+        FillFacts(*row, res.facts);
+    }
+
     // Commit: auction UPDATE + journal COMMITTED, one checked txn (spec 4.1
     // step 3). Snapshot the prior bidder for the outbid-refund facts FIRST.
-    uint32 const prevBidder = row->bidder;
-    uint32 const prevBid    = row->bid;
+    uint32 const prevBidder = (row != NULL) ? row->bidder : 0u;
+    uint32 const prevBid    = (row != NULL) ? row->bid : 0u;
 
     if (!BeginCommit())
     {
         return res;
     }
-    m_book.UpdateBid(in.auctionId, in.bidderGuid, in.bidAmount);
+    m_book.UpdateBid(auctionId, bidder, amount);
 
     res.status = MUT_OK;
     res.reason = BOOK_ERR_OK;
-    FillFacts(*m_book.Find(in.auctionId), res.facts);
+    FillFacts(*m_book.Find(auctionId), res.facts);
     res.facts.priorBidderGuid = prevBidder;
     res.facts.priorBidAmount  = prevBid;
-    res.facts.effectiveBid    = in.bidAmount;
+    res.facts.effectiveBid    = amount;
 
-    JournalCommitted(in.uuid, in.auctionId, 0x41u, res);
+    JournalCommitted(uuid, auctionId, op, res);
     if (!FinishCommit())
     {
-        m_book.RollbackUpdateBid(in.auctionId, prevBidder, prevBid);
+        m_book.RollbackUpdateBid(auctionId, prevBidder, prevBid);
         res.status = MUT_REJECTED;
         res.reason = BOOK_ERR_DATABASE;
-        FillFacts(*m_book.Find(in.auctionId), res.facts);
+        FillFacts(*m_book.Find(auctionId), res.facts);
         fprintf(stderr, "ah-service: bid commit failed for auction %u -"
-                        " REJECTED err-database\n", in.auctionId);
+                        " REJECTED err-database\n", auctionId);
         return res;
     }
 
@@ -395,13 +431,25 @@ PlayerMutationResult MutationHandler::OnBuyout(PlayerBuyoutIntent const& in)
                                                ownerAccount, bidderAccount, reason);
     if (v != VALIDATE_ADMIT)
     {
-        if (v == VALIDATE_REJECT_SILENT)
-        {
-            fprintf(stderr, "ah-service: protocol fault: IPC_PLAYER_BUYOUT below"
-                            " buyout or buyout-less (auction %u)\n", in.auctionId);
-        }
+        // A silent reject here is a genuine below-startbid on the bid leg, not a
+        // forwarder defect: a below-buyout IPC_PLAYER_BUYOUT is a normal bid
+        // (spec 4.1), and only its below-startbid case is legacy-silent.
         res.reason = reason;
         return res;
+    }
+
+    // spec 4.1: IPC_PLAYER_BUYOUT means "buy out if maxPrice >= buyout, else
+    // place a normal BID at maxPrice". Below buyout (or buyout-less) commits as
+    // a bid at maxPrice; only a genuine at/over-buyout is the removing WIN.
+    // effectiveBid < buyout (or buyout == 0) is the signal mangosd reads as
+    // "bid, not win"; effectiveBid == buyout != 0 means WIN.
+    bool const isWin = (row->buyout != 0u && in.maxPrice >= row->buyout);
+    if (!isWin)
+    {
+        // Below-buyout normal bid at maxPrice, op stays 0x42 (originating
+        // opcode). Same UpdateBid + JRN_COMMITTED path as OnBid, prior* =
+        // displaced bidder, effectiveBid = maxPrice, row stays LIVE.
+        return CommitBidAt(in.auctionId, in.bidderGuid, in.maxPrice, 0x42u, in.uuid);
     }
 
     // The sold row leaves the book: DELETE + journal COMMITTED, one checked

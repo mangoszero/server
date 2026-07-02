@@ -338,6 +338,18 @@ class MutationHandler
         PlayerMutationResult MakeResult(uint64 uuid, uint8 op, uint8 status,
                                         uint8 reason) const;
 
+        /**
+         * @brief Commit a NORMAL BID at @p amount on an already-validated LIVE
+         *        row: UpdateBid + JRN_COMMITTED in one checked txn, prior* =
+         *        the displaced bidder, effectiveBid = amount, row stays LIVE,
+         *        rollback-on-commit-failure. Shared by OnBid (op 0x41) and the
+         *        below-buyout IPC_PLAYER_BUYOUT leg (op 0x42): @p op stamps both
+         *        the reply op and the journal kind. The caller MUST have run the
+         *        bid validation to VALIDATE_ADMIT first (row present + LIVE).
+         */
+        PlayerMutationResult CommitBidAt(uint32 auctionId, uint32 bidder,
+                                         uint32 amount, uint8 op, uint64 uuid);
+
         /// SELECT account FROM characters (0 if unknown / selftest mode).
         uint32 LookupAccount(uint32 guidLow) const;
 
