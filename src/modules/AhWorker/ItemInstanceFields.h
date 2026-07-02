@@ -28,6 +28,7 @@
 /// Decoded subset of the item_instance.data UpdateFields blob the AH wire needs.
 struct ItemInstanceFields
 {
+    uint32 entry;         ///< item entry (word 3, OBJECT_FIELD_ENTRY)
     uint32 enchantId;     ///< perm-enchant id (word 22)
     uint32 suffixFactor;  ///< property seed (word 43)
     int32  randomPropId;  ///< random-properties id (word 44, signed)

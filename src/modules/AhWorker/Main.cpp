@@ -74,6 +74,7 @@
 #include "MarketSnapshot.h"
 #include "BotBrain.h"
 #include "ItemInstanceFields.h"
+#include "AuctionBook.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -734,6 +735,292 @@ static int RunIntentCodecSelfTest()
     }
 
     printf("intent codec selftest OK\n");
+    fflush(stdout);
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Self-test: SP-2 authoritative book (load gates, re-mark, admission)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Build one clean RawAuctionRow for book/mutation selftests.
+ *
+ * itemGuid = 5000 + id; item 2589 x20, startbid 100, buyout 50000, deposit 15,
+ * no bidder. Shared by RunBookSelfTest and the Task 5/6 mutation selftests.
+ */
+static RawAuctionRow MakeRawRow(uint32 id, uint8 houseId, uint32 owner)
+{
+    RawAuctionRow r;
+    r.row.id               = id;
+    r.row.houseId          = houseId;
+    r.row.itemGuid         = 5000u + id;
+    r.row.itemTemplate     = 2589u;
+    r.row.itemCount        = 20u;
+    r.row.randomPropertyId = 0;
+    r.row.owner            = owner;
+    r.row.buyout           = 50000u;
+    r.row.expireTime       = 2000000000u;
+    r.row.bidder           = 0u;
+    r.row.bid              = 0u;
+    r.row.startbid         = 100u;
+    r.row.deposit          = 15u;
+    r.row.state            = BOOK_LIVE;
+    r.itemExists   = true;
+    r.blobValid    = true;
+    r.itemEntry    = 2589u;
+    r.itemStack    = 20u;
+    r.itemRandProp = 0;
+    return r;
+}
+
+/**
+ * @brief Pure in-memory book tests: load gates 1-4, journal re-mark,
+ *        one-ACTIVE invariant, the spec 4.3b admission matrix, house
+ *        grouping for the 50-cap, and the memory mutators/rollbacks.
+ *
+ * @return 0 on success, 1 on any failure.
+ */
+static int RunBookSelfTest()
+{
+    // --- ItemInstanceFields: new entry field (word 3, OBJECT_FIELD_ENTRY) ---
+    {
+        std::string blob;
+        for (int w = 0; w < 45; ++w)
+        {
+            char buf[16];
+            sprintf(buf, "%d", w * 10);
+            if (w != 0)
+            {
+                blob += " ";
+            }
+            blob += buf;
+        }
+        ItemInstanceFields f = AhItemBlob::Decode(blob);
+        if (!f.valid || f.entry != 30u)
+        {
+            fprintf(stderr, "book selftest FAILED: blob entry decode\n");
+            return 1;
+        }
+    }
+
+    // --- load gating + gate-C adoption ---
+    {
+        std::vector<RawAuctionRow> rows;
+        rows.push_back(MakeRawRow(1u, 1u, 100u));            // clean
+        RawAuctionRow noItem = MakeRawRow(2u, 1u, 100u);     // gate A: no item row
+        noItem.itemExists = false;
+        rows.push_back(noItem);
+        RawAuctionRow badBlob = MakeRawRow(3u, 1u, 100u);    // gate A: undecodable blob
+        badBlob.blobValid = false;
+        rows.push_back(badBlob);
+        rows.push_back(MakeRawRow(4u, 9u, 100u));            // gate B: houseid 9
+        RawAuctionRow drift = MakeRawRow(5u, 7u, 100u);      // gate C: adopt item data
+        drift.itemStack    = 5u;
+        drift.itemEntry    = 2590u;
+        drift.itemRandProp = 7;
+        rows.push_back(drift);
+
+        AuctionBook book(NULL);
+        std::vector<AhJournal::JournalRow> noJournal;
+        if (!book.BuildFromRows(rows, noJournal))
+        {
+            fprintf(stderr, "book selftest FAILED: clean build returned false\n");
+            return 1;
+        }
+        if (book.Size() != 2u)
+        {
+            fprintf(stderr, "book selftest FAILED: size=%u (exp 2)\n",
+                    static_cast<unsigned>(book.Size()));
+            return 1;
+        }
+        if (book.Orphans().size() != 3u ||
+            book.Orphans()[0].kind != ORPHAN_MISSING_ITEM ||
+            book.Orphans()[1].kind != ORPHAN_MISSING_ITEM ||
+            book.Orphans()[2].kind != ORPHAN_BAD_HOUSE)
+        {
+            fprintf(stderr, "book selftest FAILED: orphan classification\n");
+            return 1;
+        }
+        BookRow* adopted = book.Find(5u);
+        if (adopted == NULL || adopted->itemCount != 5u ||
+            adopted->itemTemplate != 2590u || adopted->randomPropertyId != 7)
+        {
+            fprintf(stderr, "book selftest FAILED: gate-C adoption\n");
+            return 1;
+        }
+    }
+
+    // --- journal re-mark + one-ACTIVE-per-auction invariant ---
+    {
+        std::vector<RawAuctionRow> rows;
+        rows.push_back(MakeRawRow(10u, 1u, 100u));
+        rows.push_back(MakeRawRow(11u, 1u, 100u));
+        rows.push_back(MakeRawRow(12u, 1u, 100u));
+
+        std::vector<AhJournal::JournalRow> jr;
+        AhJournal::JournalRow j;
+        j.uuid = UINT64_C(0x0000000100000001);
+        j.auctionId = 10u;
+        j.kind = 2u;
+        j.state = AhJournal::JRN_RESOLVING;
+        j.facts = "";
+        j.createdTime = 1u;
+        j.resolvedTime = 0u;
+        jr.push_back(j);
+        j.uuid = UINT64_C(0x0000000100000002);
+        j.auctionId = 11u;
+        j.kind = 0x43u;
+        j.state = AhJournal::JRN_CANCEL_PREPARED;
+        jr.push_back(j);
+        j.uuid = UINT64_C(0x0000000100000003);
+        j.auctionId = 12u;
+        j.kind = 0u;
+        j.state = AhJournal::JRN_INTENT_PENDING;
+        jr.push_back(j);
+        j.uuid = UINT64_C(0x0000000100000004);
+        j.auctionId = 999u;                                  // no book row: tolerated
+        j.kind = 2u;
+        j.state = AhJournal::JRN_RESOLVING;
+        jr.push_back(j);
+
+        AuctionBook book(NULL);
+        if (!book.BuildFromRows(rows, jr))
+        {
+            fprintf(stderr, "book selftest FAILED: re-mark build returned false\n");
+            return 1;
+        }
+        if (book.Find(10u)->state != BOOK_RESOLVING)
+        {
+            fprintf(stderr, "book selftest FAILED: JRN_RESOLVING re-mark\n");
+            return 1;
+        }
+        if (book.Find(11u)->state != BOOK_CANCEL_PREPARED)
+        {
+            fprintf(stderr, "book selftest FAILED: JRN_CANCEL_PREPARED re-mark\n");
+            return 1;
+        }
+        if (book.Find(12u)->state != BOOK_LIVE)
+        {
+            fprintf(stderr, "book selftest FAILED: INTENT_PENDING must not mark\n");
+            return 1;
+        }
+
+        // Invariant: a second ACTIVE journal row on auction 10 refuses the load.
+        j.uuid = UINT64_C(0x0000000100000005);
+        j.auctionId = 10u;
+        j.kind = 0x43u;
+        j.state = AhJournal::JRN_CANCEL_PREPARED;
+        jr.push_back(j);
+        AuctionBook book2(NULL);
+        if (book2.BuildFromRows(rows, jr))
+        {
+            fprintf(stderr, "book selftest FAILED: invariant violation accepted\n");
+            return 1;
+        }
+    }
+
+    // --- admission matrix (spec 4.3b): op x {absent, LIVE, PREPARED, RESOLVING} ---
+    {
+        BookRow live = MakeRawRow(20u, 1u, 100u).row;
+        BookRow prepared = live;
+        prepared.state = BOOK_CANCEL_PREPARED;
+        BookRow resolving = live;
+        resolving.state = BOOK_RESOLVING;
+
+        if (AuctionBook::Admit(OP_BID, NULL) != BOOK_ERR_BID_OWN ||
+            AuctionBook::Admit(OP_BUYOUT, NULL) != BOOK_ERR_BID_OWN ||
+            AuctionBook::Admit(OP_CANCEL_PREPARE, NULL) != BOOK_ERR_DATABASE)
+        {
+            fprintf(stderr, "book selftest FAILED: admission vs absent row\n");
+            return 1;
+        }
+        if (AuctionBook::Admit(OP_BID, &live) != BOOK_ERR_OK ||
+            AuctionBook::Admit(OP_BUYOUT, &live) != BOOK_ERR_OK ||
+            AuctionBook::Admit(OP_CANCEL_PREPARE, &live) != BOOK_ERR_OK)
+        {
+            fprintf(stderr, "book selftest FAILED: admission vs LIVE\n");
+            return 1;
+        }
+        if (AuctionBook::Admit(OP_BID, &prepared) != BOOK_ERR_BID_OWN ||
+            AuctionBook::Admit(OP_BUYOUT, &prepared) != BOOK_ERR_BID_OWN ||
+            AuctionBook::Admit(OP_CANCEL_PREPARE, &prepared) != BOOK_ERR_DATABASE)
+        {
+            fprintf(stderr, "book selftest FAILED: admission vs CANCEL_PREPARED\n");
+            return 1;
+        }
+        if (AuctionBook::Admit(OP_BID, &resolving) != BOOK_ERR_BID_OWN ||
+            AuctionBook::Admit(OP_BUYOUT, &resolving) != BOOK_ERR_BID_OWN ||
+            AuctionBook::Admit(OP_CANCEL_PREPARE, &resolving) != BOOK_ERR_DATABASE)
+        {
+            fprintf(stderr, "book selftest FAILED: admission vs RESOLVING\n");
+            return 1;
+        }
+    }
+
+    // --- house grouping (50-cap scope) + memory mutators/rollbacks ---
+    {
+        AuctionBook book(NULL);
+        BookRow r = MakeRawRow(30u, 1u, 100u).row;
+        book.Insert(r);
+        r.id = 31u;
+        r.houseId = 2u;
+        book.Insert(r);                                      // same alliance group
+        r.id = 32u;
+        r.houseId = 7u;
+        book.Insert(r);                                      // neutral group
+        r.id = 33u;
+        r.houseId = 4u;
+        book.Insert(r);                                      // horde group
+        r.id = 34u;
+        r.houseId = 1u;
+        r.owner = 200u;
+        book.Insert(r);                                      // other owner
+        if (book.CountOwned(100u, 3u) != 2u)                 // houseid 3 -> alliance group
+        {
+            fprintf(stderr, "book selftest FAILED: CountOwned alliance group\n");
+            return 1;
+        }
+        if (book.CountOwned(100u, 7u) != 1u || book.CountOwned(100u, 5u) != 1u)
+        {
+            fprintf(stderr, "book selftest FAILED: CountOwned neutral/horde\n");
+            return 1;
+        }
+
+        book.UpdateBid(30u, 777u, 4242u);
+        if (book.Find(30u)->bidder != 777u || book.Find(30u)->bid != 4242u)
+        {
+            fprintf(stderr, "book selftest FAILED: UpdateBid\n");
+            return 1;
+        }
+        book.RollbackUpdateBid(30u, 0u, 0u);
+        if (book.Find(30u)->bidder != 0u || book.Find(30u)->bid != 0u)
+        {
+            fprintf(stderr, "book selftest FAILED: RollbackUpdateBid\n");
+            return 1;
+        }
+        BookRow saved = *book.Find(30u);
+        book.Remove(30u);
+        if (book.Find(30u) != NULL)
+        {
+            fprintf(stderr, "book selftest FAILED: Remove\n");
+            return 1;
+        }
+        book.RollbackRemove(saved);
+        if (book.Find(30u) == NULL)
+        {
+            fprintf(stderr, "book selftest FAILED: RollbackRemove\n");
+            return 1;
+        }
+        book.RollbackInsert(31u);
+        if (book.Find(31u) != NULL)
+        {
+            fprintf(stderr, "book selftest FAILED: RollbackInsert\n");
+            return 1;
+        }
+    }
+
+    printf("book selftest OK\n");
     fflush(stdout);
     return 0;
 }
@@ -1578,6 +1865,11 @@ int main(int argc, char** argv)
             return rc;
         }
         rc = RunIntentCodecSelfTest();
+        if (rc != 0)
+        {
+            return rc;
+        }
+        rc = RunBookSelfTest();
         if (rc != 0)
         {
             return rc;
