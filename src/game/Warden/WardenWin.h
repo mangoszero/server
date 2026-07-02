@@ -27,6 +27,7 @@
 #define _WARDEN_WIN_H
 
 #include "Warden.h"
+#include <vector>
 
 #if defined(__GNUC__)
 #pragma pack(1)
@@ -129,10 +130,25 @@ class WardenWin : public Warden
         void HandleData(ByteBuffer &buff) override;
 
     private:
+        struct PointerChainState
+        {
+            uint16 checkId;
+            std::vector<uint32> offsets;
+            size_t hopIndex;
+            uint32 currentAddress;
+            uint8  finalLength;
+            bool   invertMatch;     ///< true = fail when terminal bytes MATCH expected (signature detect)
+        };
+
+        static bool ParseChainOffsets(const std::string& str, std::vector<uint32>& out);
+        void StartPointerChain(WardenCheck* wd);
+
         uint32 _serverTicks; ///< Server ticks
         std::list<uint16> _otherChecksTodo; ///< Other checks to do
         std::list<uint16> _memChecksTodo; ///< Memory checks to do
         std::list<uint16> _currentChecks; ///< Current checks
+        PointerChainState _pointerChainInFlight; ///< in-flight pointer-chain walk state
+        bool _pointerChainActive; ///< whether a pointer-chain walk is in progress
 };
 
 #endif
