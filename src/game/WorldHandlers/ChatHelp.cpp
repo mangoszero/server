@@ -145,7 +145,6 @@ bool ChatHandler::ShowHelpForCommand(ChatCommand* table, const char* cmd)
             if (strlen(command->Name) == 0 && parentCommand)
             {
                 showCommand = parentCommand;
-                cmd = "";
             }
             else
             {

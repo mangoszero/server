@@ -89,7 +89,10 @@ void ChatHandler::SendSysMessage(const char* str)
         }
 
         ChatHandler::BuildChatPacket(data, CHAT_MSG_SYSTEM, line, LANG_UNIVERSAL, CHAT_TAG_NONE, senderGuid);
-        m_session->SendPacket(&data);
+        if (m_session)
+        {
+            m_session->SendPacket(&data);
+        }
     }
 
     delete[] buf;

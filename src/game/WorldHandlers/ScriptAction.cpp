@@ -179,7 +179,8 @@ bool ScriptAction::GetScriptProcessTargets(WorldObject* pOrigSource, WorldObject
 
             // Prefer non-players as searcher
             WorldObject* pSearcher = pOrigSource ? pOrigSource : pOrigTarget;
-            if (pSearcher->GetTypeId() == TYPEID_PLAYER && pOrigTarget && pOrigTarget->GetTypeId() != TYPEID_PLAYER)
+            if (pOrigSource && pOrigTarget &&
+                pOrigSource->GetTypeId() == TYPEID_PLAYER && pOrigTarget->GetTypeId() != TYPEID_PLAYER)
             {
                 pSearcher = pOrigTarget;
             }

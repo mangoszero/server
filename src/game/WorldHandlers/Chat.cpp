@@ -1630,14 +1630,6 @@ Creature* ChatHandler::getSelectedCreature()
 
 
 
-struct RaceMaskName
-{
-    char const* literal;
-    uint32 raceMask;
-};
-
-
-
 /**
  * @brief Builds a clickable name link for a specific player.
  *

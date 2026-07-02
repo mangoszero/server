@@ -109,7 +109,7 @@ bool  ChatHandler::ExtractInt32(char** args, int32& val)
     {
         *(tail++) = '\0';
     }
-    else if (tail && *tail)                                 // some not whitespace symbol
+    else if (*tail)                                         // some not whitespace symbol
     {
         return false;                                        // args not modified and can be re-parsed
     }
@@ -632,7 +632,7 @@ char* ChatHandler::ExtractLinkArg(char** args, char const* const* linkTypes /*= 
     tail += 2;                                              // skip |h
 
     // [name]|h|r
-    if (!*tail || *tail != '[')
+    if (*tail != '[')
     {
         return NULL;
     }
@@ -645,7 +645,7 @@ char* ChatHandler::ExtractLinkArg(char** args, char const* const* linkTypes /*= 
     tail += 2;                                              // skip ]|
 
     // h|r
-    if (!*tail || *tail != 'h'  || *(tail + 1) != '|')
+    if (*tail != 'h' || *(tail + 1) != '|')
     {
         return NULL;
     }
@@ -653,7 +653,7 @@ char* ChatHandler::ExtractLinkArg(char** args, char const* const* linkTypes /*= 
     tail += 2;                                              // skip h|
 
     // r
-    if (!*tail || *tail != 'r' || (*(tail + 1) && !isWhiteSpace(*(tail + 1))))
+    if (*tail != 'r' || (*(tail + 1) && !isWhiteSpace(*(tail + 1))))
     {
         return NULL;
     }
@@ -957,8 +957,8 @@ uint32 ChatHandler::ExtractSpellIdFromLink(char** text)
         if (spell->Effect[EFFECT_INDEX_0] == SPELL_EFFECT_LEARN_SPELL ||
             spell->Effect[EFFECT_INDEX_1] == SPELL_EFFECT_LEARN_SPELL ||
             spell->Effect[EFFECT_INDEX_2] == SPELL_EFFECT_LEARN_SPELL ||
-            sName.empty() || sName.find("Test ") == 0 ||
-            sName.find("ZZ") == 0 || sName.find("zz") == 0)
+            sName.empty() || sName.compare(0, 5, "Test ") == 0 ||
+            sName.compare(0, 2, "ZZ") == 0 || sName.compare(0, 2, "zz") == 0)
         {
             continue;
         }
