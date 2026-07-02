@@ -138,14 +138,13 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
 
     if (!apply)
     {
-        Unit* target = GetTarget();
-
         switch (GetId())
         {
             case 29213:                                     // Curse of the Plaguebringer
                 if (m_removeMode != AURA_REMOVE_BY_DISPEL)
                     // Cast Wrath of the Plaguebringer if not dispelled
                 {
+                    Unit* target = GetTarget();
                     target->CastSpell(target, 29214, true, 0, this);
                 }
                 return;
