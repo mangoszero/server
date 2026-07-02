@@ -81,6 +81,7 @@ class Creature;
 class PlayerMenu;
 class Transport;
 class UpdateMask;
+class MovementAnticheat;
 class SpellCastTargets;
 class PlayerSocial;
 class DungeonPersistentState;
@@ -3701,6 +3702,10 @@ class Player : public Unit
 
         bool canSeeSpellClickOn(Creature const* creature) const;
 
+        // Anti-Cheat: per-player movement validator (lazily created, never null
+        // after first call). Owned by the Player; freed in the destructor.
+        MovementAnticheat* GetMovementAnticheat();
+
 #ifdef ENABLE_PLAYERBOTS
         // Set the player bot AI
         void SetPlayerbotAI(PlayerbotAI* ai) { assert(!m_playerbotAI && !m_playerbotMgr); m_playerbotAI = ai; }
@@ -4055,6 +4060,10 @@ class Player : public Unit
 
         // Map reference for the player
         MapReference m_mapRef;
+
+        // Anti-Cheat: per-player movement validator (NULL until first use)
+        MovementAnticheat* m_movementAnticheat;
+        uint32 m_acPosTimer;   // countdown for periodic idle-position re-validation
 
 #ifdef ENABLE_PLAYERBOTS
         // Player bot AI
