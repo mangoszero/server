@@ -115,7 +115,7 @@ WorldObject* Spell::FindCorpseUsing()
 struct ChainHealingOrder
 {
     const Unit* MainTarget;
-    ChainHealingOrder(Unit const* Target) : MainTarget(Target) {};
+    explicit ChainHealingOrder(Unit const* Target) : MainTarget(Target) {};
     // functor for operator ">"
     bool operator()(Unit const* _Left, Unit const* _Right) const
     {
@@ -151,7 +151,7 @@ class ChainHealingFullHealth
 {
     public:
         const Unit* MainTarget;
-        ChainHealingFullHealth(const Unit* Target) : MainTarget(Target) {};
+        explicit ChainHealingFullHealth(const Unit* Target) : MainTarget(Target) {};
 
         bool operator()(const Unit* Target)
         {
@@ -164,7 +164,7 @@ class ChainHealingFullHealth
 struct TargetDistanceOrderNear
 {
     const Unit* MainTarget;
-    TargetDistanceOrderNear(const Unit* Target) : MainTarget(Target) {};
+    explicit TargetDistanceOrderNear(const Unit* Target) : MainTarget(Target) {};
     // functor for operator ">"
     bool operator()(const Unit* _Left, const Unit* _Right) const
     {

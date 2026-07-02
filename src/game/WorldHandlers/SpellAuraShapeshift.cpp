@@ -698,7 +698,6 @@ void Aura::HandleChannelDeathItem(bool apply, bool Real)
             return;
         }
 
-        Unit* victim = GetTarget();
         Unit* caster = GetCaster();
         if (!caster || caster->GetTypeId() != TYPEID_PLAYER)
         {
@@ -710,6 +709,8 @@ void Aura::HandleChannelDeathItem(bool apply, bool Real)
         // Soul Shard (target req.)
         if (createdItemId == ITEM_SOUL_SHARD)
         {
+            Unit* victim = GetTarget();
+
             // Only from non-grey units
             if (!((Player*)caster)->isHonorOrXPTarget(victim) ||
                 (victim->GetTypeId() == TYPEID_UNIT && !((Creature*)victim)->IsTappedBy((Player*)caster)))

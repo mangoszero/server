@@ -136,10 +136,10 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
 {
     m_isPeriodic = apply;
 
-    Unit* target = GetTarget();
-
     if (!apply)
     {
+        Unit* target = GetTarget();
+
         switch (GetId())
         {
             case 29213:                                     // Curse of the Plaguebringer

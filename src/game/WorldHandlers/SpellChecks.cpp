@@ -544,7 +544,6 @@ SpellCastResult Spell::CheckCast(bool strict)
                 {
                     if (!target_hostile_checked)
                     {
-                        target_hostile_checked = true;
                         target_hostile = m_caster->IsHostileTo(target);
                     }
 
@@ -557,7 +556,6 @@ SpellCastResult Spell::CheckCast(bool strict)
                 {
                     if (!target_friendly_checked)
                     {
-                        target_friendly_checked = true;
                         target_friendly = m_caster->IsFriendlyTo(target);
                     }
 
@@ -1318,8 +1316,6 @@ SpellCastResult Spell::CheckCast(bool strict)
                 Player* plr = m_caster->ToPlayer();
                 if (m_caster->GetPetGuid())                 // let warlock do a replacement summon
                 {
-                    Pet* pet = m_caster->GetPet();
-
                     if (plr && m_caster->getClass() != CLASS_WARLOCK)
                     {
                         return SPELL_FAILED_ALREADY_HAVE_SUMMON;

@@ -769,7 +769,7 @@ void Spell::EffectSummonObject(SpellEffectIndex eff_idx)
 
     if (ObjectGuid guid = m_caster->m_ObjectSlotGuid[slot])
     {
-        if (GameObject* obj = m_caster ? m_caster->GetMap()->GetGameObject(guid) : NULL)
+        if (GameObject* obj = m_caster->GetMap()->GetGameObject(guid))
         {
             obj->SetLootState(GO_JUST_DEACTIVATED);
         }
