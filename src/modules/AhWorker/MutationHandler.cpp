@@ -21,8 +21,10 @@
 
 #include "MutationHandler.h"
 #include "ServiceDatabase.h"
+#include "AuctionIntents.h"
 
 #include <cstdio>
+#include <cstring>
 #include <ctime>
 
 MutationHandler::MutationHandler(AuctionBook& book, ServiceDatabase* db, uint32 runId)
@@ -1110,4 +1112,451 @@ void MutationHandler::PrimeResolvingFromJournal(
         printf("ah-service: boot re-sent %u RESOLVING journal entrie(s)\n",
                primed);
     }
+}
+
+// ---------------------------------------------------------------------------
+// SP-2 Task 8: bot fold-in (in-process book writes + sell materialization)
+// ---------------------------------------------------------------------------
+
+uint8 MutationHandler::WireHouseToHouseId(uint8 house)
+{
+    // AuctionIntentExecutor.cpp:175-186 mapping: 0->1, 1->6, 2->7.
+    switch (house)
+    {
+        case 0u: return 1u;
+        case 1u: return 6u;
+        default: return 7u;
+    }
+}
+
+bool MutationHandler::OnBotBid(uint64 uuid, uint32 auctionId, uint32 bidAmount)
+{
+    BookRow* row = m_book.Find(auctionId);
+    // Admission (existence + lock state) via the shared table: a CANCEL_PREPARED
+    // or RESOLVING row rejects exactly as the legacy race-loser (spec 4.3b).
+    if (row == NULL || AuctionBook::Admit(OP_BID, row) != BOOK_ERR_OK)
+    {
+        return false;
+    }
+    // A row with an un-acked resolution (e.g. a bot-outbid refund) is locked to
+    // bot ops until the resolution acks (header contract / section-3 invariant).
+    if (HasActiveResolution(auctionId))
+    {
+        return false;
+    }
+    if (bidAmount <= row->bid ||
+        (row->buyout != 0u && bidAmount >= row->buyout))
+    {
+        return false;   // must beat current; at/over buyout is a buyout, not a bid
+    }
+
+    uint32 const prevBidder = row->bidder;
+    uint32 const prevBid    = row->bid;
+    if (prevBidder != 0u)
+    {
+        // Displaces a REAL player: co-commit the book bid + a JRN_RESOLVING
+        // refund row (PersistBotBidDisplacing), then track+send the non-terminal
+        // RESOLVE_REPAIR_RETURN. bidder=0 (the bot); prior fields carry the
+        // refund target. The row stays LIVE, locked until the refund acks.
+        uint64 const rUuid = NextUuid();
+        ResolveApply ra;
+        ra.uuid = rUuid;
+        ra.kind = static_cast<uint8>(RESOLVE_REPAIR_RETURN);
+        FillFacts(*row, ra.facts);
+        ra.facts.priorBidderGuid = prevBidder;
+        ra.facts.priorBidAmount  = prevBid;
+        ra.facts.curBidderGuid   = 0u;
+        ra.facts.curBid          = bidAmount;
+        ra.facts.effectiveBid    = bidAmount;
+
+        ByteBuffer bb;
+        ra.Encode(bb);
+        std::string blob(reinterpret_cast<const char*>(bb.contents()), bb.size());
+
+        if (!PersistBotBidDisplacing(*row, bidAmount, rUuid, blob))
+        {
+            return false;   // nothing sent; memory untouched
+        }
+        row->bidder = 0u;
+        row->bid    = bidAmount;
+        row->state  = static_cast<uint8>(BOOK_LIVE);
+
+        // The refund row is already durable (co-committed above): track+send
+        // WITHOUT re-journaling (unlike QueueResolution, which journals).
+        TrackAndSend(rUuid, auctionId,
+                     static_cast<uint8>(RESOLVE_REPAIR_RETURN), blob, GameTime());
+        return true;
+    }
+
+    // No displaced player (empty row or the bot raising its own held bid):
+    // direct-applied, no wire traffic (spec 6 / section 3).
+    if (!PersistBotBidSimple(*row, bidAmount, uuid))
+    {
+        return false;
+    }
+    row->bidder = 0u;
+    row->bid    = bidAmount;
+    return true;
+}
+
+bool MutationHandler::OnBotBuyout(uint64 uuid, uint32 auctionId)
+{
+    BookRow* row = m_book.Find(auctionId);
+    if (row == NULL || AuctionBook::Admit(OP_BUYOUT, row) != BOOK_ERR_OK ||
+        row->buyout == 0u)
+    {
+        return false;
+    }
+    if (HasActiveResolution(auctionId))
+    {
+        return false;
+    }
+
+    // Terminal RESOLVE_WON with curBidderGuid = 0 => mangosd's finalize takes
+    // the legacy bot-win destroy branch. Any prior player bidder rides the
+    // refund leg (prior* fields). QueueResolution journals JRN_RESOLVING
+    // durably, marks the row BOOK_RESOLVING, and tracks+sends.
+    MutationFacts facts;
+    FillFacts(*row, facts);
+    facts.priorBidderGuid = row->bidder;
+    facts.priorBidAmount  = row->bid;
+    facts.curBidderGuid   = 0u;
+    facts.curBid          = row->buyout;
+    facts.effectiveBid    = row->buyout;
+
+    if (QueueResolution(auctionId, static_cast<uint8>(RESOLVE_WON), facts,
+                        GameTime()) == 0u)
+    {
+        return false;   // active resolution / window closed / journal failed
+    }
+    (void)uuid;
+    return true;
+}
+
+bool MutationHandler::BotSellBegin(SellIntent const& si)
+{
+    // Journal the intent PENDING (facts = encoded SellIntent) durably BEFORE the
+    // send, so a crash after the send still replays the materialization request.
+    // auctionId is unknown until mangosd allocates it (sole allocator, spec 8).
+    ByteBuffer bb;
+    si.Encode(bb);
+
+    AhJournal::JournalRow row;
+    row.uuid         = si.uuid;
+    row.auctionId    = 0u;
+    row.kind         = static_cast<uint8>(JKIND_BOT_SELL);
+    row.state        = static_cast<uint8>(AhJournal::JRN_INTENT_PENDING);
+    row.facts        = std::string(reinterpret_cast<const char*>(bb.contents()),
+                                   bb.size());
+    row.createdTime  = static_cast<uint64>(time(NULL));
+    row.resolvedTime = 0u;
+
+    if (!PersistIntentPending(row))
+    {
+        return false;
+    }
+
+    // In-memory copy: repurpose resolvedTime as the last-send anchor.
+    row.resolvedTime = row.createdTime;
+    m_pendingSells[si.uuid] = row;
+
+    IpcMessage msg;
+    msg.op = IPC_INTENT_SELL;
+    si.Encode(msg.body);
+    QueueSend(msg);
+    return true;
+}
+
+void MutationHandler::OnBotSellResult(uint64 uuid, uint8 status, uint8 reason,
+                                      uint32 itemGuid, uint32 auctionId)
+{
+    std::map<uint64, AhJournal::JournalRow>::iterator it =
+        m_pendingSells.find(uuid);
+    if (it == m_pendingSells.end())
+    {
+        // No pending sell: a duplicate/late reply after we already committed
+        // (idempotent), or a stray result for a non-bot intent. Ignore.
+        return;
+    }
+
+    if (status != static_cast<uint8>(INTENT_OK))
+    {
+        // Rejected: retire the pending row and drop it; mangosd's orphan sweep
+        // (Task 13) reaps any item it minted before failing.
+        fprintf(stderr, "ah-service: bot sell uuid=%08x:%08x rejected"
+                        " (reason=%u) - dropping pending\n",
+                static_cast<unsigned>(uuid >> 32),
+                static_cast<unsigned>(uuid & 0xFFFFFFFFu),
+                static_cast<unsigned>(reason));
+        RetireIntentPending(uuid);
+        m_pendingSells.erase(it);
+        return;
+    }
+
+    // INTENT_OK: a duplicate reply for an already-committed listing is idempotent.
+    if (m_book.Find(auctionId) != NULL)
+    {
+        m_pendingSells.erase(it);
+        return;
+    }
+
+    SellIntent si;
+    ByteBuffer bb;
+    bb.append(reinterpret_cast<const uint8*>(it->second.facts.data()),
+              it->second.facts.size());
+    if (!si.Decode(bb))
+    {
+        fprintf(stderr, "ah-service: bot sell uuid=%08x:%08x - undecodable"
+                        " pending facts, dropping\n",
+                static_cast<unsigned>(uuid >> 32),
+                static_cast<unsigned>(uuid & 0xFFFFFFFFu));
+        RetireIntentPending(uuid);
+        m_pendingSells.erase(it);
+        return;
+    }
+
+    // Build the listing from the stored intent + the mangosd-minted item guid
+    // and allocated auction id (decision 8). Deposit/expire were computed by
+    // mangosd at reserve time; the worker only needs a coherent book image.
+    BookRow row;
+    row.id               = auctionId;
+    row.houseId          = WireHouseToHouseId(si.house);
+    row.itemGuid         = itemGuid;
+    row.itemTemplate     = si.itemId;
+    row.itemCount        = si.stack;
+    row.randomPropertyId = 0;
+    row.owner            = si.botGuid;
+    row.buyout           = si.buyout;
+    row.expireTime       = GameTime() +
+                           static_cast<uint64>(si.durationHrs) * 3600u;
+    row.bidder           = 0u;
+    row.bid              = 0u;
+    row.startbid         = si.bid;
+    row.deposit          = 0u;
+    row.state            = static_cast<uint8>(BOOK_LIVE);
+
+    if (!PersistBotListing(row, uuid))
+    {
+        // Commit failed: keep the pending for the resend cadence.
+        fprintf(stderr, "ah-service: bot sell listing commit failed for"
+                        " auction %u - kept pending\n", auctionId);
+        return;
+    }
+    m_pendingSells.erase(it);
+}
+
+void MutationHandler::PrimePendingSellsFromJournal(
+    std::vector<AhJournal::JournalRow> const& activeJournal)
+{
+    uint32 primed = 0;
+    for (size_t i = 0; i < activeJournal.size(); ++i)
+    {
+        AhJournal::JournalRow const& jr = activeJournal[i];
+        if (jr.state != static_cast<uint8>(AhJournal::JRN_INTENT_PENDING))
+        {
+            continue;
+        }
+
+        AhJournal::JournalRow row = jr;
+        row.resolvedTime = row.createdTime;   // in-memory last-send anchor
+        m_pendingSells[jr.uuid] = row;
+
+        SellIntent si;
+        ByteBuffer bb;
+        bb.append(reinterpret_cast<const uint8*>(jr.facts.data()),
+                  jr.facts.size());
+        if (si.Decode(bb))
+        {
+            IpcMessage msg;
+            msg.op = IPC_INTENT_SELL;
+            si.Encode(msg.body);
+            QueueSend(msg);
+            ++primed;
+        }
+    }
+    if (primed != 0u)
+    {
+        printf("ah-service: boot re-sent %u pending bot-sell intent(s)\n",
+               primed);
+    }
+}
+
+void MutationHandler::ResendStalePendingSells(uint64 now)
+{
+    std::vector<uint64> abandon;
+    for (std::map<uint64, AhJournal::JournalRow>::iterator it =
+             m_pendingSells.begin(); it != m_pendingSells.end(); ++it)
+    {
+        AhJournal::JournalRow& row = it->second;
+
+        uint64 const age = (now > row.createdTime) ? (now - row.createdTime) : 0u;
+        if (age >= BOT_SELL_ABANDON_SEC)
+        {
+            abandon.push_back(it->first);
+            continue;
+        }
+
+        uint64 const sinceSent =
+            (now > row.resolvedTime) ? (now - row.resolvedTime) : 0u;
+        if (sinceSent < BOT_SELL_RESEND_SEC)
+        {
+            continue;
+        }
+
+        SellIntent si;
+        ByteBuffer bb;
+        bb.append(reinterpret_cast<const uint8*>(row.facts.data()),
+                  row.facts.size());
+        if (si.Decode(bb))
+        {
+            IpcMessage msg;
+            msg.op = IPC_INTENT_SELL;
+            si.Encode(msg.body);
+            QueueSend(msg);
+        }
+        row.resolvedTime = now;
+    }
+
+    for (size_t i = 0; i < abandon.size(); ++i)
+    {
+        uint64 const uuid = abandon[i];
+        RetireIntentPending(uuid);
+
+        IpcMessage log;
+        log.op = IPC_CONSOLE;
+        char buf[96];
+        snprintf(buf, sizeof(buf), "ah-service: abandoned bot sell uuid=%08x:%08x"
+                 " (no materialization within %us)",
+                 static_cast<unsigned>(uuid >> 32),
+                 static_cast<unsigned>(uuid & 0xFFFFFFFFu),
+                 static_cast<unsigned>(BOT_SELL_ABANDON_SEC));
+        log.body.append(reinterpret_cast<const uint8*>(buf), strlen(buf));
+        QueueSend(log);
+
+        m_pendingSells.erase(uuid);
+    }
+}
+
+size_t MutationHandler::PendingSellCount() const
+{
+    return m_pendingSells.size();
+}
+
+// --- Real persist seams (overridden by TestMutationHandler in --selftest) ---
+
+bool MutationHandler::PersistBotBidSimple(BookRow const& row, uint32 bidAmount,
+                                          uint64 uuid)
+{
+    if (m_db == NULL)
+    {
+        return true;   // selftest mode
+    }
+
+    DatabaseType& db = m_db->Character();
+    if (!db.BeginTransaction())
+    {
+        return false;
+    }
+    // Bot bid: buyguid = 0 (no player), lastbid = bidAmount (mirrors the legacy
+    // UpdateBid persist, AuctionHouseMgr.cpp:1738).
+    db.PExecute("UPDATE `auction` SET `buyguid` = '0', `lastbid` = '%u'"
+                " WHERE `id` = '%u'", bidAmount, row.id);
+    AhJournal::JournalRow jr;
+    jr.uuid         = uuid;
+    jr.auctionId    = row.id;
+    jr.kind         = static_cast<uint8>(JKIND_BOT_BID);
+    jr.state        = static_cast<uint8>(AhJournal::JRN_APPLIED);
+    jr.facts        = std::string();
+    jr.createdTime  = static_cast<uint64>(time(NULL));
+    jr.resolvedTime = jr.createdTime;
+    AhJournal::Insert(*m_db, jr);
+    return db.CommitTransactionChecked();
+}
+
+bool MutationHandler::PersistBotBidDisplacing(BookRow const& row, uint32 bidAmount,
+                                              uint64 resolveUuid,
+                                              std::string const& factsBlob)
+{
+    if (m_db == NULL)
+    {
+        return true;   // selftest mode
+    }
+
+    DatabaseType& db = m_db->Character();
+    if (!db.BeginTransaction())
+    {
+        return false;
+    }
+    db.PExecute("UPDATE `auction` SET `buyguid` = '0', `lastbid` = '%u'"
+                " WHERE `id` = '%u'", bidAmount, row.id);
+    // The refund resolution (facts = encoded ResolveApply) co-commits with the
+    // bot bid so the displaced player is never lost (spec 4.3 [v3 I2/I3]).
+    AhJournal::JournalRow jr;
+    jr.uuid         = resolveUuid;
+    jr.auctionId    = row.id;
+    jr.kind         = static_cast<uint8>(RESOLVE_REPAIR_RETURN);
+    jr.state        = static_cast<uint8>(AhJournal::JRN_RESOLVING);
+    jr.facts        = factsBlob;
+    jr.createdTime  = static_cast<uint64>(time(NULL));
+    jr.resolvedTime = 0u;
+    AhJournal::Insert(*m_db, jr);
+    return db.CommitTransactionChecked();
+}
+
+bool MutationHandler::PersistIntentPending(AhJournal::JournalRow const& row)
+{
+    if (m_db == NULL)
+    {
+        return true;   // selftest mode
+    }
+
+    if (!m_db->Character().BeginTransaction())
+    {
+        return false;
+    }
+    AhJournal::Insert(*m_db, row);
+    return m_db->Character().CommitTransactionChecked();
+}
+
+bool MutationHandler::PersistBotListing(BookRow const& row, uint64 uuid)
+{
+    if (m_db == NULL)
+    {
+        m_book.Insert(row);   // memory-only book (selftest AuctionBook(NULL))
+        return true;
+    }
+
+    DatabaseType& db = m_db->Character();
+    if (!db.BeginTransaction())
+    {
+        return false;
+    }
+    m_book.Insert(row);   // appends the auction INSERT to this open txn + memory
+    // Retire the PENDING intent row to JRN_APPLIED in the same txn.
+    AhJournal::SetState(*m_db, uuid,
+                        static_cast<uint8>(AhJournal::JRN_APPLIED),
+                        static_cast<uint64>(time(NULL)));
+    if (!db.CommitTransactionChecked())
+    {
+        m_book.RollbackInsert(row.id);
+        return false;
+    }
+    return true;
+}
+
+bool MutationHandler::RetireIntentPending(uint64 uuid)
+{
+    if (m_db == NULL)
+    {
+        return true;   // selftest mode
+    }
+
+    if (!m_db->Character().BeginTransaction())
+    {
+        return false;
+    }
+    AhJournal::SetState(*m_db, uuid,
+                        static_cast<uint8>(AhJournal::JRN_APPLIED),
+                        static_cast<uint64>(time(NULL)));
+    return m_db->Character().CommitTransactionChecked();
 }

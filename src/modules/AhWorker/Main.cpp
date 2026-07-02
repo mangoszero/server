@@ -1778,11 +1778,12 @@ class TestMutationHandler : public MutationHandler
         TestMutationHandler(AuctionBook& book, ServiceDatabase* db,
                             uint32 runId)
             : MutationHandler(book, db, runId),
-              failJournalInsert(false), failTerminalApply(false)
+              testBook(&book), failJournalInsert(false), failTerminalApply(false)
         {
         }
 
         std::vector<std::string> trace; ///< Ordered record of DB/send effects.
+        AuctionBook* testBook;          ///< For PersistBotListing to seed (Task 8).
         bool failJournalInsert;         ///< Simulate a failed RESOLVING insert.
         bool failTerminalApply;         ///< Simulate a failed terminal txn.
 
@@ -1832,8 +1833,59 @@ class TestMutationHandler : public MutationHandler
                     tag = buf;
                 }
             }
+            else if (msg.op == IPC_INTENT_SELL)
+            {
+                tag = "send-intent-sell";
+            }
+            else if (msg.op == IPC_CONSOLE)
+            {
+                tag = "send-console";
+            }
             trace.push_back(tag);
             MutationHandler::QueueSend(msg);
+        }
+
+        virtual bool PersistBotBidSimple(BookRow const& row,
+                                         uint32 /*bidAmount*/,
+                                         uint64 /*uuid*/)
+        {
+            char buf[48];
+            snprintf(buf, sizeof(buf), "bid-simple:%u", row.id);
+            trace.push_back(buf);
+            return true;
+        }
+
+        virtual bool PersistBotBidDisplacing(BookRow const& row,
+                                             uint32 /*bidAmount*/,
+                                             uint64 /*resolveUuid*/,
+                                             std::string const& /*factsBlob*/)
+        {
+            char buf[48];
+            snprintf(buf, sizeof(buf), "bid-displace:%u", row.id);
+            trace.push_back(buf);
+            return true;
+        }
+
+        virtual bool PersistIntentPending(AhJournal::JournalRow const& /*row*/)
+        {
+            trace.push_back("jrn-intent-pending");
+            return true;
+        }
+
+        virtual bool PersistBotListing(BookRow const& row, uint64 /*uuid*/)
+        {
+            testBook->TestSeedRow(row);
+            char buf[64];
+            snprintf(buf, sizeof(buf), "commit-listing:%u:%u", row.id,
+                     row.itemGuid);
+            trace.push_back(buf);
+            return true;
+        }
+
+        virtual bool RetireIntentPending(uint64 /*uuid*/)
+        {
+            trace.push_back("retire-intent");
+            return true;
         }
 };
 
@@ -2134,6 +2186,211 @@ static int RunResolveOutboxSelfTest()
     }
 
     printf("resolve outbox selftest OK\n");
+    fflush(stdout);
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Self-test: SP-2 bot fold-in (Task 8)
+// ---------------------------------------------------------------------------
+
+static int FoldFail(const char* what)
+{
+    fprintf(stderr, "bot fold-in selftest FAILED: %s\n", what);
+    return 1;
+}
+
+static int RunBotFoldInSelfTest()
+{
+    ServiceDatabase dummyDb;
+
+    // --- A: bot bid, no displacement -> direct-applied, no wire traffic ---
+    {
+        AuctionBook book(NULL);
+        book.TestSeedRow(MakeBookRow(10u, 9999u, 0u, 0u));
+        TestMutationHandler h(book, &dummyDb, 0xAB000000u);
+        h.SetGameTime(500u);
+
+        if (!h.OnBotBid(UINT64_C(0xAB00000000000001), 10u, 150u))
+        {
+            return FoldFail("first bot bid must be admitted");
+        }
+        BookRow* row = book.Find(10u);
+        if (row->bidder != 0u || row->bid != 150u ||
+            row->state != static_cast<uint8>(BOOK_LIVE))
+        {
+            return FoldFail("bot bid book write (bidder=0, bid=150, LIVE)");
+        }
+        if (h.trace.size() != 1u || h.trace[0] != "bid-simple:10")
+        {
+            return FoldFail("simple bot bid journals directly APPLIED");
+        }
+        std::vector<IpcMessage> out;
+        h.TakeOutbound(out);
+        if (!out.empty())
+        {
+            return FoldFail("no wire traffic for a non-displacing bot bid");
+        }
+
+        // Raise over the bot's own held bid: still simple (bidder 0 gets no
+        // refund; contract 3).
+        if (!h.OnBotBid(UINT64_C(0xAB00000000000002), 10u, 200u) ||
+            book.Find(10u)->bid != 200u || h.trace.size() != 2u ||
+            h.trace[1] != "bid-simple:10")
+        {
+            return FoldFail("bot raise over own bid stays simple");
+        }
+
+        // Admission rejects (legacy race-loser shapes, 4.3b).
+        if (h.OnBotBid(UINT64_C(0xAB00000000000003), 10u, 200u))
+        {
+            return FoldFail("stale bot bid (<= current) must be rejected");
+        }
+        if (h.OnBotBid(UINT64_C(0xAB00000000000004), 10u, 5000u))
+        {
+            return FoldFail("bot bid >= buyout must be rejected (D3 shape)");
+        }
+        if (h.OnBotBid(UINT64_C(0xAB00000000000005), 999u, 100u))
+        {
+            return FoldFail("bot bid on a missing row must be rejected");
+        }
+    }
+
+    // --- B: bot bid displacing a player -> non-terminal REPAIR_RETURN ---
+    {
+        AuctionBook book(NULL);
+        book.TestSeedRow(MakeBookRow(11u, 9999u, 77u, 120u));
+        TestMutationHandler h(book, &dummyDb, 0xAB000000u);
+        h.SetGameTime(500u);
+
+        if (!h.OnBotBid(UINT64_C(0xAB00000000000006), 11u, 150u))
+        {
+            return FoldFail("displacing bot bid must be admitted");
+        }
+        if (h.trace.size() != 2u || h.trace[0] != "bid-displace:11" ||
+            h.trace[1] != "send:11")
+        {
+            return FoldFail("displacement co-commits book+journal BEFORE send");
+        }
+        std::vector<IpcMessage> out;
+        h.TakeOutbound(out);
+        ResolveApply ra;
+        if (out.size() != 1u || out[0].op != IPC_RESOLVE_APPLY ||
+            !ra.Decode(out[0].body) ||
+            ra.kind != static_cast<uint8>(RESOLVE_REPAIR_RETURN) ||
+            ra.facts.priorBidderGuid != 77u ||
+            ra.facts.priorBidAmount != 120u ||
+            ra.facts.curBidderGuid != 0u || ra.facts.curBid != 150u)
+        {
+            return FoldFail("REPAIR_RETURN refund facts");
+        }
+        BookRow* row = book.Find(11u);
+        if (row->bidder != 0u || row->bid != 150u ||
+            row->state != static_cast<uint8>(BOOK_LIVE) ||
+            !h.HasActiveResolution(11u))
+        {
+            return FoldFail("displaced row stays LIVE with active resolution");
+        }
+        // Invariant guard: no second bot op while the refund is un-acked.
+        if (h.OnBotBid(UINT64_C(0xAB00000000000007), 11u, 300u) ||
+            h.OnBotBuyout(UINT64_C(0xAB00000000000008), 11u))
+        {
+            return FoldFail("bot ops must skip rows with an active resolution");
+        }
+        // The expiry tick must also skip the resolution-locked LIVE row.
+        h.Tick(20000u);
+        out.clear();
+        h.TakeOutbound(out);
+        if (!out.empty())
+        {
+            return FoldFail("tick must skip resolution-locked LIVE rows");
+        }
+        // Ack releases the lock; the listing persists (non-terminal).
+        ResolveAck ack;
+        ack.uuid   = ra.uuid;
+        ack.status = static_cast<uint8>(RES_APPLIED);
+        h.OnResolveAck(ack);
+        if (h.HasActiveResolution(11u) || book.Find(11u) == nullptr)
+        {
+            return FoldFail("non-terminal refund ack keeps the listing");
+        }
+    }
+
+    // --- C: bot buyout -> terminal WON resolution, bidder=0 ---
+    {
+        AuctionBook book(NULL);
+        book.TestSeedRow(MakeBookRow(12u, 9999u, 88u, 200u));
+        TestMutationHandler h(book, &dummyDb, 0xAB000000u);
+        h.SetGameTime(500u);
+
+        if (!h.OnBotBuyout(UINT64_C(0xAB00000000000009), 12u))
+        {
+            return FoldFail("bot buyout must be admitted");
+        }
+        std::vector<IpcMessage> out;
+        h.TakeOutbound(out);
+        ResolveApply ra;
+        if (out.size() != 1u || !ra.Decode(out[0].body) ||
+            ra.kind != static_cast<uint8>(RESOLVE_WON) ||
+            ra.facts.curBidderGuid != 0u || ra.facts.curBid != 5000u ||
+            ra.facts.effectiveBid != 5000u ||
+            ra.facts.priorBidderGuid != 88u ||
+            ra.facts.priorBidAmount != 200u)
+        {
+            return FoldFail("bot buyout WON facts (bidder=0, prior refund)");
+        }
+        if (book.Find(12u)->state != static_cast<uint8>(BOOK_RESOLVING))
+        {
+            return FoldFail("bot buyout marks the row RESOLVING");
+        }
+        ResolveAck ack;
+        ack.uuid   = ra.uuid;
+        ack.status = static_cast<uint8>(RES_APPLIED);
+        h.OnResolveAck(ack);
+        if (book.Find(12u) != nullptr)
+        {
+            return FoldFail("terminal WON ack deletes the book row");
+        }
+        // Bid-only listing: no buyout to execute.
+        BookRow bidOnly = MakeBookRow(13u, 9999u, 0u, 0u);
+        bidOnly.buyout = 0u;
+        book.TestSeedRow(bidOnly);
+        if (h.OnBotBuyout(UINT64_C(0xAB0000000000000A), 13u))
+        {
+            return FoldFail("bot buyout on a bid-only listing must be rejected");
+        }
+    }
+
+    // --- D: direct-handler bot bid vs player bid admission (4.3b) ---
+    // NULL db: this block calls the player OnBid path, whose non-virtual
+    // LookupAccount() would otherwise fire a real PQuery on the unconnected
+    // dummy DB (owner/bidder guids are non-zero). This matches the NULL-db
+    // convention the Task-5 mutation/cancel selftests use for OnBid/OnSell.
+    {
+        AuctionBook book(NULL);
+        BookRow prepared = MakeBookRow(21u, 9999u, 0u, 0u);
+        prepared.state = static_cast<uint8>(BOOK_CANCEL_PREPARED);
+        book.TestSeedRow(prepared);
+        TestMutationHandler h(book, NULL, 0xAB000000u);
+        h.SetGameTime(500u);
+
+        if (h.OnBotBid(UINT64_C(0xAB0000000000000B), 21u, 500u))
+        {
+            return FoldFail("bot bid on CANCEL_PREPARED must be rejected");
+        }
+        PlayerBidIntent pb;
+        pb.uuid       = UINT64_C(0x0000000500000001);
+        pb.auctionId  = 21u;
+        pb.bidderGuid = 55u;
+        pb.bidAmount  = 500u;
+        PlayerMutationResult pres = h.OnBid(pb);
+        if (pres.status == static_cast<uint8>(MUT_OK))
+        {
+            return FoldFail("player bid on CANCEL_PREPARED must not be MUT_OK");
+        }
+    }
+
+    printf("bot fold-in selftest OK\n");
     fflush(stdout);
     return 0;
 }
@@ -2747,6 +3004,11 @@ int main(int argc, char** argv)
         {
             return rc;
         }
+        rc = RunBotFoldInSelfTest();
+        if (rc != 0)
+        {
+            return rc;
+        }
         return RunSelfTest();
     }
 
@@ -2973,6 +3235,9 @@ int main(int argc, char** argv)
         // SP-2 Task 7 (spec 4.3 at-least-once): re-send EVERY RESOLVING
         // journal entry immediately; the first loop pass drains the frames.
         ahHandler->PrimeResolvingFromJournal(activeJournal);
+        // SP-2 Task 8 (spec 5.4): re-load + re-send in-flight bot-sell
+        // materialization requests (JRN_INTENT_PENDING).
+        ahHandler->PrimePendingSellsFromJournal(activeJournal);
         printf("ah-service: WRITE AUTHORITY active - book %u listing(s),"
                " %u orphan(s)\n",
                static_cast<unsigned>(ahBook->Size()),
@@ -3059,6 +3324,13 @@ int main(int argc, char** argv)
                     IntentResult res;
                     if (res.Decode(msg.body))
                     {
+                        if (ahHandler != nullptr)
+                        {
+                            // SP-2 Task 8: bot-sell materialization reply.
+                            ahHandler->OnBotSellResult(res.uuid, res.status,
+                                                       res.reason, res.itemGuid,
+                                                       res.auctionId);
+                        }
                         printf("ah-service: intent result uuid=%08x:%08x"
                                " status=%u reason=%u\n",
                                static_cast<unsigned>(res.uuid >> 32),
@@ -3298,6 +3570,8 @@ int main(int argc, char** argv)
         if (ahHandler != nullptr)
         {
             ahHandler->CheckPrepareTimeouts(static_cast<uint64>(time(NULL)));
+            // SP-2 Task 8: re-send / abandon in-flight bot-sell materializations.
+            ahHandler->ResendStalePendingSells(static_cast<uint64>(time(NULL)));
         }
 
         // --- Bot cadence tick ---
@@ -3324,7 +3598,31 @@ int main(int argc, char** argv)
 
                         for (size_t i = 0; i < intents.size(); ++i)
                         {
-                            if (emitDryRun)
+                            if (ahHandler != nullptr)
+                            {
+                                // SP-2 Task 8: under WriteAuthority the bot no
+                                // longer sends IPC_INTENT_BID/BUYOUT - the
+                                // worker applies the value effect in-process
+                                // (bidder=0). Bot sells still round-trip via the
+                                // retained IPC_INTENT_SELL materialization leg.
+                                EmittedIntent const& ei = intents[i];
+                                if (ei.kind == EmittedIntent::KIND_BID)
+                                {
+                                    ahHandler->OnBotBid(ei.bid.uuid,
+                                                        ei.bid.auctionId,
+                                                        ei.bid.bidAmount);
+                                }
+                                else if (ei.kind == EmittedIntent::KIND_BUYOUT)
+                                {
+                                    ahHandler->OnBotBuyout(ei.buyout.uuid,
+                                                           ei.buyout.auctionId);
+                                }
+                                else /* KIND_SELL */
+                                {
+                                    ahHandler->BotSellBegin(ei.sell);
+                                }
+                            }
+                            else if (emitDryRun)
                             {
                                 LogIntent(intents[i]);
                             }

@@ -26,6 +26,7 @@
 #include "AuctionBook.h"
 #include "Journal.h"
 #include "PlayerMutations.h"
+#include "AuctionIntents.h"
 #include "IpcMessage.h"
 
 #include <deque>
@@ -180,6 +181,70 @@ class MutationHandler
          */
         PlayerMutationResult OnCancelDecide(uint64 uuid, uint32 auctionId, bool confirm);
 
+        // --- SP-2 Task 8: bot fold-in (spec 5.2 / 5.4 / 6 / 4.3 / decision 4,8) --
+
+        /// Journal `kind` for directly-APPLIED bot rows (spec M2). Disjoint from
+        /// ResolveKind (0-3) and the player opcode low bytes (0x40-0x43).
+        enum WorkerJournalKind
+        {
+            JKIND_BOT_SELL = 16,
+            JKIND_BOT_BID  = 17
+        };
+
+        /// Re-send a still-pending bot-sell materialization older than this.
+        static const uint32 BOT_SELL_RESEND_SEC  = 30u;
+        /// Abandon a bot-sell materialization that never came back by this age.
+        static const uint32 BOT_SELL_ABANDON_SEC = 600u;
+
+        /**
+         * @brief Bot bid (bidder identity = 0 per the section-3 cross-check
+         *        matrix): admit against the book, then EITHER PersistBotBidSimple
+         *        (no displaced player) OR PersistBotBidDisplacing + queue a
+         *        non-terminal RESOLVE_REPAIR_RETURN refund resolution for the
+         *        displaced player. Returns false on any admission reject or an
+         *        active resolution lock.
+         */
+        bool OnBotBid(uint64 uuid, uint32 auctionId, uint32 bidAmount);
+
+        /**
+         * @brief Bot buyout: admit, then queue a terminal RESOLVE_WON
+         *        (curBidderGuid = 0 => bot-win destroy branch on mangosd) which
+         *        marks the row RESOLVING and deletes it on ack. false on reject.
+         */
+        bool OnBotBuyout(uint64 uuid, uint32 auctionId);
+
+        /**
+         * @brief Bot sell: journal JRN_INTENT_PENDING(uuid, encoded SellIntent)
+         *        then send the retained IPC_INTENT_SELL for mangosd to
+         *        materialize. The book write is deferred to OnBotSellResult.
+         */
+        bool BotSellBegin(SellIntent const& si);
+
+        /**
+         * @brief Materialization reply: on INTENT_OK commit the listing to the
+         *        book + auction row + retire the INTENT_PENDING journal row
+         *        (one txn); a reject drops the pending (mangosd's orphan sweep
+         *        reaps any minted item); a duplicate/late reply is idempotent.
+         */
+        void OnBotSellResult(uint64 uuid, uint8 status, uint8 reason,
+                             uint32 itemGuid, uint32 auctionId);
+
+        /// Boot replay: re-load JRN_INTENT_PENDING rows into the in-flight map
+        /// and re-send each materialization request (idempotent by uuid).
+        void PrimePendingSellsFromJournal(
+            std::vector<AhJournal::JournalRow> const& activeJournal);
+
+        /// Re-send pending sells older than BOT_SELL_RESEND_SEC; abandon (retire
+        /// + IPC_CONSOLE log) those older than BOT_SELL_ABANDON_SEC.
+        void ResendStalePendingSells(uint64 now);
+
+        /// In-flight (un-materialized) bot-sell count.
+        size_t PendingSellCount() const;
+
+        /// Wire house index -> DBC houseid (AuctionIntentExecutor.cpp:175-186):
+        /// 0->1, 1->6, 2->7.
+        static uint8 WireHouseToHouseId(uint8 house);
+
         /**
          * @brief Re-arm prepare locks from JRN_CANCEL_PREPARED journal rows at
          *        boot (spec 4.2 v3 section-8 addition: the worker restores the
@@ -249,6 +314,26 @@ class MutationHandler
         void TrackAndSend(uint64 uuid, uint32 auctionId, uint8 kind,
                           std::string const& wire, uint64 now);
 
+        // --- SP-2 Task 8: bot value-effect persist seams (virtual so
+        //     --selftest can trap them; real bodies write the book/journal in
+        //     one checked txn) -------------------------------------------------
+
+        /// One txn: UPDATE auction (buyguid=0,lastbid) + JRN_APPLIED bot-bid row.
+        virtual bool PersistBotBidSimple(BookRow const& row, uint32 bidAmount,
+                                         uint64 uuid);
+        /// One txn: UPDATE auction (buyguid=0,lastbid) + the co-committed
+        /// JRN_RESOLVING refund row (facts = encoded ResolveApply).
+        virtual bool PersistBotBidDisplacing(BookRow const& row, uint32 bidAmount,
+                                             uint64 resolveUuid,
+                                             std::string const& factsBlob);
+        /// Standalone durable INSERT of a JRN_INTENT_PENDING row (before send).
+        virtual bool PersistIntentPending(AhJournal::JournalRow const& row);
+        /// One txn: INSERT auction row (+ book insert) + retire the pending row
+        /// to JRN_APPLIED.
+        virtual bool PersistBotListing(BookRow const& row, uint64 uuid);
+        /// Retire a JRN_INTENT_PENDING row to JRN_APPLIED (abandon/reject path).
+        virtual bool RetireIntentPending(uint64 uuid);
+
     private:
         PlayerMutationResult MakeResult(uint64 uuid, uint8 op, uint8 status,
                                         uint8 reason) const;
@@ -305,6 +390,12 @@ class MutationHandler
         std::set<uint32>                 m_resolvingAuctions; ///< Invariant guard.
         std::vector<IpcMessage>          m_outbound;          ///< Drained by the loop.
         uint64                           m_gameTimeNow;       ///< Latest game time.
+
+        // --- SP-2 Task 8: in-flight bot-sell materializations (by uuid).
+        // The stored JournalRow.facts is the encoded SellIntent; createdTime is
+        // the initial send (abandon anchor), resolvedTime the last send
+        // (resend throttle). ---------------------------------------------------
+        std::map<uint64, AhJournal::JournalRow> m_pendingSells;
 
         // Non-copyable: single-owner main-thread state.
         MutationHandler(const MutationHandler&);
