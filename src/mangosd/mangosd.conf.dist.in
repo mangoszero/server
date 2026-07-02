@@ -1853,6 +1853,20 @@ SOAP.Port      = 7878
 #        empty = off, pre-commit, pre-deferred.
 #        NEVER set on a live realm.
 #        Default: "" (off)
+#
+#    AH.Service.WriteAuthority
+#        [SP-2] Grant the out-of-process AH worker WRITE-AUTHORITY over the
+#        auction book: the worker inserts/updates/deletes `auction` rows and
+#        runs the expiry/win tick, while every residual mangosd-side auction
+#        writer (boot repair, orphan cleanup, the in-process expiry sweep, and
+#        the in-process AH bot) stands down so there is a single book writer.
+#        BOOT-LATCHED: read once at startup, ignored by `.reload config`.
+#        HARD REQUIREMENT: AH.Service.Custody = 1 (the write path rides the
+#        custody escrow ledger). Enabling this with Custody = 0 is unsupported.
+#        The worker's DB account additionally needs INSERT/UPDATE/DELETE on the
+#        `auction` and `ah_worker_journal` tables (see doc/AuctionHouseBot.md);
+#        the ah_worker_journal migration MUST be applied first.
+#        Default: 0 (disabled; mangosd owns the book, as today)
 ###############################################################################
 
 AH.Service.Enabled        = 0
@@ -1863,6 +1877,7 @@ AH.Service.Config         = ah-service.conf
 AH.Service.IntentTtlSec   = 900
 AH.Service.Custody        = 0
 AH.Service.CustodyCrashAt = ""
+AH.Service.WriteAuthority = 0
 
 ################################################################################
 #    CharDelete.Method

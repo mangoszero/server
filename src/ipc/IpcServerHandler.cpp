@@ -20,6 +20,7 @@
  */
 
 #include "IpcServerHandler.h"
+#include "IpcReliable.h"
 #include "IpcVersion.h"
 #include "Log/Log.h"
 
@@ -569,9 +570,17 @@ int IpcServerHandler::ProcessFrame(const IpcMessage& msg)
             IpcMessage stamped(msg);
             stamped.generation = m_runId;
 
-            // Push into the inbound queue for the facade, charging the body
-            // length against the queue's byte budget.
-            if (!m_inbound->push(stamped, stamped.body.size()))
+            // [SP-2 decision 10] Route mutation-class frames onto the UNBOUNDED
+            // reliable lane (never dropped under inbound pressure); the facade
+            // drains it to exhaustion BEFORE the bounded queue each pass so a
+            // browse flood can never drop a value-bearing frame. Everything else
+            // stays on the bounded drop-newest queue, charged against its byte
+            // budget. If the link is absent (legacy path) fall back to bounded.
+            if (m_link && IpcIsReliableOpcode(stamped.op))
+            {
+                m_link->PushReliable(stamped);
+            }
+            else if (!m_inbound->push(stamped, stamped.body.size()))
             {
                 sLog.outError("IpcServerHandler: inbound queue full"
                               " - frame 0x%04X dropped", msg.op);

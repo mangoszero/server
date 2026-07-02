@@ -59,6 +59,7 @@
 #include "IpcClientHandler.h"
 #include "IpcMessage.h"
 #include "IpcOpcodes.h"
+#include "IpcReliable.h"
 #include "AuctionIntents.h"
 #include "PlayerMutations.h"
 #include "BrowseMessages.h"
@@ -2487,6 +2488,99 @@ static int RunBotFoldInSelfTest()
 }
 
 // ---------------------------------------------------------------------------
+// Self-test: reliable-lane classifier + unbounded over-cap survival
+// ---------------------------------------------------------------------------
+//
+// [SP-2 decision 10] Assert IpcIsReliableOpcode routes exactly the
+// mutation-class opcodes onto the reliable lane (and nothing else), and that
+// the lane never drops a frame under over-capacity pressure - a browse flood on
+// the bounded queue must never cost a value-bearing frame.
+static int RunReliableLaneSelfTest()
+{
+    // --- classifier: mutation-class opcodes ARE reliable ---
+    const uint16 reliable[] =
+    {
+        IPC_PLAYER_SELL, IPC_PLAYER_BID, IPC_PLAYER_BUYOUT, IPC_PLAYER_CANCEL,
+        IPC_PLAYER_RESULT, IPC_RESOLVE_APPLY, IPC_RESOLVE_ACK,
+        IPC_PLAYER_CANCEL_CONFIRM, IPC_PLAYER_CANCEL_ABORT,
+        IPC_INTENT_SELL, IPC_INTENT_RESULT
+    };
+    for (size_t i = 0; i < sizeof(reliable) / sizeof(reliable[0]); ++i)
+    {
+        if (!IpcIsReliableOpcode(reliable[i]))
+        {
+            fprintf(stderr, "reliable lane selftest FAILED: opcode 0x%04X"
+                            " not classified reliable\n",
+                    static_cast<unsigned>(reliable[i]));
+            return 1;
+        }
+    }
+
+    // --- classifier: browse/heartbeat/gametime STAY on the bounded queue ---
+    const uint16 bounded[] =
+    {
+        IPC_HEARTBEAT, IPC_BROWSE_QUERY, IPC_GAMETIME, IPC_BROWSE_RESULT,
+        IPC_HEARTBEAT_ACK, IPC_GMCMD
+    };
+    for (size_t i = 0; i < sizeof(bounded) / sizeof(bounded[0]); ++i)
+    {
+        if (IpcIsReliableOpcode(bounded[i]))
+        {
+            fprintf(stderr, "reliable lane selftest FAILED: opcode 0x%04X"
+                            " misclassified as reliable\n",
+                    static_cast<unsigned>(bounded[i]));
+            return 1;
+        }
+    }
+
+    // --- over-cap survival: the unbounded lane never drops, preserves FIFO ---
+    // Push well past the bounded inbound cap and confirm every frame survives in
+    // order, proving a browse flood on the bounded queue cannot displace a
+    // value-bearing frame. Stack-allocated link, exercised directly (never
+    // Release()d): PushReliable/PopReliable/ReliableSize touch only the lane.
+    IpcServerLink lane;
+    const size_t N = IPC_INBOUND_QUEUE_CAP * 4u + 7u;
+    for (size_t i = 0; i < N; ++i)
+    {
+        IpcMessage m;
+        m.op = IPC_PLAYER_RESULT;
+        m.generation = static_cast<uint32>(i);   // FIFO order marker
+        lane.PushReliable(m);
+    }
+    if (lane.ReliableSize() != N)
+    {
+        fprintf(stderr, "reliable lane selftest FAILED: size %u (exp %u)\n",
+                static_cast<unsigned>(lane.ReliableSize()),
+                static_cast<unsigned>(N));
+        return 1;
+    }
+    size_t got = 0;
+    IpcMessage out;
+    while (lane.PopReliable(out))
+    {
+        if (out.generation != static_cast<uint32>(got))
+        {
+            fprintf(stderr, "reliable lane selftest FAILED: FIFO order at %u"
+                            " (got gen %u)\n",
+                    static_cast<unsigned>(got),
+                    static_cast<unsigned>(out.generation));
+            return 1;
+        }
+        ++got;
+    }
+    if (got != N)
+    {
+        fprintf(stderr, "reliable lane selftest FAILED: drained %u (exp %u)\n",
+                static_cast<unsigned>(got), static_cast<unsigned>(N));
+        return 1;
+    }
+
+    printf("reliable lane selftest OK\n");
+    fflush(stdout);
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
 // Self-test: in-process loopback
 // ---------------------------------------------------------------------------
 
@@ -3100,6 +3194,11 @@ int main(int argc, char** argv)
         {
             return rc;
         }
+        rc = RunReliableLaneSelfTest();
+        if (rc != 0)
+        {
+            return rc;
+        }
         return RunSelfTest();
     }
 
@@ -3361,7 +3460,11 @@ int main(int argc, char** argv)
     while (!stop)
     {
         IpcMessage msg;
-        while (cli.PopInbound(msg))
+        // [SP-2 decision 10] Prefer the UNBOUNDED reliable lane on every pop: a
+        // reliable frame (player mutation command, resolve-ack, cancel
+        // confirm/abort) is always taken before a bounded-queue frame, so a
+        // browse flood can never starve or drop a mutation-class frame.
+        while (cli.PopReliable(msg) || cli.PopInbound(msg))
         {
             switch (msg.op)
             {

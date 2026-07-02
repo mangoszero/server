@@ -155,6 +155,18 @@ bool IpcServer::PopInbound(IpcMessage& out)
     return m_inbound.pop(out);
 }
 
+bool IpcServer::PopReliable(IpcMessage& out)
+{
+    // The reliable lane lives on the shared, reference-counted link so it
+    // survives child reconnects (the reactor pushes, the world thread drains).
+    return m_link && m_link->PopReliable(out);
+}
+
+size_t IpcServer::ClearReliable()
+{
+    return m_link ? m_link->ClearReliable() : 0u;
+}
+
 bool IpcServer::Connected() const
 {
     return m_link && m_link->live.load(std::memory_order_acquire);
@@ -267,6 +279,11 @@ bool IpcClient::SendFrame(const IpcMessage& msg)
 bool IpcClient::PopInbound(IpcMessage& out)
 {
     return m_inbound.pop(out);
+}
+
+bool IpcClient::PopReliable(IpcMessage& out)
+{
+    return m_link && m_link->PopReliable(out);
 }
 
 bool IpcClient::Connected() const

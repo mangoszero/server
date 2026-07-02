@@ -286,3 +286,68 @@ gate: while the worker is down the window opens, but its first browse returns th
 unavailable reply (an empty window). This affects only realms whose scripts call
 that API, and the fix would mean patching the third-party Eluna module, so it is
 left as a documented limitation.
+
+### SP-2: worker write-authority (write path)
+
+`AH.Service.WriteAuthority` (in `mangosd.conf`, default `0`) hands the
+out-of-process worker authority over the auction book. When set, the worker is
+the **single writer** of the `auction` table: it inserts listings, applies
+player bids/buyouts/cancels, and runs the expiry/win tick, while mangosd forwards
+player mutations to it over the reliable IPC lane and applies the returned facts
+against the in-process custody escrow ledger.
+
+**Boot-latched flag.** The value is read once at startup (`LoadConfigSettings`
+only reads it when `!reload`), so `.reload config` can never toggle it mid-run --
+the process must be restarted to change it. This makes the "single book writer"
+invariant a per-boot property that no runtime reload can violate.
+
+**Hard requirement: `AH.Service.Custody = 1`.** The write path rides the custody
+escrow ledger (deposit/bid reservations, item escrow, seller payout netting).
+Enabling `WriteAuthority` with `Custody = 0` is unsupported.
+
+**Worker DB grant delta.** On top of the SELECT-only reader grants in *Security*
+above, a write-authority worker's DB account needs INSERT/UPDATE/DELETE on
+exactly two Character-DB tables -- and nothing else:
+
+```sql
+GRANT INSERT, UPDATE, DELETE ON `character0`.`auction`           TO 'ahworker'@'localhost';
+GRANT INSERT, UPDATE, DELETE ON `character0`.`ah_worker_journal` TO 'ahworker'@'localhost';
+```
+
+**Residual mangosd-side writers that stand down (spec section 5.7).** With
+`WriteAuthority = 1` these in-process auction writers no-op so there is exactly
+one book writer:
+
+* `AuctionHouseMgr::LoadAuctions` boot repair (item-template mismatch UPDATE,
+  missing-item / invalid-house row DELETE + return-mail) -- the worker's
+  `LoadFromDb` gates and reports instead.
+* `ObjectMgr::SetHighestGuids` auction-orphan `DELETE`.
+* `World::Update` `WUPDATE_AUCTIONS` in-process expiry sweep (`sAuctionMgr.Update`)
+  -- the worker runs the expiry/win tick; the returned-mail delivery still runs
+  in-process in both modes.
+* The in-process `AuctionHouseBot` startup (`sAuctionBot.Initialize`) -- the
+  worker's bot brain drives listings; the in-process buyer/seller stay null.
+
+Eluna AH hooks (`OnAdd` / `OnRemove`) still fire under write-authority: they are
+raised at the finalize position from the worker's facts on a synthesized
+transient `AuctionEntry`, so existing Lua AH scripts keep working.
+
+> **OPERATOR WARNING 1 -- do not `.reload config` Custody off while
+> WriteAuthority is on.** `WriteAuthority` is boot-latched but `Custody` is
+> reloadable. Reloading with `AH.Service.Custody = 0` while the worker still
+> holds write-authority bypasses the runtime custody invariant the write path
+> depends on and can corrupt in-flight escrow. If you must disable custody,
+> restart with `WriteAuthority = 0` as well.
+
+> **OPERATOR WARNING 2 -- apply the `ah_worker_journal` migration BEFORE enabling
+> WriteAuthority.** The worker records its committed mutations in
+> `ah_worker_journal`; the mangosd-side reconcile-on-reconnect reads it to decide
+> finalize-forward vs release. A missing table silently degrades reconcile to
+> "release", which can double-credit a mutation that actually committed. Verify
+> the migration is present first.
+
+> **OPERATOR WARNING 3 -- run a live smoke of the nonzero-cut CANCEL path before
+> enabling on a real realm.** The cancel path that reserves and sinks a non-zero
+> auction cut is exercised end-to-end only against a live custody ledger; the
+> `-t` unit harness has no cut reservation to validate it. Mandatory pre-enable
+> live smoke.

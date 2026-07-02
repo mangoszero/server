@@ -2467,6 +2467,66 @@ static void AhReturnItemToSellerFromFacts(MutationFacts const& f, uint32 mailRes
     }
 }
 
+#ifdef ENABLE_ELUNA
+// [SP-2 spec 5.8] Under WriteAuthority the worker owns the book, so the legacy
+// in-map AuctionEntry that fed the Eluna AH hooks no longer lives in mangosd.
+// Synthesize a transient (stack-only, never map-inserted) AuctionEntry from the
+// wire facts and fire the SAME OnAdd/OnRemove the legacy custody path invokes,
+// so Lua AH scripts still observe listing/finalize events. The hooks self-guard
+// on owner-online + escrow-item-present (GetAItem), so fire them while the
+// escrow item is still cached -- i.e. BEFORE the finalize's deferred RemoveAItem
+// runs. startbid is not carried in MutationFacts (0 here); every other field is
+// exact.
+static void AhElunaFillEntry(AuctionEntry& e, MutationFacts const& f)
+{
+    e.Id                   = f.auctionId;
+    e.itemGuidLow          = f.itemGuid;
+    e.itemTemplate         = f.itemTemplate;
+    e.itemCount            = f.itemCount;
+    e.itemRandomPropertyId = f.randomPropertyId;
+    e.owner                = f.sellerGuid;
+    e.startbid             = 0;
+    e.bid                  = f.curBid;
+    e.buyout               = f.buyout;
+    e.expireTime           = 0;
+    e.bidder               = f.curBidderGuid;
+    e.deposit              = f.deposit;
+    e.auctionHouseEntry    = sAuctionHouseStore.LookupEntry(uint32(f.houseId));
+}
+
+static void AhElunaOnAddFromFacts(MutationFacts const& f)
+{
+    Eluna* e = sWorld.GetEluna();
+    if (!e)
+    {
+        return;
+    }
+    AuctionEntry tmp;
+    AhElunaFillEntry(tmp, f);
+    if (!tmp.auctionHouseEntry)
+    {
+        return;
+    }
+    e->OnAdd(sAuctionMgr.GetAuctionsMap(tmp.auctionHouseEntry), &tmp);
+}
+
+static void AhElunaOnRemoveFromFacts(MutationFacts const& f)
+{
+    Eluna* e = sWorld.GetEluna();
+    if (!e)
+    {
+        return;
+    }
+    AuctionEntry tmp;
+    AhElunaFillEntry(tmp, f);
+    if (!tmp.auctionHouseEntry)
+    {
+        return;
+    }
+    e->OnRemove(sAuctionMgr.GetAuctionsMap(tmp.auctionHouseEntry), &tmp);
+}
+#endif /* ENABLE_ELUNA */
+
 // [SP-2] MUT_OK sell (spec 4.1 step 4): NO value moves -- the deposit stays
 // reserved and the item stays escrowed until resolution. Cross-check + the
 // legacy AUCTION_STARTED/AUCTION_OK result only.
@@ -2486,6 +2546,10 @@ static bool AhFinalizeSellOk(PlayerMutationResult const& res, PendingMutation co
         return true;   // faults are terminal, never redriven
     }
     AhSendCommandResultTo(pm.playerGuidLow, f.auctionId, AUCTION_STARTED, AUCTION_OK, 0);
+#ifdef ENABLE_ELUNA
+    // [SP-2 spec 5.8] listing committed to the worker's book -> Eluna OnAdd.
+    AhElunaOnAddFromFacts(f);
+#endif
     return true;
 }
 
@@ -2608,6 +2672,14 @@ static bool AhFinalizeBidOk(PlayerMutationResult const& res, PendingMutation con
         }
         return false;   // -> redrive, never rollback (I10)
     }
+#ifdef ENABLE_ELUNA
+    if (isBuyoutWin)
+    {
+        // [SP-2 spec 5.8] buyout win removed the listing -> Eluna OnRemove
+        // (fired while the escrow item is still cached, before def.run()).
+        AhElunaOnRemoveFromFacts(f);
+    }
+#endif
     def.run();
     return true;
 }
@@ -2671,6 +2743,11 @@ static bool AhFinalizeCancelOk(PlayerMutationResult const& res, PendingMutation 
     {
         return false;
     }
+#ifdef ENABLE_ELUNA
+    // [SP-2 spec 5.8] cancel removed the listing -> Eluna OnRemove (fired while
+    // the escrow item is still cached, before def.run()).
+    AhElunaOnRemoveFromFacts(f);
+#endif
     def.run();
     return true;
 }
@@ -3203,6 +3280,19 @@ uint8 AhHandleResolveApply(ResolveApply const& ra)
                       uint32(ra.kind), f.auctionId);
         return uint8(RES_FAILED);
     }
+#ifdef ENABLE_ELUNA
+    // [SP-2 spec 5.8] fire Eluna OnRemove for worker-initiated resolutions that
+    // terminally remove the listing from the book: won, no-bid expiry, and the
+    // repair item-return branch. Cancel-unlock and the repair bidder-refund
+    // sub-case keep the listing live, so they do not fire. Fired while the
+    // escrow item is still cached, before def.run().
+    if (ra.kind == RESOLVE_WON || ra.kind == RESOLVE_EXPIRED_NOBID ||
+        (ra.kind == RESOLVE_REPAIR_RETURN &&
+         !(f.curBidderGuid == 0u && f.priorBidderGuid != 0u)))
+    {
+        AhElunaOnRemoveFromFacts(f);
+    }
+#endif
     def.run();
     return uint8(RES_APPLIED);
 }

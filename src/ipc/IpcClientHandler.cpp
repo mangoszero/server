@@ -20,6 +20,7 @@
  */
 
 #include "IpcClientHandler.h"
+#include "IpcReliable.h"
 #include "IpcVersion.h"
 #include "Log/Log.h"
 
@@ -423,7 +424,15 @@ int IpcClientHandler::ProcessFrame(const IpcMessage& msg)
                                 static_cast<unsigned>(msg.body.size()));
                 break;
             }
-            if (m_inbound)
+            // [SP-2 decision 10] Mutation-class frames ride the UNBOUNDED
+            // reliable lane (never dropped); the facade drains it to exhaustion
+            // before the bounded queue each pass. Everything else stays on the
+            // bounded drop-newest queue. Fall back to bounded if no link.
+            if (m_link && IpcIsReliableOpcode(msg.op))
+            {
+                m_link->PushReliable(msg);
+            }
+            else if (m_inbound)
             {
                 if (!m_inbound->push(msg))
                 {

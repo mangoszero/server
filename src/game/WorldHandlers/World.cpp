@@ -930,9 +930,23 @@ void World::SetInitialWorldSettings()
     // Delete all characters which have been deleted X days before
     Player::DeleteOldCharacters();
 
-    sLog.outString("Initialize AuctionHouseBot...");
-    sAuctionBot.Initialize();
-    sLog.outString();
+    // [SP-2 spec 5.7] Under WriteAuthority the out-of-process worker's bot brain
+    // drives all listings; the in-process AuctionHouseBot must not also write
+    // the book. Skipping Initialize() leaves its buyer/seller agents null, so
+    // its Update() (gated on !serviceActive in WUPDATE_AHBOT) and
+    // PurgeMailedItemsTick() both no-op (no agents / no configured bot GUID).
+    if (!IsAhWriteAuthority())
+    {
+        sLog.outString("Initialize AuctionHouseBot...");
+        sAuctionBot.Initialize();
+        sLog.outString();
+    }
+    else
+    {
+        sLog.outString("AuctionHouseBot: in-process bot disabled"
+                       " (AH.Service.WriteAuthority = 1; worker drives listings)");
+        sLog.outString();
+    }
 
 #ifdef ENABLE_ELUNA
     ///- Run eluna scripts.
@@ -1165,7 +1179,14 @@ void World::Update(uint32 diff)
         }
 
         ///- Handle expired auctions
-        sAuctionMgr.Update();
+        // [SP-2 spec 5.7] Under WriteAuthority the worker runs the expiry/win
+        // tick and owns every auction-row write; mangosd's in-process expiry
+        // sweep must not also finalize/delete rows (double-writer). The
+        // returned-mail delivery above stays mangosd's and runs in both modes.
+        if (!IsAhWriteAuthority())
+        {
+            sAuctionMgr.Update();
+        }
     }
 
     /// <li> Handle AHBot operations

@@ -29,6 +29,7 @@
 #include <ace/Reactor.h>
 #include <ace/Event_Handler.h>
 #include <atomic>
+#include <deque>
 #include <mutex>
 
 class IpcServerHandler;
@@ -109,6 +110,56 @@ struct IpcLink
 
     /// [SP-2] Write-authority bit received in IPC_HELLO_ACK (0 until then).
     std::atomic<uint8> writeAuthority;
+
+    /// [SP-2 decision 10] UNBOUNDED reliable inbound lane for mutation-class
+    /// frames (IpcIsReliableOpcode) that must never be dropped under inbound
+    /// pressure - they carry money/item value or their outcome. The reactor
+    /// thread pushes (PushReliable); the caller/facade thread drains
+    /// (PopReliable) to EXHAUSTION before the bounded inbound queue each pass,
+    /// so a browse flood on the bounded queue can neither drop nor starve a
+    /// value-bearing frame. Genuinely unbounded (no drop policy): the frame
+    /// rate is naturally bounded (one per player action / worker resolve) and
+    /// each accepted frame already passed the per-opcode size validation. Its
+    /// own mutex, independent of the notify/outbound paths.
+    std::deque<IpcMessage> reliableInbound;
+    std::mutex             reliableMx;
+
+    /// Push a reliable frame (reactor thread). Never drops.
+    void PushReliable(const IpcMessage& m)
+    {
+        std::lock_guard<std::mutex> g(reliableMx);
+        reliableInbound.push_back(m);
+    }
+
+    /// Pop the oldest reliable frame (caller thread). False when empty.
+    bool PopReliable(IpcMessage& out)
+    {
+        std::lock_guard<std::mutex> g(reliableMx);
+        if (reliableInbound.empty())
+        {
+            return false;
+        }
+        out = reliableInbound.front();
+        reliableInbound.pop_front();
+        return true;
+    }
+
+    /// Discard every queued reliable frame; returns the count discarded. Used
+    /// by the supervisor purge on child death/respawn (mirrors ClearInbound).
+    size_t ClearReliable()
+    {
+        std::lock_guard<std::mutex> g(reliableMx);
+        const size_t removed = reliableInbound.size();
+        reliableInbound.clear();
+        return removed;
+    }
+
+    /// Approximate number of queued reliable frames.
+    size_t ReliableSize()
+    {
+        std::lock_guard<std::mutex> g(reliableMx);
+        return reliableInbound.size();
+    }
 
     /// Single-owner guard. Set true (test-and-set) by the FIRST handler that
     /// opens on the reactor thread; any additional accepted connection finds

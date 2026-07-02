@@ -92,4 +92,15 @@ AhBot.DryRun = 0
 
 AhBot.UpdateIntervalMs = 20000
 
+#
+#    AH.Service.TickMs
+#        [SP-2] Mutation-tick cadence in milliseconds, on the IPC_GAMETIME-synced
+#        game clock. Under WriteAuthority the worker runs the expiry/win tick on
+#        this interval (auctions past expireTime resolve as won/no-bid). Lower =
+#        tighter expiry latency at more DB churn; 1000 tracks the legacy
+#        minute-class sweep comfortably.
+#    Default: 1000
+
+AH.Service.TickMs = 1000
+
 ###############################################################################

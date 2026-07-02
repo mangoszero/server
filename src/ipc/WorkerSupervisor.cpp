@@ -585,6 +585,18 @@ void WorkerSupervisor::ClearStagedFrames()
                        " on child death/respawn",
                        m_name.c_str(), static_cast<unsigned>(purged));
     }
+
+    // [SP-2 decision 10] Same reasoning for the unbounded reliable lane: the
+    // dead child's mutation frames must not survive into the next child. The
+    // per-spawn run-id gate in DrainInboundProtocol() would drop them anyway,
+    // but purging here keeps the lane from carrying stale frames across restart.
+    const size_t purgedReliable = m_ipc.ClearReliable();
+    if (purgedReliable != 0)
+    {
+        sLog.outString("[WorkerSupervisor:%s] purged %u stale reliable frame(s)"
+                       " on child death/respawn",
+                       m_name.c_str(), static_cast<unsigned>(purgedReliable));
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -599,6 +611,34 @@ void WorkerSupervisor::DrainInboundProtocol()
     // consumed inline and do NOT count toward this budget.
     uint32 appBudget    = WS_DRAIN_APP_PER_CALL;
     uint32 browseBudget = WS_DRAIN_BROWSE_PER_CALL;
+
+    // [SP-2 decision 10] Drain the UNBOUNDED reliable lane to EXHAUSTION FIRST,
+    // before the bounded queue, so a browse flood on the bounded queue can never
+    // starve a mutation-class frame. Reliable frames received here are all
+    // application/consumer frames (IPC_PLAYER_RESULT, IPC_RESOLVE_APPLY,
+    // IPC_INTENT_SELL) destined for World::HandleAhInbound, so they are staged
+    // directly - bypassing the app/browse drop budgets and the staging cap: they
+    // carry money/item value and must NOT be dropped. Draining them first also
+    // seats them at the FRONT of m_pendingFrames, so they survive DrainInbound's
+    // over-cap tail clamp even under a simultaneous browse-result flood.
+    IpcMessage rmsg;
+    while (m_ipc.PopReliable(rmsg))
+    {
+        // PF2-B: same generation/run-id gate as the bounded path below - drop a
+        // frame stamped by a PRIOR child's connection so it can never be applied
+        // under the current child.
+        if (rmsg.generation != m_runId)
+        {
+            DETAIL_LOG("[WorkerSupervisor:%s] dropping stale-run reliable frame"
+                       " 0x%04X (gen=%u, current=%u)",
+                       m_name.c_str(),
+                       static_cast<unsigned>(rmsg.op),
+                       static_cast<unsigned>(rmsg.generation),
+                       static_cast<unsigned>(m_runId));
+            continue;
+        }
+        m_pendingFrames.push_back(rmsg);
+    }
 
     IpcMessage msg;
     while (m_ipc.PopInbound(msg))

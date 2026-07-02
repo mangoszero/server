@@ -823,7 +823,14 @@ void AuctionHouseMgr::LoadAuctions()
         Item* pItem = GetAItem(auction->itemGuidLow);
         if (!pItem)
         {
-            auction->DeleteFromDB();
+            // [SP-2 spec 5.7] Under WriteAuthority the worker owns the auction
+            // book: its LoadFromDb gates + reports orphaned rows. mangosd must
+            // not also delete the row (double-writer). Skip the row in-memory
+            // either way; only the durable repair write is gated.
+            if (!sWorld.IsAhWriteAuthority())
+            {
+                auction->DeleteFromDB();
+            }
             sLog.outError("Auction %u has not a existing item : %u, deleted", auction->Id, auction->itemGuidLow);
             delete auction;
             continue;
@@ -838,9 +845,15 @@ void AuctionHouseMgr::LoadAuctions()
             auction->itemCount    = pItem->GetCount();
             auction->itemRandomPropertyId = pItem->GetItemRandomPropertyId();
 
-            // No SQL injection (no strings)
-            CharacterDatabase.PExecute("UPDATE `auction` SET `item_template` = %u, `item_count` = %u, `item_randompropertyid` = %i WHERE `itemguid` = %u",
-                auction->itemTemplate, auction->itemCount, auction->itemRandomPropertyId, auction->itemGuidLow);
+            // [SP-2 spec 5.7] In-memory correction always applies (the local map
+            // must be self-consistent); the durable book repair is the worker's
+            // under WriteAuthority, so mangosd must not also rewrite the row.
+            if (!sWorld.IsAhWriteAuthority())
+            {
+                // No SQL injection (no strings)
+                CharacterDatabase.PExecute("UPDATE `auction` SET `item_template` = %u, `item_count` = %u, `item_randompropertyid` = %i WHERE `itemguid` = %u",
+                    auction->itemTemplate, auction->itemCount, auction->itemRandomPropertyId, auction->itemGuidLow);
+            }
         }
 
         auction->auctionHouseEntry = sAuctionHouseStore.LookupEntry(houseid);
@@ -850,22 +863,30 @@ void AuctionHouseMgr::LoadAuctions()
             // need for send mail, use goblin auctionhouse
             auction->auctionHouseEntry = sAuctionHouseStore.LookupEntry(7);
 
-            // Attempt send item back to owner
-            std::ostringstream msgAuctionCanceledOwner;
-            msgAuctionCanceledOwner << auction->itemTemplate << ":" << auction->itemRandomPropertyId << ":" << AUCTION_CANCELED;
-
-            if (auction->itemGuidLow)
+            // [SP-2 spec 5.7] Under WriteAuthority the worker owns auction-row
+            // lifecycle: it returns the item + deletes the invalid-house row via
+            // its own LoadFromDb repair. mangosd must not also mail the item back
+            // and delete the row (double-credit / double-writer). The row is
+            // dropped from the in-memory map either way (delete + continue).
+            if (!sWorld.IsAhWriteAuthority())
             {
-                RemoveAItem(auction->itemGuidLow);
-                auction->itemGuidLow = 0;
+                // Attempt send item back to owner
+                std::ostringstream msgAuctionCanceledOwner;
+                msgAuctionCanceledOwner << auction->itemTemplate << ":" << auction->itemRandomPropertyId << ":" << AUCTION_CANCELED;
 
-                // item will deleted or added to received mail list
-                MailDraft(msgAuctionCanceledOwner.str(), "")// TODO: fix body
-                    .AddItem(pItem)
-                    .SendMailTo(MailReceiver(ObjectGuid(HIGHGUID_PLAYER, auction->owner)), auction, MAIL_CHECK_MASK_COPIED);
+                if (auction->itemGuidLow)
+                {
+                    RemoveAItem(auction->itemGuidLow);
+                    auction->itemGuidLow = 0;
+
+                    // item will deleted or added to received mail list
+                    MailDraft(msgAuctionCanceledOwner.str(), "")// TODO: fix body
+                        .AddItem(pItem)
+                        .SendMailTo(MailReceiver(ObjectGuid(HIGHGUID_PLAYER, auction->owner)), auction, MAIL_CHECK_MASK_COPIED);
+                }
+
+                auction->DeleteFromDB();
             }
-
-            auction->DeleteFromDB();
             delete auction;
 
             continue;

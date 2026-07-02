@@ -1794,7 +1794,14 @@ void ObjectMgr::SetHighestGuids()
     CharacterDatabase.BeginTransaction();
     CharacterDatabase.PExecute("DELETE FROM `character_inventory` WHERE `item` >= '%u'", m_ItemGuids.GetNextAfterMaxUsed());
     CharacterDatabase.PExecute("DELETE FROM `mail_items` WHERE `item_guid` >= '%u'", m_ItemGuids.GetNextAfterMaxUsed());
-    CharacterDatabase.PExecute("DELETE FROM `auction` WHERE `itemguid` >= '%u'", m_ItemGuids.GetNextAfterMaxUsed());
+    // [SP-2 spec 5.7] Under WriteAuthority the worker owns the `auction` book;
+    // the orphan-row DELETE is its responsibility (its own LoadFromDb repair).
+    // mangosd must not also delete auction rows (double-writer). The two item
+    // tables above stay mangosd's.
+    if (!sWorld.IsAhWriteAuthority())
+    {
+        CharacterDatabase.PExecute("DELETE FROM `auction` WHERE `itemguid` >= '%u'", m_ItemGuids.GetNextAfterMaxUsed());
+    }
     CharacterDatabase.CommitTransaction();
 
     result = WorldDatabase.Query("SELECT MAX(`guid`) FROM `gameobject`");
