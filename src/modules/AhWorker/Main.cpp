@@ -69,6 +69,7 @@
 #include "Config/Config.h"
 #include "ServiceConfig.h"
 #include "ServiceDatabase.h"
+#include "Journal.h"
 #include "ItemPool.h"
 #include "MarketSnapshot.h"
 #include "BotBrain.h"
@@ -897,6 +898,102 @@ static int RunWireSelfTest()
 }
 
 // ---------------------------------------------------------------------------
+// Self-test: SP-2 journal DAO CRUD (requires a character DB; skips if absent)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Round-trip the AhJournal DAO against the configured character DB:
+ *        Insert (with a binary facts blob) -> Get -> SetState -> LoadActive
+ *        membership -> DeleteAppliedOlderThan prune. Skips (returns 0) when
+ *        no character DB is configured, mirroring the DB-less selftest rule.
+ * @return 0 on success or skip, 1 on any assertion failure.
+ */
+static int RunJournalSelfTest()
+{
+    ServiceDatabase db;
+    if (!db.InitCharacter())
+    {
+        printf("journal selftest SKIPPED (no character DB configured)\n");
+        fflush(stdout);
+        return 0;
+    }
+
+    // A binary facts payload with embedded NULs to prove hex-safety.
+    std::string facts;
+    facts.push_back('\x00'); facts.push_back('\x01'); facts.push_back('\xFF');
+    facts.push_back('\x00'); facts.push_back('\x7A');
+
+    uint64 const uuid = UINT64_C(0x00000009DEADBEEF);
+    AhJournal::JournalRow row;
+    row.uuid = uuid; row.auctionId = 12345u; row.kind = 0x41u;
+    row.state = AhJournal::JRN_RESOLVING; row.facts = facts;
+    row.createdTime = 1000u; row.resolvedTime = 0u;
+
+    // Clean any prior run, then Insert inside a checked txn.
+    db.Character().DirectPExecute(
+        "DELETE FROM `ah_worker_journal` WHERE `uuid` = %llu",
+        static_cast<unsigned long long>(uuid));
+    db.Character().BeginTransaction();
+    AhJournal::Insert(db, row);
+    if (!db.Character().CommitTransactionChecked())
+    {
+        fprintf(stderr, "journal selftest FAILED: insert commit\n");
+        return 1;
+    }
+
+    AhJournal::JournalRow got;
+    if (!AhJournal::Get(db, uuid, got) || got.auctionId != 12345u ||
+        got.kind != 0x41u || got.state != AhJournal::JRN_RESOLVING ||
+        got.facts != facts || got.createdTime != 1000u)
+    {
+        fprintf(stderr, "journal selftest FAILED: get/round-trip (facts %u bytes)\n",
+                static_cast<unsigned>(got.facts.size()));
+        return 1;
+    }
+
+    // SetState -> APPLIED with a resolved_time.
+    db.Character().BeginTransaction();
+    AhJournal::SetState(db, uuid, AhJournal::JRN_APPLIED, 2000u);
+    if (!db.Character().CommitTransactionChecked())
+    {
+        fprintf(stderr, "journal selftest FAILED: setstate commit\n");
+        return 1;
+    }
+    if (!AhJournal::Get(db, uuid, got) || got.state != AhJournal::JRN_APPLIED ||
+        got.resolvedTime != 2000u)
+    {
+        fprintf(stderr, "journal selftest FAILED: setstate read-back\n");
+        return 1;
+    }
+
+    // LoadActive excludes JRN_APPLIED.
+    {
+        std::vector<AhJournal::JournalRow> active;
+        AhJournal::LoadActive(db, active);
+        for (size_t i = 0; i < active.size(); ++i)
+        {
+            if (active[i].uuid == uuid)
+            {
+                fprintf(stderr, "journal selftest FAILED: APPLIED row in LoadActive\n");
+                return 1;
+            }
+        }
+    }
+
+    // DeleteAppliedOlderThan prunes it (resolved_time 2000 < cutoff 3000).
+    AhJournal::DeleteAppliedOlderThan(db, 3000u);
+    if (AhJournal::Get(db, uuid, got))
+    {
+        fprintf(stderr, "journal selftest FAILED: prune left the row\n");
+        return 1;
+    }
+
+    printf("journal selftest OK\n");
+    fflush(stdout);
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
 // Self-test: in-process loopback
 // ---------------------------------------------------------------------------
 
@@ -1471,6 +1568,11 @@ int main(int argc, char** argv)
     if (selfTest)
     {
         int rc = RunWireSelfTest();
+        if (rc != 0)
+        {
+            return rc;
+        }
+        rc = RunJournalSelfTest();
         if (rc != 0)
         {
             return rc;
