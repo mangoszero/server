@@ -1188,6 +1188,12 @@ void World::Update(uint32 diff)
             {
                 sLog.outString("[AHSupervisor] AH service active -"
                                " in-process AuctionHouseBot standing down");
+                // SP-2 (spec 8): on the just-became-active edge, reconcile every
+                // in-flight player-mutation reservation against the shared worker
+                // journal (committed => finalize-forward, absent => release,
+                // cancel-prepared => abort + release). No-op when nothing is
+                // in-flight (the default-off / steady-state case).
+                AhReconcileOnReconnect();
             }
             else
             {
@@ -1695,6 +1701,39 @@ void World::HandleAhInbound(const IpcMessage& msg)
                 break;
             }
             AhHandlePlayerMutationResult(res);
+            break;
+        }
+        case IPC_RESOLVE_APPLY:
+        {
+            // SP-2 write-authority: worker-initiated resolution (WON / EXPIRED /
+            // CANCELLED_UNLOCK / REPAIR_RETURN). AhHandleResolveApply applies the
+            // per-kind value effects inside ONE checked txn with the
+            // resolve:<uuid> applied-record (DUPLICATE == APPLIED). An
+            // AH_RESOLVE_NO_ACK return is an unrecoverable protocol fault:
+            // already alarmed, NO ack is sent (the worker never retries it).
+            ByteBuffer body(msg.body);
+            ResolveApply ra;
+            if (!ra.Decode(body))
+            {
+                sLog.outError("[AHSupervisor] IPC_RESOLVE_APPLY decode failed");
+                break;
+            }
+            uint8 const st = AhHandleResolveApply(ra);
+            if (st == AH_RESOLVE_NO_ACK)
+            {
+                break;
+            }
+            WorkerSupervisor* const sv = GetAhSupervisor();
+            if (sv != NULL)
+            {
+                ResolveAck ack;
+                ack.uuid   = ra.uuid;
+                ack.status = st;
+                IpcMessage reply;
+                reply.op = IPC_RESOLVE_ACK;
+                ack.Encode(reply.body);
+                sv->Channel().SendFrame(reply);
+            }
             break;
         }
         default:

@@ -157,6 +157,16 @@ bool MutationPendingMap::SetReserve(uint64 uuid, uint32 amount, std::string cons
     return true;
 }
 
+void MutationPendingMap::SnapshotInflight(std::vector<PendingMutation>& out) const
+{
+    out.reserve(out.size() + m_map.size());
+    for (std::unordered_map<uint64, PendingMutation>::const_iterator itr = m_map.begin();
+         itr != m_map.end(); ++itr)
+    {
+        out.push_back(itr->second);
+    }
+}
+
 uint64 AhMintMutationUuid()
 {
     // World-thread only. See header note on the composition.

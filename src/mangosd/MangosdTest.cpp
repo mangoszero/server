@@ -2019,6 +2019,237 @@ static int RunAhMutResultTest()
     return 2;
 }
 
+/// SP-2 Task 12 self-test for AhHandleResolveApply: applies crafted
+/// worker-initiated resolutions (WON / EXPIRED_NOBID / CANCELLED_UNLOCK /
+/// REPAIR_RETURN) against SEEDED custody rows -- no live worker, no world data.
+/// Asserts each kind's ledger flips + value mails, the resolve:<uuid>
+/// applied-record, and that a SECOND apply returns RES_DUPLICATE without
+/// double-applying. Recipients use guid 1 (seeded offline with an account so the
+/// account-guarded AH mail path delivers -- see RunAhMutResultTest). World data
+/// is NOT loaded under -t, so GetAItem() is always NULL: the item legs take the
+/// escrow-cache-miss (ledger-only) branch and no physical item mail is asserted.
+/// Returns 0 on pass.
+static int RunAhResolveTest()
+{
+    bool pass = true;
+    CharacterDatabase.AllowAsyncTransactions();
+    sObjectMgr.SetHighestGuids();       // mail ids collide otherwise (RunMailTest)
+
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (991001,991002,991003,991004)");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `mail` WHERE `receiver`=1 AND `subject` LIKE '19019:%'");
+    CharacterDatabase.DirectExecute("DELETE FROM `characters` WHERE `guid`=1");
+    CharacterDatabase.DirectExecute(
+        "INSERT INTO `characters` (`guid`,`account`,`name`,`money`) "
+        "VALUES (1, 1, 'AhResTestRcv', 100000)");
+
+    auto readMoney = []() -> uint64
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT `money` FROM `characters` WHERE `guid`=1"));
+        return res ? res->Fetch()[0].GetUInt64() : 0;
+    };
+    auto rowState = [](char const* key) -> uint32
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT `state` FROM `custody_ledger` WHERE `idem_key`='%s'", key));
+        return res ? res->Fetch()[0].GetUInt32() : 255u;
+    };
+    auto mailCount = [](uint32 money, char const* subject) -> uint64
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT COUNT(*) FROM `mail` WHERE `receiver`=1 AND `money`=%u AND `subject`='%s'",
+            money, subject));
+        return res ? res->Fetch()[0].GetUInt64() : 0;
+    };
+
+    // ---- RESOLVE_WON: bid + dep + item terminal; seller payout mail ----
+    {
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('bid:991001:1',0,1,0,99999,0,800,0,991001,0,0),"
+            "       ('dep:991001',0,0,0,1,0,50,0,991001,0,0),"
+            "       ('item:991001',1,3,0,1,0,0,424242,991001,0,0)");
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahresolve FAIL: seed commit (won)\n");
+            return 2;
+        }
+
+        ResolveApply ra;
+        ra.uuid = 0xB1ull;
+        ra.kind = uint8(RESOLVE_WON);
+        ra.facts = MutationFacts();
+        ra.facts.auctionId = 991001u;
+        ra.facts.houseId = 7;
+        ra.facts.itemGuid = 424242u;
+        ra.facts.itemTemplate = 19019u;
+        ra.facts.randomPropertyId = 0;
+        ra.facts.sellerGuid = 1u;           // has an account -> gets payout mail
+        ra.facts.deposit = 50u;
+        ra.facts.effectiveBid = 800u;
+        ra.facts.curBid = 800u;
+        ra.facts.curBidderGuid = 99999u;    // offline-nobody winner
+        ra.facts.buyout = 800u;
+
+        if (AhHandleResolveApply(ra) != uint8(RES_APPLIED))
+        { printf("ahresolve FAIL: WON not RES_APPLIED\n"); pass = false; }
+        if (!CustodyService::ResolutionApplied(0xB1ull))
+        { printf("ahresolve FAIL: WON applied-record missing\n"); pass = false; }
+        if (rowState("bid:991001:1") != 1u)
+        { printf("ahresolve FAIL: WON bid row not TERMINAL_OK\n"); pass = false; }
+        if (rowState("dep:991001") != 1u)
+        { printf("ahresolve FAIL: WON dep row not TERMINAL_OK\n"); pass = false; }
+        if (rowState("item:991001") != 1u)
+        { printf("ahresolve FAIL: WON item row not TERMINAL_OK\n"); pass = false; }
+        if (mailCount(850u, "19019:0:2") != 1u)   // profit = 800+50-cut(0 under -t)
+        { printf("ahresolve FAIL: WON seller payout mail missing\n"); pass = false; }
+
+        // Duplicate: RES_DUPLICATE, no second payout mail, rows unchanged.
+        if (AhHandleResolveApply(ra) != uint8(RES_DUPLICATE))
+        { printf("ahresolve FAIL: WON second apply not RES_DUPLICATE\n"); pass = false; }
+        if (mailCount(850u, "19019:0:2") != 1u)
+        { printf("ahresolve FAIL: WON duplicate double-applied payout mail\n"); pass = false; }
+    }
+
+    // ---- RESOLVE_EXPIRED_NOBID: deposit forfeit + item returned ----
+    {
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('dep:991002',0,0,0,1,0,40,0,991002,0,0),"
+            "       ('item:991002',1,3,0,1,0,0,424244,991002,0,0)");
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahresolve FAIL: seed commit (expired)\n");
+            return 2;
+        }
+
+        ResolveApply ra;
+        ra.uuid = 0xB2ull;
+        ra.kind = uint8(RESOLVE_EXPIRED_NOBID);
+        ra.facts = MutationFacts();
+        ra.facts.auctionId = 991002u;
+        ra.facts.houseId = 7;
+        ra.facts.itemGuid = 424244u;
+        ra.facts.itemTemplate = 19019u;
+        ra.facts.sellerGuid = 1u;
+        ra.facts.deposit = 40u;
+
+        if (AhHandleResolveApply(ra) != uint8(RES_APPLIED))
+        { printf("ahresolve FAIL: EXPIRED not RES_APPLIED\n"); pass = false; }
+        if (rowState("dep:991002") != 1u)          // forfeit -> TERMINAL_OK
+        { printf("ahresolve FAIL: EXPIRED deposit not forfeit (TERMINAL_OK)\n"); pass = false; }
+        if (rowState("item:991002") != 1u)         // returned -> TERMINAL_OK
+        { printf("ahresolve FAIL: EXPIRED item not TERMINAL_OK\n"); pass = false; }
+        if (!CustodyService::ResolutionApplied(0xB2ull))
+        { printf("ahresolve FAIL: EXPIRED applied-record missing\n"); pass = false; }
+        if (AhHandleResolveApply(ra) != uint8(RES_DUPLICATE))
+        { printf("ahresolve FAIL: EXPIRED second apply not RES_DUPLICATE\n"); pass = false; }
+    }
+
+    // ---- RESOLVE_CANCELLED_UNLOCK: cut released to seller, no item/bid move ----
+    // The cut key is uuid-salted in production ("cut:<auc>:<uuid>"), so this
+    // exercises the by-auction cut scan (AhFindLiveCutRow), not a point key.
+    {
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('cut:991003:12345',0,2,0,1,0,55,0,991003,0,0)");
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahresolve FAIL: seed commit (cancelled)\n");
+            return 2;
+        }
+
+        ResolveApply ra;
+        ra.uuid = 0xB3ull;
+        ra.kind = uint8(RESOLVE_CANCELLED_UNLOCK);
+        ra.facts = MutationFacts();
+        ra.facts.auctionId = 991003u;
+        ra.facts.sellerGuid = 1u;
+
+        uint64 const before = readMoney();
+        if (AhHandleResolveApply(ra) != uint8(RES_APPLIED))
+        { printf("ahresolve FAIL: CANCELLED not RES_APPLIED\n"); pass = false; }
+        if (rowState("cut:991003:12345") != 2u)    // released -> TERMINAL_BACK
+        { printf("ahresolve FAIL: CANCELLED cut not TERMINAL_BACK\n"); pass = false; }
+        if (readMoney() != before + 55u)
+        { printf("ahresolve FAIL: CANCELLED cut not credited to seller\n"); pass = false; }
+        if (!CustodyService::ResolutionApplied(0xB3ull))
+        { printf("ahresolve FAIL: CANCELLED applied-record missing\n"); pass = false; }
+
+        uint64 const afterFirst = readMoney();
+        if (AhHandleResolveApply(ra) != uint8(RES_DUPLICATE))
+        { printf("ahresolve FAIL: CANCELLED second apply not RES_DUPLICATE\n"); pass = false; }
+        if (readMoney() != afterFirst)
+        { printf("ahresolve FAIL: CANCELLED duplicate double-credited\n"); pass = false; }
+    }
+
+    // ---- RESOLVE_REPAIR_RETURN (bot displaced a player): prior-bidder refund ----
+    {
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('bid:991004:1',0,1,0,1,0,400,0,991004,0,0)");
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahresolve FAIL: seed commit (repair)\n");
+            return 2;
+        }
+
+        ResolveApply ra;
+        ra.uuid = 0xB4ull;
+        ra.kind = uint8(RESOLVE_REPAIR_RETURN);
+        ra.facts = MutationFacts();
+        ra.facts.auctionId = 991004u;
+        ra.facts.houseId = 7;
+        ra.facts.itemTemplate = 19019u;
+        ra.facts.randomPropertyId = 0;
+        ra.facts.sellerGuid = 2u;
+        ra.facts.curBidderGuid = 0u;        // a bot now holds the top bid
+        ra.facts.priorBidderGuid = 1u;      // displaced real player
+        ra.facts.priorBidAmount = 400u;
+
+        if (AhHandleResolveApply(ra) != uint8(RES_APPLIED))
+        { printf("ahresolve FAIL: REPAIR not RES_APPLIED\n"); pass = false; }
+        if (rowState("bid:991004:1") != 2u)        // prior bid -> TERMINAL_BACK
+        { printf("ahresolve FAIL: REPAIR prior bid not TERMINAL_BACK\n"); pass = false; }
+        if (mailCount(400u, "19019:0:0") != 1u)    // outbid refund to guid 1
+        { printf("ahresolve FAIL: REPAIR prior-bidder refund mail missing\n"); pass = false; }
+        if (!CustodyService::ResolutionApplied(0xB4ull))
+        { printf("ahresolve FAIL: REPAIR applied-record missing\n"); pass = false; }
+        if (AhHandleResolveApply(ra) != uint8(RES_DUPLICATE))
+        { printf("ahresolve FAIL: REPAIR second apply not RES_DUPLICATE\n"); pass = false; }
+        if (mailCount(400u, "19019:0:0") != 1u)
+        { printf("ahresolve FAIL: REPAIR duplicate double-refunded\n"); pass = false; }
+    }
+
+    // Clean up.
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (991001,991002,991003,991004)");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `mail` WHERE `receiver`=1 AND `subject` LIKE '19019:%'");
+    CharacterDatabase.DirectExecute("DELETE FROM `characters` WHERE `guid`=1");
+
+    if (pass)
+    {
+        printf("ahresolve OK\n");
+        return 0;
+    }
+    return 2;
+}
+
 int RunMangosdTest(std::string const& name)
 {
     if (name == "noop")
@@ -2080,6 +2311,11 @@ int RunMangosdTest(std::string const& name)
     if (name == "ahmutresult")
     {
         return RunAhMutResultTest();
+    }
+
+    if (name == "ahresolve")
+    {
+        return RunAhResolveTest();
     }
 
     printf("%s FAIL: unknown test\n", name.c_str());

@@ -122,6 +122,12 @@ class MutationPendingMap
         /// empty at Register time for a cancel). Returns false if uuid unknown.
         bool SetReserve(uint64 uuid, uint32 amount, std::string const& key);
 
+        /// [SP-2 Task 12, additive] Copy every registered entry (awaiting +
+        /// tombstoned) into @p out for reconcile-on-reconnect (spec 8). Rows are
+        /// appended, not replaced. Non-consuming: the reconcile walk consumes
+        /// each entry itself via Take once it has decided its disposition.
+        void SnapshotInflight(std::vector<PendingMutation>& out) const;
+
         size_t Size() const { return m_map.size(); }
 
     private:
