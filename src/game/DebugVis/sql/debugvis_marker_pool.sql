@@ -18,10 +18,15 @@
 
 DELETE FROM `gameobject_template` WHERE `entry` BETWEEN 305000 AND 305511;
 
+-- Generate 305000..305511 (512 entries) without a recursive CTE so this stays
+-- portable to MySQL 5.5+/MariaDB 5.5+ (WITH RECURSIVE needs MySQL 8.0/MariaDB
+-- 10.2+). Three base-8 digit tables cross-join to 8*8*8 = 512 distinct offsets.
 INSERT INTO `gameobject_template` (`entry`, `type`, `displayId`, `name`, `faction`, `flags`, `size`)
-WITH RECURSIVE seq(n) AS (
-    SELECT 305000
-    UNION ALL
-    SELECT n + 1 FROM seq WHERE n < 305511
-)
-SELECT n, 10, 263, 'DebugVis Marker', 0, 0, 1 FROM seq;
+SELECT 305000 + d.n, 10, 263, 'DebugVis Marker', 0, 0, 1
+FROM
+(
+    SELECT ones.n + eights.n * 8 + sixtyfours.n * 64 AS n
+    FROM      (SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7) ones
+    CROSS JOIN (SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7) eights
+    CROSS JOIN (SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7) sixtyfours
+) AS d;
