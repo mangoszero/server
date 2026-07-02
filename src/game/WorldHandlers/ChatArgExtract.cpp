@@ -167,7 +167,7 @@ bool  ChatHandler::ExtractUInt32Base(char** args, uint32& val, uint32 base)
     {
         *(tail++) = '\0';
     }
-    else if (tail && *tail)                                 // some not whitespace symbol
+    else if (*tail)                                         // some not whitespace symbol
     {
         return false;                                        // args not modified and can be re-parsed
     }
@@ -226,7 +226,7 @@ bool  ChatHandler::ExtractFloat(char** args, float& val)
     {
         *(tail++) = '\0';
     }
-    else if (tail && *tail)                                 // some not whitespace symbol
+    else if (*tail)                                         // some not whitespace symbol
     {
         return false;                                        // args not modified and can be re-parsed
     }
