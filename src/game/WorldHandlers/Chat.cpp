@@ -255,6 +255,28 @@ ChatCommand* ChatHandler::getCommandTable()
         { NULL,             0,                  false, NULL,                                                "", NULL }
     };
 
+    static ChatCommand anticheatCommandTable[] =
+    {
+        { "status",         SEC_GAMEMASTER,     true,  &ChatHandler::HandleAntiCheatStatusCommand,          "", NULL },
+        { "report",         SEC_GAMEMASTER,     true,  &ChatHandler::HandleAntiCheatReportCommand,          "", NULL },
+        { "reload",         SEC_GAMEMASTER,     true,  &ChatHandler::HandleAntiCheatReloadCommand,          "", NULL },
+        { "warn",           SEC_GAMEMASTER,     true,  &ChatHandler::HandleAntiCheatWarnCommand,            "", NULL },
+        { "jail",           SEC_GAMEMASTER,     true,  &ChatHandler::HandleAntiCheatJailCommand,            "", NULL },
+        { "unjail",         SEC_GAMEMASTER,     true,  &ChatHandler::HandleAntiCheatUnjailCommand,          "", NULL },
+        { "delete",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAntiCheatDeleteCommand,          "", NULL },
+        { NULL,             0,                  false, NULL,                                                "", NULL }
+    };
+
+    static ChatCommand timesyncCommandTable[] =
+    {
+        { "status",         SEC_GAMEMASTER,     true,  &ChatHandler::HandleTimeSyncStatusCommand,           "", NULL },
+        { "config",         SEC_GAMEMASTER,     true,  &ChatHandler::HandleTimeSyncConfigCommand,           "", NULL },
+        { "set",            SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleTimeSyncSetCommand,              "", NULL },
+        { "resync",         SEC_GAMEMASTER,     true,  &ChatHandler::HandleTimeSyncResyncCommand,           "", NULL },
+        { "skip",           SEC_GAMEMASTER,     true,  &ChatHandler::HandleTimeSyncSkipCommand,             "", NULL },
+        { NULL,             0,                  false, NULL,                                                "", NULL }
+    };
+
     static ChatCommand debugCommandTable[] =
     {
         { "anim",           SEC_GAMEMASTER,     false, &ChatHandler::HandleDebugAnimCommand,                "", NULL },
@@ -772,6 +794,8 @@ ChatCommand* ChatHandler::getCommandTable()
         { "ah",             SEC_ADMINISTRATOR,  true,  NULL,                                           "", ahCommandTable       },
         { "auction",        SEC_ADMINISTRATOR,  false, NULL,                                           "", auctionCommandTable  },
         { "ahbot",          SEC_ADMINISTRATOR,  true,  NULL,                                           "", ahbotCommandTable    },
+        { "anticheat",      SEC_GAMEMASTER,     true,  NULL,                                           "", anticheatCommandTable},
+        { "timesync",       SEC_GAMEMASTER,     true,  NULL,                                           "", timesyncCommandTable },
         { "cast",           SEC_ADMINISTRATOR,  true,  NULL,                                           "", castCommandTable     },
         { "character",      SEC_GAMEMASTER,     true,  NULL,                                           "", characterCommandTable},
         { "debug",          SEC_MODERATOR,      true,  NULL,                                           "", debugCommandTable    },

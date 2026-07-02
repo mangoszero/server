@@ -2028,3 +2028,173 @@ Eluna.CompatibilityMode = false
 Eluna.OnlyOnMaps = ""
 Eluna.TraceBack = false
 Eluna.ScriptPath = "lua_scripts"
+
+###################################################################################################
+#  ANTI-CHEAT / MOVEMENT-VALIDATION FRAMEWORK
+#
+#   Server-side movement/physics/spell/item validation. Detectors observe and
+#   score; the central manager owns all enforcement (log -> GM alert ->
+#   rubberband -> kick), with an optional account-level autoban. OFF by default:
+#   with AntiCheat.Enable = 0 the framework is fully inert.
+#
+#   AntiCheat.Enable
+#       Description: Master switch for the framework.
+#       Default:     0 - (disabled)
+#
+#   AntiCheat.Movement.Enable / AntiCheat.Physics.Enable
+#       Description: Toggle the movement detectors and the (moderate-cost) physics
+#                    terrain-plausibility stage. Only matter when Enable = 1.
+#       Default:     1 - (both on)
+#
+#   AntiCheat.ExemptBots
+#       Description: Do not validate playerbots (when built with playerbots).
+#       Default:     1 - (exempt)
+#
+#   AntiCheat.ExemptGMLevel
+#       Description: Accounts at or above this security level are not validated
+#                    (0 = exempt nobody by level). Range 0-4.
+#       Default:     1
+#
+#   AntiCheat.Persist
+#       Description: Persist detection events to character_anticheat_violation.
+#       Default:     1 - (persist)
+#
+#   AntiCheat.Action
+#       Description: Maximum enforcement action the manager may apply.
+#                    1 = log, 2 = GM alert, 3 = rubberband, 4 = kick. Range 0-4.
+#       Default:     1 - (log only)
+#
+#   AntiCheat.Speed.Tolerance
+#       Description: Allowed horizontal speed as a percent of the granted speed
+#                    before the speed detector trips. Range 100-500.
+#       Default:     110
+#
+#   AntiCheat.Teleport.Distance
+#       Description: Single-packet displacement (yards, latency-adjusted) beyond
+#                    which a move is treated as a teleport/blink. Range 10-1000.
+#       Default:     50
+#
+#   AntiCheat.Score.Warn / Rubberband / Kick
+#       Description: Decayed-score thresholds at which the matching action fires
+#                    (each capped by AntiCheat.Action).
+#       Default:     30 / 60 / 120
+#
+#   AntiCheat.Score.DecayPerSec
+#       Description: Points the per-player score decays each second. Range 0-100.
+#       Default:     2
+#
+#   AntiCheat.CastBurstPerSec
+#       Description: Spell cast requests per second above which casting is treated
+#                    as cast spam. Range 2-100.
+#       Default:     8
+#
+#   AntiCheat.AccelCheck / AntiCheat.AccelMaxMult
+#       Description: Optional acceleration/velocity-delta gate (FP-prone, OFF by
+#                    default). Flags a sudden speed increase beyond granted-speed
+#                    times the multiplier per second. Mult range 2-50.
+#       Default:     0 / 6
+#
+#   AntiCheat.BotDetect
+#       Description: Optional bot-movement heuristic (snap-to-waypoint + metronomic
+#                    packet timing over a 30s window). Heuristic/FP-prone, OFF by
+#                    default.
+#       Default:     0 - (disabled)
+#
+#   AntiCheat.Autoban.Enable
+#       Description: Account-level autoban accumulator. A kick adds KickPoints to
+#                    the account; crossing Threshold queues an escalating ban
+#                    (Duration1 -> Duration2 -> Duration3). The accumulator decays
+#                    by DecayPerHour. Needs AntiCheat.Enable too.
+#       Default:     0 - (disabled)
+#
+#   AntiCheat.Autoban.KickPoints / Threshold / DecayPerHour
+#       Default:     10 / 30 / 1
+#
+#   AntiCheat.Autoban.Duration1 / Duration2 / Duration3
+#       Description: Escalating ban durations in seconds (0 = permanent).
+#       Default:     86400 / 604800 / 0   (1 day, 7 days, permanent)
+#
+###################################################################################################
+
+AntiCheat.Enable = 0
+AntiCheat.Movement.Enable = 1
+AntiCheat.Physics.Enable = 1
+AntiCheat.ExemptBots = 1
+AntiCheat.ExemptGMLevel = 1
+AntiCheat.Persist = 1
+AntiCheat.Action = 1
+AntiCheat.Speed.Tolerance = 110
+AntiCheat.Teleport.Distance = 50
+AntiCheat.Score.Warn = 30
+AntiCheat.Score.Rubberband = 60
+AntiCheat.Score.Kick = 120
+AntiCheat.Score.DecayPerSec = 2
+AntiCheat.CastBurstPerSec = 8
+AntiCheat.AccelCheck = 0
+AntiCheat.AccelMaxMult = 6
+AntiCheat.BotDetect = 0
+AntiCheat.Autoban.Enable = 0
+AntiCheat.Autoban.KickPoints = 10
+AntiCheat.Autoban.Threshold = 30
+AntiCheat.Autoban.DecayPerHour = 1
+AntiCheat.Autoban.Duration1 = 86400
+AntiCheat.Autoban.Duration2 = 604800
+AntiCheat.Autoban.Duration3 = 0
+
+###################################################################################################
+# ANTI-CHEAT TIME-SYNC SUBSYSTEM
+#
+#   Builds additively on the anti-cheat core. Provides a per-session client<->server
+#   clock-offset service, time-based desync detection, CMSG_MOVE_TIME_SKIPPED handling,
+#   an optional movement-timestamp correction, and an optional desync auto-resync.
+#   GM commands: .timesync status / config / set / resync / skip.
+#
+#   NOTE: the per-session latency window + EWMA (used by the core movement detectors
+#   for latency-aware tolerances) is ALWAYS maintained regardless of TimeSync.Enable;
+#   this switch only governs the time-sync desync detection layer.
+#
+#   TimeSync.Enable
+#       Description: Master switch for the desync-detection layer (latency-spike
+#                    desync + client/server elapsed-time divergence). The skip
+#                    relay and abuse scoring run under AntiCheat.Movement.Enable.
+#       Default:     0 - (disabled)
+#
+#   TimeSync.EWMA.Alpha
+#       Description: Latency EWMA smoothing weight, percent (20 = 0.20).
+#       Default:     20
+#
+#   TimeSync.Desync.Threshold
+#       Description: Latency/elapsed-time deviation (ms) from baseline treated as a
+#                    desync (added to measured latency as tolerance).
+#       Default:     1000
+#
+#   TimeSync.MaxSkipMs
+#       Description: CMSG_MOVE_TIME_SKIPPED above this many ms scores as a time-based
+#                    cheat signal (legit lag-freezes are usually well under this).
+#       Default:     2000
+#
+#   TimeSync.MovementCorrection
+#       Description: Normalise the movement timestamp relayed to OTHER players to the
+#                    server clock so observers interpolate on one timebase (reduces
+#                    other-player warp/stutter). Higher-risk netcode; A/B test it.
+#       Default:     0 - (disabled)
+#
+#   TimeSync.AutoResync
+#       Description: After ResyncDesyncTrips sustained desync trips, rubberband the
+#                    client to its authoritative position (the only vanilla resync
+#                    lever). Cooldown-limited by ResyncCooldownMs.
+#       Default:     0 - (disabled)
+#
+#   TimeSync.ResyncDesyncTrips / TimeSync.ResyncCooldownMs
+#       Default:     5 / 10000
+#
+###################################################################################################
+
+TimeSync.Enable = 0
+TimeSync.EWMA.Alpha = 20
+TimeSync.Desync.Threshold = 1000
+TimeSync.MaxSkipMs = 2000
+TimeSync.MovementCorrection = 0
+TimeSync.AutoResync = 0
+TimeSync.ResyncDesyncTrips = 5
+TimeSync.ResyncCooldownMs = 10000

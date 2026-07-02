@@ -112,6 +112,9 @@
 // WARDEN
 #include "WardenCheckMgr.h"
 
+// ANTICHEAT
+#include "AntiCheatMgr.h"
+
 // AH subprocess supervisor (Task 5+)
 #include "WorkerSupervisor.h"
 #include "IpcMessage.h"
@@ -289,8 +292,6 @@ void World::CleanupsBeforeStop()
 }
 
 
-
-
 void
 World::AddSession_(WorldSession* s)
 {
@@ -373,9 +374,6 @@ World::AddSession_(WorldSession* s)
         DETAIL_LOG("Server Population (%f).", popu);
     }
 }
-
-
-
 
 
 /// Initialize the World
@@ -845,6 +843,9 @@ void World::SetInitialWorldSettings()
     // for AhBot
     m_timers[WUPDATE_AHBOT].SetInterval(20 * IN_MILLISECONDS); // every 20 sec
 
+    // for Anti-Cheat maintenance (idle score pruning)
+    m_timers[WUPDATE_ANTICHEAT].SetInterval(30 * IN_MILLISECONDS); // every 30 sec
+
     // for AutoBroadcast
     sLog.outString("Starting AutoBroadcast System");
     if (m_broadcastEnable)
@@ -896,6 +897,11 @@ void World::SetInitialWorldSettings()
 
     sLog.outString("Loading Warden Action Overrides...");
     sWardenCheckMgr->LoadWardenOverrides();
+    sLog.outString();
+
+    // Initialize Anti-Cheat / Movement-Validation framework (inert unless enabled)
+    sLog.outString("Initializing Anti-Cheat framework...");
+    sAntiCheatMgr->Init();
     sLog.outString();
 
     sLog.outString("Deleting expired bans...");
@@ -1237,6 +1243,13 @@ void World::Update(uint32 diff)
         }
 
         m_timers[WUPDATE_AHBOT].Reset();
+    }
+
+    /// <li> Handle Anti-Cheat maintenance (prune idle scores + apply autobans)
+    if (m_timers[WUPDATE_ANTICHEAT].Passed())
+    {
+        sAntiCheatMgr->Update(m_timers[WUPDATE_ANTICHEAT].GetCurrent());
+        m_timers[WUPDATE_ANTICHEAT].Reset();
     }
 
     /// <li> Tick the AH subprocess supervisor and drain inbound frames
@@ -2514,21 +2527,6 @@ void World::UpdateMaxSessionCounters()
     m_maxActiveSessionCount = std::max(m_maxActiveSessionCount, uint32(m_sessions.size() - m_QueuedSessions.size()));
     m_maxQueuedSessionCount = std::max(m_maxQueuedSessionCount, uint32(m_QueuedSessions.size()));
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 /**
