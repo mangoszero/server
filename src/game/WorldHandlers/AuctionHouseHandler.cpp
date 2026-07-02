@@ -610,6 +610,123 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
             GetPlayerName(), GetAccountId(), it->GetProto()->Name1, it->GetEntry(), it->GetCount());
     }
 
+    // ----- SP-2 write-authority forward path: reserve -> forward (spec 4.1) -----
+    // Placed BEFORE the 50-owned-auctions loop: that guard walks the local
+    // AuctionsMap, which is dead under WriteAuthority -- the worker owns the
+    // book and enforces the 50-cap itself (spec I6). Eluna OnAdd fires at
+    // finalize time from the worker facts (spec 5.8, Task 11), not here.
+    if (sWorld.IsAhWriteAuthority())
+    {
+        // No in-process fallback of any kind (spec 5.5). Worker configured but
+        // down => the existing unavailable path (center flash + red chat line)
+        // plus an ERR_DATABASE command result so the client UI unlocks
+        // (the same result class as the M2 in-doubt tombstone).
+        WorkerSupervisor* sv = sWorld.GetAhSupervisor();
+        if (!sv || !sv->ServiceActive())
+        {
+            AhSendUnavailableMessage(this);
+            SendAuctionCommandResult(NULL, AUCTION_STARTED, AUCTION_ERR_DATABASE);
+            return;
+        }
+
+        // Cap check BEFORE any reserve (spec 5.5).
+        if (!sWorld.GetMutationPending().CanRegister(pl->GetGUIDLow()))
+        {
+            SendAuctionCommandResult(NULL, AUCTION_STARTED, AUCTION_ERR_DATABASE);
+            return;
+        }
+
+        // mangosd is the sole auction-ID allocator (spec decision 8): minted
+        // here and carried in the intent, so every custody idem key exists at
+        // reserve time.
+        uint32 const auctionId     = sObjectMgr.GenerateAuctionID();
+        uint64 const uuid          = AhMintMutationUuid();
+        std::string const aucIdStr = std::to_string(auctionId);
+        uint32 const itemGuidLow   = itemGuid.GetCounter();
+
+        // In-memory escrow exactly as the custody AddAuction path does (deposit
+        // debit at the legacy :605 position, then mAitems + out of the bags);
+        // the durable writes co-commit below. mAitems stays in mangosd (I7).
+        pl->ModifyMoney(-int32(deposit));
+        sAuctionMgr.AddAItem(it);
+        pl->MoveItemFromInventory(it->GetBagSlot(), it->GetSlot(), true);
+
+        // ONE checked txn (spec decision 9): item ownership move + escrow row +
+        // deposit reserve row. NO `auction` row -- the worker is the sole book
+        // writer and inserts it at commit (spec 4.1 step 3).
+        CharacterDatabase.BeginTransaction();
+        it->DeleteFromInventoryDB();
+        it->SaveToDB();
+        pl->SaveInventoryAndGoldToDB();
+        CustodyService::EscrowItem(pl->GetGUIDLow(), itemGuidLow, "item:" + aucIdStr, auctionId);
+        CustodyService::ReserveGoldAlreadyDebited(pl->GetGUIDLow(), deposit, "dep:" + aucIdStr, auctionId, ROLE_DEPOSIT);
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            // Durable rollback -> restore live state (mirrors the custody S1
+            // rollback below, minus the phantom AuctionEntry: none exists here).
+            sAuctionMgr.RemoveAItem(itemGuidLow);
+            ItemPosCountVec dest;
+            if (pl->CanStoreItem(NULL_BAG, NULL_SLOT, dest, it, false) == EQUIP_ERR_OK)
+            {
+                pl->MoveItemToInventory(dest, it, true, true);
+            }
+            else
+            {
+                sLog.outError("SP-2 sell: seller %u could not re-store item %u on reserve rollback of "
+                              "auction %u; item remains durably the seller's on disk (reloads on relog)",
+                              pl->GetGUIDLow(), itemGuidLow, auctionId);
+            }
+            pl->ModifyMoney(int32(deposit));
+            SendAuctionCommandResult(NULL, AUCTION_STARTED, AUCTION_ERR_DATABASE);
+            sLog.outError("SP-2 sell: reserve txn rolled back for auction %u; live state restored", auctionId);
+            return;
+        }
+
+        // Register BEFORE the send so a fast reply can never race an
+        // unregistered uuid.
+        PendingMutation pm;
+        pm.uuid           = uuid;
+        pm.playerGuidLow  = pl->GetGUIDLow();
+        pm.op             = uint16(IPC_PLAYER_SELL);
+        pm.auctionId      = auctionId;
+        pm.state          = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec        = uint32(time(NULL));
+        pm.reservedAmount = 0u;                 // deposit rides depKey, no bid reserve
+        pm.reserveKey.clear();
+        pm.itemKey        = "item:" + aucIdStr;
+        pm.depKey         = "dep:" + aucIdStr;
+        sWorld.GetMutationPending().Register(pm);
+
+        PlayerSellIntent psi;
+        psi.uuid             = uuid;
+        psi.auctionId        = auctionId;
+        psi.sellerGuid       = pl->GetGUIDLow();
+        psi.house            = uint8(auctionHouseEntry->houseId);
+        psi.itemGuid         = itemGuidLow;
+        psi.itemTemplate     = it->GetEntry();
+        psi.itemCount        = it->GetCount();
+        psi.randomPropertyId = it->GetItemRandomPropertyId();
+        psi.startbid         = bid;
+        psi.buyout           = buyout;
+        psi.deposit          = deposit;         // mangosd-computed, worker persists verbatim (spec 4.1)
+        psi.expireTime       = uint32(time(NULL) + uint32(etime * sWorld.getConfig(CONFIG_FLOAT_RATE_AUCTION_TIME)));
+
+        IpcMessage m;
+        m.op = IPC_PLAYER_SELL;
+        psi.Encode(m.body);
+        if (!sv->Channel().SendFrame(m))
+        {
+            // The reserve is durable and is NEVER unilaterally rolled back
+            // (decision 10): tombstone as in-doubt; reconcile-on-reconnect
+            // resolves it against the worker journal (spec 8).
+            sWorld.GetMutationPending().Tombstone(uuid);
+            SendAuctionCommandResult(NULL, AUCTION_STARTED, AUCTION_ERR_DATABASE);
+            sLog.outError("SP-2 sell: forward send failed for auction %u uuid " UI64FMTD "; reservation in doubt",
+                          auctionId, uuid);
+        }
+        return;
+    }
+
     /* The client limits owned auctions to 50: */
     /* Make sure we do not go over this limit, or the client will crash */
     char numTotalOwned = 0;
