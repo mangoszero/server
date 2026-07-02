@@ -288,48 +288,8 @@ void World::CleanupsBeforeStop()
     sBattleGroundMgr.DeleteAllBattleGrounds();       // unload battleground templates before different singletons destroyed
 }
 
-/// Find a session by its id
-WorldSession* World::FindSession(uint32 id) const
-{
-    SessionMap::const_iterator itr = m_sessions.find(id);
 
-    if (itr != m_sessions.end())
-    {
-        return itr->second;
-    }                                 // also can return NULL for kicked session
-    else
-    {
-        return NULL;
-    }
-}
 
-/// Remove a given session
-bool World::RemoveSession(uint32 id)
-{
-    ///- Find the session, kick the user, but we can't delete session at this moment to prevent iterator invalidation
-    SessionMap::const_iterator itr = m_sessions.find(id);
-
-    if (itr != m_sessions.end() && itr->second)
-    {
-        if (itr->second->PlayerLoading())
-        {
-            return false;
-        }
-        itr->second->KickPlayer();
-    }
-
-    return true;
-}
-
-/**
- * @brief Queues a new session for addition during the world update.
- *
- * @param s The session to add.
- */
-void World::AddSession(WorldSession* s)
-{
-    addSessQueue.add(s);
-}
 
 void
 World::AddSession_(WorldSession* s)
@@ -414,106 +374,8 @@ World::AddSession_(WorldSession* s)
     }
 }
 
-/**
- * @brief Returns the current queue position of a session.
- *
- * @param sess The session to locate.
- * @return The 1-based queue position, or 0 if not queued.
- */
-int32 World::GetQueuedSessionPos(WorldSession* sess)
-{
-    uint32 position = 1;
 
-    for (Queue::const_iterator iter = m_QueuedSessions.begin(); iter != m_QueuedSessions.end(); ++iter, ++position)
-    {
-        if ((*iter) == sess)
-        {
-            return position;
-        }
-    }
-    return 0;
-}
 
-/**
- * @brief Places a session into the login queue and notifies the client.
- *
- * @param sess The session being queued.
- */
-void World::AddQueuedSession(WorldSession* sess)
-{
-    sess->SetInQueue(true);
-    m_QueuedSessions.push_back(sess);
-
-    // [-ZERO] Possible wrong
-    // The 1st SMSG_AUTH_RESPONSE needs to contain other info too.
-    WorldPacket packet(SMSG_AUTH_RESPONSE, 1 + 4 + 1 + 4 + 4);
-    packet << uint8(AUTH_WAIT_QUEUE);
-    packet << uint32(0);                                    // BillingTimeRemaining
-    packet << uint8(0);                                     // BillingPlanFlags
-    packet << uint32(0);                                    // BillingTimeRested
-    packet << uint32(GetQueuedSessionPos(sess));            // position in queue
-    sess->SendPacket(&packet);
-}
-
-/**
- * @brief Removes a session from the login queue and updates later positions.
- *
- * @param sess The session to remove.
- * @return true if the session was queued and removed; otherwise false.
- */
-bool World::RemoveQueuedSession(WorldSession* sess)
-{
-    // sessions count including queued to remove (if removed_session set)
-    uint32 sessions = GetActiveSessionCount();
-
-    uint32 position = 1;
-    Queue::iterator iter = m_QueuedSessions.begin();
-
-    // search to remove and count skipped positions
-    bool found = false;
-
-    for (; iter != m_QueuedSessions.end(); ++iter, ++position)
-    {
-        if (*iter == sess)
-        {
-            sess->SetInQueue(false);
-            iter = m_QueuedSessions.erase(iter);
-            found = true;                                   // removing queued session
-            break;
-        }
-    }
-
-    // iter point to next socked after removed or end()
-    // position store position of removed socket and then new position next socket after removed
-
-    // if session not queued then we need decrease sessions count
-    if (!found && sessions)
-    {
-        --sessions;
-    }
-
-    // accept first in queue
-    if ((!m_playerLimit || (int32)sessions < m_playerLimit) && !m_QueuedSessions.empty())
-    {
-        WorldSession* pop_sess = m_QueuedSessions.front();
-        pop_sess->SetInQueue(false);
-        pop_sess->SendAuthWaitQue(0);
-        m_QueuedSessions.pop_front();
-
-        // update iter to point first queued socket or end() if queue is empty now
-        iter = m_QueuedSessions.begin();
-        position = 1;
-    }
-
-    // update position from iter to end()
-    // iter point to first not updated socket, position store new position
-    for (; iter != m_QueuedSessions.end(); ++iter, ++position)
-    {
-        (*iter)->SendAuthWaitQue(position);
-    }
-
-    return found;
-}
 
 
 /// Initialize the World
