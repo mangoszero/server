@@ -1559,27 +1559,6 @@ void WorldSession::HandleFarSightOpcode(WorldPacket& recv_data)
     }
 }
 
-/**
- * @brief Resets the player's or group's saved instances.
- *
- * @param recv_data The received opcode packet.
- */
-void WorldSession::HandleResetInstancesOpcode(WorldPacket& /*recv_data*/)
-{
-    DEBUG_LOG("WORLD: Received opcode CMSG_RESET_INSTANCES");
-
-    if (Group* pGroup = _player->GetGroup())
-    {
-        if (pGroup->IsLeader(_player->GetObjectGuid()))
-        {
-            pGroup->ResetInstances(INSTANCE_RESET_ALL, _player);
-        }
-    }
-    else
-    {
-        _player->ResetInstances(INSTANCE_RESET_ALL);
-    }
-}
 
 /**
  * @brief Cancels the player's mount aura when allowed.
