@@ -1274,6 +1274,222 @@ static int RunMutationSelfTest()
 }
 
 // ---------------------------------------------------------------------------
+// Self-test: SP-2 cancel two-phase (prepare/confirm/abort/timeout)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief In-memory cancel state machine: prepare facts + lock, admission of a
+ *        bid against a prepared row, double-prepare, abort, stale confirm,
+ *        prepare/confirm, timeout unlock via RESOLVE_CANCELLED_UNLOCK, and
+ *        boot re-arm via AdoptActiveJournal.
+ *
+ * @return 0 on success, 1 on any failure.
+ */
+static int RunCancelSelfTest()
+{
+    AuctionBook book(NULL);
+    std::vector<RawAuctionRow> noRows;
+    std::vector<AhJournal::JournalRow> noJournal;
+    book.BuildFromRows(noRows, noJournal);
+    MutationHandler handler(book, NULL, 1u);
+
+    // Seed one live listing (owner 100) with a standing bid of 100 by guid 200.
+    PlayerSellIntent sell;
+    sell.uuid = UINT64_C(0x0000000300000001);
+    sell.auctionId = 60u;
+    sell.sellerGuid = 100u;
+    sell.house = 7u;
+    sell.itemGuid = 9500u;
+    sell.itemTemplate = 2589u;
+    sell.itemCount = 20u;
+    sell.randomPropertyId = 0;
+    sell.startbid = 100u;
+    sell.buyout = 50000u;
+    sell.deposit = 15u;
+    sell.expireTime = 2000000000u;
+    if (handler.OnSell(sell).status != MUT_OK)
+    {
+        fprintf(stderr, "cancel selftest FAILED: seed sell\n");
+        return 1;
+    }
+    PlayerBidIntent bid;
+    bid.uuid = UINT64_C(0x0000000300000002);
+    bid.auctionId = 60u;
+    bid.bidderGuid = 200u;
+    bid.bidAmount = 100u;
+    if (handler.OnBid(bid).status != MUT_OK)
+    {
+        fprintf(stderr, "cancel selftest FAILED: seed bid\n");
+        return 1;
+    }
+
+    // --- not-owner prepare -> the legacy cheater reject (err-database) ---
+    PlayerCancelPrepare prep;
+    prep.uuid = UINT64_C(0x0000000300000010);
+    prep.auctionId = 60u;
+    prep.sellerGuid = 999u;
+    PlayerMutationResult r = handler.OnCancelPrepare(prep);
+    if (r.status != MUT_REJECTED || r.reason != BOOK_ERR_DATABASE)
+    {
+        fprintf(stderr, "cancel selftest FAILED: not-owner prepare\n");
+        return 1;
+    }
+
+    // --- prepare -> MUT_PREPARED with {curBid, curBidder, deposit} facts ---
+    prep.sellerGuid = 100u;
+    r = handler.OnCancelPrepare(prep);
+    if (r.status != MUT_PREPARED || r.op != 0x43u ||
+        r.facts.curBid != 100u || r.facts.curBidderGuid != 200u ||
+        r.facts.deposit != 15u ||
+        book.Find(60u)->state != BOOK_CANCEL_PREPARED)
+    {
+        fprintf(stderr, "cancel selftest FAILED: prepare\n");
+        return 1;
+    }
+
+    // --- bid vs prepared row -> legacy race-loser reject (spec 4.3b) ---
+    bid.uuid += 1u;
+    bid.bidAmount = 200u;
+    r = handler.OnBid(bid);
+    if (r.status != MUT_REJECTED || r.reason != BOOK_ERR_BID_OWN)
+    {
+        fprintf(stderr, "cancel selftest FAILED: bid vs prepared\n");
+        return 1;
+    }
+
+    // --- second prepare on a prepared row -> err-database ---
+    PlayerCancelPrepare prep2 = prep;
+    prep2.uuid = UINT64_C(0x0000000300000011);
+    r = handler.OnCancelPrepare(prep2);
+    if (r.status != MUT_REJECTED || r.reason != BOOK_ERR_DATABASE)
+    {
+        fprintf(stderr, "cancel selftest FAILED: double prepare\n");
+        return 1;
+    }
+
+    // --- abort -> unlocked, auction untouched ---
+    r = handler.OnCancelDecide(prep.uuid, 60u, false);
+    if (r.status != MUT_OK || r.op != 0x48u || book.Find(60u) == NULL ||
+        book.Find(60u)->state != BOOK_LIVE)
+    {
+        fprintf(stderr, "cancel selftest FAILED: abort\n");
+        return 1;
+    }
+
+    // --- stale confirm (already aborted) -> MUT_REJECTED_STALE ---
+    r = handler.OnCancelDecide(prep.uuid, 60u, true);
+    if (r.status != MUT_REJECTED_STALE || r.op != 0x47u)
+    {
+        fprintf(stderr, "cancel selftest FAILED: stale confirm\n");
+        return 1;
+    }
+
+    // --- prepare/confirm -> row removed, facts snapshot preserved ---
+    prep.uuid = UINT64_C(0x0000000300000012);
+    r = handler.OnCancelPrepare(prep);
+    if (r.status != MUT_PREPARED)
+    {
+        fprintf(stderr, "cancel selftest FAILED: re-prepare\n");
+        return 1;
+    }
+    r = handler.OnCancelDecide(prep.uuid, 60u, true);
+    if (r.status != MUT_OK || r.op != 0x47u || book.Find(60u) != NULL ||
+        r.facts.curBid != 100u || r.facts.curBidderGuid != 200u ||
+        r.facts.deposit != 15u || r.facts.sellerGuid != 100u)
+    {
+        fprintf(stderr, "cancel selftest FAILED: confirm\n");
+        return 1;
+    }
+
+    // --- timeout unlock on a fresh prepared listing ---
+    sell.uuid = UINT64_C(0x0000000300000020);
+    sell.auctionId = 61u;
+    sell.itemGuid = 9501u;
+    if (handler.OnSell(sell).status != MUT_OK)
+    {
+        fprintf(stderr, "cancel selftest FAILED: timeout seed sell\n");
+        return 1;
+    }
+    prep.uuid = UINT64_C(0x0000000300000021);
+    prep.auctionId = 61u;
+    if (handler.OnCancelPrepare(prep).status != MUT_PREPARED)
+    {
+        fprintf(stderr, "cancel selftest FAILED: timeout prepare\n");
+        return 1;
+    }
+
+    uint64 const now = static_cast<uint64>(time(NULL));
+    handler.CheckPrepareTimeouts(now + 3u);      // inside T: still locked
+    if (book.Find(61u)->state != BOOK_CANCEL_PREPARED)
+    {
+        fprintf(stderr, "cancel selftest FAILED: early timeout fired\n");
+        return 1;
+    }
+    handler.CheckPrepareTimeouts(now + 30u);     // past T: unlock
+    if (book.Find(61u)->state != BOOK_LIVE)
+    {
+        fprintf(stderr, "cancel selftest FAILED: timeout did not unlock\n");
+        return 1;
+    }
+
+    ResolveApply ra;
+    if (!handler.PopQueuedResolve(ra) || ra.kind != RESOLVE_CANCELLED_UNLOCK ||
+        ra.facts.auctionId != 61u || (ra.uuid >> 32) != 1u ||
+        (ra.uuid & 0xFFFFFFFFu) < 0x80000000u)
+    {
+        fprintf(stderr, "cancel selftest FAILED: queued unlock resolution\n");
+        return 1;
+    }
+    if (handler.PopQueuedResolve(ra))
+    {
+        fprintf(stderr, "cancel selftest FAILED: queue not drained\n");
+        return 1;
+    }
+
+    // --- late confirm after the timeout unlock -> MUT_REJECTED_STALE ---
+    r = handler.OnCancelDecide(prep.uuid, 61u, true);
+    if (r.status != MUT_REJECTED_STALE)
+    {
+        fprintf(stderr, "cancel selftest FAILED: post-unlock confirm\n");
+        return 1;
+    }
+
+    // --- AdoptActiveJournal re-arms a lock after a synthetic restart ---
+    {
+        AuctionBook book2(NULL);
+        std::vector<RawAuctionRow> rows;
+        rows.push_back(MakeRawRow(70u, 7u, 100u));
+        std::vector<AhJournal::JournalRow> jr;
+        AhJournal::JournalRow j;
+        j.uuid = UINT64_C(0x0000000400000001);
+        j.auctionId = 70u;
+        j.kind = 0x43u;
+        j.state = AhJournal::JRN_CANCEL_PREPARED;
+        j.facts = "";
+        j.createdTime = 50u;
+        j.resolvedTime = 0u;
+        jr.push_back(j);
+        if (!book2.BuildFromRows(rows, jr))
+        {
+            fprintf(stderr, "cancel selftest FAILED: restart build\n");
+            return 1;
+        }
+        MutationHandler handler2(book2, NULL, 2u);
+        handler2.AdoptActiveJournal(jr);
+        PlayerMutationResult r2 = handler2.OnCancelDecide(j.uuid, 70u, true);
+        if (r2.status != MUT_OK || book2.Find(70u) != NULL)
+        {
+            fprintf(stderr, "cancel selftest FAILED: adopted confirm\n");
+            return 1;
+        }
+    }
+
+    printf("cancel selftest OK\n");
+    fflush(stdout);
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
 // Self-test: SP-2 wire codecs (PlayerMutations.h round-trips + truncation)
 // ---------------------------------------------------------------------------
 
@@ -2127,6 +2343,11 @@ int main(int argc, char** argv)
         {
             return rc;
         }
+        rc = RunCancelSelfTest();
+        if (rc != 0)
+        {
+            return rc;
+        }
         return RunSelfTest();
     }
 
@@ -2349,6 +2570,7 @@ int main(int argc, char** argv)
             return 1;
         }
         ahHandler = new MutationHandler(*ahBook, &botDb, cli.RunId());
+        ahHandler->AdoptActiveJournal(activeJournal);
         printf("ah-service: WRITE AUTHORITY active - book %u listing(s),"
                " %u orphan(s)\n",
                static_cast<unsigned>(ahBook->Size()),
@@ -2571,6 +2793,50 @@ int main(int argc, char** argv)
                     }
                     break;
                 }
+                case IPC_PLAYER_CANCEL:
+                {
+                    PlayerCancelPrepare in;
+                    if (ahHandler != nullptr && in.Decode(msg.body))
+                    {
+                        PlayerMutationResult res = ahHandler->OnCancelPrepare(in);
+                        IpcMessage reply;
+                        reply.op = IPC_PLAYER_RESULT;
+                        res.Encode(reply.body);
+                        cli.SendFrame(reply);
+                    }
+                    else
+                    {
+                        fprintf(stderr, "ah-service: IPC_PLAYER_CANCEL %s\n",
+                                (ahHandler == nullptr)
+                                    ? "without write authority - ignored"
+                                    : "decode failed");
+                    }
+                    break;
+                }
+                case IPC_PLAYER_CANCEL_CONFIRM:
+                case IPC_PLAYER_CANCEL_ABORT:
+                {
+                    PlayerCancelDecide in;
+                    if (ahHandler != nullptr && in.Decode(msg.body))
+                    {
+                        bool const confirm = (msg.op == IPC_PLAYER_CANCEL_CONFIRM);
+                        PlayerMutationResult res =
+                            ahHandler->OnCancelDecide(in.uuid, in.auctionId, confirm);
+                        IpcMessage reply;
+                        reply.op = IPC_PLAYER_RESULT;
+                        res.Encode(reply.body);
+                        cli.SendFrame(reply);
+                    }
+                    else
+                    {
+                        fprintf(stderr, "ah-service: cancel decide (op 0x%04x) %s\n",
+                                static_cast<unsigned>(msg.op),
+                                (ahHandler == nullptr)
+                                    ? "without write authority - ignored"
+                                    : "decode failed");
+                    }
+                    break;
+                }
                 default:
                     printf("ah-service: unhandled IPC opcode %u"
                            " - ignored\n",
@@ -2584,6 +2850,13 @@ int main(int argc, char** argv)
             fprintf(stderr, "ah-service: connection lost - exiting\n");
             stop = true;
             break;
+        }
+
+        // SP-2: cancel prepare-lock timeout sweep (same serializer thread as
+        // the dispatch above -- no tick-vs-handler race by construction).
+        if (ahHandler != nullptr)
+        {
+            ahHandler->CheckPrepareTimeouts(static_cast<uint64>(time(NULL)));
         }
 
         // --- Bot cadence tick ---

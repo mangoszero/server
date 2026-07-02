@@ -70,6 +70,57 @@ class MutationHandler
         PlayerMutationResult OnBid(PlayerBidIntent const& in);
         PlayerMutationResult OnBuyout(PlayerBuyoutIntent const& in);
 
+        /**
+         * @brief Cancel two-phase step 1 (spec 4.2): validate ownership, lock
+         *        the row (BOOK_CANCEL_PREPARED + a durable JRN_CANCEL_PREPARED
+         *        journal row), reply MUT_PREPARED carrying {curBid, curBidder,
+         *        deposit} in the facts. Concurrent bids on the prepared row are
+         *        rejected as the legacy race-loser (spec 4.3b).
+         */
+        PlayerMutationResult OnCancelPrepare(PlayerCancelPrepare const& in);
+
+        /**
+         * @brief Cancel two-phase step 2. confirm==true commits the removal
+         *        (DELETE + journal COMMITTED, one checked txn) -> MUT_OK with
+         *        the facts snapshot; confirm==false unlocks (journal APPLIED,
+         *        auction untouched) -> MUT_OK. An unknown/expired uuid gets an
+         *        explicit MUT_REJECTED_STALE -- the worker answers EVERY
+         *        confirm, never silence (spec 4.2 v3).
+         */
+        PlayerMutationResult OnCancelDecide(uint64 uuid, uint32 auctionId, bool confirm);
+
+        /**
+         * @brief Re-arm prepare locks from JRN_CANCEL_PREPARED journal rows at
+         *        boot (spec 4.2 v3 section-8 addition: the worker restores the
+         *        locks in the reloaded book and awaits CONFIRM/ABORT/timeout).
+         *        Call once, after AuctionBook::LoadFromDb, with the same rows.
+         */
+        void AdoptActiveJournal(std::vector<AhJournal::JournalRow> const& rows);
+
+        /**
+         * @brief Prepare-lock timeout sweep (T = CANCEL_PREPARE_TIMEOUT_SECS).
+         *
+         * A timed-out lock unlocks via a journal-anchored resolution: the
+         * prepare row retires to JRN_APPLIED and a NEW worker-minted
+         * JRN_RESOLVING row (kind RESOLVE_CANCELLED_UNLOCK, facts = encoded
+         * ResolveApply) is inserted in the SAME txn, so the
+         * one-ACTIVE-per-auction invariant holds and a late CONFIRM is
+         * serialized by the journal (spec 4.2 v3 C2/I5/I6). The ResolveApply
+         * is queued for the resolve-send driver.
+         */
+        void CheckPrepareTimeouts(uint64 nowSecs);
+
+        /**
+         * @brief Drain one queued worker-initiated resolution (the resolve-send
+         *        task's seam). Entries are ALSO journal-anchored as
+         *        JRN_RESOLVING, so a crash before the send loses nothing: the
+         *        re-send driver re-encodes from the journal facts blob.
+         */
+        bool PopQueuedResolve(ResolveApply& out);
+
+        /// PREPARE lock timeout, seconds (spec 4.2 step 4's "T" -- pinned).
+        static const uint32 CANCEL_PREPARE_TIMEOUT_SECS = 10u;
+
         /// GetAuctionOutBid (AuctionHouseMgr.cpp:1502-1510): (bid/100)*5, min 1c.
         static uint32 OutBidAmount(uint32 bid);
 
@@ -102,6 +153,22 @@ class MutationHandler
         /// open transaction. No-op in selftest mode.
         void JournalCommitted(uint64 uuid, uint32 auctionId, uint8 kind,
                               PlayerMutationResult const& res);
+
+        /// One armed cancel-prepare lock awaiting CONFIRM/ABORT/timeout.
+        struct PrepareEntry
+        {
+            uint32 auctionId;
+            uint32 sellerGuid;
+            uint64 preparedAt;   ///< seconds, time(NULL) domain
+        };
+        typedef std::map<uint64, PrepareEntry> PrepareMap;
+
+        /// (m_runId << 32) | m_nextSeq++ -- the BotBrain scheme
+        /// (BotBrain.cpp:106) on the 0x80000000+ half of the low word.
+        uint64 NextWorkerUuid();
+
+        PrepareMap               m_prepares;
+        std::deque<ResolveApply> m_resolveQueue;
 
         AuctionBook&     m_book;
         ServiceDatabase* m_db;

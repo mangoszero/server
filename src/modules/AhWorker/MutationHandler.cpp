@@ -436,3 +436,279 @@ PlayerMutationResult MutationHandler::OnBuyout(PlayerBuyoutIntent const& in)
 
     return res;
 }
+
+uint64 MutationHandler::NextWorkerUuid()
+{
+    return (static_cast<uint64>(m_runId) << 32) | static_cast<uint64>(m_nextSeq++);
+}
+
+PlayerMutationResult MutationHandler::OnCancelPrepare(PlayerCancelPrepare const& in)
+{
+    PlayerMutationResult res = MakeResult(in.uuid, 0x43u, MUT_REJECTED,
+                                          BOOK_ERR_DATABASE);
+
+    BookRow* row = m_book.Find(in.auctionId);
+
+    uint8 const admit = AuctionBook::Admit(OP_CANCEL_PREPARE, row);
+    if (admit != BOOK_ERR_OK)
+    {
+        res.reason = admit;
+        return res;
+    }
+
+    // Ownership: legacy replies AUCTION_ERR_DATABASE + a cheater log
+    // (AuctionHouseHandler.cpp:921-926).
+    if (row->owner != in.sellerGuid)
+    {
+        fprintf(stderr, "ah-service: CHEATER? guid %u tried to cancel"
+                        " auction %u owned by %u\n",
+                in.sellerGuid, in.auctionId, row->owner);
+        return res;
+    }
+
+    // Build the MUT_PREPARED reply first: its encoded form is the journal
+    // facts blob, so reconcile reads the exact snapshot mangosd saw.
+    res.status = MUT_PREPARED;
+    res.reason = BOOK_ERR_OK;
+    FillFacts(*row, res.facts);   // curBid / curBidderGuid / deposit ride here
+
+    // Lock DURABLY before replying (standalone checked commit -- plain
+    // PExecute without a txn is async and would not be durable-before-reply).
+    if (m_db != NULL)
+    {
+        ByteBuffer bb;
+        res.Encode(bb);
+        AhJournal::JournalRow j;
+        j.uuid         = in.uuid;
+        j.auctionId    = in.auctionId;
+        j.kind         = 0x43u;
+        j.state        = AhJournal::JRN_CANCEL_PREPARED;
+        j.facts        = std::string(reinterpret_cast<const char*>(bb.contents()),
+                                     bb.size());
+        j.createdTime  = static_cast<uint64>(time(NULL));
+        j.resolvedTime = 0u;
+
+        if (!m_db->Character().BeginTransaction())
+        {
+            return MakeResult(in.uuid, 0x43u, MUT_REJECTED, BOOK_ERR_DATABASE);
+        }
+        AhJournal::Insert(*m_db, j);
+        if (!m_db->Character().CommitTransactionChecked())
+        {
+            fprintf(stderr, "ah-service: cancel-prepare journal write failed"
+                            " for auction %u - REJECTED err-database\n",
+                    in.auctionId);
+            return MakeResult(in.uuid, 0x43u, MUT_REJECTED, BOOK_ERR_DATABASE);
+        }
+    }
+
+    row->state = BOOK_CANCEL_PREPARED;
+    PrepareEntry pe;
+    pe.auctionId  = in.auctionId;
+    pe.sellerGuid = in.sellerGuid;
+    pe.preparedAt = static_cast<uint64>(time(NULL));
+    m_prepares[in.uuid] = pe;
+
+    return res;
+}
+
+PlayerMutationResult MutationHandler::OnCancelDecide(uint64 uuid, uint32 auctionId,
+                                                     bool confirm)
+{
+    uint8 const op = confirm ? 0x47u : 0x48u;
+
+    PrepareMap::iterator it = m_prepares.find(uuid);
+    if (it == m_prepares.end())
+    {
+        // Post-unlock CONFIRM/ABORT or unknown uuid: answer explicitly, never
+        // silence (spec 4.2 v3 -- the worker answers EVERY confirm).
+        return MakeResult(uuid, op, MUT_REJECTED_STALE, BOOK_ERR_OK);
+    }
+
+    if (it->second.auctionId != auctionId)
+    {
+        fprintf(stderr, "ah-service: protocol fault: cancel decide uuid/auction"
+                        " mismatch (locked auction %u, frame auction %u)\n",
+                it->second.auctionId, auctionId);
+        return MakeResult(uuid, op, MUT_REJECTED_STALE, BOOK_ERR_OK);
+    }
+
+    BookRow* row = m_book.Find(auctionId);
+    if (row == NULL || row->state != BOOK_CANCEL_PREPARED)
+    {
+        fprintf(stderr, "ah-service: cancel decide: auction %u not in prepared"
+                        " state - dropping the stale lock entry\n", auctionId);
+        m_prepares.erase(it);
+        return MakeResult(uuid, op, MUT_REJECTED_STALE, BOOK_ERR_OK);
+    }
+
+    if (confirm)
+    {
+        // Commit the removal: DELETE + journal COMMITTED, one checked txn
+        // (spec 4.2 step 3). Snapshot the row for the facts + rollback.
+        BookRow const removed = *row;
+
+        PlayerMutationResult res = MakeResult(uuid, op, MUT_OK, BOOK_ERR_OK);
+        FillFacts(removed, res.facts);
+
+        if (!BeginCommit())
+        {
+            return MakeResult(uuid, op, MUT_REJECTED, BOOK_ERR_DATABASE);
+        }
+        m_book.Remove(auctionId);
+        if (m_db != NULL)
+        {
+            AhJournal::SetState(*m_db, uuid, AhJournal::JRN_COMMITTED,
+                                static_cast<uint64>(time(NULL)));
+        }
+        if (!FinishCommit())
+        {
+            // DB rolled back: restore the prepared row in memory. The lock
+            // stays armed and the timeout sweep recovers it; mangosd releases
+            // its cut reservation on the err-database reply.
+            m_book.RollbackRemove(removed);
+            fprintf(stderr, "ah-service: cancel confirm commit failed for"
+                            " auction %u - row stays prepared until timeout\n",
+                    auctionId);
+            return MakeResult(uuid, op, MUT_REJECTED, BOOK_ERR_DATABASE);
+        }
+
+        m_prepares.erase(it);
+        return res;
+    }
+
+    // ABORT: retire the journal row durably, then unlock in memory. The
+    // auction is untouched; the seller gets the legacy silent-return behavior
+    // (spec 4.2 step 2 -- mangosd emits nothing on an ABORT it initiated).
+    if (m_db != NULL)
+    {
+        if (!m_db->Character().BeginTransaction())
+        {
+            return MakeResult(uuid, op, MUT_REJECTED, BOOK_ERR_DATABASE);
+        }
+        AhJournal::SetState(*m_db, uuid, AhJournal::JRN_APPLIED,
+                            static_cast<uint64>(time(NULL)));
+        if (!m_db->Character().CommitTransactionChecked())
+        {
+            // Journal still says CANCEL_PREPARED: keep the memory lock so
+            // journal and book agree; the timeout sweep unlocks it via the
+            // journal-anchored resolution.
+            fprintf(stderr, "ah-service: cancel abort journal write failed for"
+                            " auction %u - lock kept until timeout\n",
+                    auctionId);
+            return MakeResult(uuid, op, MUT_REJECTED, BOOK_ERR_DATABASE);
+        }
+    }
+    row->state = BOOK_LIVE;
+    m_prepares.erase(it);
+    return MakeResult(uuid, op, MUT_OK, BOOK_ERR_OK);
+}
+
+void MutationHandler::AdoptActiveJournal(std::vector<AhJournal::JournalRow> const& rows)
+{
+    for (size_t i = 0; i < rows.size(); ++i)
+    {
+        AhJournal::JournalRow const& j = rows[i];
+        if (j.state != AhJournal::JRN_CANCEL_PREPARED)
+        {
+            continue;
+        }
+        BookRow* row = m_book.Find(j.auctionId);
+        if (row == NULL)
+        {
+            continue;   // already logged by the book load
+        }
+        PrepareEntry pe;
+        pe.auctionId  = j.auctionId;
+        pe.sellerGuid = row->owner;
+        pe.preparedAt = j.createdTime;
+        m_prepares[j.uuid] = pe;
+    }
+}
+
+void MutationHandler::CheckPrepareTimeouts(uint64 nowSecs)
+{
+    std::vector<uint64> expired;
+    for (PrepareMap::const_iterator it = m_prepares.begin();
+         it != m_prepares.end(); ++it)
+    {
+        if (it->second.preparedAt + CANCEL_PREPARE_TIMEOUT_SECS <= nowSecs)
+        {
+            expired.push_back(it->first);
+        }
+    }
+
+    for (size_t i = 0; i < expired.size(); ++i)
+    {
+        uint64 const prepareUuid = expired[i];
+        PrepareMap::iterator pit = m_prepares.find(prepareUuid);
+        if (pit == m_prepares.end())
+        {
+            continue;
+        }
+        PrepareEntry const pe = pit->second;
+
+        BookRow* row = m_book.Find(pe.auctionId);
+        if (row == NULL || row->state != BOOK_CANCEL_PREPARED)
+        {
+            m_prepares.erase(pit);
+            continue;
+        }
+
+        // Journal-anchored unlock (spec 4.2 v3): retire the prepare row and
+        // insert the RESOLVE_CANCELLED_UNLOCK resolution in ONE txn. The
+        // one-ACTIVE-per-auction invariant holds throughout, and a late
+        // CONFIRM now finds no armed lock -> MUT_REJECTED_STALE.
+        ResolveApply ra;
+        ra.uuid = NextWorkerUuid();
+        ra.kind = RESOLVE_CANCELLED_UNLOCK;
+        FillFacts(*row, ra.facts);
+
+        if (m_db != NULL)
+        {
+            ByteBuffer bb;
+            ra.Encode(bb);
+            AhJournal::JournalRow j;
+            j.uuid         = ra.uuid;
+            j.auctionId    = pe.auctionId;
+            j.kind         = RESOLVE_CANCELLED_UNLOCK;
+            j.state        = AhJournal::JRN_RESOLVING;
+            j.facts        = std::string(reinterpret_cast<const char*>(bb.contents()),
+                                         bb.size());
+            j.createdTime  = nowSecs;
+            j.resolvedTime = 0u;
+
+            if (!m_db->Character().BeginTransaction())
+            {
+                continue;   // retry next sweep
+            }
+            AhJournal::SetState(*m_db, prepareUuid, AhJournal::JRN_APPLIED,
+                                nowSecs);
+            AhJournal::Insert(*m_db, j);
+            if (!m_db->Character().CommitTransactionChecked())
+            {
+                fprintf(stderr, "ah-service: prepare-timeout unlock txn failed"
+                                " for auction %u - retrying next sweep\n",
+                        pe.auctionId);
+                continue;
+            }
+        }
+
+        row->state = BOOK_LIVE;
+        m_prepares.erase(pit);
+        m_resolveQueue.push_back(ra);
+        printf("ah-service: cancel prepare timed out for auction %u -"
+               " unlocked via RESOLVE_CANCELLED_UNLOCK\n", pe.auctionId);
+    }
+}
+
+bool MutationHandler::PopQueuedResolve(ResolveApply& out)
+{
+    if (m_resolveQueue.empty())
+    {
+        return false;
+    }
+    out = m_resolveQueue.front();
+    m_resolveQueue.pop_front();
+    return true;
+}
