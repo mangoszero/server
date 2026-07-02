@@ -144,6 +144,19 @@ bool MutationPendingMap::Peek(uint64 uuid, PendingMutation& out) const
     return true;
 }
 
+bool MutationPendingMap::SetReserve(uint64 uuid, uint32 amount, std::string const& key)
+{
+    std::unordered_map<uint64, PendingMutation>::iterator itr = m_map.find(uuid);
+    if (itr == m_map.end())
+    {
+        return false;
+    }
+
+    itr->second.reservedAmount = amount;
+    itr->second.reserveKey     = key;
+    return true;
+}
+
 uint64 AhMintMutationUuid()
 {
     // World-thread only. See header note on the composition.

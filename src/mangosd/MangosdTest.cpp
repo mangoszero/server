@@ -16,6 +16,8 @@
 #include "AuctionHouseBot/MutationPending.h"
 #include "IpcOpcodes.h"
 #include "BrowseMessages.h"
+#include "World.h"
+#include "PlayerMutations.h"
 #include <cstdio>
 #include <ctime>
 #include <memory>
@@ -1545,6 +1547,478 @@ static int RunAhReleaseTest()
     return pass ? 0 : 1;
 }
 
+/// SP-2 self-test for AhHandlePlayerMutationResult: finalizes crafted worker
+/// results against SEEDED custody rows + a seeded MutationPending entry. No live
+/// worker, no world data. Recipients of AH mail / gold re-credits use guid 1,
+/// which the test SEEDS as an offline `characters` row with an account (the
+/// legacy AH mail path guards on GetPlayerAccountIdByGUID != 0, so a recipient
+/// with no `characters` row is correctly skipped -- see RunAhReleaseTest); guid
+/// 99999 stays an offline-nobody bidder. Covers the reconciliation that an
+/// op=0x42 (buyout intent) MUT_OK is a WIN only when effectiveBid==buyout, else
+/// a normal standing bid. Returns 0 on pass.
+static int RunAhMutResultTest()
+{
+    bool pass = true;
+    CharacterDatabase.AllowAsyncTransactions();
+    sObjectMgr.SetHighestGuids();       // mail ids collide otherwise (RunMailTest)
+
+    // Clean slate from any prior run (auction-id scoped -- covers both the
+    // test:mut* keys and the hardcoded dep:/item: keys the buyout finalize uses).
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (990001,990002,990003,990004)");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `mail` WHERE `receiver` IN (1,2) AND `subject` LIKE '19019:%'");
+
+    // Seed the offline recipient (guid 1) with an account + durable money so the
+    // account-guarded AH mail path delivers and the offline gold re-credit UPDATE
+    // has a row to hit. World data is NOT loaded under -t, so GetPlayer(1) is
+    // NULL and every value motion takes the offline (durable-DB) branch.
+    CharacterDatabase.DirectExecute("DELETE FROM `characters` WHERE `guid`=1");
+    CharacterDatabase.DirectExecute(
+        "INSERT INTO `characters` (`guid`,`account`,`name`,`money`) "
+        "VALUES (1, 1, 'AhMutTestRcv', 100000)");
+
+    // Helper lambda: read guid 1's durable money.
+    auto readMoney = []() -> uint64
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT `money` FROM `characters` WHERE `guid`=1"));
+        return res ? res->Fetch()[0].GetUInt64() : 0;
+    };
+
+    // Helper lambda: read a custody row's state (255 = missing).
+    auto rowState = [](char const* key) -> uint32
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT `state` FROM `custody_ledger` WHERE `idem_key`='%s'", key));
+        return res ? res->Fetch()[0].GetUInt32() : 255u;
+    };
+
+    // Helper lambda: count mails matching a money+subject to receiver 1.
+    auto mailCount = [](uint32 money, char const* subject) -> uint64
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT COUNT(*) FROM `mail` WHERE `receiver`=1 AND `money`=%u AND `subject`='%s'",
+            money, subject));
+        return res ? res->Fetch()[0].GetUInt64() : 0;
+    };
+
+    MutationPendingMap& pend = sWorld.GetMutationPending();
+
+    // ---- Part A: MUT_OK bid displacing a real prior bidder ----
+    {
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('test:mut:prior',0,1,0,1,0,777,0,990001,0,0),"
+            "       ('test:mut:own',0,1,0,99999,0,900,0,990001,0,0)");
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahmutresult FAIL: seed commit (bid)\n");
+            return 2;
+        }
+
+        PendingMutation pm;
+        pm.uuid = 0xA1ull;
+        pm.playerGuidLow = 99999u;          // nonexistent char: offline, no account
+        pm.op = uint16(IPC_PLAYER_BID);
+        pm.auctionId = 990001u;
+        pm.state = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec = uint32(time(NULL));
+        pm.reservedAmount = 900u;
+        pm.reserveKey = "test:mut:own";
+        pm.itemKey.clear();
+        pm.depKey.clear();
+        pend.Register(pm);
+
+        PlayerMutationResult res;
+        res.uuid = 0xA1ull;
+        res.op = uint8(IPC_PLAYER_BID & 0xFFu);
+        res.status = uint8(MUT_OK);
+        res.reason = 0;
+        res.facts = MutationFacts();
+        res.facts.auctionId = 990001u;
+        res.facts.houseId = 7;
+        res.facts.itemTemplate = 19019u;
+        res.facts.randomPropertyId = 0;
+        res.facts.sellerGuid = 2u;
+        res.facts.effectiveBid = 900u;
+        res.facts.curBid = 900u;
+        res.facts.curBidderGuid = 99999u;
+        res.facts.priorBidderGuid = 1u;
+        res.facts.priorBidAmount = 777u;
+        AhHandlePlayerMutationResult(res);
+
+        if (rowState("test:mut:prior") != 2u)
+        { printf("ahmutresult FAIL: prior bid row not TERMINAL_BACK\n"); pass = false; }
+        if (rowState("test:mut:own") != 0u)
+        { printf("ahmutresult FAIL: new live bid row must stay RESERVED\n"); pass = false; }
+        if (mailCount(777u, "19019:0:0") != 1u)
+        { printf("ahmutresult FAIL: outbid refund mail missing\n"); pass = false; }
+        PendingMutation gone;
+        if (pend.Peek(0xA1ull, gone))
+        { printf("ahmutresult FAIL: OK pending not consumed\n"); pass = false; }
+    }
+
+    // ---- Part A2: MUT_OK sell -> no value motion, rows stay RESERVED ----
+    {
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('test:mut:dep',0,0,0,1,0,25,0,990002,0,0),"
+            "       ('test:mut:item',1,3,0,1,0,0,424242,990002,0,0)");
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahmutresult FAIL: seed commit (sell)\n");
+            return 2;
+        }
+
+        PendingMutation pm;
+        pm.uuid = 0xA5ull;
+        pm.playerGuidLow = 1u;
+        pm.op = uint16(IPC_PLAYER_SELL);
+        pm.auctionId = 990002u;
+        pm.state = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec = uint32(time(NULL));
+        pm.reservedAmount = 25u;
+        pm.reserveKey.clear();
+        pm.itemKey = "test:mut:item";
+        pm.depKey = "test:mut:dep";
+        pend.Register(pm);
+
+        PlayerMutationResult res;
+        res.uuid = 0xA5ull;
+        res.op = uint8(IPC_PLAYER_SELL & 0xFFu);
+        res.status = uint8(MUT_OK);
+        res.reason = 0;
+        res.facts = MutationFacts();
+        res.facts.auctionId = 990002u;
+        res.facts.houseId = 7;
+        res.facts.itemGuid = 424242u;
+        res.facts.itemTemplate = 19019u;
+        res.facts.sellerGuid = 1u;
+        res.facts.deposit = 25u;
+        AhHandlePlayerMutationResult(res);
+
+        if (rowState("test:mut:dep") != 0u || rowState("test:mut:item") != 0u)
+        { printf("ahmutresult FAIL: sell OK must leave dep+item RESERVED\n"); pass = false; }
+        PendingMutation gone;
+        if (pend.Peek(0xA5ull, gone))
+        { printf("ahmutresult FAIL: sell pending not consumed\n"); pass = false; }
+    }
+
+    // ---- Part A3: MUT_OK op=0x42 buyout WIN (effectiveBid == buyout) ----
+    // The worker removed the row at buyout: seller paid, item to winner,
+    // buyer reserve committed as proceeds, deposit returned, remainder released.
+    {
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('test:mut:bowin',0,1,0,99999,0,1000,0,990003,0,0),"
+            "       ('dep:990003',0,0,0,1,0,50,0,990003,0,0),"
+            "       ('item:990003',1,3,0,1,0,0,424243,990003,0,0)");
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahmutresult FAIL: seed commit (buyout-win)\n");
+            return 2;
+        }
+
+        PendingMutation pm;
+        pm.uuid = 0xA8ull;
+        pm.playerGuidLow = 99999u;          // buyer offline-nobody
+        pm.op = uint16(IPC_PLAYER_BUYOUT);
+        pm.auctionId = 990003u;
+        pm.state = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec = uint32(time(NULL));
+        pm.reservedAmount = 1000u;          // maxPrice
+        pm.reserveKey = "test:mut:bowin";
+        pm.itemKey.clear();
+        pm.depKey.clear();
+        pend.Register(pm);
+
+        PlayerMutationResult res;
+        res.uuid = 0xA8ull;
+        res.op = uint8(IPC_PLAYER_BUYOUT & 0xFFu);
+        res.status = uint8(MUT_OK);
+        res.reason = 0;
+        res.facts = MutationFacts();
+        res.facts.auctionId = 990003u;
+        res.facts.houseId = 7;
+        res.facts.itemGuid = 424243u;
+        res.facts.itemTemplate = 19019u;
+        res.facts.randomPropertyId = 0;
+        res.facts.sellerGuid = 1u;          // seller has an account -> gets payout mail
+        res.facts.deposit = 50u;
+        res.facts.effectiveBid = 800u;
+        res.facts.curBid = 800u;
+        res.facts.curBidderGuid = 99999u;
+        res.facts.buyout = 800u;            // effectiveBid == buyout -> WIN
+        AhHandlePlayerMutationResult(res);
+
+        if (rowState("test:mut:bowin") != 1u)
+        { printf("ahmutresult FAIL: buyout-win reserve not TERMINAL_OK (proceeds)\n"); pass = false; }
+        if (rowState("dep:990003") != 2u)
+        { printf("ahmutresult FAIL: buyout-win deposit not TERMINAL_BACK\n"); pass = false; }
+        if (rowState("item:990003") != 1u)
+        { printf("ahmutresult FAIL: buyout-win item not TERMINAL_OK\n"); pass = false; }
+        if (mailCount(850u, "19019:0:2") != 1u)  // profit=800+50-cut(0 under -t)
+        { printf("ahmutresult FAIL: buyout-win seller payout mail missing\n"); pass = false; }
+        PendingMutation gone;
+        if (pend.Peek(0xA8ull, gone))
+        { printf("ahmutresult FAIL: buyout-win pending not consumed\n"); pass = false; }
+    }
+
+    // ---- Part A4: MUT_OK op=0x42 committed by worker as a NORMAL BID ----
+    // effectiveBid < buyout: the row stayed LIVE. The buyer reserve becomes the
+    // standing bid (stays RESERVED); ONLY the displaced prior bidder is refunded;
+    // no seller payout, no item delivery, no release.
+    {
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('test:mut:bobid',0,1,0,99999,0,500,0,990004,0,0),"
+            "       ('test:mut:bobidprior',0,1,0,1,0,400,0,990004,0,0)");
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahmutresult FAIL: seed commit (buyout-as-bid)\n");
+            return 2;
+        }
+
+        PendingMutation pm;
+        pm.uuid = 0xA9ull;
+        pm.playerGuidLow = 99999u;          // buyer offline-nobody
+        pm.op = uint16(IPC_PLAYER_BUYOUT);
+        pm.auctionId = 990004u;
+        pm.state = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec = uint32(time(NULL));
+        pm.reservedAmount = 500u;           // reserved == effectiveBid -> release 0
+        pm.reserveKey = "test:mut:bobid";
+        pm.itemKey.clear();
+        pm.depKey.clear();
+        pend.Register(pm);
+
+        PlayerMutationResult res;
+        res.uuid = 0xA9ull;
+        res.op = uint8(IPC_PLAYER_BUYOUT & 0xFFu);
+        res.status = uint8(MUT_OK);
+        res.reason = 0;
+        res.facts = MutationFacts();
+        res.facts.auctionId = 990004u;
+        res.facts.houseId = 7;
+        res.facts.itemTemplate = 19019u;
+        res.facts.randomPropertyId = 0;
+        res.facts.sellerGuid = 2u;
+        res.facts.effectiveBid = 500u;
+        res.facts.curBid = 500u;
+        res.facts.curBidderGuid = 99999u;
+        res.facts.priorBidderGuid = 1u;
+        res.facts.priorBidAmount = 400u;
+        res.facts.buyout = 1000u;           // effectiveBid < buyout -> NOT a win
+        AhHandlePlayerMutationResult(res);
+
+        if (rowState("test:mut:bobid") != 0u)
+        { printf("ahmutresult FAIL: buyout-as-bid reserve must stay RESERVED\n"); pass = false; }
+        if (rowState("test:mut:bobidprior") != 2u)
+        { printf("ahmutresult FAIL: buyout-as-bid prior bidder not refunded\n"); pass = false; }
+        if (mailCount(400u, "19019:0:0") != 1u)
+        { printf("ahmutresult FAIL: buyout-as-bid outbid refund mail missing\n"); pass = false; }
+        PendingMutation gone;
+        if (pend.Peek(0xA9ull, gone))
+        { printf("ahmutresult FAIL: buyout-as-bid pending not consumed\n"); pass = false; }
+    }
+
+    // ---- Part B: MUT_REJECTED buyout -> ReleaseGoldToWallet (offline) ----
+    {
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('test:mut:rej',0,1,0,1,0,555,0,990001,0,0)");
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahmutresult FAIL: seed commit (rej)\n");
+            return 2;
+        }
+
+        PendingMutation pm;
+        pm.uuid = 0xA2ull;
+        pm.playerGuidLow = 1u;
+        pm.op = uint16(IPC_PLAYER_BUYOUT);
+        pm.auctionId = 990001u;
+        pm.state = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec = uint32(time(NULL));
+        pm.reservedAmount = 555u;
+        pm.reserveKey = "test:mut:rej";
+        pm.itemKey.clear();
+        pm.depKey.clear();
+        pend.Register(pm);
+
+        uint64 const before = readMoney();
+
+        PlayerMutationResult res;
+        res.uuid = 0xA2ull;
+        res.op = uint8(IPC_PLAYER_BUYOUT & 0xFFu);
+        res.status = uint8(MUT_REJECTED);
+        res.reason = uint8(AUCTION_ERR_BID_INCREMENT);
+        res.facts = MutationFacts();
+        res.facts.auctionId = 990001u;
+        AhHandlePlayerMutationResult(res);
+
+        if (rowState("test:mut:rej") != 2u)
+        { printf("ahmutresult FAIL: rejected row not TERMINAL_BACK\n"); pass = false; }
+        if (readMoney() != before + 555u)
+        { printf("ahmutresult FAIL: rejected release not credited\n"); pass = false; }
+        PendingMutation gone;
+        if (pend.Peek(0xA2ull, gone))
+        { printf("ahmutresult FAIL: rejected pending not consumed\n"); pass = false; }
+    }
+
+    // ---- Part C: MUT_REJECTED_STALE cancel -> release cut + resolve ----
+    {
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('test:mut:cut',0,2,0,1,0,55,0,990001,0,0)");
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahmutresult FAIL: seed commit (cut)\n");
+            return 2;
+        }
+
+        PendingMutation pm;
+        pm.uuid = 0xA3ull;
+        pm.playerGuidLow = 1u;
+        pm.op = uint16(IPC_PLAYER_CANCEL);
+        pm.auctionId = 990001u;
+        pm.state = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec = uint32(time(NULL));
+        pm.reservedAmount = 0u;
+        pm.reserveKey.clear();
+        pm.itemKey.clear();
+        pm.depKey.clear();
+        pend.Register(pm);
+        pend.RearmConfirm(0xA3ull, uint32(time(NULL)));
+        if (!pend.SetReserve(0xA3ull, 55u, "test:mut:cut"))
+        { printf("ahmutresult FAIL: SetReserve\n"); pass = false; }
+
+        uint64 const before = readMoney();
+
+        PlayerMutationResult res;
+        res.uuid = 0xA3ull;
+        res.op = uint8(IPC_PLAYER_CANCEL & 0xFFu);
+        res.status = uint8(MUT_REJECTED_STALE);
+        res.reason = 0;
+        res.facts = MutationFacts();
+        res.facts.auctionId = 990001u;
+        AhHandlePlayerMutationResult(res);
+
+        if (rowState("test:mut:cut") != 2u)
+        { printf("ahmutresult FAIL: stale cut row not TERMINAL_BACK\n"); pass = false; }
+        if (readMoney() != before + 55u)
+        { printf("ahmutresult FAIL: stale cut not credited\n"); pass = false; }
+        PendingMutation gone;
+        if (pend.Peek(0xA3ull, gone))
+        { printf("ahmutresult FAIL: stale pending not consumed\n"); pass = false; }
+    }
+
+    // ---- Part D: unknown uuid -> loud protocol fault, no crash ----
+    {
+        PlayerMutationResult res;
+        res.uuid = 0xDEADull;
+        res.op = uint8(IPC_PLAYER_BID & 0xFFu);
+        res.status = uint8(MUT_OK);
+        res.reason = 0;
+        res.facts = MutationFacts();
+        AhHandlePlayerMutationResult(res);   // must only log
+    }
+
+    // ---- Part E: MUT_PREPARED with offline seller -> ABORT path consumes ----
+    {
+        PendingMutation pm;
+        pm.uuid = 0xA6ull;
+        pm.playerGuidLow = 99999u;          // offline -> can't debit cut -> ABORT
+        pm.op = uint16(IPC_PLAYER_CANCEL);
+        pm.auctionId = 990001u;
+        pm.state = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec = uint32(time(NULL));
+        pm.reservedAmount = 0u;
+        pm.reserveKey.clear();
+        pm.itemKey.clear();
+        pm.depKey.clear();
+        pend.Register(pm);
+
+        PlayerMutationResult res;
+        res.uuid = 0xA6ull;
+        res.op = uint8(IPC_PLAYER_CANCEL & 0xFFu);
+        res.status = uint8(MUT_PREPARED);
+        res.reason = 0;
+        res.facts = MutationFacts();
+        res.facts.auctionId = 990001u;
+        res.facts.houseId = 7;
+        res.facts.curBid = 500u;            // nonzero bid -> cut is owed -> gate engages
+        res.facts.curBidderGuid = 1u;
+        AhHandlePlayerMutationResult(res);   // sv==NULL under -t: frame skipped
+
+        PendingMutation gone;
+        if (pend.Peek(0xA6ull, gone))
+        { printf("ahmutresult FAIL: PREPARED abort did not consume pending\n"); pass = false; }
+    }
+
+    // ---- Part F: sweep tombstones a stale entry ----
+    {
+        PendingMutation pm;
+        pm.uuid = 0xA7ull;
+        pm.playerGuidLow = 99999u;
+        pm.op = uint16(IPC_PLAYER_BID);
+        pm.auctionId = 990001u;
+        pm.state = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec = 100u;                   // ancient
+        pm.reservedAmount = 0u;
+        pend.Register(pm);
+        std::vector<uint64> inDoubt;
+        pend.SweepToTombstones(uint32(time(NULL)), 10u, inDoubt);
+        bool swept = false;
+        for (size_t i = 0; i < inDoubt.size(); ++i)
+        {
+            if (inDoubt[i] == 0xA7ull)
+            {
+                swept = true;
+            }
+        }
+        PendingMutation t;
+        if (!swept || !pend.Peek(0xA7ull, t) || t.state != uint8(PMUT_TOMBSTONE))
+        { printf("ahmutresult FAIL: sweep did not tombstone\n"); pass = false; }
+        AhNotifyMutationInDoubt(t);          // offline -> no packet; must not crash
+        PendingMutation consumed;
+        pend.Take(0xA7ull, consumed);        // clean the slot for re-runs
+    }
+
+    // Clean up.
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (990001,990002,990003,990004)");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `mail` WHERE `receiver` IN (1,2) AND `subject` LIKE '19019:%'");
+    CharacterDatabase.DirectExecute("DELETE FROM `characters` WHERE `guid`=1");
+
+    if (pass)
+    {
+        printf("ahmutresult OK\n");
+        return 0;
+    }
+    return 2;
+}
+
 int RunMangosdTest(std::string const& name)
 {
     if (name == "noop")
@@ -1601,6 +2075,11 @@ int RunMangosdTest(std::string const& name)
     if (name == "ahrelease")
     {
         return RunAhReleaseTest();
+    }
+
+    if (name == "ahmutresult")
+    {
+        return RunAhMutResultTest();
     }
 
     printf("%s FAIL: unknown test\n", name.c_str());

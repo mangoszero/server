@@ -65,6 +65,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <list>
 #include <ctime>
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -1998,6 +1999,1036 @@ void WorldSession::HandleAuctionListItems(WorldPacket& recv_data)
     data.put<uint32>(0, count);
     data << uint32(totalcount);
     SendPacket(&data);
+}
+
+// ===========================================================================
+// SP-2 write-authority: player-mutation finalize + cancel phase-2 driver.
+// The worker is the book authority; mangosd applies VALUE ONLY, from the
+// wire facts, cross-checked fail-closed against its own custody ledger
+// (spec section 3). No AuctionEntry / AuctionsMap access on any path here.
+// ===========================================================================
+
+// [SP-2] outbid increment from a bid value (mirrors AuctionEntry::GetAuctionOutBid,
+// AuctionHouseMgr.cpp GetAuctionOutBid).
+static uint32 AhOutbidFor(uint32 bid)
+{
+    uint32 outbid = (bid / 100) * 5;
+    if (!outbid)
+    {
+        outbid = 1;
+    }
+    return outbid;
+}
+
+// [SP-2] auction-house cut from wire facts (mirrors AuctionEntry::GetAuctionCut,
+// keyed by houseId -- no AuctionEntry exists on the finalize path). NULL house
+// entry -> 0 (also the -t harness case, where DBC data is not loaded).
+static uint32 AhCutFor(uint8 houseId, uint32 bid)
+{
+    AuctionHouseEntry const* he = sAuctionHouseStore.LookupEntry(uint32(houseId));
+    if (!he)
+    {
+        return 0;
+    }
+    return uint32(he->cutPercent * bid * sWorld.getConfig(CONFIG_FLOAT_RATE_AUCTION_CUT) / 100.0f);
+}
+
+// [SP-2] PlayerMutationResult.op (low byte of the IpcOpcode) -> AuctionAction.
+static AuctionAction AhActionForOp(uint8 op)
+{
+    switch (op)
+    {
+        case uint8(IPC_PLAYER_SELL & 0xFFu):
+            return AUCTION_STARTED;
+        case uint8(IPC_PLAYER_CANCEL & 0xFFu):
+            return AUCTION_REMOVED;
+        default:
+            return AUCTION_BID_PLACED;   // IPC_PLAYER_BID / IPC_PLAYER_BUYOUT
+    }
+}
+
+// [SP-2] GUID-re-resolve SMSG emitter (the SP-1 reply-branch pattern): never
+// hold a WorldSession* across ticks; re-resolve by low GUID at send time and
+// skip silently when offline (the durable mail rows are authoritative).
+static void AhSendCommandResultTo(uint32 playerGuidLow, uint32 aucId,
+                                  AuctionAction action, AuctionError err,
+                                  uint32 newOutbid)
+{
+    Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, playerGuidLow));
+    if (p && p->GetSession())
+    {
+        p->GetSession()->SendAuctionCommandResultData(aucId, action, err, EQUIP_ERR_OK, newOutbid);
+    }
+}
+
+// [SP-2] AUCTION_ERR_HIGHER_BID carries the current bidder/bid (the inline
+// branch of SendAuctionCommandResult); rebuilt from wire facts.
+static void AhSendHigherBidResultTo(uint32 playerGuidLow, uint8 op, MutationFacts const& f)
+{
+    Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, playerGuidLow));
+    if (!p || !p->GetSession())
+    {
+        return;
+    }
+    WorldPacket data(SMSG_AUCTION_COMMAND_RESULT, 16);
+    data << uint32(f.auctionId);
+    data << uint32(AhActionForOp(op));
+    data << uint32(AUCTION_ERR_HIGHER_BID);
+    data << ObjectGuid(HIGHGUID_PLAYER, f.curBidderGuid);
+    data << uint32(f.curBid);
+    data << uint32(AhOutbidFor(f.curBid));
+    p->GetSession()->SendPacket(&data);
+}
+
+// [SP-2] "<itemTemplate>:<rand>:<response>" mail subject (the legacy pattern
+// used by every AH mail).
+static std::string AhMailSubject(uint32 itemTemplate, int32 itemRand, uint32 response)
+{
+    std::ostringstream s;
+    s << itemTemplate << ":" << itemRand << ":" << response;
+    return s.str();
+}
+
+// [SP-2] every live (CST_RESERVED CUSTODY_GOLD ROLE_BID) row for an auction.
+// LoadNonTerminal + filter: no new CustodyLedger read API; the non-terminal
+// set is TTL-bounded.
+static void AhLoadLiveBidRows(uint32 auctionId, std::vector<CustodyRow>& out)
+{
+    std::vector<CustodyRow> rows;
+    CustodyLedger::LoadNonTerminal(rows);
+    for (size_t i = 0; i < rows.size(); ++i)
+    {
+        if (rows[i].auctionId == auctionId && rows[i].kind == CUSTODY_GOLD &&
+            rows[i].role == ROLE_BID && rows[i].state == CST_RESERVED)
+        {
+            out.push_back(rows[i]);
+        }
+    }
+}
+
+// [SP-2] the prior/current bidder's live bid row: EXACTLY ONE live bid row for
+// the auction that is not `excludeKey` and matches the reported owner+amount.
+// Any other shape returns false -> fail closed (spec section 3 matrix).
+static bool AhFindPriorBidRow(uint32 auctionId, uint32 bidderGuid, uint32 amount,
+                              std::string const& excludeKey, CustodyRow& out)
+{
+    std::vector<CustodyRow> rows;
+    AhLoadLiveBidRows(auctionId, rows);
+    bool found = false;
+    for (size_t i = 0; i < rows.size(); ++i)
+    {
+        if (!excludeKey.empty() && rows[i].idemKey == excludeKey)
+        {
+            continue;
+        }
+        if (found)
+        {
+            return false;   // ambiguous -> fail closed
+        }
+        out = rows[i];
+        found = true;
+    }
+    if (!found)
+    {
+        return false;
+    }
+    return out.ownerGuid == bidderGuid && out.amount == amount;
+}
+
+// [SP-2] in-txn wallet re-credit WITHOUT a ledger-row flip (the buyout
+// remainder: the row shrinks via SetAmount and then commits). Mirrors
+// ReleaseGoldToWallet's wallet leg. The caller MUST undo the online in-memory
+// credit if its checked commit fails (forward-only redrive, X6 idiom).
+static void AhCreditWalletInTxn(uint32 guidLow, uint32 amount)
+{
+    if (amount == 0)
+    {
+        return;
+    }
+    Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, guidLow));
+    if (p)
+    {
+        p->ModifyMoney(int32(amount));
+        p->SaveInventoryAndGoldToDB();
+    }
+    else
+    {
+        CharacterDatabase.PExecute("UPDATE `characters` SET `money` = `money` + '%u' WHERE `guid` = '%u'", amount, guidLow);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Redrive queue (spec 4.1 step 4, "failed finalize"): forward-only re-attempts
+// of finalizes whose checked commit returned false. NEVER rolls a committed
+// book fact back. In-memory only (a mangosd crash re-enters via reconcile).
+// ---------------------------------------------------------------------------
+struct AhRedriveEntry
+{
+    PlayerMutationResult res;
+    PendingMutation pm;
+    uint32 nextRetrySec;
+    uint32 attempts;
+};
+static std::list<AhRedriveEntry> s_ahRedrive;
+
+// In-doubt sweep TTL (spec 4.1 step 5). A player mutation un-answered by the
+// worker for this long is tombstoned and the player gets the legacy DB error;
+// the reservation stays non-terminal (decision 10) and a late reply still
+// applies via Take. Generous vs the worker round-trip; default-off in prod.
+static uint32 const AH_MUTATION_INDOUBT_TTL_SEC = 30u;
+
+// forward declarations (bodies below)
+static bool AhFinalizeOkDispatch(PlayerMutationResult const& res, PendingMutation const& pm);
+static void AhHandleCancelPrepared(PlayerMutationResult const& res);
+
+// [SP-2] replay of SendAuctionSuccessfulMailInTransaction from wire facts:
+// owner-exists guard, sold-notify deferred BEFORE the mail push, profit =
+// effectiveBid + deposit - cut, COPIED mask.
+static void AhSellerPayoutFromFacts(MutationFacts const& f, CustodyDeferred& def)
+{
+    ObjectGuid ownerGuid = ObjectGuid(HIGHGUID_PLAYER, f.sellerGuid);
+    Player* owner = sObjectMgr.GetPlayer(ownerGuid);
+    uint32 ownerAccId = 0;
+    if (!owner)
+    {
+        ownerAccId = sObjectMgr.GetPlayerAccountIdByGUID(ownerGuid);
+    }
+    if (!owner && !ownerAccId)
+    {
+        return;
+    }
+
+    uint32 const cut = AhCutFor(f.houseId, f.effectiveBid);
+    uint32 const profit = f.effectiveBid + f.deposit - cut;
+
+    std::ostringstream body;
+    body.width(16);
+    body << std::right << std::hex << f.curBidderGuid;
+    body << std::dec << ":" << f.effectiveBid << ":" << f.buyout;
+    body << ":" << f.deposit << ":" << cut;
+
+    if (owner)
+    {
+        uint32 const ownerGuidLow = f.sellerGuid;
+        uint32 const houseId  = f.houseId;
+        uint32 const aucId    = f.auctionId;
+        uint32 const bidValue = f.effectiveBid;
+        uint32 const outbid   = AhOutbidFor(f.effectiveBid);
+        uint32 const bidder   = f.curBidderGuid;
+        uint32 const itemTpl  = f.itemTemplate;
+        int32  const itemRand = f.randomPropertyId;
+        def.effects.push_back([ownerGuidLow, houseId, aucId, bidValue, outbid, bidder, itemTpl, itemRand]()
+        {
+            Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, ownerGuidLow));
+            if (p)
+            {
+                p->GetSession()->SendAuctionOwnerNotificationData(houseId, aucId, bidValue, outbid, bidder, itemTpl, itemRand, true);
+            }
+        });
+    }
+
+    MailDraft(AhMailSubject(f.itemTemplate, f.randomPropertyId, AUCTION_SUCCESSFUL), body.str())
+        .SetMoney(profit)
+        .SendMailToInTransaction(MailReceiver(owner, ownerGuid),
+                                 MailSender(MAIL_AUCTION, uint32(f.houseId), MAIL_STATIONERY_AUCTION),
+                                 def, MAIL_CHECK_MASK_COPIED);
+}
+
+// [SP-2] replay of SendAuctionWonMailInTransaction from wire facts, minus the
+// GM-log block (server-side-only trace). A bot winner (curBidderGuid==0)
+// resolves to "no receiver" and follows the legacy destroy branch (spec
+// section 3). Escrow-cache miss -> loud log, no item mail (the caller still
+// terminalizes "item:<id>").
+static void AhItemToWinnerFromFacts(MutationFacts const& f, CustodyDeferred& def)
+{
+    Item* pItem = sAuctionMgr.GetAItem(f.itemGuid);
+    if (!pItem)
+    {
+        sLog.outError("[AHMut] auction %u won-item %u missing from escrow cache; no item mail",
+                      f.auctionId, f.itemGuid);
+        return;
+    }
+
+    ObjectGuid bidderGuid = ObjectGuid(HIGHGUID_PLAYER, f.curBidderGuid);
+    Player* bidder = sObjectMgr.GetPlayer(bidderGuid);
+    uint32 bidderAccId = 0;
+    if (!bidder)
+    {
+        bidderAccId = sObjectMgr.GetPlayerAccountIdByGUID(bidderGuid);
+    }
+
+    uint32 const savedItemGuidLow = f.itemGuid;
+
+    if (bidder || bidderAccId)
+    {
+        std::ostringstream body;
+        body.width(16);
+        body << std::right << std::hex << f.sellerGuid;
+        body << std::dec << ":" << f.effectiveBid << ":" << f.buyout;
+
+        CharacterDatabase.PExecute("UPDATE `item_instance` SET `owner_guid` = '%u' WHERE `guid`='%u'",
+                                   f.curBidderGuid, savedItemGuidLow);
+
+        if (bidder)
+        {
+            uint32 const bidderGuidLow = f.curBidderGuid;
+            uint32 const houseId  = f.houseId;
+            uint32 const aucId    = f.auctionId;
+            uint32 const bidValue = f.effectiveBid;
+            uint32 const outbid   = AhOutbidFor(f.effectiveBid);
+            uint32 const itemTpl  = f.itemTemplate;
+            int32  const itemRand = f.randomPropertyId;
+            def.effects.push_back([bidderGuidLow, houseId, aucId, bidValue, outbid, itemTpl, itemRand]()
+            {
+                Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, bidderGuidLow));
+                if (p)
+                {
+                    p->GetSession()->SendAuctionBidderNotificationData(houseId, aucId, bidderGuidLow, bidValue, outbid, itemTpl, itemRand, true);
+                }
+            });
+        }
+
+        def.effects.push_back([savedItemGuidLow]()
+        {
+            sAuctionMgr.RemoveAItem(savedItemGuidLow);
+        });
+
+        MailDraft(AhMailSubject(f.itemTemplate, f.randomPropertyId, AUCTION_WON), body.str())
+            .AddItem(pItem)
+            .SendMailToInTransaction(MailReceiver(bidder, bidderGuid),
+                                     MailSender(MAIL_AUCTION, uint32(f.houseId), MAIL_STATIONERY_AUCTION),
+                                     def, MAIL_CHECK_MASK_COPIED);
+    }
+    else
+    {
+        CharacterDatabase.PExecute("DELETE FROM `item_instance` WHERE `guid`='%u'", savedItemGuidLow);
+        def.effects.push_back([savedItemGuidLow, pItem]()
+        {
+            sAuctionMgr.RemoveAItem(savedItemGuidLow);
+            delete pItem;
+        });
+    }
+}
+
+// [SP-2] replay of the S2 outbid displacement (UpdateBidCustody +
+// SendAuctionOutbiddedMailInTransaction): terminalize the prior live bid row
+// ledger-only, outbid-notify deferred BEFORE the refund-mail push, refund
+// money = the prior bid, COPIED mask.
+static void AhRefundPriorBidderFromFacts(MutationFacts const& f, std::string const& priorKey, CustodyDeferred& def)
+{
+    CustodyService::RollbackGoldLedgerOnly(priorKey);
+
+    ObjectGuid priorGuid = ObjectGuid(HIGHGUID_PLAYER, f.priorBidderGuid);
+    Player* prior = sObjectMgr.GetPlayer(priorGuid);
+    uint32 priorAccId = 0;
+    if (!prior)
+    {
+        priorAccId = sObjectMgr.GetPlayerAccountIdByGUID(priorGuid);
+    }
+    if (!prior && !priorAccId)
+    {
+        return;   // legacy sends nothing when the old bidder is gone
+    }
+
+    if (prior)
+    {
+        uint32 const priorGuidLow = f.priorBidderGuid;
+        uint32 const houseId  = f.houseId;
+        uint32 const aucId    = f.auctionId;
+        uint32 const bidValue = f.priorBidAmount;
+        uint32 const outbid   = AhOutbidFor(f.priorBidAmount);
+        uint32 const itemTpl  = f.itemTemplate;
+        int32  const itemRand = f.randomPropertyId;
+        def.effects.push_back([priorGuidLow, houseId, aucId, bidValue, outbid, itemTpl, itemRand]()
+        {
+            Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, priorGuidLow));
+            if (p)
+            {
+                p->GetSession()->SendAuctionBidderNotificationData(houseId, aucId, priorGuidLow, bidValue, outbid, itemTpl, itemRand, false);
+            }
+        });
+    }
+
+    MailDraft(AhMailSubject(f.itemTemplate, f.randomPropertyId, AUCTION_OUTBIDDED), "")
+        .SetMoney(f.priorBidAmount)
+        .SendMailToInTransaction(MailReceiver(prior, priorGuid),
+                                 MailSender(MAIL_AUCTION, uint32(f.houseId), MAIL_STATIONERY_AUCTION),
+                                 def, MAIL_CHECK_MASK_COPIED);
+}
+
+// [SP-2] replay of the S5 bidder-refund leg
+// (SendAuctionCancelledToBidderMailInTransaction): removed-notify deferred
+// BEFORE the refund-mail push, money = the standing bid.
+static void AhRefundCancelledBidderFromFacts(MutationFacts const& f, std::string const& bidKey, CustodyDeferred& def)
+{
+    CustodyService::RollbackGoldLedgerOnly(bidKey);
+
+    ObjectGuid bidderGuid = ObjectGuid(HIGHGUID_PLAYER, f.curBidderGuid);
+    Player* bidder = sObjectMgr.GetPlayer(bidderGuid);
+    uint32 accId = 0;
+    if (!bidder)
+    {
+        accId = sObjectMgr.GetPlayerAccountIdByGUID(bidderGuid);
+    }
+    if (!bidder && !accId)
+    {
+        return;
+    }
+
+    if (bidder)
+    {
+        uint32 const bidderGuidLow = f.curBidderGuid;
+        uint32 const aucId    = f.auctionId;
+        uint32 const itemTpl  = f.itemTemplate;
+        int32  const itemRand = f.randomPropertyId;
+        def.effects.push_back([bidderGuidLow, aucId, itemTpl, itemRand]()
+        {
+            Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, bidderGuidLow));
+            if (p)
+            {
+                p->GetSession()->SendAuctionRemovedNotificationData(aucId, itemTpl, itemRand);
+            }
+        });
+    }
+
+    MailDraft(AhMailSubject(f.itemTemplate, f.randomPropertyId, AUCTION_CANCELLED_TO_BIDDER), "")
+        .SetMoney(f.curBid)
+        .SendMailToInTransaction(MailReceiver(bidder, bidderGuid),
+                                 MailSender(MAIL_AUCTION, uint32(f.houseId), MAIL_STATIONERY_AUCTION),
+                                 def, MAIL_CHECK_MASK_COPIED);
+}
+
+// [SP-2] item return to the seller (cancel / expiry / repair), replaying
+// SendAuctionExpiredMailInTransaction / the S5 return: expired owner-notify
+// (EXPIRED response only), RemoveAItem deferred FIRST, DeliverItem flips
+// "item:<id>" -> TERMINAL_OK and co-commits the mail; destroy branch when the
+// account is gone; ledger-only flip when the escrow cache lost the Item*.
+static void AhReturnItemToSellerFromFacts(MutationFacts const& f, uint32 mailResponse, CustodyDeferred& def)
+{
+    std::string const itemKey = "item:" + std::to_string(f.auctionId);
+    Item* pItem = sAuctionMgr.GetAItem(f.itemGuid);
+    if (!pItem)
+    {
+        sLog.outError("[AHMut] auction %u return-item %u missing from escrow cache; ledger-only flip",
+                      f.auctionId, f.itemGuid);
+        CustodyService::CommitGoldLedgerOnly(itemKey);
+        return;
+    }
+
+    ObjectGuid ownerGuid = ObjectGuid(HIGHGUID_PLAYER, f.sellerGuid);
+    Player* owner = sObjectMgr.GetPlayer(ownerGuid);
+    uint32 accId = 0;
+    if (!owner)
+    {
+        accId = sObjectMgr.GetPlayerAccountIdByGUID(ownerGuid);
+    }
+
+    uint32 const savedItemGuidLow = f.itemGuid;
+
+    if (owner || accId)
+    {
+        if (owner && mailResponse == uint32(AUCTION_EXPIRED))
+        {
+            uint32 const ownerGuidLow = f.sellerGuid;
+            uint32 const houseId  = f.houseId;
+            uint32 const aucId    = f.auctionId;
+            uint32 const itemTpl  = f.itemTemplate;
+            int32  const itemRand = f.randomPropertyId;
+            def.effects.push_back([ownerGuidLow, houseId, aucId, itemTpl, itemRand]()
+            {
+                Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, ownerGuidLow));
+                if (p)
+                {
+                    p->GetSession()->SendAuctionOwnerNotificationData(houseId, aucId, 0, 0, 0, itemTpl, itemRand, false);
+                }
+            });
+        }
+
+        def.effects.push_back([savedItemGuidLow]()
+        {
+            sAuctionMgr.RemoveAItem(savedItemGuidLow);
+        });
+
+        MailDraft itemReturn(AhMailSubject(f.itemTemplate, f.randomPropertyId, mailResponse), "");
+        itemReturn.AddItem(pItem);
+        CustodyService::DeliverItem(def, itemKey, itemReturn,
+                                    MailReceiver(owner, ownerGuid),
+                                    MailSender(MAIL_AUCTION, uint32(f.houseId), MAIL_STATIONERY_AUCTION));
+    }
+    else
+    {
+        CharacterDatabase.PExecute("DELETE FROM `item_instance` WHERE `guid`='%u'", savedItemGuidLow);
+        CustodyService::CommitGoldLedgerOnly(itemKey);
+        def.effects.push_back([savedItemGuidLow, pItem]()
+        {
+            sAuctionMgr.RemoveAItem(savedItemGuidLow);
+            delete pItem;
+        });
+    }
+}
+
+// [SP-2] MUT_OK sell (spec 4.1 step 4): NO value moves -- the deposit stays
+// reserved and the item stays escrowed until resolution. Cross-check + the
+// legacy AUCTION_STARTED/AUCTION_OK result only.
+static bool AhFinalizeSellOk(PlayerMutationResult const& res, PendingMutation const& pm)
+{
+    MutationFacts const& f = res.facts;
+    CustodyRow depRow;
+    CustodyRow itemRow;
+    if (!CustodyLedger::Get(pm.depKey, depRow) || depRow.state != CST_RESERVED ||
+        depRow.ownerGuid != pm.playerGuidLow || depRow.amount != f.deposit ||
+        !CustodyLedger::Get(pm.itemKey, itemRow) || itemRow.state != CST_RESERVED ||
+        itemRow.itemGuid != f.itemGuid ||
+        f.sellerGuid != pm.playerGuidLow || f.auctionId != pm.auctionId)
+    {
+        sLog.outError("[AHMut] PROTOCOL FAULT: sell facts mismatch ledger for uuid " UI64FMTD
+                      " (auction %u); finalize refused", res.uuid, f.auctionId);
+        return true;   // faults are terminal, never redriven
+    }
+    AhSendCommandResultTo(pm.playerGuidLow, f.auctionId, AUCTION_STARTED, AUCTION_OK, 0);
+    return true;
+}
+
+// [SP-2] MUT_OK bid/buyout (spec 4.1 step 4 + I4 value math): section 4.4
+// order = command-result FIRST, then outbid-notify, then mails.
+//
+// [SP-2 reconciliation] op=0x42 (from an IPC_PLAYER_BUYOUT intent) is a buyout
+// WIN only when the worker actually removed the row at the buyout price; a
+// below-buyout price is committed by the worker as a NORMAL bid and the row
+// stays LIVE (HEAD 16e22c4e). Distinguish by facts: WIN <=> buyout != 0 &&
+// effectiveBid == buyout. A BID sub-case falls through the standing-bid path
+// (release = reservedAmount - effectiveBid == 0; no seller payout, no item
+// delivery, just the displaced prior-bidder refund).
+static bool AhFinalizeBidOk(PlayerMutationResult const& res, PendingMutation const& pm)
+{
+    MutationFacts const& f = res.facts;
+    bool const isBuyoutWin = (res.op == uint8(IPC_PLAYER_BUYOUT & 0xFFu)
+                              && f.buyout != 0 && f.effectiveBid == f.buyout);
+    bool const sameBidderRaise = (f.priorBidderGuid != 0 && f.priorBidderGuid == pm.playerGuidLow);
+
+    // ---- fail-closed cross-check vs our OWN ledger (spec section 3) ----
+    CustodyRow ownRow;
+    if (!CustodyLedger::Get(pm.reserveKey, ownRow) || ownRow.state != CST_RESERVED ||
+        ownRow.ownerGuid != pm.playerGuidLow || ownRow.auctionId != f.auctionId ||
+        ownRow.amount != pm.reservedAmount ||
+        f.curBidderGuid != pm.playerGuidLow || f.effectiveBid != f.curBid)
+    {
+        sLog.outError("[AHMut] PROTOCOL FAULT: bid facts mismatch ledger for uuid " UI64FMTD
+                      " (auction %u); finalize refused", res.uuid, f.auctionId);
+        return true;
+    }
+    if (sameBidderRaise && f.effectiveBid < f.priorBidAmount)
+    {
+        sLog.outError("[AHMut] PROTOCOL FAULT: raise below prior bid for uuid " UI64FMTD, res.uuid);
+        return true;
+    }
+    uint32 const needed = sameBidderRaise ? (f.effectiveBid - f.priorBidAmount) : f.effectiveBid;
+    if (needed > pm.reservedAmount)
+    {
+        sLog.outError("[AHMut] PROTOCOL FAULT: needed %u exceeds reserved %u for uuid " UI64FMTD,
+                      needed, pm.reservedAmount, res.uuid);
+        return true;
+    }
+    uint32 const remainder = pm.reservedAmount - needed;
+
+    CustodyRow liveRow;
+    std::string priorKey;
+    if (f.priorBidderGuid != 0)
+    {
+        if (!AhFindPriorBidRow(f.auctionId, f.priorBidderGuid, f.priorBidAmount, pm.reserveKey, liveRow))
+        {
+            sLog.outError("[AHMut] PROTOCOL FAULT: prior live bid row mismatch for auction %u (uuid " UI64FMTD ")",
+                          f.auctionId, res.uuid);
+            return true;
+        }
+        priorKey = liveRow.idemKey;
+    }
+
+    CustodyDeferred def;
+
+    // 4.4: command-result FIRST (the S2 seam pushes it before UpdateBid).
+    {
+        uint32 const bidderGuidLow = pm.playerGuidLow;
+        uint32 const aucId = f.auctionId;
+        uint32 const newOutbid = AhOutbidFor(f.effectiveBid);
+        def.effects.push_back([bidderGuidLow, aucId, newOutbid]()
+        {
+            AhSendCommandResultTo(bidderGuidLow, aucId, AUCTION_BID_PLACED, AUCTION_OK, newOutbid);
+        });
+    }
+
+    CharacterDatabase.BeginTransaction();
+
+    if (sameBidderRaise)
+    {
+        // Merge the delta row into the live bid row. The delta gold was
+        // debited at reserve time -> NULL bidder = ledger-only, no 2nd debit.
+        CustodyService::TopUpBid(priorKey, f.effectiveBid, 0, NULL);
+        if (remainder > 0)
+        {
+            CustodyLedger::SetAmount(pm.reserveKey, needed);
+        }
+        CustodyService::CommitGoldLedgerOnly(pm.reserveKey);
+    }
+    else
+    {
+        if (f.priorBidderGuid != 0)
+        {
+            AhRefundPriorBidderFromFacts(f, priorKey, def);
+        }
+        if (remainder > 0)
+        {
+            CustodyLedger::SetAmount(pm.reserveKey, needed);
+        }
+        // Our (possibly shrunk) reserved row IS the live bid row: stays RESERVED.
+    }
+
+    AhCreditWalletInTxn(pm.playerGuidLow, remainder);   // I4: buyout remainder (0 on a bid)
+
+    if (isBuyoutWin)
+    {
+        // S4 replay MINUS the auction-row delete + AuctionsMap ops: the worker
+        // owns the book under WriteAuthority.
+        AhSellerPayoutFromFacts(f, def);
+        CustodyService::RollbackGoldLedgerOnly("dep:" + std::to_string(f.auctionId));
+        CustodyService::CommitGoldLedgerOnly(sameBidderRaise ? priorKey : pm.reserveKey);
+        AhItemToWinnerFromFacts(f, def);
+        CustodyService::CommitGoldLedgerOnly("item:" + std::to_string(f.auctionId));
+    }
+
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        if (remainder > 0)
+        {
+            Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, pm.playerGuidLow));
+            if (p)
+            {
+                p->ModifyMoney(-int32(remainder));   // X6: undo the in-memory credit
+            }
+        }
+        return false;   // -> redrive, never rollback (I10)
+    }
+    def.run();
+    return true;
+}
+
+// [SP-2] MUT_OK cancel (after CONFIRM; spec 4.2 step 3): S5 replay minus the
+// auction delete/map ops; 4.4 order = notifications and mails first,
+// command-result LAST.
+static bool AhFinalizeCancelOk(PlayerMutationResult const& res, PendingMutation const& pm)
+{
+    MutationFacts const& f = res.facts;
+
+    uint32 const cut = f.curBid ? AhCutFor(f.houseId, f.curBid) : 0;
+    if (cut)
+    {
+        CustodyRow cutRow;
+        if (pm.reserveKey.empty() || !CustodyLedger::Get(pm.reserveKey, cutRow) ||
+            cutRow.state != CST_RESERVED || cutRow.ownerGuid != pm.playerGuidLow ||
+            cutRow.amount != cut || cutRow.auctionId != f.auctionId)
+        {
+            sLog.outError("[AHMut] PROTOCOL FAULT: cancel cut reservation mismatch for uuid " UI64FMTD
+                          " (auction %u)", res.uuid, f.auctionId);
+            return true;
+        }
+    }
+    std::string bidKey;
+    if (f.curBid && f.curBidderGuid != 0)
+    {
+        CustodyRow liveRow;
+        if (!AhFindPriorBidRow(f.auctionId, f.curBidderGuid, f.curBid, pm.reserveKey, liveRow))
+        {
+            sLog.outError("[AHMut] PROTOCOL FAULT: cancel live bid row mismatch for auction %u (uuid " UI64FMTD ")",
+                          f.auctionId, res.uuid);
+            return true;
+        }
+        bidKey = liveRow.idemKey;
+    }
+
+    CustodyDeferred def;
+    CharacterDatabase.BeginTransaction();
+
+    if (!bidKey.empty())
+    {
+        AhRefundCancelledBidderFromFacts(f, bidKey, def);
+    }
+    CustodyService::CommitGoldLedgerOnly("dep:" + std::to_string(f.auctionId));   // forfeit (S5)
+    AhReturnItemToSellerFromFacts(f, uint32(AUCTION_CANCELED), def);
+    if (cut)
+    {
+        CustodyService::CommitGoldLedgerOnly(pm.reserveKey);                      // cut -> house sink
+    }
+    {
+        uint32 const sellerGuidLow = pm.playerGuidLow;
+        uint32 const aucId = f.auctionId;
+        def.effects.push_back([sellerGuidLow, aucId]()
+        {
+            AhSendCommandResultTo(sellerGuidLow, aucId, AUCTION_REMOVED, AUCTION_OK, 0);
+        });
+    }
+
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        return false;
+    }
+    def.run();
+    return true;
+}
+
+static bool AhFinalizeOkDispatch(PlayerMutationResult const& res, PendingMutation const& pm)
+{
+    switch (res.op)
+    {
+        case uint8(IPC_PLAYER_SELL & 0xFFu):
+            return AhFinalizeSellOk(res, pm);
+        case uint8(IPC_PLAYER_BID & 0xFFu):
+        case uint8(IPC_PLAYER_BUYOUT & 0xFFu):
+            return AhFinalizeBidOk(res, pm);
+        case uint8(IPC_PLAYER_CANCEL & 0xFFu):
+            return AhFinalizeCancelOk(res, pm);
+        default:
+            sLog.outError("[AHMut] PROTOCOL FAULT: MUT_OK with unknown op 0x%02X (uuid " UI64FMTD ")",
+                          uint32(res.op), res.uuid);
+            return true;
+    }
+}
+
+// [SP-2] MUT_REJECTED (spec 4.1 step 4): silent wallet re-credit of the
+// reservation (I1: NO mail for the gold) + the legacy error result. For a
+// rejected SELL the escrowed item also leaves custody: returned by MAIL.
+static bool AhFinalizeRejected(PlayerMutationResult const& res, PendingMutation const& pm)
+{
+    MutationFacts const& f = res.facts;
+    Player* online = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, pm.playerGuidLow));
+    uint32 onlineCredit = 0;
+
+    CustodyDeferred def;
+    CharacterDatabase.BeginTransaction();
+
+    if (res.op == uint8(IPC_PLAYER_SELL & 0xFFu))
+    {
+        CustodyService::ReleaseGoldToWallet(def, pm.playerGuidLow, online, pm.reservedAmount, pm.depKey);
+        if (online)
+        {
+            onlineCredit += pm.reservedAmount;
+        }
+
+        CustodyRow itemRow;
+        if (!pm.itemKey.empty() && CustodyLedger::Get(pm.itemKey, itemRow) && itemRow.state == CST_RESERVED)
+        {
+            Item* pItem = sAuctionMgr.GetAItem(itemRow.itemGuid);
+            CustodyLedger::SetState(pm.itemKey, CST_TERMINAL_BACK, static_cast<uint64>(time(NULL)));
+            if (pItem)
+            {
+                uint32 const savedItemGuidLow = itemRow.itemGuid;
+                def.effects.push_back([savedItemGuidLow]()
+                {
+                    sAuctionMgr.RemoveAItem(savedItemGuidLow);
+                });
+                MailDraft ret(AhMailSubject(pItem->GetEntry(), pItem->GetItemRandomPropertyId(), AUCTION_CANCELED), "");
+                ret.AddItem(pItem);
+                ret.SendMailToInTransaction(MailReceiver(online, ObjectGuid(HIGHGUID_PLAYER, pm.playerGuidLow)),
+                                            MailSender(MAIL_AUCTION, uint32(f.houseId), MAIL_STATIONERY_AUCTION),
+                                            def, MAIL_CHECK_MASK_COPIED);
+            }
+            else
+            {
+                sLog.outError("[AHMut] rejected sell %u: escrow item %u missing; ledger-only return",
+                              pm.auctionId, itemRow.itemGuid);
+            }
+        }
+    }
+    else if (!pm.reserveKey.empty() && pm.reservedAmount > 0)
+    {
+        // bid / buyout (and, defensively, a post-CONFIRM cancel reject).
+        CustodyService::ReleaseGoldToWallet(def, pm.playerGuidLow, online, pm.reservedAmount, pm.reserveKey);
+        if (online)
+        {
+            onlineCredit += pm.reservedAmount;
+        }
+    }
+
+    // Legacy error result, deferred so it fires only when the release landed.
+    {
+        uint8 const op = res.op;
+        uint8 const reason = res.reason;
+        uint32 const guidLow = pm.playerGuidLow;
+        uint32 const aucId = pm.auctionId;
+        MutationFacts const facts = f;
+        def.effects.push_back([op, reason, guidLow, aucId, facts]()
+        {
+            if (reason == uint8(AUCTION_ERR_HIGHER_BID))
+            {
+                AhSendHigherBidResultTo(guidLow, op, facts);
+            }
+            else if (reason != 0)
+            {
+                AhSendCommandResultTo(guidLow, aucId, AhActionForOp(op), AuctionError(reason), 0);
+            }
+            // reason == 0 -> silent (spec: legacy emits nothing).
+        });
+    }
+
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        if (onlineCredit > 0 && online)
+        {
+            online->ModifyMoney(-int32(onlineCredit));   // X6: undo the in-memory credit
+        }
+        return false;
+    }
+    def.run();
+    return true;
+}
+
+// [SP-2] MUT_REJECTED_STALE (spec 4.2 step 4): the cancel CONFIRM raced the
+// worker's unlock. Release the cut reservation (if one was made) and resolve
+// the tombstone. No SMSG: the auction is untouched (divergence 12.5).
+static bool AhFinalizeStale(PlayerMutationResult const& res, PendingMutation const& pm)
+{
+    if (pm.reserveKey.empty() || pm.reservedAmount == 0)
+    {
+        DETAIL_LOG("[AHMut] REJECTED_STALE for uuid " UI64FMTD " with no reservation", res.uuid);
+        return true;
+    }
+    Player* online = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, pm.playerGuidLow));
+    CustodyDeferred def;
+    CharacterDatabase.BeginTransaction();
+    CustodyService::ReleaseGoldToWallet(def, pm.playerGuidLow, online, pm.reservedAmount, pm.reserveKey);
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        if (online)
+        {
+            online->ModifyMoney(-int32(pm.reservedAmount));
+        }
+        return false;
+    }
+    def.run();
+    return true;
+}
+
+void AhNotifyMutationInDoubt(PendingMutation const& pm)
+{
+    // M2: the timed-out mutation reports the legacy DB error; the reservation
+    // stays non-terminal (decision 10 -- no unilateral rollback) and a late
+    // reply still applies through the tombstone.
+    AhSendCommandResultTo(pm.playerGuidLow, pm.auctionId,
+                          AhActionForOp(uint8(pm.op & 0xFFu)), AUCTION_ERR_DATABASE, 0);
+}
+
+void AhHandlePlayerMutationResult(PlayerMutationResult const& res)
+{
+    if (res.status == uint8(MUT_PREPARED))
+    {
+        AhHandleCancelPrepared(res);
+        return;
+    }
+
+    MutationPendingMap& pend = sWorld.GetMutationPending();
+    PendingMutation pm;
+    if (!pend.Take(res.uuid, pm))
+    {
+        // Late reply on a terminal/unknown row: loud protocol fault, never a
+        // silent drop or a double apply (decision 10).
+        sLog.outError("[AHMut] PROTOCOL FAULT: result status %u for unknown or already-consumed uuid " UI64FMTD,
+                      uint32(res.status), res.uuid);
+        return;
+    }
+
+    bool ok = true;
+    switch (res.status)
+    {
+        case uint8(MUT_OK):
+            ok = AhFinalizeOkDispatch(res, pm);
+            break;
+        case uint8(MUT_REJECTED):
+            ok = AhFinalizeRejected(res, pm);
+            break;
+        case uint8(MUT_REJECTED_STALE):
+            ok = AhFinalizeStale(res, pm);
+            break;
+        default:
+            sLog.outError("[AHMut] PROTOCOL FAULT: unknown status %u for uuid " UI64FMTD,
+                          uint32(res.status), res.uuid);
+            break;
+    }
+
+    if (!ok)
+    {
+        AhRedriveEntry e;
+        e.res = res;
+        e.pm = pm;
+        e.attempts = 1;
+        e.nextRetrySec = uint32(time(NULL)) + 5;
+        s_ahRedrive.push_back(e);
+        sLog.outError("[AHMut] finalize checked-commit FAILED for uuid " UI64FMTD "; queued for redrive", res.uuid);
+    }
+}
+
+// [SP-2] MUT_PREPARED -- the cancel phase-2 driver (spec 4.2 step 2 + [v3]).
+static void AhHandleCancelPrepared(PlayerMutationResult const& res)
+{
+    MutationPendingMap& pend = sWorld.GetMutationPending();
+    WorkerSupervisor* sv = sWorld.GetAhSupervisor();
+
+    PendingMutation pm;
+    if (!pend.Peek(res.uuid, pm))
+    {
+        sLog.outError("[AHMut] PROTOCOL FAULT: PREPARED for unknown uuid " UI64FMTD, res.uuid);
+        return;
+    }
+    if (pm.op != uint16(IPC_PLAYER_CANCEL))
+    {
+        sLog.outError("[AHMut] PROTOCOL FAULT: PREPARED for non-cancel op 0x%04X (uuid " UI64FMTD ")",
+                      uint32(pm.op), res.uuid);
+        return;
+    }
+
+    // A PREPARE reply landing after the tombstone -> mangosd answers ABORT
+    // (spec 4.2 [v3]); the slot resolves.
+    if (pm.state == uint8(PMUT_TOMBSTONE))
+    {
+        if (sv && sv->ServiceActive())
+        {
+            PlayerCancelDecide d;
+            d.uuid = res.uuid;
+            d.auctionId = pm.auctionId;
+            IpcMessage m;
+            m.op = IPC_PLAYER_CANCEL_ABORT;
+            d.Encode(m.body);
+            sv->Channel().SendFrame(m);
+        }
+        PendingMutation consumed;
+        pend.Take(res.uuid, consumed);
+        return;
+    }
+
+    MutationFacts const& f = res.facts;
+    uint32 const cut = f.curBid ? AhCutFor(f.houseId, f.curBid) : 0;
+    Player* pl = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, pm.playerGuidLow));
+
+    // Affordability gate (legacy silent return). A standing bid (curBid != 0)
+    // means a cut is owed on cancel: an OFFLINE seller cannot be debited -> ABORT
+    // (the auction is untouched; the seller can retry -- byte-parity: legacy
+    // emits nothing here). Gated on curBid, not the computed cut, so the offline
+    // -> ABORT decision is independent of whether DBC cut data is loaded (the -t
+    // harness has none; AhCutFor would return 0 and mask the gate).
+    bool abort = false;
+    if (f.curBid != 0)
+    {
+        if (!pl)
+        {
+            abort = true;
+        }
+        else if (pl->GetMoney() < cut)
+        {
+            abort = true;
+        }
+    }
+
+    if (!abort && cut)
+    {
+        // Durable cut reserve = its own checked commit (decision 9). The key
+        // is uuid-salted so a retry after a stale/aborted cancel of the same
+        // auction can never collide on uk_idem.
+        std::string const cutKey = "cut:" + std::to_string(pm.auctionId) + ":" + std::to_string(res.uuid);
+        CustodyDeferred def;
+        CharacterDatabase.BeginTransaction();
+        CustodyService::ReserveGold(def, pm.playerGuidLow, pl, cut, cutKey, pm.auctionId, ROLE_PROCEEDS);
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            if (pl)
+            {
+                pl->ModifyMoney(int32(cut));   // X6: undo the in-memory debit
+            }
+            sLog.outError("[AHMut] cancel cut reserve commit FAILED for uuid " UI64FMTD "; aborting cancel", res.uuid);
+            abort = true;
+        }
+        else
+        {
+            def.run();
+            pend.SetReserve(res.uuid, cut, cutKey);
+        }
+    }
+
+    PlayerCancelDecide d;
+    d.uuid = res.uuid;
+    d.auctionId = pm.auctionId;
+    IpcMessage m;
+    m.op = abort ? IPC_PLAYER_CANCEL_ABORT : IPC_PLAYER_CANCEL_CONFIRM;
+    d.Encode(m.body);
+    if (sv && sv->ServiceActive())
+    {
+        sv->Channel().SendFrame(m);
+    }
+
+    if (abort)
+    {
+        PendingMutation consumed;
+        pend.Take(res.uuid, consumed);       // legacy silent-return parity: no SMSG
+    }
+    else
+    {
+        pend.RearmConfirm(res.uuid, uint32(time(NULL)));
+    }
+}
+
+void AhProcessRedriveQueue(uint32 nowSec)
+{
+    // (1) Forward-only re-attempt of finalizes whose checked commit failed.
+    for (std::list<AhRedriveEntry>::iterator it = s_ahRedrive.begin(); it != s_ahRedrive.end();)
+    {
+        if (nowSec < it->nextRetrySec)
+        {
+            ++it;
+            continue;
+        }
+        bool ok = true;
+        switch (it->res.status)
+        {
+            case uint8(MUT_OK):
+                ok = AhFinalizeOkDispatch(it->res, it->pm);
+                break;
+            case uint8(MUT_REJECTED):
+                ok = AhFinalizeRejected(it->res, it->pm);
+                break;
+            case uint8(MUT_REJECTED_STALE):
+                ok = AhFinalizeStale(it->res, it->pm);
+                break;
+            default:
+                break;
+        }
+        if (ok)
+        {
+            it = s_ahRedrive.erase(it);
+        }
+        else
+        {
+            ++it->attempts;
+            it->nextRetrySec = nowSec + 5;
+            if (it->attempts % 12 == 0)
+            {
+                sLog.outError("[AHMut] redrive STUCK: uuid " UI64FMTD " still failing after %u attempts",
+                              it->res.uuid, it->attempts);
+            }
+            ++it;
+        }
+    }
+
+    // (2) Age un-answered player mutations into in-doubt tombstones and emit the
+    // one-time legacy AUCTION_ERR_DATABASE result for each (spec 4.1 step 5).
+    // Cheap no-op when the pending map is empty (the default-off case).
+    std::vector<uint64> newlyInDoubt;
+    MutationPendingMap& pend = sWorld.GetMutationPending();
+    pend.SweepToTombstones(nowSec, AH_MUTATION_INDOUBT_TTL_SEC, newlyInDoubt);
+    for (size_t i = 0; i < newlyInDoubt.size(); ++i)
+    {
+        PendingMutation pm;
+        if (pend.Peek(newlyInDoubt[i], pm))
+        {
+            AhNotifyMutationInDoubt(pm);
+        }
+    }
 }
 
 /** @} */

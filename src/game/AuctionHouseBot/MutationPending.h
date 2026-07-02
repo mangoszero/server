@@ -117,6 +117,11 @@ class MutationPendingMap
         /// need the entry while it remains in-flight.
         bool Peek(uint64 uuid, PendingMutation& out) const;
 
+        /// [SP-2 Task 11, additive] Record the cut reservation made at cancel
+        /// CONFIRM time on the existing slot (reserveKey/reservedAmount were
+        /// empty at Register time for a cancel). Returns false if uuid unknown.
+        bool SetReserve(uint64 uuid, uint32 amount, std::string const& key);
+
         size_t Size() const { return m_map.size(); }
 
     private:
@@ -153,5 +158,37 @@ uint64 AhMintMutationUuid();
 ///                      (spec I6) and bot-held bids have no ledger row.
 uint16 AhClassifyBidForward(uint32 auctionId, uint32 bidderGuidLow, uint32 price,
                             uint32& reserveAmount);
+
+// ---------------------------------------------------------------------------
+// SP-2 finalize entry points (contract section 5). Defined in
+// WorldHandlers/AuctionHouseHandler.cpp; called from the World.cpp supervisor
+// pump and the once-per-second world-tick block.
+// ---------------------------------------------------------------------------
+struct PlayerMutationResult;
+struct ResolveApply;
+
+/// Sentinel return of AhHandleResolveApply: protocol fault -- the pump sends
+/// NO ack (never retried, never applied; alarmed in the log). Distinct from
+/// RES_FAILED (retryable).
+uint8 const AH_RESOLVE_NO_ACK = 0xFF;
+
+/// Player-mutation finalize + cancel phase-2 driver (spec 4.1 step 4 / 4.2).
+void AhHandlePlayerMutationResult(PlayerMutationResult const& res);
+
+/// Worker-initiated resolution finalize; returns a ResolveAckStatus value or
+/// AH_RESOLVE_NO_ACK (spec 4.3). Implemented by Task 12.
+uint8 AhHandleResolveApply(ResolveApply const& ra);
+
+/// Reconcile-on-reconnect walk (spec 8). Implemented by Task 12.
+void AhReconcileOnReconnect();
+
+/// Forward-only re-attempt of finalizes whose checked commit failed (spec 4.1
+/// step 4, "failed finalize") + the in-doubt tombstone sweep. Called once per
+/// second from World::Update while the AH service is active.
+void AhProcessRedriveQueue(uint32 nowSec);
+
+/// Legacy AUCTION_ERR_DATABASE result for a newly tombstoned mutation (spec
+/// 4.1 step 5 / M2). Called from the world-tick sweep.
+void AhNotifyMutationInDoubt(PendingMutation const& pm);
 
 #endif // MANGOS_AH_MUTATION_PENDING_H
