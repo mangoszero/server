@@ -1850,7 +1850,15 @@ SOAP.Port      = 7878
 #
 #    AH.Service.CustodyCrashAt
 #        TEST ONLY.  Inject _exit(3) at a custody seam transition:
-#        empty = off, pre-commit, pre-deferred.
+#        empty = off, pre-commit, pre-deferred, and the SP-2 write-path seams
+#        post-reserve-pre-forward, resolving-pre-apply.
+#        NEVER set on a live realm.
+#        Default: "" (off)
+#
+#    AH.Service.CustodyFailCommitAt
+#        TEST ONLY.  Force a finalize checked-commit to roll back and report
+#        failure ONCE (one-shot per process) to exercise the redrive path:
+#        empty = off, finalize-fail.
 #        NEVER set on a live realm.
 #        Default: "" (off)
 #
@@ -1877,6 +1885,7 @@ AH.Service.Config         = ah-service.conf
 AH.Service.IntentTtlSec   = 900
 AH.Service.Custody        = 0
 AH.Service.CustodyCrashAt = ""
+AH.Service.CustodyFailCommitAt = ""
 AH.Service.WriteAuthority = 0
 
 ################################################################################

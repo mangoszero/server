@@ -24,8 +24,35 @@
 #include "AuctionIntents.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
+
+#ifdef _WIN32
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
+
+namespace
+{
+    // [SP-2 Task 15] worker-side crash-injection seam. The worker has no game
+    // headers (no CustodyService), so this is a self-contained equivalent of
+    // CustodyService::MaybeCrash: if getenv("AH_WORKER_CRASH_AT") == @p phase,
+    // flush stdio and _exit(3) to simulate worker death at that transition.
+    // Inert when the env var is unset (the live default), so it never fires on a
+    // real realm.
+    void AhWorkerMaybeCrash(const char* phase)
+    {
+        const char* armed = getenv("AH_WORKER_CRASH_AT");
+        if (armed != NULL && phase != NULL && strcmp(armed, phase) == 0)
+        {
+            fprintf(stderr, "ah-service: worker crash-injection: _exit(3) at phase '%s' (TEST ONLY)\n", phase);
+            fflush(NULL);   // flush ALL stdio streams -- _exit skips cleanup
+            _exit(3);
+        }
+    }
+}
 
 MutationHandler::MutationHandler(AuctionBook& book, ServiceDatabase* db, uint32 runId)
     : m_book(book), m_db(db), m_runId(runId), m_nextSeq(0x80000000u),
@@ -125,7 +152,16 @@ bool MutationHandler::FinishCommit()
     {
         return true;   // selftest mode
     }
-    return m_db->Character().CommitTransactionChecked();
+    bool const committed = m_db->Character().CommitTransactionChecked();
+    if (committed)
+    {
+        // [SP-2 Task 15] "worker-committed-pre-reply": the book + journal COMMITTED
+        // row are durable, but the dispatch loop has NOT yet sent IPC_PLAYER_RESULT.
+        // Reconcile must finalize-forward from the journal COMMITTED row on the
+        // mangosd side. Inert unless AH_WORKER_CRASH_AT is set.
+        AhWorkerMaybeCrash("worker-committed-pre-reply");
+    }
+    return committed;
 }
 
 void MutationHandler::JournalCommitted(uint64 uuid, uint32 auctionId, uint8 kind,

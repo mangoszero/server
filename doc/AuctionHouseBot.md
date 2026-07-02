@@ -351,3 +351,93 @@ transient `AuctionEntry`, so existing Lua AH scripts keep working.
 > auction cut is exercised end-to-end only against a live custody ledger; the
 > `-t` unit harness has no cut reservation to validate it. Mandatory pre-enable
 > live smoke.
+
+#### SP-2 crash-injection seams (TEST ONLY)
+
+The custody `AH.Service.CustodyCrashAt` pattern (which fires `_exit(3)` at a named
+seam transition) extends to the write path. These are the deterministic substitute
+for a multi-realm soak on a solo realm: kill the process at each SP-2 transition
+and prove reconcile-on-reconnect recovers with **no lost or duplicated gold or
+items** and `ah repair` reporting **zero drift**. Every seam is inert by default
+(empty config / unset env var) so it is dead on a live realm. Run only on
+disposable DB clones with `AH.Service.WriteAuthority = 1` and
+`AH.Service.Custody = 1`.
+
+There are four SP-2 seams. Three are mangosd-side and fire on
+`AH.Service.CustodyCrashAt`; one is worker-side and fires on the worker's
+`AH_WORKER_CRASH_AT` environment variable (the worker has no game config). A fifth
+hook, `AH.Service.CustodyFailCommitAt = finalize-fail`, is not a crash: it forces
+one finalize checked-commit to roll back so the redrive path can be exercised
+without killing the process.
+
+| Seam | Config / env | Site | Fires when | Recovery proven |
+| --- | --- | --- | --- | --- |
+| `post-reserve-pre-forward` | `AH.Service.CustodyCrashAt` | `AuctionHouseHandler.cpp` sell + bid forward branches | after the escrow/deposit or bid reserve durably commits, before the intent is forwarded | reconcile releases the reserved-but-un-forwarded row -> gold/item returned |
+| `worker-committed-pre-reply` | `AH_WORKER_CRASH_AT` (worker env) | `MutationHandler::FinishCommit` (worker) | after the worker commits the book + journal `COMMITTED` row, before `IPC_PLAYER_RESULT` is sent | reconcile finalize-forwards from the journal `COMMITTED` row -> value applied once |
+| `resolving-pre-apply` | `AH.Service.CustodyCrashAt` | `AhHandleResolveApply` | after `WriteResolutionApplied` is queued, before its checked commit | worker re-sends `RESOLVE_APPLY`; the `ResolutionApplied` guard answers `DUPLICATE == APPLIED` -> no double apply |
+| `finalize-fail` | `AH.Service.CustodyFailCommitAt` | `AhFinalizeBidOk` value commit | forces ONE finalize commit to roll back (one-shot; process stays up) | the redrive queue re-drives forward-only; the worker book is never rolled back |
+
+**Per-seam operator procedure.** For each seam, on a clone with `WriteAuthority = 1`
+and `Custody = 1`:
+
+1. **Baseline.** Record the actors' gold and inventory and
+   `SELECT COUNT(*) FROM custody_ledger WHERE state = 0` (non-terminal rows).
+2. **Arm the seam:**
+   - mangosd seams: set `AH.Service.CustodyCrashAt = "<phase>"` in `mangosd.conf`.
+   - worker seam: start the worker with `AH_WORKER_CRASH_AT=worker-committed-pre-reply`
+     in its environment (leave `CustodyCrashAt` empty).
+   - `finalize-fail`: set `AH.Service.CustodyFailCommitAt = "finalize-fail"` (no
+     process death -- expect a single redrive instead).
+3. **Drive the matching flow** exactly once:
+   - `post-reserve-pre-forward`: have a player list an item OR place a bid.
+   - `worker-committed-pre-reply`: have a player list/bid/buyout/cancel (any
+     book-committing mutation).
+   - `resolving-pre-apply`: let a listing reach the expiry/win tick, or cancel one,
+     so the worker sends `RESOLVE_APPLY`.
+   - `finalize-fail`: have a player place a bid or buyout (the value finalize).
+4. **Confirm the injection.**
+   - crash seams: the process exits with code `3` and the log/stderr shows
+     `crash-injection: _exit(3) at phase '<phase>'`.
+   - `finalize-fail`: the log shows
+     `custody forced commit-fail: rollback ... (one-shot)` followed a few seconds
+     later by the redrive re-applying (no `redrive STUCK`).
+5. **Disarm and restart.** Clear the config / env var, keep `Custody = 1` and
+   `WriteAuthority = 1`, and restart mangosd (and the worker). Reconcile-on-reconnect
+   runs on the reliable lane.
+6. **Assert recovery.** Re-read the actors' gold/inventory: no copper or item is
+   lost or duplicated versus the baseline plus the intended mutation. Then run
+   `ah repair` (audit) and confirm **zero drift** -- no orphan non-terminal rows
+   and no live custody auction missing a required row.
+
+### Whole-branch acceptance checklist (SP-2)
+
+Do not enable `AH.Service.WriteAuthority` on a real realm until every item is green:
+
+- [ ] Both targets build clean: `--target ah-service` and `--target mangosd`
+      (`RelWithDebInfo`).
+- [ ] `ah-service --selftest` all green in order: `wire`, `intent codec`,
+      `journal` (or SKIPPED with no character DB), `book`, `mutation`, `cancel`,
+      `resolve outbox`, `bot fold-in`, `reliable lane`, `ipc`.
+- [ ] Every `mangosd -t` green (exit 0): `custody`, `ahrelease`, `ahmutpending`,
+      `ahforwardreserve`, `ahmutresult`, `ahresolve`, `ahmaterialize`, plus the
+      regression set `commit` / `mail` / `ahowner` / `ahbrowsepending`.
+      (`mail` needs character guid 1 present in the character DB clone -- it is a
+      DB-fixture dependency, not a code gate.)
+- [ ] A/B differential (`src/modules/AhWorker/tools/sp2_differential.md`): the
+      serialized list/bid/buyout/cancel/expire workload diffs to zero on `auction`
+      / `item_instance` / `custody_ledger` end-state and on per-session packet
+      order; every remaining difference is one of the five documented divergences.
+- [ ] All four crash seams recover clean (procedure above): no lost/duplicated
+      gold or items, `ah repair` reports zero drift; `finalize-fail` redrives
+      without rolling the worker book back.
+- [ ] Manual live smoke on a copy DB with `WriteAuthority = 1` + `Custody = 1`:
+      list / bid / buyout / cancel one auction between two characters, then advance
+      time + restart to fire expiry/win, then `ah repair` -> zero drift.
+- [ ] **MANDATORY:** the live smoke exercises the **nonzero-cut CANCEL path**
+      (OPERATOR WARNING 3) -- this leg has no `-t` coverage and must be observed
+      end-to-end against a live custody ledger.
+- [ ] Both `ah_worker_journal` and custody migrations applied (OPERATOR WARNING 2).
+
+The `.ai_tools/ah_custody_harness` SP-2 mode (inject -> resolve under
+WriteAuthority; assert via journal + ledger + mails) is out of this repo and is
+extended separately.

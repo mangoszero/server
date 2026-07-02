@@ -230,6 +230,15 @@ namespace CustodyService
     /// config is empty (the live default), so it is inert on a real realm.
     void MaybeCrash(std::string const& phase);
 
+    /// TEST ONLY. Checked-commit wrapper for a finalize transaction. If
+    /// AH.Service.CustodyFailCommitAt == @p phase, rolls the caller's OPEN
+    /// CharacterDatabase transaction back and returns false ONCE (one-shot per
+    /// process) to simulate a failed finalize checked-commit, exercising the
+    /// redrive-without-rollback path (spec 4.1 step 4). Otherwise -- and always
+    /// once the one-shot has fired -- it just delegates to
+    /// CommitTransactionChecked(). Inert when the config is empty (live default).
+    bool CommitCheckedOrForcedFail(std::string const& phase);
+
     /**
      * @brief Audit custody-ledger drift.
      *

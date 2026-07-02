@@ -683,6 +683,11 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
             return;
         }
 
+        // [SP-2 Task 15] crash seam: the escrow+deposit reserve is durably
+        // committed but the intent has NOT been forwarded. Reconcile (Task 12)
+        // must release the reserved-but-un-forwarded row. Inert on a live realm.
+        CustodyService::MaybeCrash("post-reserve-pre-forward");
+
         // Register BEFORE the send so a fast reply can never race an
         // unregistered uuid.
         PendingMutation pm;
@@ -946,6 +951,11 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
             sLog.outError("SP-2 bid: reserve txn rolled back for auction %u", auctionId);
             return;
         }
+
+        // [SP-2 Task 15] crash seam: the bid reserve is durably committed but the
+        // intent has NOT been forwarded. Reconcile (Task 12) must release the
+        // reserved-but-un-forwarded row. Inert on a live realm.
+        CustodyService::MaybeCrash("post-reserve-pre-forward");
 
         // Register BEFORE the send (reply can never race an unknown uuid).
         PendingMutation pm;
@@ -2660,7 +2670,12 @@ static bool AhFinalizeBidOk(PlayerMutationResult const& res, PendingMutation con
         CustodyService::CommitGoldLedgerOnly("item:" + std::to_string(f.auctionId));
     }
 
-    if (!CharacterDatabase.CommitTransactionChecked())
+    // [SP-2 Task 15] finalize-fail crash seam: CommitCheckedOrForcedFail forces
+    // this checked commit to roll back and report false ONCE when
+    // AH.Service.CustodyFailCommitAt == "finalize-fail", exercising the
+    // redrive-without-rollback path below. Inert (a plain checked commit) on a
+    // live realm.
+    if (!CustodyService::CommitCheckedOrForcedFail("finalize-fail"))
     {
         if (remainder > 0)
         {
@@ -3263,6 +3278,12 @@ uint8 AhHandleResolveApply(ResolveApply const& ra)
 
     // The applied-record commits atomically with the value effects.
     CustodyService::WriteResolutionApplied(f.auctionId, ra.uuid);
+
+    // [SP-2 Task 15] crash seam: the applied-record is queued but NOT yet
+    // committed. On restart the worker re-sends RESOLVE_APPLY and the
+    // ResolutionApplied guard above must answer DUPLICATE == APPLIED. Inert on a
+    // live realm.
+    CustodyService::MaybeCrash("resolving-pre-apply");
 
     if (!CharacterDatabase.CommitTransactionChecked())
     {
