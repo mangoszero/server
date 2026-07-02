@@ -4320,52 +4320,6 @@ bool Player::HasItemWithIdEquipped(uint32 item, uint32 count, uint8 except_slot)
     return false;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-// D1: map the header-free AhUseResult back to the EXACT InventoryResult. The
-// switch is exhaustive so every per-branch code is preserved (CanUseAmmo /
-// SpellHandler forward these to the client); the static_assert pins AHUSE_OK.
-static InventoryResult MapAhUseResult(AhUseResult r)
-{
-    static_assert(int(AHUSE_OK) == int(EQUIP_ERR_OK),
-                  "AHUSE_OK must equal EQUIP_ERR_OK");
-    switch (r)
-    {
-        case AHUSE_OK:                    return EQUIP_ERR_OK;
-        case AHUSE_NEVER_USE:             return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
-        case AHUSE_NO_PROFICIENCY:        return EQUIP_ERR_NO_REQUIRED_PROFICIENCY;
-        case AHUSE_CANT_EQUIP_SKILL:      return EQUIP_ERR_CANT_EQUIP_SKILL;
-        case AHUSE_CANT_EQUIP_RANK:       return EQUIP_ERR_CANT_EQUIP_RANK;
-        case AHUSE_CANT_EQUIP_LEVEL:      return EQUIP_ERR_CANT_EQUIP_LEVEL_I;
-        case AHUSE_CANT_EQUIP_REPUTATION: return EQUIP_ERR_CANT_EQUIP_REPUTATION;
-    }
-    return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;   // unreachable
-}
-
-uint16 Player::ThunkSkillRank(void* c, uint32 s)
-{
-    return reinterpret_cast<AhEvalCtx*>(c)->self->GetSkillValue(s);
-}
-bool Player::ThunkHasSpell(void* c, uint32 s)
-{
-    return reinterpret_cast<AhEvalCtx*>(c)->self->HasSpell(s);
-}
-uint8 Player::ThunkRepRank(void* c, uint32 f)
-{
-    return uint8(reinterpret_cast<AhEvalCtx*>(c)->self->GetReputationRank(f));
-}
-
-
 /// Runs ONLY the Eluna OnCanUseItem veto (D5). Returns EQUIP_ERR_OK when Eluna
 /// is compiled out or there is no veto. Used by the deferred-Eluna browse pass,
 /// which has already had every non-Eluna sub-filter enforced worker-side.

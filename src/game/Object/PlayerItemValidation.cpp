@@ -1709,6 +1709,39 @@ InventoryResult Player::CanUseItem(Item* pItem, bool direct_action) const
     return EQUIP_ERR_ITEM_NOT_FOUND;
 }
 
+// D1: map the header-free AhUseResult back to the EXACT InventoryResult. The
+// switch is exhaustive so every per-branch code is preserved (CanUseAmmo /
+// SpellHandler forward these to the client); the static_assert pins AHUSE_OK.
+static InventoryResult MapAhUseResult(AhUseResult r)
+{
+    static_assert(int(AHUSE_OK) == int(EQUIP_ERR_OK),
+                  "AHUSE_OK must equal EQUIP_ERR_OK");
+    switch (r)
+    {
+        case AHUSE_OK:                    return EQUIP_ERR_OK;
+        case AHUSE_NEVER_USE:             return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
+        case AHUSE_NO_PROFICIENCY:        return EQUIP_ERR_NO_REQUIRED_PROFICIENCY;
+        case AHUSE_CANT_EQUIP_SKILL:      return EQUIP_ERR_CANT_EQUIP_SKILL;
+        case AHUSE_CANT_EQUIP_RANK:       return EQUIP_ERR_CANT_EQUIP_RANK;
+        case AHUSE_CANT_EQUIP_LEVEL:      return EQUIP_ERR_CANT_EQUIP_LEVEL_I;
+        case AHUSE_CANT_EQUIP_REPUTATION: return EQUIP_ERR_CANT_EQUIP_REPUTATION;
+    }
+    return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;   // unreachable
+}
+
+uint16 Player::ThunkSkillRank(void* c, uint32 s)
+{
+    return reinterpret_cast<AhEvalCtx*>(c)->self->GetSkillValue(s);
+}
+bool Player::ThunkHasSpell(void* c, uint32 s)
+{
+    return reinterpret_cast<AhEvalCtx*>(c)->self->HasSpell(s);
+}
+uint8 Player::ThunkRepRank(void* c, uint32 f)
+{
+    return uint8(reinterpret_cast<AhEvalCtx*>(c)->self->GetReputationRank(f));
+}
+
 /**
  * @brief Checks whether an item prototype is usable by the player.
  *
