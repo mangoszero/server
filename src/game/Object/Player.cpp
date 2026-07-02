@@ -6283,31 +6283,6 @@ void Player::UpdateHomebindTime(uint32 time)
     }
 }
 
-/**
- * @brief Sets or clears the player's PvP state with timeout-aware handling.
- *
- * @param state True to enable PvP; false to disable it.
- * @param ovrride True to bypass the delayed PvP timeout behavior.
- */
-void Player::UpdatePvP(bool state, bool ovrride)
-{
-    if (!state || ovrride)
-    {
-        SetPvP(state);
-        pvpInfo.endTimer = 0;
-    }
-    else
-    {
-        if (pvpInfo.endTimer != 0)
-        {
-            pvpInfo.endTimer = time(NULL);
-        }
-        else
-        {
-            SetPvP(state);
-        }
-    }
-}
 
 /**
  * @brief Applies personal and category cooldowns for a spell cast.
