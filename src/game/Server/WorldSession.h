@@ -39,6 +39,7 @@
 struct ItemPrototype;
 struct AuctionEntry;
 struct AuctionHouseEntry;
+struct CustodyDeferred;
 struct TradeStatusInfo;
 
 class ObjectGuid;
@@ -397,12 +398,40 @@ class WorldSession
 
         // auction
         void SendAuctionHello(Unit* unit);
-        void SendAuctionCommandResult(AuctionEntry* auc, AuctionAction Action, AuctionError ErrorCode, InventoryResult invError = EQUIP_ERR_OK);
+        void SendAuctionCommandResult(AuctionEntry* auc, AuctionAction Action, AuctionError ErrorCode, InventoryResult invError = EQUIP_ERR_OK, uint32 newOutbid = 0);
+        /// By-value variant of SendAuctionCommandResult: builds
+        /// SMSG_AUCTION_COMMAND_RESULT from raw values so a deferred custody
+        /// closure can snapshot the auction Id (the buyout path deletes the
+        /// AuctionEntry before the deferred queue runs -- spec I5).
+        void SendAuctionCommandResultData(uint32 aucId, AuctionAction Action, AuctionError ErrorCode, InventoryResult invError, uint32 newOutbid);
         void SendAuctionBidderNotification(AuctionEntry* auction, bool won);
+        /// By-value variant of SendAuctionBidderNotification: builds
+        /// SMSG_AUCTION_BIDDER_NOTIFICATION from raw values snapshotted before a
+        /// custody co-commit (spec I5).
+        void SendAuctionBidderNotificationData(uint32 houseId, uint32 id, uint32 bidder, uint32 bid, uint32 outbid, uint32 itemTemplate, int32 itemRand, bool won);
         void SendAuctionOwnerNotification(AuctionEntry* auction, bool sold);
+        /// By-value variant of SendAuctionOwnerNotification: builds
+        /// SMSG_AUCTION_OWNER_NOTIFICATION from raw values snapshotted before a
+        /// custody co-commit, so a deferred closure can fire it after the
+        /// AuctionEntry is gone (spec I5).
+        void SendAuctionOwnerNotificationData(uint32 houseId, uint32 id, uint32 bid, uint32 outbid, uint32 bidderGuidLow, uint32 itemTemplate, int32 itemRand, bool sold);
         void SendAuctionRemovedNotification(AuctionEntry* auction);
+        /// By-value variant of SendAuctionRemovedNotification: builds
+        /// SMSG_AUCTION_REMOVED_NOTIFICATION from raw values snapshotted before a
+        /// custody co-commit, so a deferred closure can fire it after the
+        /// AuctionEntry is gone (spec I5 / S5).
+        void SendAuctionRemovedNotificationData(uint32 id, uint32 itemTemplate, int32 itemRand);
         static void SendAuctionOutbiddedMail(AuctionEntry* auction);
+        /// Custody co-commit variant of SendAuctionOutbiddedMail: defers the
+        /// online bidder notification (snapshotted by value) then co-commits the
+        /// refund mail into the caller's open transaction (spec B / S2).
+        static void SendAuctionOutbiddedMailInTransaction(AuctionEntry* auction, CustodyDeferred& def);
         void SendAuctionCancelledToBidderMail(AuctionEntry* auction);
+        /// Custody co-commit variant of SendAuctionCancelledToBidderMail: defers
+        /// the distinct SMSG_AUCTION_REMOVED_NOTIFICATION (snapshotted by value)
+        /// then co-commits the refund mail (money = auction->bid) into the
+        /// caller's open transaction (spec B / S5).
+        static void SendAuctionCancelledToBidderMailInTransaction(AuctionEntry* auction, CustodyDeferred& def);
         AuctionHouseEntry const* GetCheckedAuctionHouseForAuctioneer(ObjectGuid guid);
 
         // Item Enchantment

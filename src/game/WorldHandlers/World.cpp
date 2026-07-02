@@ -54,6 +54,9 @@
 #include "Player.h"
 #include "AccountMgr.h"
 #include "AuctionHouseMgr.h"
+#include "AuctionHouseBot/AuctionIntentExecutor.h"
+#include "AuctionHouseBot/CustodyLedger.h"
+#include "AuctionHouseBot/CustodyService.h"
 #include "ObjectMgr.h"
 #include "CreatureEventAIMgr.h"
 #include "GuildMgr.h"
@@ -110,12 +113,28 @@
 // WARDEN
 #include "WardenCheckMgr.h"
 
+// AH subprocess supervisor (Task 5+)
+#include "WorkerSupervisor.h"
+#include "IpcMessage.h"
+#include "IpcOpcodes.h"
+#include "AuctionIntents.h"
+#include "BrowseMessages.h"
+#include "AuctionHouseBot/BrowsePending.h"
+
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 INSTANTIATE_SINGLETON_1(World);
 
 extern void LoadGameObjectModelList();
+
+// SP-1 coordinator: the "AH unavailable" responder + house re-resolution (for
+// the BIDDER outbid-prepend), defined in AuctionHouseHandler.cpp (next to the
+// three async-proxy handlers). The world thread calls these from the
+// IPC_BROWSE_RESULT reply branch and the TTL sweep.
+void AhSendBrowseUnavailable(WorldSession* session, uint8 kind);
+AuctionHouseObject* AhResolveHouse(const PendingBrowse& pb);
 
 volatile bool World::m_stopEvent = false;
 uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
@@ -221,6 +240,12 @@ World::World()
     {
         m_configBoolValues[i] = false;
     }
+
+    // PF3-A: single-threaded construction; relaxed is sufficient here. The
+    // release/acquire pairing happens later between SetAhSupervisor() and the
+    // world tick loop.
+    m_ahSupervisor.store(NULL, std::memory_order_relaxed);
+    m_ahServiceConfigured.store(false, std::memory_order_relaxed);
 }
 
 /// World destructor
@@ -932,6 +957,9 @@ void World::LoadConfigSettings(bool reload)
     // Recommended Or New Flag
     setConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW_ENABLED, "Realm.RecommendedOrNew.Enabled", false);
     setConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW, "Realm.RecommendedOrNew", false);
+
+    // AH Service custody escrow ledger
+    setConfig(CONFIG_BOOL_AH_CUSTODY, "AH.Service.Custody", false);
 
     m_relocation_ai_notify_delay = sConfig.GetIntDefault("Visibility.AIRelocationNotifyDelay", 1000u);
     m_relocation_lower_limit_sq  = pow(sConfig.GetFloatDefault("Visibility.RelocationLowerLimit", 10), 2);
@@ -1832,6 +1860,18 @@ void World::Update(uint32 diff)
     GameTime::UpdateGameTimers();
     sWorldUpdateTime.UpdateWithDiff(diff);
 
+    ///- Flush buffered log files about once per second. The file sinks are
+    ///  fully buffered (setvbuf), so this bounds how long a buffered line waits
+    ///  to reach disk; error paths still flush immediately at emit time. Safe as
+    ///  a function-local static: World::Update runs only on the world thread.
+    static uint32 logFlushTimer = 0;
+    logFlushTimer += diff;
+    if (logFlushTimer >= 1000)
+    {
+        logFlushTimer = 0;
+        sLog.Flush();
+    }
+
     ///-Update mass mailer tasks if any
     sMassMailMgr.Update();
 
@@ -1855,8 +1895,190 @@ void World::Update(uint32 diff)
     /// <li> Handle AHBot operations
     if (m_timers[WUPDATE_AHBOT].Passed())
     {
-        sAuctionBot.Update();
+        // PF3-A: acquire-load the published supervisor pointer once. The
+        // matching release store in SetAhSupervisor() guarantees the
+        // supervisor's construction + Start() is fully visible before any
+        // non-NULL pointer can be observed here.
+        WorkerSupervisor* const ahSupervisor = GetAhSupervisor();
+        const bool serviceActive =
+            (ahSupervisor != NULL && ahSupervisor->ServiceActive());
+
+        /// Transition logging: announce each time the in-process bot stands
+        /// down for / resumes from the out-of-process service.
+        static bool s_prevServiceActive = false;
+        if (serviceActive != s_prevServiceActive)
+        {
+            if (serviceActive)
+            {
+                sLog.outString("[AHSupervisor] AH service active -"
+                               " in-process AuctionHouseBot standing down");
+            }
+            else
+            {
+                sLog.outString("[AHSupervisor] AH service inactive -"
+                               " in-process AuctionHouseBot resuming");
+            }
+            s_prevServiceActive = serviceActive;
+        }
+
+        if (!serviceActive)
+        {
+            sAuctionBot.Update();
+        }
+
+        // Mail cleanup must run in BOTH modes. In service mode the in-process
+        // bot's Update() is gated out, so PurgeMailedItems() (the hourly
+        // cleanup of the bot's returned/unsold/outbid mail) would otherwise
+        // never run and the char-DB mail tables would grow without bound.
+        // It is self-throttled to once/hour internally, so calling it on every
+        // WUPDATE_AHBOT tick in either mode is cheap and idempotent.
+        sAuctionBot.PurgeMailedItemsTick();
+
+        // Custody drift audit + terminal-row TTL prune. This is intentionally
+        // a fixed retention constant, not a config key, so no mangosd.conf
+        // version bump is required for Task 13.
+        static uint64 s_nextCustodyReconcileTime = 0;
+        uint64 const now = static_cast<uint64>(GetGameTime());
+        uint64 const custodyTerminalRetention = 30 * DAY;
+        if (!s_nextCustodyReconcileTime)
+        {
+            s_nextCustodyReconcileTime = now + HOUR;
+        }
+        else if (now >= s_nextCustodyReconcileTime)
+        {
+            std::vector<CustodyRow> drift;
+            CustodyService::ReconcileScan(true, drift);
+            if (!drift.empty())
+            {
+                sLog.outError("custody reconcile sweep: %u drift row(s) detected",
+                              uint32(drift.size()));
+            }
+
+            if (now > custodyTerminalRetention)
+            {
+                CustodyLedger::DeleteTerminalOlderThan(now - custodyTerminalRetention);
+            }
+
+            s_nextCustodyReconcileTime = now + HOUR;
+        }
+
         m_timers[WUPDATE_AHBOT].Reset();
+    }
+
+    /// <li> Tick the AH subprocess supervisor and drain inbound frames
+    // PF3-A: acquire-load the published supervisor pointer once for this whole
+    // block (see SetAhSupervisor()). Reusing one local keeps every dereference
+    // below consistent and avoids repeated atomic loads.
+    WorkerSupervisor* const ahSupervisor = GetAhSupervisor();
+    if (ahSupervisor != NULL)
+    {
+        // Tick() uses wall-clock deltas internally; do NOT gate behind
+        // WUPDATE_AHBOT. Tick() drives heartbeat/restart/protocol and MUST run
+        // every tick regardless of service health (it is what transitions the
+        // service from inactive back to active).
+        ahSupervisor->Tick(GetGameTime());
+
+        // Overflow visibility: warn (rate-limited) when the inbound queue
+        // has dropped frames since we last checked.
+        static size_t s_lastDroppedSeen = 0;
+        static time_t s_lastOverflowWarn = 0;
+        static time_t s_lastNearFullWarn = 0;
+        const size_t  dropped = ahSupervisor->InboundDropped();
+        if (dropped > s_lastDroppedSeen)
+        {
+            const time_t now = time(NULL);
+            // Warn at most once every 60 seconds to avoid log spam.
+            // Baseline only advances on emission so suppressed bursts are
+            // counted correctly in the next warning.
+            if (now - s_lastOverflowWarn >= 60)
+            {
+                sLog.outError("[AHSupervisor] inbound queue overflow:"
+                              " %u frame(s) dropped (total %u)",
+                              static_cast<unsigned>(dropped - s_lastDroppedSeen),
+                              static_cast<unsigned>(dropped));
+                s_lastOverflowWarn = now;
+                s_lastDroppedSeen  = dropped;
+            }
+        }
+
+        // The apply loop (DrainInbound + HandleAhInbound) and the near-full
+        // back-pressure check are gated on service health. When the service is
+        // inactive (crash / heartbeat-timeout / stand-down) the in-process
+        // AuctionHouseBot resumes (see the WUPDATE_AHBOT block above); applying
+        // the dead child's last staged batch at the same time would over-post
+        // against the resumed in-process bot. WorkerSupervisor clears its
+        // staged frames on child exit, so a reconnecting child never replays
+        // the dead child's stale batch; this gate is the second guard.
+        if (ahSupervisor->ServiceActive())
+        {
+            // Drain up to 256 application frames per tick.
+            std::vector<IpcMessage> msgs;
+            ahSupervisor->DrainInbound(msgs, 256);
+
+            // Near-full back-pressure: queue >= 80% capacity means we are close
+            // to dropping frames even though none have been lost yet. Warn AND
+            // tell the child to throttle via IPC_QUEUE_FULL so it pauses one
+            // bot cycle. Both are rate-limited to once per 60s to avoid spam.
+            const size_t qSize = ahSupervisor->Channel().InboundSize();
+            if (qSize >= IPC_INBOUND_QUEUE_CAP * 4 / 5)
+            {
+                const time_t now = time(NULL);
+                if (now - s_lastNearFullWarn >= 60)
+                {
+                    sLog.outError("[AHSupervisor] inbound queue near full:"
+                                  " %u / %u frames - sending IPC_QUEUE_FULL",
+                                  static_cast<unsigned>(qSize),
+                                  static_cast<unsigned>(IPC_INBOUND_QUEUE_CAP));
+
+                    // Back-pressure producer: the child backs off one bot
+                    // cycle on IPC_QUEUE_FULL (ah-service Main.cpp). Empty
+                    // body; the child reads no payload for this opcode.
+                    IpcMessage qf;
+                    qf.op = IPC_QUEUE_FULL;
+                    ahSupervisor->Channel().SendFrame(qf);
+
+                    s_lastNearFullWarn = now;
+                }
+            }
+
+            for (size_t i = 0; i < msgs.size(); ++i)
+            {
+                HandleAhInbound(msgs[i]);
+            }
+        }
+
+        // Expire processed-uuid dedup entries. UNCONDITIONAL: the dedup cache
+        // must keep aging out regardless of service health, else stale uuids
+        // leak when the service stays inactive. Rate-limit to once per second
+        // (game-time); purging every tick would be wasteful.
+        static time_t s_lastIntentPurge = 0;
+        const time_t nowSec = GetGameTime();
+        if (nowSec != s_lastIntentPurge)
+        {
+            sAuctionIntentExecutor.PurgeExpiredUuids(uint32(nowSec));
+            s_lastIntentPurge = nowSec;
+
+            // SP-1 (M5): sweep timed-out browse requests on the SAME nowSec clock
+            // used to register them. The worker never replied (crash/lost frame);
+            // coordinator model -> tell each player the AH is unavailable iff it
+            // is still the current search and the player is present (I4).
+            std::vector<PendingBrowse> timedOut;
+            m_browsePending.Sweep(uint32(nowSec), 10u, timedOut);
+            for (size_t i = 0; i < timedOut.size(); ++i)
+            {
+                if (!m_browsePending.IsCurrent(timedOut[i].playerGuidLow,
+                                               timedOut[i].kind, timedOut[i].seq))
+                {
+                    continue;
+                }
+                Player* p = sObjectAccessor.FindPlayer(
+                    ObjectGuid(HIGHGUID_PLAYER, timedOut[i].playerGuidLow));
+                if (p && p->IsInWorld() && p->GetSession())
+                {
+                    AhSendBrowseUnavailable(p->GetSession(), timedOut[i].kind);
+                }
+            }
+        }
     }
 
 #ifdef ENABLE_PLAYERBOTS
@@ -1946,6 +2168,247 @@ void World::Update(uint32 diff)
 
     // cleanup unused GridMap objects as well as VMaps
     sTerrainMgr.Update(diff);
+}
+
+// ---------------------------------------------------------------------------
+// World::HandleAhInbound -- M1 stub; routes consumer frames in M2
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Dispatch one inbound frame from the ah-service child process.
+ *
+ * M1: logs what arrived so the smoke test can confirm the drain pipeline
+ * is live. M2 will add IPC_AH_* intent routing here; keep the switch
+ * extensible.
+ */
+void World::HandleAhInbound(const IpcMessage& msg)
+{
+    switch (msg.op)
+    {
+        case IPC_ECHO_REPLY:
+        {
+            DETAIL_LOG("[AHSupervisor] IPC_ECHO_REPLY received"
+                       " (body=%u bytes)", static_cast<unsigned>(msg.body.size()));
+            break;
+        }
+        case IPC_HEARTBEAT_ACK:
+        {
+            // Should have been consumed by WorkerSupervisor::Tick(); log if
+            // it somehow leaks through.
+            DETAIL_LOG("[AHSupervisor] HandleAhInbound: unexpected"
+                       " IPC_HEARTBEAT_ACK");
+            break;
+        }
+        case IPC_INTENT_SELL:
+        case IPC_INTENT_BID:
+        case IPC_INTENT_BUYOUT:
+        {
+            // Authority side: re-validate against live state and apply
+            // idempotently. The executor populates `result` with an
+            // IPC_INTENT_RESULT frame to return to the child (or leaves it
+            // empty -- op 0 -- for a malformed body, which we must not send).
+            IpcMessage result;
+            sAuctionIntentExecutor.Apply(msg, result);
+            // PF3-A: acquire-load the published supervisor pointer (see
+            // SetAhSupervisor()) before dereferencing it.
+            WorkerSupervisor* const ahSupervisor = GetAhSupervisor();
+            if (ahSupervisor != NULL && result.op != IpcOpcode(0))
+            {
+                ahSupervisor->Channel().SendFrame(result);
+            }
+            break;
+        }
+        case IPC_INTENT_RESULT:
+        {
+            // mangosd -> child direction; should never be received here.
+            sLog.outError("[AHSupervisor] HandleAhInbound: unexpected"
+                          " IPC_INTENT_RESULT (ignored)");
+            break;
+        }
+        case IPC_GMCMD_RESULT:
+        {
+            ByteBuffer body(msg.body);
+            GmCmdResult res;
+            if (res.Decode(body))
+            {
+                sLog.outString("[AHService] GM command %u result: %s",
+                               static_cast<unsigned>(res.cmd),
+                               res.ok ? "OK" : "FAIL");
+            }
+            else
+            {
+                sLog.outError("[AHSupervisor] HandleAhInbound:"
+                              " IPC_GMCMD_RESULT decode failed");
+            }
+            break;
+        }
+        case IPC_GMCMD:
+        {
+            // mangosd -> child direction; should never be received inbound.
+            sLog.outError("[AHSupervisor] HandleAhInbound: unexpected"
+                          " IPC_GMCMD inbound (ignored)");
+            break;
+        }
+        case IPC_BROWSE_RESULT:
+        {
+            ByteBuffer body(msg.body);
+            BrowseResult res;
+            if (!res.Decode(body))
+            {
+                sLog.outError("[AHSupervisor] IPC_BROWSE_RESULT decode failed");
+                break;
+            }
+            PendingBrowse pb;
+            if (!m_browsePending.Take(res.queryId, pb))
+            {
+                DETAIL_LOG("[AHSupervisor] IPC_BROWSE_RESULT unknown queryId %llu",
+                           (unsigned long long)res.queryId);
+                break;
+            }
+            // I4: ignore a reply for a search the player has since superseded.
+            if (!m_browsePending.IsCurrent(pb.playerGuidLow, pb.kind, pb.seq))
+            {
+                break;
+            }
+            Player* player = sObjectAccessor.FindPlayer(
+                ObjectGuid(HIGHGUID_PLAYER, pb.playerGuidLow));
+            if (!player || !player->IsInWorld())
+            {
+                break;   // logged out / different char (I4) -> drop cleanly
+            }
+            WorldSession* session = player->GetSession();
+            if (!session)
+            {
+                break;
+            }
+
+            // tooMany: the worker declined (queue saturated / oversize failsafe /
+            // over-cap deferred-Eluna). Coordinator model: no in-process fallback
+            // -> the player gets "AH unavailable".
+            if (res.tooMany)
+            {
+                AhSendBrowseUnavailable(session, pb.kind);
+                break;
+            }
+
+            std::vector<BrowseEntry> finalEntries;
+            uint32 totalcount = res.totalcount;
+
+            if (res.elunaPending && pb.kind != uint8(BROWSE_BIDDER))
+            {
+                // Deferred-Eluna pass (D5/V2): run ONLY the OnCanUseItem veto per
+                // entry via the thin Player::CanUseItemEluna accessor. The worker
+                // already enforced every non-Eluna sub-filter on the same profile.
+                // Run the hook over EVERY entry -- NO per-tick budget that keeps
+                // unchecked entries (V2: that broke parity by counting/showing
+                // Lua-vetoed items).
+                std::vector<BrowseEntry> survivors;
+                survivors.reserve(res.entries.size());
+                for (size_t i = 0; i < res.entries.size(); ++i)
+                {
+                    if (player->CanUseItemEluna(res.entries[i].itemEntry) != EQUIP_ERR_OK)
+                    {
+                        continue;   // Lua veto -> drop (exact parity)
+                    }
+                    survivors.push_back(res.entries[i]);
+                }
+                // The worker shipped the FULL surviving set un-paginated (the >cap
+                // deferred-Eluna case is declined with tooMany, above). Run the Lua
+                // veto over all survivors, then paginate here for exact in-process
+                // parity.
+                totalcount = uint32(survivors.size());
+                uint32 from = pb.listfrom;
+                for (uint32 i = from; i < survivors.size() && finalEntries.size() < 50u; ++i)
+                {
+                    finalEntries.push_back(survivors[i]);
+                }
+            }
+            else
+            {
+                finalEntries = res.entries;   // worker already paginated
+            }
+
+            uint16 opcode = SMSG_AUCTION_LIST_RESULT;
+            if (pb.kind == uint8(BROWSE_OWNER))
+            {
+                opcode = SMSG_AUCTION_OWNER_LIST_RESULT;
+            }
+            else if (pb.kind == uint8(BROWSE_BIDDER))
+            {
+                opcode = SMSG_AUCTION_BIDDER_LIST_RESULT;
+            }
+
+            if (pb.kind == uint8(BROWSE_BIDDER))
+            {
+                // I1: BIDDER prepends the client-supplied outbid entries in CLIENT
+                // ORDER (mirroring HandleAuctionListBidderItems) before the worker
+                // bidder-sweep entries. The client outbid rows are resolved live
+                // from the player's house via GetAuction(id)->BuildAuctionInfo.
+                AuctionHouseObject* house = AhResolveHouse(pb);
+                ByteBuffer rows;
+                uint32 prependCount = 0;
+                if (house)
+                {
+                    for (size_t i = 0; i < pb.clientOutbidIds.size(); ++i)
+                    {
+                        AuctionEntry* ae = house->GetAuction(pb.clientOutbidIds[i]);
+                        if (!ae)
+                        {
+                            continue;
+                        }
+                        WorldPacket one(opcode, 60);
+                        if (ae->BuildAuctionInfo(one))
+                        {
+                            rows.append(one.contents(), one.size());
+                            ++prependCount;
+                        }
+                    }
+                }
+                // Assemble: count(prepend+sweep) | client rows | sweep rows | total
+                WorldPacket data(opcode, 4 + rows.size() + finalEntries.size() * 60 + 4);
+                data << uint32(prependCount + uint32(finalEntries.size()));
+                if (rows.size())
+                {
+                    data.append(rows.contents(), rows.size());
+                }
+                ByteBuffer sweepRows;
+                for (size_t i = 0; i < finalEntries.size(); ++i)
+                {
+                    const BrowseEntry& e = finalEntries[i];
+                    sweepRows << uint32(e.id) << uint32(e.itemEntry) << uint32(e.enchantId)
+                              << uint32(e.randomPropId) << uint32(e.suffixFactor)
+                              << uint32(e.count) << uint32(e.charges)
+                              << ObjectGuid(HIGHGUID_PLAYER, e.ownerGuidLow)
+                              << uint32(e.startbid) << uint32(e.outbid) << uint32(e.buyout)
+                              << uint32(e.timeLeftMs)
+                              << ObjectGuid(HIGHGUID_PLAYER, e.bidderGuidLow)
+                              << uint32(e.curBid);
+                }
+                if (sweepRows.size())
+                {
+                    data.append(sweepRows.contents(), sweepRows.size());
+                }
+                data << uint32(totalcount + prependCount);
+                session->SendPacket(&data);
+                break;
+            }
+
+            WorldPacket data(opcode, 4 + 4 + finalEntries.size() * 60);
+            ByteBuffer assembled;
+            AhAssembleBrowseListBody(finalEntries, totalcount, assembled);
+            data.append(assembled.contents(), assembled.size());
+            session->SendPacket(&data);
+            break;
+        }
+        default:
+        {
+            DETAIL_LOG("[AHSupervisor] HandleAhInbound: opcode 0x%04X"
+                       " (body=%u bytes) -- unhandled",
+                       static_cast<unsigned>(msg.op),
+                       static_cast<unsigned>(msg.body.size()));
+            break;
+        }
+    }
 }
 
 namespace MaNGOS

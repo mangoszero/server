@@ -889,6 +889,18 @@ void utf8print(void* /*arg*/, const char* str);
 void vutf8printf(FILE* out, const char* str, va_list* ap);
 
 /**
+ * @brief Format like vutf8printf but return the rendered string instead of
+ *        writing it. The Windows path applies the same UTF-8 -> wide -> OEM
+ *        transform so the result is byte-identical to what vutf8printf would
+ *        have written to a console.
+ *
+ * @param str
+ * @param ap
+ * @return std::string
+ */
+std::string vutf8format(const char* str, va_list* ap);
+
+/**
  * @brief
  *
  * @param ipaddress

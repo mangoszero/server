@@ -41,6 +41,9 @@
 #include "Policies/Singleton.h"
 #include "DBCStructure.h"
 
+#include <string>
+#include <vector>
+
 /** \addtogroup auctionhouse
  * @{
  * \file
@@ -50,6 +53,7 @@ class Item;
 class Player;
 class Unit;
 class WorldPacket;
+struct CustodyDeferred;
 
 #define MIN_AUCTION_TIME (2*HOUR)
 
@@ -102,7 +106,52 @@ struct AuctionEntry
     void DeleteFromDB() const;
     void SaveToDB() const;
     void AuctionBidWinning(Player* bidder = NULL);
+    /// Custody co-commit mirror of AuctionBidWinning: pays the seller, delivers
+    /// the item to the winner, nets the deposit/bid ledger rows, deletes the
+    /// auction row, and defers every in-memory effect (notifications, mail pushes,
+    /// AH cache mutations, RemoveAuction, delete this) into @p def. Every DB write
+    /// appends to the caller's ALREADY-OPEN CharacterDatabase transaction; the
+    /// caller checked-commits it then runs @p def (spec Sec 6 S4). @p newbidder is
+    /// the online winner (buyout path) or NULL (expiry path).
+    ///
+    /// @p knownBidKey is the idem_key of the live bid row to commit-net. It is
+    /// REQUIRED on the buyout path: the bid row was just RESERVED in the same
+    /// still-open transaction, so a synchronous SELECT (GetSingleLiveBidRow) cannot
+    /// see it yet -- the caller passes the key it just reserved. On the expiry path
+    /// the bid row is already committed, so the caller passes "" and this method
+    /// re-fetches + validates it via GetSingleLiveBidRow. Ignored when bidder == 0.
+    void AuctionBidWinningCustody(Player* newbidder, CustodyDeferred& def,
+                                  std::string const& knownBidKey = "");
+    /// Custody co-commit mirror of the unsold-expiry path (spec S6): returns the
+    /// item to the seller by mail (or destroys it if the account is gone),
+    /// forfeits the deposit to the house, deletes the auction row, and defers
+    /// every in-memory effect (owner-expired notification, mail push, RemoveAItem,
+    /// RemoveAuction, delete this) into @p def. Every DB write appends to the
+    /// caller's ALREADY-OPEN CharacterDatabase transaction; the caller
+    /// checked-commits it then runs @p def. S6 makes NO synchronous in-memory
+    /// mutation, so on rollback there is nothing to restore.
+    void ExpireUnsoldCustody(CustodyDeferred& def);
     bool UpdateBid(uint32 newbid, Player* newbidder = NULL);// true if normal bid, false if buyout, bidder==NULL for generated bid
+    /// Custody co-commit mirror of UpdateBid: moves the bidder's gold via the
+    /// custody primitives and appends every DB write to the caller's already-open
+    /// CharacterDatabase transaction (the caller opens/commits it). Live effects
+    /// (outbid notify/refund mail push) are queued into @p def. The outbid refund
+    /// mail is sent via the static SendAuctionOutbiddedMailInTransaction, which
+    /// resolves the old bidder's session itself, so no acting session is needed.
+    ///
+    /// @p liveBidKey is the idem_key of the existing live bid row, pre-fetched and
+    /// VALIDATED by the handler before BeginTransaction (spec I1) for the
+    /// same-bidder raise and the outbid-displacement cases; it is empty when the
+    /// auction has no live bid row (bidder==0 / first bid). Used directly so this
+    /// method never re-looks-up (and never trusts) an unvalidated row.
+    ///
+    /// A buyout (newbid >= buyout) is absorbed here (Task 10): the bid is capped at
+    /// buyout, reserved/refunded as a normal bid, then the win resolves on the same
+    /// open transaction via AuctionBidWinningCustody (auction delete + cache
+    /// mutations deferred into @p def). Returns true if the auction remains active
+    /// (normal bid), false on a buyout (auction resolved + scheduled for delete).
+    bool UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDeferred& def,
+                          std::string const& liveBidKey);
 };
 
 // this class is used as auctionhouse instance
@@ -154,7 +203,19 @@ class AuctionHouseObject
             std::wstring const& searchedname, uint32 listfrom, uint32 levelmin, uint32 levelmax, uint32 usable,
             uint32 inventoryType, uint32 itemClass, uint32 itemSubClass, uint32 quality,
             uint32& count, uint32& totalcount);
-        AuctionEntry* AddAuction(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout = 0, uint32 deposit = 0, Player* pl = NULL);
+
+        /// Dispatcher for in-process browse fallback (C1/I1). Switches on @p kind:
+        ///   0 = LIST (public browse), 1 = OWNER, 2 = BIDDER.
+        /// For BIDDER the @p clientOutbidIds entries are prepended in CLIENT ORDER
+        /// (matching HandleAuctionListBidderItems) before the sweep.
+        /// All other parameters mirror the corresponding BuildList* signatures.
+        void BuildListForKind(uint8 kind, WorldPacket& data, Player* player,
+            const std::wstring& wname, uint32 listfrom, uint32 levelmin, uint32 levelmax,
+            uint32 usable, uint32 invType, uint32 itemClass, uint32 itemSubClass,
+            uint32 quality, const std::vector<uint32>& clientOutbidIds,
+            uint32& count, uint32& totalcount);
+
+        AuctionEntry* AddAuction(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout = 0, uint32 deposit = 0, Player* pl = NULL, bool ownTransaction = true);
         AuctionEntry* AddAuctionByGuid(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout, uint32 lowguid);
     private:
         AuctionEntryMap AuctionsMap;
@@ -199,6 +260,33 @@ class AuctionHouseMgr
         void SendAuctionWonMail(AuctionEntry* auction);
         void SendAuctionSuccessfulMail(AuctionEntry* auction);
         void SendAuctionExpiredMail(AuctionEntry* auction);
+
+        /// Custody co-commit variant of SendAuctionExpiredMail: same owner-exists
+        /// guard + expired subject, but the item return mail co-commits into the
+        /// caller's open transaction (no own Begin/Commit), the "item:<Id>" escrow
+        /// row flips to TERMINAL_OK (DeliverItem on the return branch;
+        /// CommitGoldLedgerOnly on the destroy branch), and the online owner's
+        /// SMSG_AUCTION_OWNER_NOTIFICATION (expired form) + RemoveAItem (+ live
+        /// item destroy on the no-owner branch) are deferred into @p def in legacy
+        /// order (notify-then-mail, spec S6 / C7). itemGuidLow is intentionally NOT
+        /// zeroed (success deletes the AuctionEntry; rollback needs the GUID).
+        void SendAuctionExpiredMailInTransaction(AuctionEntry* auction, CustodyDeferred& def);
+
+        /// Custody co-commit variant of SendAuctionSuccessfulMail: same owner-exists
+        /// guard + profit math, but the seller payout mail co-commits into the
+        /// caller's open transaction (no own Begin/Commit) and the online owner-sold
+        /// notification is deferred into @p def BEFORE the mail push so packet order
+        /// stays notify-then-mail (legacy). Reads auction->bid/bidder, so the caller
+        /// MUST call this before mutating them (spec S4 / B).
+        void SendAuctionSuccessfulMailInTransaction(AuctionEntry* auction, CustodyDeferred& def);
+
+        /// Custody co-commit variant of SendAuctionWonMail: keeps the GM-log block;
+        /// the item_instance owner UPDATE (receiver-exists) or DELETE (destroy)
+        /// appends to the caller's open transaction, the winner mail co-commits via
+        /// SendMailToInTransaction, and the bidder notification + RemoveAItem +
+        /// itemGuidLow=0 (+ live item destroy on the no-receiver branch) are deferred
+        /// into @p def in legacy order (spec S4 / C).
+        void SendAuctionWonMailInTransaction(AuctionEntry* auction, CustodyDeferred& def);
         static uint32 GetAuctionDeposit(AuctionHouseEntry const* entry, uint32 time, Item* pItem);
 
         static uint32 GetAuctionHouseTeam(AuctionHouseEntry const* house);
@@ -222,6 +310,12 @@ class AuctionHouseMgr
 
 /// Convenience define to access the singleton object for the Auction House Manager
 #define sAuctionMgr MaNGOS::Singleton<AuctionHouseMgr>::Instance()
+
+/// Test seam for the client-outbid-prepend order contract (used by -t ahbrowsehelper).
+/// Records the ids from @p clientIds into @p outOrder in CLIENT ORDER, locking
+/// the invariant that BuildListForKind(BIDDER) prepends them before the sweep.
+void AhAppendClientOutbidsForTest(const std::vector<uint32>& clientIds,
+                                  std::vector<uint32>& outOrder);
 
 /** @} */
 

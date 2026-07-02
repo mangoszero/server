@@ -27,6 +27,8 @@
 
 #include "Platform/Define.h"
 
+#include <cstddef>
+
 /**
  * @brief
  *
@@ -60,6 +62,27 @@ class BarGoLink
          * @param on
          */
         static void SetOutputState(bool on);
+
+        /**
+         * @brief Console output sink for one fully-built bar redraw.
+         *
+         * Receives the exact bytes of a single visual update (built by
+         * ProgressBarRender, carrying their own '\r'/'\n'). The default sink
+         * does a synchronous fwrite(stdout)+fflush, byte-identical to the
+         * legacy per-fragment printf path, so offline tools and any caller
+         * before the logging system is up behave exactly as before. mangosd
+         * installs a sink that forwards the bytes to the off-thread console
+         * writer (sLog.ConsoleEmitRaw), so the bar shares one serialized stdout
+         * with the log lines and can no longer tear against them.
+         */
+        typedef void (*ConsoleSink)(char const* bytes, size_t len);
+
+        /**
+         * @brief Install the console sink. Passing NULL restores the default
+         *        synchronous sink.
+         * @param sink
+         */
+        static void SetConsoleSink(ConsoleSink sink);
     private:
         /**
          * @brief
@@ -68,9 +91,11 @@ class BarGoLink
          */
         void init(int row_count);
 
+        /// Default synchronous sink: fwrite(stdout)+fflush (legacy behaviour).
+        static void DefaultSink(char const* bytes, size_t len);
+
+        static ConsoleSink m_sink; /**< active console sink for built bar redraws */
         static bool m_showOutput; /**< not recommended change with existed active bar */
-        static char const* const empty; /**< TODO */
-        static char const* const full; /**< TODO */
 
         int rec_no; /**< TODO */
         int rec_pos; /**< TODO */

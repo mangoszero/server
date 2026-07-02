@@ -8,6 +8,6 @@ void DpsTanksTargetStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(
             "no tanks target active",
-        NextAction::array(0, new NextAction("attack tanks target", 50.0f), NULL)));
+        NextAction::array(0, new NextAction("attack tanks target", 65.0f), NULL)));
 }
 

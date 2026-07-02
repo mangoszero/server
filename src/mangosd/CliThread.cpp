@@ -31,6 +31,7 @@
 #include "CliThread.h"
 #include "World.h"
 #include "Util.h"
+#include "Log.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -41,8 +42,11 @@
  */
 static void prompt(void* callback = NULL, bool status = true)
 {
-    printf("mangos>");
-    fflush(stdout);
+    // Route the prompt through the console writer (verbatim, no newline) so it
+    // shares the single serialized stdout with bar redraws and log lines and
+    // cannot overtake queued output -- e.g. the bar frames from a just-finished
+    // .reload that this same callback follows on the world thread.
+    sLog.ConsoleEmitRaw("mangos>");
 }
 
 // Non-blocking keypress detector, when return pressed, return 1, else always return 0
@@ -78,7 +82,7 @@ int CliThread::svc()
 
     if (beep_)
     {
-        printf("\a");     // \a = Alert
+        sLog.ConsoleEmitRaw("\a");     // \a = Alert (through the writer, single-owner stdout)
     }
 
     prompt();

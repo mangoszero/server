@@ -92,6 +92,7 @@ jobs:
             -DSCRIPT_LIB_SD3=1 \
             -DPLAYERBOTS=1 \
             -DUSE_STORMLIB=1 \
+            -DBUILD_AH_SERVICE=1 \
             -DPCH=0
 
 
@@ -100,3 +101,14 @@ jobs:
         run: |
           cd build
           cmake --build . --config Release --parallel
+
+      - name: AH service IPC self-test
+        shell: bash
+        run: |
+          bin="$(find build -type f -name ah-service.exe | head -n1)"
+          if [ -z "$bin" ]; then echo "ah-service.exe not found"; exit 1; fi
+          echo "Running: $bin --selftest"
+          out="$("$bin" --selftest)"
+          echo "$out"
+          echo "$out" | grep -q "intent codec selftest OK" || { echo "MISSING: intent codec selftest OK"; exit 1; }
+          echo "$out" | grep -q "ipc selftest OK"           || { echo "MISSING: ipc selftest OK"; exit 1; }

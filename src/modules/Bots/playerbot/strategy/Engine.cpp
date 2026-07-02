@@ -440,7 +440,7 @@ void Engine::toggleStrategy(string name)
 }
 
 // Checks if the engine has a specific strategy
-bool Engine::HasStrategy(string name)
+bool Engine::HasStrategy(const string& name)
 {
     return strategies.find(name) != strategies.end();
 }

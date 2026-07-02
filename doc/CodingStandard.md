@@ -57,13 +57,12 @@ Now we use symmetric bracket placement, closing bracket under the opening bracke
         printf("I is %i!\n", i);
     }
 
-Every bracketed block moves its contents by one tab to right. Labels (but not case
+Every bracketed block moves its contents by one tab to the right. Labels (but not case
 selectors or 'public:/private:/protected' C++ keywords) are placed at the leftmost
-indention position for the current block, that is, in the same position where
+indentation position for the current block, that is, in the same position where
 enclosing brackets are.
 
-Also please don't use brackets around a single statement because it clutters the
-code with unneeded stuff; use brackets only when using non-obvious constructs,
+Also use brackets around a single statement because it helps clarify usage to newer coders,
 like:
 
     if (...)
@@ -80,6 +79,36 @@ like:
 
 Also, please place one space before opening parenthesis. Before, but not after
 (the `if ( blah )` style is a no-no!).
+
+Inline functions
+----------------
+Inline functions must use the same symmetric bracket placement as any other
+function, even when the body contains only a single statement.
+
+    bool isArena() const
+    {
+        return m_IsArena;
+    }
+
+Do not write function, method, constructor, or destructor bodies on the same
+line as the declaration.
+
+Incorrect:
+
+    ~GroupReference() { unlink(); }
+    GroupReference const* next() const { return (GroupReference const*)Reference<Group, Player>::next(); }
+
+Correct:
+
+    ~GroupReference()
+    {
+        unlink();
+    }
+
+    GroupReference const* next() const
+    {
+        return (GroupReference const*)Reference<Group, Player>::next();
+    }
 
 Class declaration and constructors
 ----------------------------------
@@ -106,8 +135,7 @@ Please follow the following rules for classes:
 * next line and indent for class field initialization list
 * indent for public:/private:/protected: section with additional indent
   for section content
-* empty or short function body can be at same line with declaration in
-  in-class definition case
+* function bodies must start on the next line, even for short in-class definitions
 
 Code documentation with Doxygen
 -------------------------------
