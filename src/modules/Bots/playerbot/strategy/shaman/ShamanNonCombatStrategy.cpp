@@ -44,6 +44,20 @@ void ShamanNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     triggers.push_back(new TriggerNode(
             "ghost wolf",
         NextAction::array(0, new NextAction("ghost wolf", 9.0f), NULL)));
+
+    triggers.push_back(new TriggerNode(
+            "party member cleanse spirit poison",
+        NextAction::array(0, new NextAction("cleanse spirit poison on party", 35.0f), new
+                NextAction("cure poison on party", 33.0f), NULL)));
+
+    triggers.push_back(new TriggerNode(
+            "party member cleanse spirit curse",
+        NextAction::array(0, new NextAction("cleanse spirit curse on party", 35.0f), NULL)));
+
+    triggers.push_back(new TriggerNode(
+            "party member cleanse spirit disease",
+        NextAction::array(0, new NextAction("cleanse spirit disease on party", 35.0f), new
+                NextAction("cure disease on party", 33.0f), NULL)));
 }
 
 void ShamanNonCombatStrategy::InitMultipliers(std::list<Multiplier*> &multipliers)

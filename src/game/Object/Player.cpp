@@ -13131,6 +13131,39 @@ InventoryResult Player::CanUseItem(Item* pItem, bool direct_action) const
     return EQUIP_ERR_ITEM_NOT_FOUND;
 }
 
+// D1: map the header-free AhUseResult back to the EXACT InventoryResult. The
+// switch is exhaustive so every per-branch code is preserved (CanUseAmmo /
+// SpellHandler forward these to the client); the static_assert pins AHUSE_OK.
+static InventoryResult MapAhUseResult(AhUseResult r)
+{
+    static_assert(int(AHUSE_OK) == int(EQUIP_ERR_OK),
+                  "AHUSE_OK must equal EQUIP_ERR_OK");
+    switch (r)
+    {
+        case AHUSE_OK:                    return EQUIP_ERR_OK;
+        case AHUSE_NEVER_USE:             return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
+        case AHUSE_NO_PROFICIENCY:        return EQUIP_ERR_NO_REQUIRED_PROFICIENCY;
+        case AHUSE_CANT_EQUIP_SKILL:      return EQUIP_ERR_CANT_EQUIP_SKILL;
+        case AHUSE_CANT_EQUIP_RANK:       return EQUIP_ERR_CANT_EQUIP_RANK;
+        case AHUSE_CANT_EQUIP_LEVEL:      return EQUIP_ERR_CANT_EQUIP_LEVEL_I;
+        case AHUSE_CANT_EQUIP_REPUTATION: return EQUIP_ERR_CANT_EQUIP_REPUTATION;
+    }
+    return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;   // unreachable
+}
+
+uint16 Player::ThunkSkillRank(void* c, uint32 s)
+{
+    return reinterpret_cast<AhEvalCtx*>(c)->self->GetSkillValue(s);
+}
+bool Player::ThunkHasSpell(void* c, uint32 s)
+{
+    return reinterpret_cast<AhEvalCtx*>(c)->self->HasSpell(s);
+}
+uint8 Player::ThunkRepRank(void* c, uint32 f)
+{
+    return uint8(reinterpret_cast<AhEvalCtx*>(c)->self->GetReputationRank(f));
+}
+
 /**
  * @brief Checks whether an item prototype is usable by the player.
  *
@@ -13144,118 +13177,41 @@ InventoryResult Player::CanUseItem(ItemPrototype const* pProto, bool direct_acti
 
     if (pProto)
     {
-        if ((pProto->AllowableClass & getClassMask()) == 0 || (pProto->AllowableRace & getRaceMask()) == 0)
-        {
-            return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
-        }
+        // NOTE: the prototype overload historically did NOT check reputation or
+        // proficiency (those are in the Item* overload). Pass 0 for
+        // rep/proficiency so Evaluate skips them here; the Item* overload passes
+        // the real values. The null-pProto case returns EQUIP_ERR_ITEM_NOT_FOUND
+        // below, outside Evaluate (the AhUseResult enum has no such value).
+        AhRefItem it;
+        it.itemClass            = pProto->Class;
+        it.allowableClass       = pProto->AllowableClass;
+        it.allowableRace        = pProto->AllowableRace;
+        it.requiredLevel        = pProto->RequiredLevel;
+        it.itemId               = pProto->ItemId;
+        it.requiredSkill        = pProto->RequiredSkill;
+        it.requiredSkillRank    = pProto->RequiredSkillRank;
+        it.requiredSpell        = pProto->RequiredSpell;
+        it.requiredHonorRank    = pProto->RequiredHonorRank;
+        it.requiredRepFaction   = 0u;
+        it.requiredRepRank      = 0u;
+        it.itemProficiencySkill = 0u;
 
-        if (pProto->RequiredSkill != 0)
+        // D1: Evaluate returns the per-branch AhUseResult; MapAhUseResult maps
+        // it 1:1 to the EXACT InventoryResult (no collapse) so callers that
+        // forward specific codes keep their client error messages.
+        // D2: direct_action gates the honor branch.
+        AhEvalCtx evalCtx = { this };
+        const AhUseResult ur = AhUsabilityRef::Evaluate(
+            getClassMask(), getRaceMask(), getLevel(),
+            uint32(GetHonorHighestRankInfo().rank), direct_action,
+            sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL),
+            sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_EPIC_MOUNT_LEVEL),
+            it,
+            &Player::ThunkSkillRank, &Player::ThunkHasSpell, &Player::ThunkRepRank,
+            &evalCtx);
+        if (ur != AHUSE_OK)
         {
-            if (GetSkillValue(pProto->RequiredSkill) == 0)
-            {
-                return EQUIP_ERR_NO_REQUIRED_PROFICIENCY;
-            }
-            else if (GetSkillValue(pProto->RequiredSkill) < pProto->RequiredSkillRank)
-            {
-                return EQUIP_ERR_CANT_EQUIP_SKILL;
-            }
-        }
-
-        if (pProto->RequiredSpell != 0 && !HasSpell(pProto->RequiredSpell))
-        {
-            return EQUIP_ERR_NO_REQUIRED_PROFICIENCY;
-        }
-
-        if (direct_action && GetHonorHighestRankInfo().rank < (uint8)pProto->RequiredHonorRank)
-        {
-            return EQUIP_ERR_CANT_EQUIP_RANK;
-        }
-
-        // override mount level requirements with the settings from the configuration file
-        uint32 requiredLevel = pProto->RequiredLevel;
-        switch (pProto->ItemId)
-        {
-            case 1132: //regular mounts
-            case 2411:
-            case 2414:
-            case 5655:
-            case 5656:
-            case 5665:
-            case 5668:
-            case 5864:
-            case 5872:
-            case 5873:
-            case 8563:
-            case 8588:
-            case 8591:
-            case 8592:
-            case 8595:
-            case 8629:
-            case 8631:
-            case 8632:
-            case 12325:
-            case 12326:
-            case 12327:
-            case 13321:
-            case 13322:
-            case 13331:
-            case 13332:
-            case 13333:
-            case 15277:
-            case 15290:
-            case 18241:
-            case 18242:
-            case 18243:
-            case 18244:
-            case 18245:
-            case 18246:
-            case 18247:
-            case 18248:
-                requiredLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL));
-                break;
-            case 12302: // epic mounts
-            case 12303:
-            case 12330:
-            case 12351:
-            case 12353:
-            case 12354:
-            case 13086:
-            case 13326:
-            case 13327:
-            case 13328:
-            case 13329:
-            case 13334:
-            case 13335:
-            case 18766:
-            case 18767:
-            case 18768:
-            case 18772:
-            case 18773:
-            case 18774:
-            case 18776:
-            case 18777:
-            case 18778:
-            case 18785:
-            case 18786:
-            case 18787:
-            case 18788:
-            case 18789:
-            case 18790:
-            case 18791:
-            case 18793:
-            case 18794:
-            case 18795:
-            case 18796:
-            case 18797:
-            case 18798:
-            case 18902:
-                requiredLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_EPIC_MOUNT_LEVEL));
-                break;
-        }
-
-        if (getLevel() < requiredLevel)
-        {
-            return EQUIP_ERR_CANT_EQUIP_LEVEL_I;
+            return MapAhUseResult(ur);
         }
 
 #ifdef ENABLE_ELUNA
@@ -13272,6 +13228,22 @@ InventoryResult Player::CanUseItem(ItemPrototype const* pProto, bool direct_acti
         return EQUIP_ERR_OK;
     }
     return EQUIP_ERR_ITEM_NOT_FOUND;
+}
+
+/// Runs ONLY the Eluna OnCanUseItem veto (D5). Returns EQUIP_ERR_OK when Eluna
+/// is compiled out or there is no veto. Used by the deferred-Eluna browse pass,
+/// which has already had every non-Eluna sub-filter enforced worker-side.
+InventoryResult Player::CanUseItemEluna(uint32 itemEntry) const
+{
+#ifdef ENABLE_ELUNA
+    if (Eluna* e = GetEluna())
+    {
+        return e->OnCanUseItem(this, itemEntry);
+    }
+#else
+    (void)itemEntry;
+#endif
+    return EQUIP_ERR_OK;
 }
 
 /**

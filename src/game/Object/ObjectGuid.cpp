@@ -94,6 +94,14 @@ uint32 ObjectGuidGenerator<high>::Generate()
     {
         sLog.outError("%s guid overflow!! Can't continue, shutting down server. ", ObjectGuid::GetTypeName(high));
         World::StopNow(ERROR_EXIT_CODE);
+        // World::StopNow() only sets a deferred stop flag, so this call still
+        // returns. Do NOT hand out m_nextGuid here: at the overflow boundary it
+        // equals GetMaxCounter-1, which for players is the reserved AH bot
+        // system-owner GUID (0xFFFFFFFE) -- returning it could brand a real
+        // character with the forged owner's GUID before the shutdown takes
+        // effect. Return the top-of-range value instead (never the reserved one);
+        // the server is stopping regardless.
+        return ObjectGuid::GetMaxCounter(high);
     }
     return m_nextGuid++;
 }

@@ -260,7 +260,10 @@ MaxWhoListReturns                 = 49
 #    LogLevel
 #        Server console level of logging
 #        0 = Minimum; 1 = Basic&Error; 2 = Detail; 3 = Full/Debug
-#        Default: 3
+#        Default: 1 - Basic&Error (keeps the live console light; level 3 in
+#                     particular is very chatty and can stall startup under
+#                     large spawn loads -- prefer raising LogFileLevel instead
+#                     to capture detail to disk without the console cost)
 #
 #    LogTime
 #        Include time in server console output [hh:mm:ss]
@@ -293,9 +296,15 @@ MaxWhoListReturns                 = 49
 #    LogFilter_MapsLoading
 #    LogFilter_EventAiDev
 #    LogFilter_CellEnvelope
+#    LogFilter_GridAdd
+#    LogFilter_DbScripts
 #        Log filters (active by default - meaning: the filter is active, hence the log is not displayed)
 #        Default: 1 - not include with any log level
 #                 0 - include in log if log level permit
+#        NOTE: LogFilter_GridAdd ("X enters grid[x,y]", mostly creatures) and
+#              LogFilter_DbScripts (db_scripts command-processing trace) ship as 1
+#              (suppressed). Both are extremely high-volume at LogFileLevel=3 and
+#              otherwise dominate the logs. Set either to 0 to restore its output.
 #
 #    LogFilter_PeriodicAffects
 #    LogFilter_AIAndMovegens
@@ -303,9 +312,15 @@ MaxWhoListReturns                 = 49
 #    LogFilter_Damage
 #    LogFilter_Combat
 #    LogFilter_SpellCast
-#        Log filters (disabled by default, mostly debug only output affected cases)
-#        Default: 0 - include in log if log level permit
-#                 1 - not include with any log level
+#        Log filters (mostly debug-only output for the affected cases)
+#        Default: 1 - not include with any log level
+#                 0 - include in log if log level permit
+#        NOTE: ALL log filters now ship as 1 (suppressed) by default, so a fresh
+#              LogLevel/LogFileLevel=3 run is usable out of the box. These cases
+#              are high-volume on busy or debug servers (movement generators,
+#              every spell cast, damage/combat rolls, periodic auras) and would
+#              otherwise dominate the logs. Set any individual filter to 0 to
+#              restore that category's verbose output.
 #
 #    LogWhispers
 #        Log whispers between players to database, character.character_whispers
@@ -317,6 +332,15 @@ MaxWhoListReturns                 = 49
 #        Packet logging file for the worldserver
 #        Default: ""          - no log file created
 #                 "world.log" - recommended name to create a log file
+#
+#    PacketLoggingEnabled
+#        Master switch for world packet logging (the WorldLogFile dump). Packet
+#        logging is high-volume and was historically turned on implicitly
+#        whenever WorldLogFile was set; it is now OFF unless this is explicitly
+#        set to 1, so an existing config that sets WorldLogFile (even at
+#        LogLevel 3) no longer pays the packet-dump cost by accident.
+#        Default: 0 - do not write packet dumps (recommended)
+#                 1 - write packet dumps to WorldLogFile
 #
 #    WorldLogTimestamp
 #        Logfile with timestamp of server start in name
@@ -389,7 +413,7 @@ MaxWhoListReturns                 = 49
 
 LogSQL                       = 1
 PidFile                      = ""
-LogLevel                     = 3
+LogLevel                     = 1
 LogTime                      = 0
 LogFile                      = "world-server.log"
 LogTimestamp                 = 0
@@ -403,16 +427,19 @@ LogFilter_Pathfinding        = 1
 LogFilter_MapsLoading        = 1
 LogFilter_EventAiDev         = 1
 LogFilter_CellEnvelope       = 1
-LogFilter_PeriodicAffects    = 0
+LogFilter_GridAdd            = 1
+LogFilter_DbScripts          = 1
+LogFilter_PeriodicAffects    = 1
 LogFilter_PlayerMoves        = 1
 LogFilter_SQLText            = 1
-LogFilter_AIAndMovegens      = 0
-LogFilter_PlayerStats        = 0
-LogFilter_Damage             = 0
-LogFilter_Combat             = 0
-LogFilter_SpellCast          = 0
+LogFilter_AIAndMovegens      = 1
+LogFilter_PlayerStats        = 1
+LogFilter_Damage             = 1
+LogFilter_Combat             = 1
+LogFilter_SpellCast          = 1
 LogWhispers                  = 1
 WorldLogFile                 = "world-packets.log"
+PacketLoggingEnabled         = 0
 WorldLogTimestamp            = 0
 DBErrorLogFile               = "world-database.log"
 ElunaErrorLogFile            = "ElunaErrors.log"
@@ -1818,6 +1845,63 @@ Ra.Stricted    = 1
 SOAP.Enabled   = 0
 SOAP.IP        = 127.0.0.1
 SOAP.Port      = 7878
+
+###############################################################################
+#    AH.Service.Enabled
+#        Run the auction house bot as a separate supervised child process.
+#        When enabled, mangosd spawns the ah-service executable, maintains a
+#        loopback IPC channel, and restarts the child on unexpected exit.
+#        Default: 0 (disabled; in-process AH bot is used instead)
+#
+#    AH.Service.Path
+#        Path to the ah-service executable, relative to the mangosd working
+#        directory (or absolute).
+#        Default: service-workers/ah-service/ah-service
+#
+#    AH.Service.Port
+#        Loopback TCP port for the mangosd ↔ ah-service IPC channel.
+#        Default: 5760
+#
+#    AH.Service.Secret
+#        Shared secret for IPC handshake authentication.
+#        Change this to a random string in production configurations.
+#        mangosd passes this to the child OUT-OF-BAND via the
+#        AH_SERVICE_SECRET environment variable (NOT on the child command
+#        line), so it is not exposed in the process list.
+#        Default: changeme
+#
+#    AH.Service.Config
+#        Path to the ah-service configuration file, passed as --config to the
+#        child process so it can locate its own settings.
+#        Default: ah-service.conf
+#
+#    AH.Service.IntentTtlSec
+#        How long (in seconds) the executor retains UUID records for
+#        deduplication of intents submitted by the child process.
+#        Increase if the child can re-emit the same intent after a reconnect
+#        within a window longer than the default.
+#        Default: 900
+#
+#    AH.Service.Custody
+#        Route player auction gold/items through the in-process custody escrow
+#        ledger.  Default 0 = today's direct path.
+#        Default: 0
+#
+#    AH.Service.CustodyCrashAt
+#        TEST ONLY.  Inject _exit(3) at a custody seam transition:
+#        empty = off, pre-commit, pre-deferred.
+#        NEVER set on a live realm.
+#        Default: "" (off)
+###############################################################################
+
+AH.Service.Enabled        = 0
+AH.Service.Path           = service-workers/ah-service/ah-service
+AH.Service.Port           = 5760
+AH.Service.Secret         = changeme
+AH.Service.Config         = ah-service.conf
+AH.Service.IntentTtlSec   = 900
+AH.Service.Custody        = 0
+AH.Service.CustodyCrashAt = ""
 
 ################################################################################
 #    CharDelete.Method

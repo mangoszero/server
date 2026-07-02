@@ -633,6 +633,24 @@ class Database
          */
         bool CommitTransactionDirect();
 
+        /**
+         * @brief synchronous, durable, checked commit of the current transaction
+         *
+         * Unlike CommitTransaction() (which detaches the transaction to the
+         * delay thread and returns true immediately, before it is durable) and
+         * CommitTransactionDirect() (which runs synchronously but discards the
+         * real result and is unsafe on the world thread while async is enabled),
+         * this:
+         *   - returns the REAL SqlTransaction::Execute() result, and
+         *   - when async is enabled, FIFO-queues the transaction through the
+         *     delay thread and blocks the calling thread until it has durably
+         *     committed (so it never races the delay thread on m_pAsyncConn).
+         * Clears m_TransStorage like the other commit paths.
+         *
+         * @return true if the transaction committed, false on rollback/failure
+         */
+        bool CommitTransactionChecked();
+
         // PREPARED STATEMENT API
 
         /**

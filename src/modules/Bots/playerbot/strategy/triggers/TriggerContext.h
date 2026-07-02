@@ -28,6 +28,7 @@ namespace ai
                 creators["hungry"] = &TriggerContext::Hungry;
 
                 creators["low mana"] = &TriggerContext::LowMana;
+                creators["low mana has aggro"] = &TriggerContext::LowManaHasAggro;
                 creators["medium mana"] = &TriggerContext::MediumMana;
                 creators["thirsty"] = &TriggerContext::Thirsty;
 
@@ -46,6 +47,7 @@ namespace ai
 
                 creators["loot available"] = &TriggerContext::LootAvailable;
                 creators["no attackers"] = &TriggerContext::NoAttackers;
+                creators["has threat"] = &TriggerContext::HasThreat;
                 creators["no target"] = &TriggerContext::NoTarget;
                 creators["target in sight"] = &TriggerContext::TargetInSight;
                 creators["not least hp target active"] = &TriggerContext::not_least_hp_target_active;
@@ -130,6 +132,7 @@ namespace ai
             static Trigger* Hungry(PlayerbotAI* ai) { return new HungryTrigger(ai); }
             static Trigger* TargetCriticalHealth(PlayerbotAI* ai) { return new TargetCriticalHealthTrigger(ai); }
             static Trigger* LowMana(PlayerbotAI* ai) { return new LowManaTrigger(ai); }
+            static Trigger* LowManaHasAggro(PlayerbotAI* ai) { return new LowManaHasAggroTrigger(ai); }
             static Trigger* MediumMana(PlayerbotAI* ai) { return new MediumManaTrigger(ai); }
             static Trigger* Thirsty(PlayerbotAI* ai) { return new ThirstyTrigger(ai); }
             static Trigger* LightRageAvailable(PlayerbotAI* ai) { return new LightRageAvailableTrigger(ai); }
@@ -140,6 +143,10 @@ namespace ai
             static Trigger* HighEnergyAvailable(PlayerbotAI* ai) { return new HighEnergyAvailableTrigger(ai); }
             static Trigger* LootAvailable(PlayerbotAI* ai) { return new LootAvailableTrigger(ai); }
             static Trigger* NoAttackers(PlayerbotAI* ai) { return new NoAttackersTrigger(ai); }
+            static Trigger* HasThreat(PlayerbotAI* ai)
+            {
+                return new HasThreatTrigger(ai);
+            }
             static Trigger* TankAoe(PlayerbotAI* ai) { return new TankAoeTrigger(ai); }
             static Trigger* Timer(PlayerbotAI* ai) { return new TimerTrigger(ai); }
             static Trigger* NoTarget(PlayerbotAI* ai) { return new NoTargetTrigger(ai); }

@@ -68,6 +68,7 @@ jobs:
             -DSCRIPT_LIB_SD3_GATE=1 \
             -DPLAYERBOTS=1 \
             -DUSE_STORMLIB=1 \
+            -DBUILD_AH_SERVICE=1 \
             -DPCH=0
 
       - name: Build and install
@@ -75,3 +76,13 @@ jobs:
           cd _build
           make -j"$(nproc)"
           make install -j"$(nproc)"
+
+      - name: AH service IPC self-test
+        run: |
+          bin="$(find _install _build -type f -name ah-service | head -n1)"
+          if [ -z "$bin" ]; then echo "ah-service binary not found"; exit 1; fi
+          echo "Running: $bin --selftest"
+          out="$("$bin" --selftest)"
+          echo "$out"
+          echo "$out" | grep -q "intent codec selftest OK" || { echo "MISSING: intent codec selftest OK"; exit 1; }
+          echo "$out" | grep -q "ipc selftest OK"           || { echo "MISSING: ipc selftest OK"; exit 1; }

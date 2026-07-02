@@ -79,6 +79,7 @@ bool AreaTriggerAction::Execute(Event event)
 
     MotionMaster &mm = *bot->GetMotionMaster();
     mm.Clear();
+    bot->StopMoving(true);
 
     WorldPacket p(CMSG_AREATRIGGER);
     p << triggerId;

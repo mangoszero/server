@@ -253,6 +253,10 @@ class ChatHandler
         bool HandleAHBotReloadCommand(char* args);
         bool HandleAHBotStatusCommand(char* args);
 
+        bool HandleAhServiceConsoleShowCommand(char* args);
+        bool HandleAhServiceConsoleHideCommand(char* args);
+        bool HandleAhRepairCommand(char* args);
+
         // Movement subsystem commands
         bool HandleMovementStatusCommand(char* args);
         bool HandleMovementConfigCommand(char* args);
@@ -857,4 +861,3 @@ class CliHandler : public ChatHandler
 bool AddAuraToPlayer(const SpellEntry* spellInfo, Unit* target, WorldObject* caster);
 
 #endif
-

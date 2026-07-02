@@ -6,12 +6,33 @@ namespace ai
 {
     class EnemyTooCloseForSpellTrigger : public Trigger {
         public:
-            EnemyTooCloseForSpellTrigger(PlayerbotAI* ai) : Trigger(ai, "enemy too close for spell") {}
+            EnemyTooCloseForSpellTrigger(PlayerbotAI* ai) : Trigger(ai, "enemy too close for spell"), lastNoAggroFlee_(0) {}
             virtual bool IsActive()
             {
                 Unit* target = AI_VALUE(Unit*, "current target");
-                return target && AI_VALUE2(float, "distance", "current target") <= sPlayerbotAIConfig.spellDistance / 2;
+                if (!target || AI_VALUE2(float, "distance", "current target") > sPlayerbotAIConfig.spellDistance / 2)
+                {
+                    return false;
+                }
+
+                if (AI_VALUE2(bool, "has aggro", "current target"))
+                {
+                    lastNoAggroFlee_ = 0;
+                    return true;
+                }
+
+                // No aggro: apply cooldown.
+                time_t now = time(nullptr);
+                if (lastNoAggroFlee_ == 0 || (now - lastNoAggroFlee_) >= NO_AGGRO_FLEE_COOLDOWN)
+                {
+                    lastNoAggroFlee_ = now;
+                    return true;
+                }
+                return false;
             }
+        private:
+            time_t lastNoAggroFlee_;
+            static const time_t NO_AGGRO_FLEE_COOLDOWN = 6;
     };
 
     class EnemyTooCloseForMeleeTrigger : public Trigger {
