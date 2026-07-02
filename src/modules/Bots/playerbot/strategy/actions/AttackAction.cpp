@@ -4,6 +4,7 @@
 #include "MovementGenerator.h"
 #include "CreatureAI.h"
 #include "../../LootObjectStack.h"
+#include "ThreatManager.h"
 
 using namespace ai;
 
@@ -38,6 +39,54 @@ bool AttackMyTargetAction::Execute(Event event)
     }
 
     return Attack(ai->GetUnit(guid));
+}
+
+bool AttackAction::isUseful()
+{
+    if (!bot->GetGroup() || !ai->HasStrategy("cautious") ||
+       (sPlayerbotAIConfig.tankDelaySeconds == 0 && sPlayerbotAIConfig.tankThreatPct == 0.0f) ||
+       ai->IsTank(bot))
+    {
+        return true;
+    }
+
+    Player* tank = ai->GetGroupTank(bot);
+    Unit* target = GetTarget();
+    if (!tank || !tank->getVictim() || !target || tank->getVictim() != target)
+    {
+        return true;
+    }
+
+    float tankThreat = target->GetThreatManager().getThreat(tank);
+    if (sPlayerbotAIConfig.tankDelaySeconds > 0)
+    {
+        if (tankThreat == 0.0f)
+        {
+            return false;
+        }
+
+        if (m_tankEngageTarget != target->GetObjectGuid())
+        {
+            m_tankEngageTarget = target->GetObjectGuid();
+            m_tankEngageTime = getMSTime();
+        }
+
+        if (getMSTimeDiff(m_tankEngageTime, getMSTime()) < sPlayerbotAIConfig.tankDelaySeconds * 1000)
+        {
+            return false;
+        }
+    }
+
+    if (sPlayerbotAIConfig.tankThreatPct > 0.0f)
+    {
+        float threshold = target->GetMaxHealth() * sPlayerbotAIConfig.tankThreatPct / 100.0f;
+        if (tankThreat < threshold)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool AttackAction::Attack(Unit* target)

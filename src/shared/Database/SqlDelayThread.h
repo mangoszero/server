@@ -81,6 +81,19 @@ class SqlDelayThread : public ACE_Based::Runnable
         bool Delay(SqlOperation* sql) { m_sqlQueue.add(sql); return true; }
 
         /**
+         * @brief Whether the worker loop is still running (not yet stopped)
+         *
+         * Used by Database::CommitTransactionChecked() to avoid enqueuing a
+         * blocking transaction onto a thread that will never drain it (which
+         * would block the caller forever). m_running is a volatile bool toggled
+         * only by Stop(); this best-effort cross-thread read is sufficient for a
+         * pure shutdown gate (we only ever transition true -> false).
+         *
+         * @return bool true while the thread loop is running
+         */
+        bool IsRunning() const { return m_running; }
+
+        /**
          * @brief Stop event
          *
          */

@@ -155,6 +155,20 @@ ChatCommand* ChatHandler::getCommandTable()
         { NULL,             0,                  true,  NULL,                                           "", NULL }
     };
 
+    static ChatCommand ahConsoleCommandTable[] =
+    {
+        { "show",           SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAhServiceConsoleShowCommand, "", NULL },
+        { "hide",           SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAhServiceConsoleHideCommand, "", NULL },
+        { NULL,             0,                  true,  NULL,                                            "", NULL }
+    };
+
+    static ChatCommand ahCommandTable[] =
+    {
+        { "console",        SEC_ADMINISTRATOR,  true,  NULL,                                            "", ahConsoleCommandTable },
+        { "repair",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAhRepairCommand,             "", NULL },
+        { NULL,             0,                  true,  NULL,                                            "", NULL }
+    };
+
     static ChatCommand auctionCommandTable[] =
     {
         { "alliance",       SEC_ADMINISTRATOR,  false, &ChatHandler::HandleAuctionAllianceCommand,     "", NULL },
@@ -195,7 +209,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "dist",           SEC_ADMINISTRATOR,  false, &ChatHandler::HandleCastDistCommand,            "", NULL },
         { "self",           SEC_ADMINISTRATOR,  false, &ChatHandler::HandleCastSelfCommand,            "", NULL },
         { "target",         SEC_ADMINISTRATOR,  false, &ChatHandler::HandleCastTargetCommand,          "", NULL },
-        { "",               SEC_ADMINISTRATOR,  false, &ChatHandler::HandleCastCommand,                "", NULL },
+        { "",               SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleCastCommand,                "", NULL },
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };
 
@@ -767,10 +781,11 @@ ChatCommand* ChatHandler::getCommandTable()
     static ChatCommand commandTable[] =
     {
         { "account",        SEC_PLAYER,         true,  NULL,                                           "", accountCommandTable  },
+        { "ah",             SEC_ADMINISTRATOR,  true,  NULL,                                           "", ahCommandTable       },
         { "auction",        SEC_ADMINISTRATOR,  false, NULL,                                           "", auctionCommandTable  },
         { "ahbot",          SEC_ADMINISTRATOR,  true,  NULL,                                           "", ahbotCommandTable    },
         { "anticheat",      SEC_GAMEMASTER,     true,  NULL,                                           "", anticheatCommandTable},
-        { "cast",           SEC_ADMINISTRATOR,  false, NULL,                                           "", castCommandTable     },
+        { "cast",           SEC_ADMINISTRATOR,  true,  NULL,                                           "", castCommandTable     },
         { "character",      SEC_GAMEMASTER,     true,  NULL,                                           "", characterCommandTable},
         { "debug",          SEC_MODERATOR,      true,  NULL,                                           "", debugCommandTable    },
         { "event",          SEC_GAMEMASTER,     false, NULL,                                           "", eventCommandTable    },
@@ -3232,48 +3247,152 @@ uint32 ChatHandler::ExtractSpellIdFromLink(char** text)
     int type;
     char* param1_str = NULL;
     char* idS = ExtractKeyFromLink(text, spellKeys, &type, &param1_str);
-    if (!idS)
+    if (idS)
     {
-        return 0;
-    }
-
-    uint32 id;
-    if (!ExtractUInt32(&idS, id))
-    {
-        return 0;
-    }
-
-    switch (type)
-    {
-        case SPELL_LINK_RAW:
-        case SPELL_LINK_SPELL:
-        case SPELL_LINK_ENCHANT:
-            return id;
-        case SPELL_LINK_TALENT:
+        uint32 id;
+        if (ExtractUInt32(&idS, id))
         {
-            // talent
-            TalentEntry const* talentEntry = sTalentStore.LookupEntry(id);
-            if (!talentEntry)
+            switch (type)
             {
-                return 0;
+                case SPELL_LINK_RAW:
+                case SPELL_LINK_SPELL:
+                case SPELL_LINK_ENCHANT:
+                    return id;
+                case SPELL_LINK_TALENT:
+                {
+                    // talent
+                    TalentEntry const* talentEntry = sTalentStore.LookupEntry(id);
+                    int32 rank;
+                    if (talentEntry && ExtractInt32(&param1_str, rank))
+                    {
+                        if (rank < 0) // unlearned talent have in shift-link field -1 as rank
+                        {
+                            rank = 0;
+                        }
+                        if (rank < MAX_TALENT_RANK)
+                        {
+                            return talentEntry->RankID[rank];
+                        }
+                    }
+                    break;
+                }
             }
-
-            int32 rank;
-            if (!ExtractInt32(&param1_str, rank))
-            {
-                return 0;
-            }
-
-            if (rank < 0)                                   // unlearned talent have in shift-link field -1 as rank
-            {
-                rank = 0;
-            }
-
-            return rank < MAX_TALENT_RANK ? talentEntry->RankID[rank] : 0;
         }
     }
 
-    // unknown type?
+    // Name-based fallback
+    char const* lookupName = idS ? idS : *text;
+    if (!lookupName || !*lookupName)
+    {
+        return 0;
+    }
+
+    LocaleConstant locale = GetSessionDbcLocale();
+
+    std::wstring wname;
+    if (!Utf8toWStr(lookupName, wname))
+    {
+        return 0;
+    }
+    wstrToLower(wname);
+
+    uint32 exactId = 0;
+    std::vector<std::pair<uint32, std::string>> candidates;
+    std::vector<std::pair<uint32, std::string>> fuzzyCandidates;
+
+    for (uint32 id = 0; id < sSpellStore.GetNumRows(); ++id)
+    {
+        SpellEntry const* spell = sSpellStore.LookupEntry(id);
+        if (!spell)
+        {
+            continue;
+        }
+        std::string sName = spell->SpellName[locale];
+
+        if (spell->Effect[EFFECT_INDEX_0] == SPELL_EFFECT_LEARN_SPELL ||
+            spell->Effect[EFFECT_INDEX_1] == SPELL_EFFECT_LEARN_SPELL ||
+            spell->Effect[EFFECT_INDEX_2] == SPELL_EFFECT_LEARN_SPELL ||
+            sName.empty() || sName.find("Test ") == 0 ||
+            sName.find("ZZ") == 0 || sName.find("zz") == 0)
+        {
+            continue;
+        }
+
+        std::wstring wSpellName;
+        if (!Utf8toWStr(sName, wSpellName))
+        {
+            continue;
+        }
+        wstrToLower(wSpellName);
+
+        if (wSpellName == wname)
+        {
+            if (exactId == 0)
+            {
+                exactId = id;
+            }
+            candidates.push_back({id, spell->SpellName[locale]});
+        }
+        else if (exactId == 0)
+        {
+            int loc = locale;
+            if (!Utf8FitTo(sName, wname))
+            {
+                loc = 0;
+                for (; loc < MAX_LOCALE; ++loc)
+                {
+                    if (loc == locale)
+                    {
+                        continue;
+                    }
+                    sName = spell->SpellName[loc];
+                    if (sName.empty())
+                    {
+                        continue;
+                    }
+                    if (Utf8FitTo(sName, wname))
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (loc < MAX_LOCALE)
+            {
+                fuzzyCandidates.push_back({id, spell->SpellName[locale]});
+            }
+        }
+    }
+
+    if (!candidates.empty())
+    {
+        if (candidates.size() == 1)
+        {
+            return exactId;
+        }
+
+        SendSysMessage("Multiple spells found with that name:");
+        for (auto const& c : candidates)
+        {
+            PSendSysMessage("  %u - %s", c.first, c.second.c_str());
+        }
+        SetSentErrorMessage(true);
+        return 0;
+    }
+
+    if (fuzzyCandidates.empty())
+    {
+        SendSysMessage(LANG_COMMAND_NOSPELLFOUND);
+        SetSentErrorMessage(true);
+        return 0;
+    }
+
+    SendSysMessage("No exact match. Close matches:");
+    for (auto const& c : fuzzyCandidates)
+    {
+        PSendSysMessage("  %u - %s", c.first, c.second.c_str());
+    }
+    SetSentErrorMessage(true);
     return 0;
 }
 

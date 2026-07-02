@@ -20,6 +20,9 @@
 # Build the mangos shared library
 add_subdirectory(shared)
 
+# IPC substrate (always built; ah-service and mangosd both link it)
+add_subdirectory(ipc)
+
 add_subdirectory(genrev)
 
 # Needs to link against mangos_world.lib
@@ -31,8 +34,14 @@ endif()
 if(BUILD_MANGOSD)
     # Build the mangos world server
     add_subdirectory(mangosd)
+endif()
 
-    # Build the selected modules
+# The modules tree contains BOTH the game-linked scripts (SD3/Eluna, which
+# self-gate on SCRIPT_LIB_* AND require the `game` target) and the standalone
+# AhWorker (which links only ah_ipc + shared). Add it when EITHER mangosd or the
+# worker is being built; the SD3/Eluna add_subdirectory calls themselves stay
+# guarded so they never reference `game` when BUILD_MANGOSD is OFF.
+if(BUILD_MANGOSD OR BUILD_AH_SERVICE)
     add_subdirectory(modules)
 endif()
 

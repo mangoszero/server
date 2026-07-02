@@ -55,6 +55,7 @@
 #include "ItemPrototype.h"
 #include "Unit.h"
 #include "Item.h"
+#include "AhUsabilityRef.h"
 
 #include "Database/DatabaseEnv.h"
 #include "QuestDef.h"
@@ -1544,6 +1545,12 @@ class Player : public Unit
         bool HasItemTotemCategory(uint32 TotemCategory) const;
         InventoryResult CanUseItem(ItemPrototype const* pItem, bool direct_action = true) const;
         InventoryResult CanUseAmmo(uint32 item) const;
+
+        /// Runs ONLY the Eluna OnCanUseItem veto (D5). Returns EQUIP_ERR_OK when
+        /// Eluna is compiled out or there is no veto. Used by the deferred-Eluna
+        /// browse pass, which has already had every non-Eluna sub-filter enforced
+        /// worker-side.
+        InventoryResult CanUseItemEluna(uint32 itemEntry) const;
 
         // Store a new item
         Item* StoreNewItem(ItemPosCountVec const& pos, uint32 item, bool update, int32 randomPropertyId = 0);
@@ -3980,6 +3987,16 @@ class Player : public Unit
 
     private:
         uint32 m_created_date = 0;
+
+        /// Context struct threaded through AhUsabilityRef::Evaluate thunks so
+        /// the static callbacks can reach the Player instance without a capture.
+        struct AhEvalCtx { const Player* self; };
+
+        /// Static thunks for AhUsabilityRef::Evaluate (D1). Cast ctx to AhEvalCtx*.
+        static uint16 ThunkSkillRank(void* c, uint32 s);
+        static bool   ThunkHasSpell (void* c, uint32 s);
+        static uint8  ThunkRepRank  (void* c, uint32 f);
+
         // internal common parts for CanStore/StoreItem functions
         InventoryResult _CanStoreItem_InSpecificSlot(uint8 bag, uint8 slot, ItemPosCountVec& dest, ItemPrototype const* pProto, uint32& count, bool swap, Item* pSrcItem) const;
 

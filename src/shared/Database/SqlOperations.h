@@ -30,6 +30,7 @@
 #include <ace/Thread_Mutex.h>
 #include "LockedQueue/LockedQueue.h"
 #include <queue>
+#include <future>
 #include "Utilities/Callback.h"
 
 /// ---- BASE ---
@@ -135,6 +136,47 @@ class SqlTransaction : public SqlOperation
          * @param sql
          */
         void DelayExecute(SqlOperation* sql) { m_queue.push_back(sql); }
+
+        /**
+         * @brief
+         *
+         * @param conn
+         * @return bool
+         */
+        bool Execute(SqlConnection* conn) override;
+};
+
+/**
+ * @brief Signalling wrapper that runs a SqlTransaction synchronously and
+ *        reports its real result back to a blocked caller.
+ *
+ * Used by Database::CommitTransactionChecked() to push a transaction through
+ * the SqlDelayThread (preserving FIFO order with all other async writes) while
+ * the world thread blocks until the worker has durably committed it.
+ *
+ * The worker (SqlDelayThread::ProcessRequests) runs Execute() then deletes
+ * this op. To make the result race-free, Execute() fulfils the caller's
+ * std::promise<bool> BEFORE returning (and before the worker deletes us).
+ *
+ * @note Ownership: this op owns the wrapped SqlTransaction (detached from the
+ *       TSS slot) and deletes it. The std::promise is owned by the (blocked)
+ *       caller's stack frame and MUST outlive this op - guaranteed because the
+ *       caller blocks on the matching std::future until set_value() has run.
+ */
+class SqlTransactionResultSignal : public SqlOperation
+{
+    private:
+        SqlTransaction* m_trans;        ///< owned wrapped transaction
+        std::promise<bool>* m_result;   ///< caller-owned result channel
+    public:
+        /**
+         * @brief
+         *
+         * @param trans transaction detached from the TSS slot (this op owns it)
+         * @param result caller-owned promise; outlives this op (caller blocks)
+         */
+        SqlTransactionResultSignal(SqlTransaction* trans, std::promise<bool>* result)
+            : m_trans(trans), m_result(result) {}
 
         /**
          * @brief

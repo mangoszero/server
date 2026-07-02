@@ -89,6 +89,9 @@ class PlayerbotAIConfig
 
         int commandServerPort; ///< Port for the command server.
 
+        uint32 tankDelaySeconds;
+        float tankThreatPct;
+
         /**
          * @brief Gets the value of a configuration parameter by name.
          * @param name The name of the configuration parameter.

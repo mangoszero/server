@@ -231,6 +231,22 @@ namespace ai
             string name;
     };
 
+    class FindNamedItemVisitor : public FindItemVisitor {
+        public:
+            FindNamedItemVisitor(string name)
+            {
+                this->name = name;
+            }
+
+            virtual bool Accept(const ItemPrototype* proto)
+            {
+                return proto && proto->Name1 && strstri(proto->Name1, name.c_str());
+            }
+
+        private:
+            string name;
+    };
+
     class FindItemByIdVisitor : public FindItemVisitor {
         public:
             FindItemByIdVisitor(uint32 id) : FindItemVisitor()
@@ -310,6 +326,7 @@ namespace ai
             virtual bool Accept(const ItemPrototype* proto)
             {
                 return proto->Class == ITEM_CLASS_CONSUMABLE &&
+                    proto->SubClass != ITEM_SUBCLASS_BANDAGE &&
                     proto->Spells[0].SpellCategory == spellCategory;
             }
         private:

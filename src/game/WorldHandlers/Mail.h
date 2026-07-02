@@ -45,6 +45,7 @@
 #include <map>
 
 struct AuctionEntry;
+struct CustodyDeferred;
 class Item;
 class Object;
 class Player;
@@ -264,9 +265,28 @@ class MailDraft
     public:                                                 // finishers
         void SendReturnToSender(uint32 sender_acc, ObjectGuid sender_guid, ObjectGuid receiver_guid);
         void SendMailTo(MailReceiver const& receiver, MailSender const& sender, MailCheckMask checked = MAIL_CHECK_MASK_NONE, uint32 deliver_delay = 0);
+
+        /// Custody co-commit: appends the mail INSERTs to the caller's OPEN
+        /// CharacterDatabase transaction (no own Begin/Commit) and DEFERS the
+        /// online receiver's in-memory push + any live-Item* destruction into
+        /// @p deferred, to be run AFTER the caller's checked commit succeeds.
+        /// The receiver's existence MUST be preflighted by the caller. The
+        /// deferred closure runs in the same call stack right after the checked
+        /// commit (no yield), so captured Player/Item pointers stay valid. Sec 5.1.
+        void SendMailToInTransaction(MailReceiver const& receiver, MailSender const& sender,
+                                     CustodyDeferred& deferred,
+                                     MailCheckMask checked = MAIL_CHECK_MASK_NONE,
+                                     uint32 deliver_delay = 0);
     private:
         MailDraft(MailDraft const&);                        // trap decl, no body, mail draft must cloned only explicitly...
         MailDraft& operator=(MailDraft const&);             // trap decl, no body, ...because items clone is high price operation
+
+        /// Emits the two mail INSERTs (`mail` then `mail_items`) into the
+        /// CURRENT CharacterDatabase transaction. Shared by SendMailTo and
+        /// SendMailToInTransaction so both write byte-identical rows.
+        void writeMailRows(uint32 mailId, MailReceiver const& receiver, MailSender const& sender,
+                           MailCheckMask checked, time_t deliver_time, time_t expire_time,
+                           bool has_items);
 
         void deleteIncludedItems(bool inDB = false);
         bool prepareItems(Player* receiver);                ///< called from SendMailTo for generate mailTemplateBase items

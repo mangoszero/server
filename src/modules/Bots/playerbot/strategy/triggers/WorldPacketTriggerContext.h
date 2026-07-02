@@ -42,12 +42,14 @@ namespace ai
                 creators["lfg proposal"] = &WorldPacketTriggerContext::lfg_proposal;
                 creators["lfg role check"] = &WorldPacketTriggerContext::lfg_role_check;
                 creators["lfg leave"] = &WorldPacketTriggerContext::lfg_leave;
+                creators["petition sign"] = &WorldPacketTriggerContext::petition_sign;
                 creators["guild invite"] = &WorldPacketTriggerContext::guild_invite;
                 creators["master released spirit"] = &WorldPacketTriggerContext::master_released_spirit;
                 creators["master spirit healer"] = &WorldPacketTriggerContext::master_spirit_healer;
             }
 
         private:
+            static Trigger* petition_sign(PlayerbotAI* ai) { return new WorldPacketTrigger(ai, "petition sign"); }
             static Trigger* guild_invite(PlayerbotAI* ai) { return new WorldPacketTrigger(ai, "guild invite"); }
             static Trigger* master_released_spirit(PlayerbotAI* ai) { return new WorldPacketTrigger(ai, "master released spirit"); }
             static Trigger* master_spirit_healer(PlayerbotAI* ai) { return new WorldPacketTrigger(ai, "master spirit healer"); }
