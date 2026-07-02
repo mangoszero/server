@@ -75,6 +75,7 @@
 #include "BotBrain.h"
 #include "ItemInstanceFields.h"
 #include "AuctionBook.h"
+#include "MutationHandler.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -1026,6 +1027,253 @@ static int RunBookSelfTest()
 }
 
 // ---------------------------------------------------------------------------
+// Self-test: SP-2 player-mutation handler (sell/bid/buyout)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Pure validation-branch matrix + full in-memory OnSell/OnBid/OnBuyout
+ *        flows (NULL db: journal + txn steps are skipped as success).
+ *
+ * @return 0 on success, 1 on any failure.
+ */
+static int RunMutationSelfTest()
+{
+    // --- OutBidAmount: the 1.12 min-increment formula (AuctionHouseMgr.cpp:1502-1510) ---
+    if (MutationHandler::OutBidAmount(0u) != 1u ||
+        MutationHandler::OutBidAmount(99u) != 1u ||
+        MutationHandler::OutBidAmount(100u) != 5u ||
+        MutationHandler::OutBidAmount(2000u) != 100u)
+    {
+        fprintf(stderr, "mutation selftest FAILED: OutBidAmount\n");
+        return 1;
+    }
+
+    // --- ValidateBid branch matrix (legacy order, AuctionHouseHandler.cpp:735-784) ---
+    {
+        BookRow live = MakeRawRow(1u, 1u, 100u).row;   // owner 100, startbid 100, buyout 50000
+        live.bid    = 1000u;
+        live.bidder = 300u;
+        uint8 reason = 99u;
+
+        if (MutationHandler::ValidateBid(NULL, 200u, 2000u, 0u, 0u, reason) != VALIDATE_REJECT ||
+            reason != BOOK_ERR_BID_OWN)
+        {
+            fprintf(stderr, "mutation selftest FAILED: bid vs absent\n");
+            return 1;
+        }
+        BookRow prepared = live;
+        prepared.state = BOOK_CANCEL_PREPARED;
+        if (MutationHandler::ValidateBid(&prepared, 200u, 2000u, 0u, 0u, reason) != VALIDATE_REJECT ||
+            reason != BOOK_ERR_BID_OWN)
+        {
+            fprintf(stderr, "mutation selftest FAILED: bid vs prepared\n");
+            return 1;
+        }
+        if (MutationHandler::ValidateBid(&live, 100u, 2000u, 0u, 0u, reason) != VALIDATE_REJECT ||
+            reason != BOOK_ERR_BID_OWN)
+        {
+            fprintf(stderr, "mutation selftest FAILED: bid-own\n");
+            return 1;
+        }
+        if (MutationHandler::ValidateBid(&live, 200u, 2000u, 55u, 55u, reason) != VALIDATE_REJECT ||
+            reason != BOOK_ERR_BID_OWN)
+        {
+            fprintf(stderr, "mutation selftest FAILED: same-account\n");
+            return 1;
+        }
+        if (MutationHandler::ValidateBid(&live, 200u, 1000u, 1u, 2u, reason) != VALIDATE_REJECT ||
+            reason != BOOK_ERR_HIGHER_BID)
+        {
+            fprintf(stderr, "mutation selftest FAILED: price<=bid\n");
+            return 1;
+        }
+        if (MutationHandler::ValidateBid(&live, 200u, 1001u, 1u, 2u, reason) != VALIDATE_REJECT ||
+            reason != BOOK_ERR_BID_INCREMENT)
+        {
+            fprintf(stderr, "mutation selftest FAILED: increment\n");
+            return 1;
+        }
+        BookRow fresh = MakeRawRow(2u, 1u, 100u).row;  // bid 0, startbid 100
+        if (MutationHandler::ValidateBid(&fresh, 200u, 50u, 1u, 2u, reason) != VALIDATE_REJECT_SILENT)
+        {
+            fprintf(stderr, "mutation selftest FAILED: below-startbid must be silent\n");
+            return 1;
+        }
+        if (MutationHandler::ValidateBid(&live, 200u, 50000u, 1u, 2u, reason) != VALIDATE_REJECT_SILENT)
+        {
+            fprintf(stderr, "mutation selftest FAILED: bid at buyout must be silent misuse\n");
+            return 1;
+        }
+        if (MutationHandler::ValidateBid(&live, 200u, 1050u, 1u, 2u, reason) != VALIDATE_ADMIT)
+        {
+            fprintf(stderr, "mutation selftest FAILED: valid bid rejected\n");
+            return 1;
+        }
+    }
+
+    // --- ValidateBuyout branch matrix ---
+    {
+        BookRow live = MakeRawRow(3u, 1u, 100u).row;
+        live.bid    = 1000u;
+        live.bidder = 300u;
+        uint8 reason = 99u;
+        if (MutationHandler::ValidateBuyout(NULL, 200u, 50000u, 0u, 0u, reason) != VALIDATE_REJECT ||
+            reason != BOOK_ERR_BID_OWN)
+        {
+            fprintf(stderr, "mutation selftest FAILED: buyout vs absent\n");
+            return 1;
+        }
+        if (MutationHandler::ValidateBuyout(&live, 100u, 50000u, 0u, 0u, reason) != VALIDATE_REJECT ||
+            reason != BOOK_ERR_BID_OWN)
+        {
+            fprintf(stderr, "mutation selftest FAILED: self-buy\n");
+            return 1;
+        }
+        if (MutationHandler::ValidateBuyout(&live, 200u, 49999u, 1u, 2u, reason) != VALIDATE_REJECT_SILENT)
+        {
+            fprintf(stderr, "mutation selftest FAILED: buyout below price must be silent\n");
+            return 1;
+        }
+        BookRow noBuyout = live;
+        noBuyout.buyout = 0u;
+        if (MutationHandler::ValidateBuyout(&noBuyout, 200u, 60000u, 1u, 2u, reason) != VALIDATE_REJECT_SILENT)
+        {
+            fprintf(stderr, "mutation selftest FAILED: buyout-less must be silent\n");
+            return 1;
+        }
+        if (MutationHandler::ValidateBuyout(&live, 200u, 50000u, 1u, 2u, reason) != VALIDATE_ADMIT)
+        {
+            fprintf(stderr, "mutation selftest FAILED: valid buyout rejected\n");
+            return 1;
+        }
+    }
+
+    // --- full flows, in-memory (NULL db: journal/txn skipped) ---
+    {
+        AuctionBook book(NULL);
+        std::vector<RawAuctionRow> noRows;
+        std::vector<AhJournal::JournalRow> noJournal;
+        book.BuildFromRows(noRows, noJournal);
+        MutationHandler handler(book, NULL, 1u);
+
+        PlayerSellIntent sell;
+        sell.uuid = UINT64_C(0x0000000200000001);
+        sell.auctionId = 40u;
+        sell.sellerGuid = 100u;
+        sell.house = 7u;
+        sell.itemGuid = 9000u;
+        sell.itemTemplate = 2589u;
+        sell.itemCount = 20u;
+        sell.randomPropertyId = 0;
+        sell.startbid = 100u;
+        sell.buyout = 50000u;
+        sell.deposit = 15u;
+        sell.expireTime = 2000000000u;
+
+        PlayerMutationResult r = handler.OnSell(sell);
+        if (r.status != MUT_OK || r.op != 0x40u || book.Find(40u) == NULL ||
+            r.facts.auctionId != 40u || r.facts.deposit != 15u ||
+            r.facts.sellerGuid != 100u || r.facts.buyout != 50000u)
+        {
+            fprintf(stderr, "mutation selftest FAILED: OnSell OK path\n");
+            return 1;
+        }
+
+        r = handler.OnSell(sell);   // duplicate id -> protocol-fault reject
+        if (r.status != MUT_REJECTED || r.reason != BOOK_ERR_DATABASE)
+        {
+            fprintf(stderr, "mutation selftest FAILED: OnSell duplicate id\n");
+            return 1;
+        }
+
+        // 50-cap: fill to 50 owned in the neutral group, assert the 51st rejects
+        // (legacy AUCTION_ERR_DATABASE, AuctionHouseHandler.cpp:595-599).
+        for (uint32 i = 0; i < 49u; ++i)
+        {
+            sell.uuid += 1u;
+            sell.auctionId = 41u + i;
+            sell.itemGuid  = 9001u + i;
+            if (handler.OnSell(sell).status != MUT_OK)
+            {
+                fprintf(stderr, "mutation selftest FAILED: cap prefill %u\n", i);
+                return 1;
+            }
+        }
+        sell.uuid += 1u;
+        sell.auctionId = 90u;
+        sell.itemGuid = 9100u;
+        r = handler.OnSell(sell);
+        if (r.status != MUT_REJECTED || r.reason != BOOK_ERR_DATABASE)
+        {
+            fprintf(stderr, "mutation selftest FAILED: 50-cap\n");
+            return 1;
+        }
+
+        // OnBid: first bid, then a raise by another player (outbid facts).
+        PlayerBidIntent bid;
+        bid.uuid = UINT64_C(0x0000000200000100);
+        bid.auctionId = 40u;
+        bid.bidderGuid = 200u;
+        bid.bidAmount = 100u;
+        r = handler.OnBid(bid);
+        if (r.status != MUT_OK || r.op != 0x41u ||
+            r.facts.curBid != 100u || r.facts.curBidderGuid != 200u ||
+            r.facts.priorBidderGuid != 0u || r.facts.priorBidAmount != 0u ||
+            r.facts.effectiveBid != 100u || book.Find(40u)->bid != 100u)
+        {
+            fprintf(stderr, "mutation selftest FAILED: OnBid first bid\n");
+            return 1;
+        }
+        bid.uuid += 1u;
+        bid.bidderGuid = 201u;
+        bid.bidAmount = 200u;
+        r = handler.OnBid(bid);
+        if (r.status != MUT_OK || r.facts.priorBidderGuid != 200u ||
+            r.facts.priorBidAmount != 100u || r.facts.curBid != 200u ||
+            r.facts.curBidderGuid != 201u)
+        {
+            fprintf(stderr, "mutation selftest FAILED: OnBid outbid facts\n");
+            return 1;
+        }
+
+        // OnBuyout: row removed, effectiveBid = min(maxPrice, buyout) = buyout,
+        // prior-bidder refund facts kept (spec 4.1 I4 / 4.5).
+        PlayerBuyoutIntent bo;
+        bo.uuid = UINT64_C(0x0000000200000200);
+        bo.auctionId = 40u;
+        bo.bidderGuid = 202u;
+        bo.maxPrice = 60000u;
+        r = handler.OnBuyout(bo);
+        if (r.status != MUT_OK || r.op != 0x42u || book.Find(40u) != NULL ||
+            r.facts.effectiveBid != 50000u || r.facts.curBid != 50000u ||
+            r.facts.curBidderGuid != 202u ||
+            r.facts.priorBidderGuid != 201u || r.facts.priorBidAmount != 200u)
+        {
+            fprintf(stderr, "mutation selftest FAILED: OnBuyout\n");
+            return 1;
+        }
+
+        // REJECTED results still carry the row facts the AUCTION_ERR_HIGHER_BID
+        // packet needs (spec 4.5).
+        bid.uuid += 1u;
+        bid.auctionId = 41u;
+        bid.bidderGuid = 100u;   // owner bids own auction
+        bid.bidAmount = 500u;
+        r = handler.OnBid(bid);
+        if (r.status != MUT_REJECTED || r.reason != BOOK_ERR_BID_OWN ||
+            r.facts.auctionId != 41u || r.facts.buyout != 50000u)
+        {
+            fprintf(stderr, "mutation selftest FAILED: REJECTED facts\n");
+            return 1;
+        }
+    }
+
+    printf("mutation selftest OK\n");
+    fflush(stdout);
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
 // Self-test: SP-2 wire codecs (PlayerMutations.h round-trips + truncation)
 // ---------------------------------------------------------------------------
 
@@ -1874,6 +2122,11 @@ int main(int argc, char** argv)
         {
             return rc;
         }
+        rc = RunMutationSelfTest();
+        if (rc != 0)
+        {
+            return rc;
+        }
         return RunSelfTest();
     }
 
@@ -2071,6 +2324,37 @@ int main(int argc, char** argv)
            botBrain->BuyerEnabled() ? "on" : "off",
            emitDryRun ? "on" : "off", tickIntervalMs);
 
+    // SP-2: write-authority book + mutation handler (main thread only -- the
+    // serializer). The authority bit arrives in IPC_HELLO_ACK; without it the
+    // worker must never touch the auction table (default-off gating). Frames
+    // arriving between READY and this construction sit in the inbound queue
+    // and are drained after it, so nothing is lost.
+    AuctionBook*     ahBook    = nullptr;
+    MutationHandler* ahHandler = nullptr;
+    if (cli.WriteAuthority())
+    {
+        std::vector<AhJournal::JournalRow> activeJournal;
+        AhJournal::LoadActive(botDb, activeJournal);
+        ahBook = new AuctionBook(&botDb);
+        if (!ahBook->LoadFromDb(botDb, activeJournal))
+        {
+            fprintf(stderr, "ah-service: authoritative book load failed -"
+                            " exiting\n");
+            delete ahBook;
+            delete botBrain;
+            delete botSnap;
+            delete botPool;
+            botDb.Shutdown();
+            cli.Stop();
+            return 1;
+        }
+        ahHandler = new MutationHandler(*ahBook, &botDb, cli.RunId());
+        printf("ah-service: WRITE AUTHORITY active - book %u listing(s),"
+               " %u orphan(s)\n",
+               static_cast<unsigned>(ahBook->Size()),
+               static_cast<unsigned>(ahBook->Orphans().size()));
+    }
+
     // SP-1: dedicated browse thread (owns per-thread MySQL init in run()).
     BrowseThread* browseRunnable = new BrowseThread(botDb, cli);
     browseRunnable->incReference();
@@ -2227,6 +2511,66 @@ int main(int argc, char** argv)
                     cli.SendFrame(reply);
                     break;
                 }
+                case IPC_PLAYER_SELL:
+                {
+                    PlayerSellIntent in;
+                    if (ahHandler != nullptr && in.Decode(msg.body))
+                    {
+                        PlayerMutationResult res = ahHandler->OnSell(in);
+                        IpcMessage reply;
+                        reply.op = IPC_PLAYER_RESULT;
+                        res.Encode(reply.body);
+                        cli.SendFrame(reply);
+                    }
+                    else
+                    {
+                        fprintf(stderr, "ah-service: IPC_PLAYER_SELL %s\n",
+                                (ahHandler == nullptr)
+                                    ? "without write authority - ignored"
+                                    : "decode failed");
+                    }
+                    break;
+                }
+                case IPC_PLAYER_BID:
+                {
+                    PlayerBidIntent in;
+                    if (ahHandler != nullptr && in.Decode(msg.body))
+                    {
+                        PlayerMutationResult res = ahHandler->OnBid(in);
+                        IpcMessage reply;
+                        reply.op = IPC_PLAYER_RESULT;
+                        res.Encode(reply.body);
+                        cli.SendFrame(reply);
+                    }
+                    else
+                    {
+                        fprintf(stderr, "ah-service: IPC_PLAYER_BID %s\n",
+                                (ahHandler == nullptr)
+                                    ? "without write authority - ignored"
+                                    : "decode failed");
+                    }
+                    break;
+                }
+                case IPC_PLAYER_BUYOUT:
+                {
+                    PlayerBuyoutIntent in;
+                    if (ahHandler != nullptr && in.Decode(msg.body))
+                    {
+                        PlayerMutationResult res = ahHandler->OnBuyout(in);
+                        IpcMessage reply;
+                        reply.op = IPC_PLAYER_RESULT;
+                        res.Encode(reply.body);
+                        cli.SendFrame(reply);
+                    }
+                    else
+                    {
+                        fprintf(stderr, "ah-service: IPC_PLAYER_BUYOUT %s\n",
+                                (ahHandler == nullptr)
+                                    ? "without write authority - ignored"
+                                    : "decode failed");
+                    }
+                    break;
+                }
                 default:
                     printf("ah-service: unhandled IPC opcode %u"
                            " - ignored\n",
@@ -2305,6 +2649,8 @@ int main(int argc, char** argv)
     browseThread.wait();             // guaranteed join
     browseRunnable->decReference();  // may delete
 
+    delete ahHandler;
+    delete ahBook;
     delete botBrain;
     delete botSnap;
     delete botPool;
