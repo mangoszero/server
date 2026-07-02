@@ -58,6 +58,8 @@
 #include "Opcodes.h"
 #include "Log.h"
 #include "Player.h"
+#include "AntiCheatMgr.h"
+#include "MovementAnticheat.h"
 #include "MapManager.h"
 #include "Transports.h"
 #include "BattleGround/BattleGround.h"
@@ -159,6 +161,8 @@ void WorldSession::HandleMoveWorldportAckOpcode()
 
     GetPlayer()->SetMap(map);
     GetPlayer()->Relocate(loc.coord_x, loc.coord_y, loc.coord_z, loc.orientation);
+    // Anti-Cheat: server-initiated far teleport; trust the next client packet.
+    GetPlayer()->GetMovementAnticheat()->NotifyServerRelocation();
 
     GetPlayer()->SendInitialPacketsBeforeAddToMap();
     // the CanEnter checks are done in TeleporTo but conditions may change
@@ -288,6 +292,8 @@ void WorldSession::HandleMoveTeleportAckOpcode(WorldPacket& recv_data)
     WorldLocation const& dest = plMover->GetTeleportDest();
 
     plMover->SetPosition(dest.coord_x, dest.coord_y, dest.coord_z, dest.orientation, true);
+    // Anti-Cheat: server-initiated near teleport; trust the next client packet.
+    plMover->GetMovementAnticheat()->NotifyServerRelocation();
 
     uint32 newzone, newarea;
     plMover->GetZoneAndAreaId(newzone, newarea);
@@ -343,6 +349,11 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
     {
         return;
     }
+
+    // Anti-Cheat: per-player movement validation (observe + score; never rejects
+    // packets). Inert unless the framework is enabled in config.
+    if (plMover && sAntiCheatMgr->MovementEnabled() && !sAntiCheatMgr->IsExempt(plMover))
+        plMover->GetMovementAnticheat()->HandlePositionUpdate(opcode, movementInfo);
 
     // fall damage generation (ignore in flight case that can be triggered also at lags in moment teleportation to another map).
     if (opcode == MSG_MOVE_FALL_LAND && plMover && !plMover->IsTaxiFlying())

@@ -149,13 +149,42 @@ WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, time_
     _player(NULL), m_Socket(sock), _security(sec), _accountId(id), _warden(NULL), _build(0), _logoutTime(0),
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
-    m_latency(0), m_clientTimeDelay(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_npcWatchLastGuid()
+    m_latency(0), m_latIdx(0), m_latCount(0), m_latEWMA(0), m_latMin(0), m_latMax(0),
+    m_clientTimeDelay(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_npcWatchLastGuid()
 {
+    memset(m_latSamples, 0, sizeof(m_latSamples));
+
     if (sock)
     {
         m_Address = sock->GetRemoteAddress();
         sock->AddReference();
     }
+}
+
+// Anti-Cheat: fold a fresh client-reported latency sample into the rolling window
+// and EWMA. Fed from WorldSocket::HandlePing (CMSG_PING).
+void WorldSession::UpdateLatencyStats(uint32 sampleMS)
+{
+    m_latSamples[m_latIdx] = sampleMS;
+    m_latIdx = (m_latIdx + 1) % LATENCY_WINDOW;
+    if (m_latCount < LATENCY_WINDOW)
+        ++m_latCount;
+
+    uint32 mn = 0xFFFFFFFF, mx = 0;
+    for (uint32 i = 0; i < m_latCount; ++i)
+    {
+        uint32 v = m_latSamples[i];
+        if (v < mn) { mn = v; }
+        if (v > mx) { mx = v; }
+    }
+    m_latMin = (mn == 0xFFFFFFFF) ? 0 : mn;
+    m_latMax = mx;
+
+    // EWMA with a fixed 20% weight on the newest sample.
+    if (m_latEWMA == 0)
+        m_latEWMA = sampleMS;
+    else
+        m_latEWMA = (20 * sampleMS + 80 * m_latEWMA) / 100;
 }
 
 /// WorldSession destructor
