@@ -22,6 +22,7 @@
 #include "AuctionBook.h"
 #include "ServiceDatabase.h"
 #include "ItemInstanceFields.h"
+#include "PlayerMutations.h"
 
 #include <cstdio>
 
@@ -173,8 +174,16 @@ bool AuctionBook::BuildFromRows(std::vector<RawAuctionRow> const& rows,
         {
             row->state = BOOK_CANCEL_PREPARED;
         }
-        else
+        else if (j.kind == static_cast<uint8>(RESOLVE_WON) ||
+                 j.kind == static_cast<uint8>(RESOLVE_EXPIRED_NOBID))
         {
+            // Only TERMINAL resolutions (WON, EXPIRED_NOBID) freeze the row
+            // RESOLVING while awaiting the ack's terminal apply. NON-terminal
+            // kinds (CANCELLED_UNLOCK, REPAIR_RETURN) leave the listing LIVE
+            // while resolving (spec 4.3 v3 I2/I3): row.state is already
+            // BOOK_LIVE from the load loop above, so there is nothing to do
+            // here -- re-marking it RESOLVING would freeze a live listing
+            // across a crash/restart (F1).
             row->state = BOOK_RESOLVING;
         }
     }

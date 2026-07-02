@@ -858,12 +858,13 @@ static int RunBookSelfTest()
         rows.push_back(MakeRawRow(10u, 1u, 100u));
         rows.push_back(MakeRawRow(11u, 1u, 100u));
         rows.push_back(MakeRawRow(12u, 1u, 100u));
+        rows.push_back(MakeRawRow(13u, 1u, 100u));
 
         std::vector<AhJournal::JournalRow> jr;
         AhJournal::JournalRow j;
         j.uuid = UINT64_C(0x0000000100000001);
         j.auctionId = 10u;
-        j.kind = 2u;
+        j.kind = static_cast<uint8>(RESOLVE_WON);            // TERMINAL kind
         j.state = AhJournal::JRN_RESOLVING;
         j.facts = "";
         j.createdTime = 1u;
@@ -881,7 +882,16 @@ static int RunBookSelfTest()
         jr.push_back(j);
         j.uuid = UINT64_C(0x0000000100000004);
         j.auctionId = 999u;                                  // no book row: tolerated
-        j.kind = 2u;
+        j.kind = static_cast<uint8>(RESOLVE_WON);
+        j.state = AhJournal::JRN_RESOLVING;
+        jr.push_back(j);
+        // F1 regression: a NON-terminal kind (CANCELLED_UNLOCK / REPAIR_RETURN)
+        // must leave the row LIVE across a boot reload -- re-marking it
+        // RESOLVING would freeze a live listing (unbiddable/unbuyable/
+        // uncancellable) until the next restart.
+        j.uuid = UINT64_C(0x0000000100000006);
+        j.auctionId = 13u;
+        j.kind = static_cast<uint8>(RESOLVE_CANCELLED_UNLOCK);
         j.state = AhJournal::JRN_RESOLVING;
         jr.push_back(j);
 
@@ -893,7 +903,8 @@ static int RunBookSelfTest()
         }
         if (book.Find(10u)->state != BOOK_RESOLVING)
         {
-            fprintf(stderr, "book selftest FAILED: JRN_RESOLVING re-mark\n");
+            fprintf(stderr, "book selftest FAILED: JRN_RESOLVING re-mark"
+                            " (terminal kind)\n");
             return 1;
         }
         if (book.Find(11u)->state != BOOK_CANCEL_PREPARED)
@@ -904,6 +915,13 @@ static int RunBookSelfTest()
         if (book.Find(12u)->state != BOOK_LIVE)
         {
             fprintf(stderr, "book selftest FAILED: INTENT_PENDING must not mark\n");
+            return 1;
+        }
+        if (book.Find(13u)->state != BOOK_LIVE)
+        {
+            fprintf(stderr, "book selftest FAILED: F1 regression - non-terminal"
+                            " JRN_RESOLVING (CANCELLED_UNLOCK) must stay"
+                            " BOOK_LIVE, not BOOK_RESOLVING\n");
             return 1;
         }
 

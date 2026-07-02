@@ -1035,6 +1035,17 @@ void MutationHandler::OnResolveAck(ResolveAck const& ack)
                     static_cast<unsigned>(ack.uuid & 0xFFFFFFFFu));
             return;
         }
+
+        // Defensive (F1 belt-and-suspenders): a boot before the BuildFromRows
+        // fix could have mis-frozen this LIVE row BOOK_RESOLVING. Un-freeze it
+        // here too, so an old freeze self-heals the next time its resolution
+        // acks even without a restart. No-op in normal operation, since the
+        // row never left BOOK_LIVE for a non-terminal kind.
+        BookRow* row = m_book.Find(e.auctionId);
+        if (row != NULL && row->state == static_cast<uint8>(BOOK_RESOLVING))
+        {
+            row->state = BOOK_LIVE;
+        }
     }
 
     m_resolvingAuctions.erase(e.auctionId);
