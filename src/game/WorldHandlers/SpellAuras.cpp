@@ -910,48 +910,6 @@ void Aura::ReapplyAffectedPassiveAuras()
     GetTarget()->CallForAllControlledUnits(ReapplyAffectedPassiveAurasHelper(this), CONTROLLED_PET | CONTROLLED_TOTEMS);
 }
 
-/*********************************************************/
-/***               BASIC AURA FUNCTION                 ***/
-/*********************************************************/
-void Aura::HandleAddModifier(bool apply, bool Real)
-{
-    if (GetTarget()->GetTypeId() != TYPEID_PLAYER || !Real)
-    {
-        return;
-    }
-
-    if (m_modifier.m_miscvalue >= MAX_SPELLMOD)
-    {
-        return;
-    }
-
-    if (apply)
-    {
-        SpellEntry const* spellProto = GetSpellProto();
-
-        // Add custom charges for some mod aura
-        switch (spellProto->Id)
-        {
-            case 17941:                                     // Shadow Trance
-            case 22008:                                     // Netherwind Focus
-                GetHolder()->SetAuraCharges(1);
-                break;
-        }
-
-        m_spellmod = new SpellModifier(
-            SpellModOp(m_modifier.m_miscvalue),
-            SpellModType(m_modifier.m_auraname),            // SpellModType value == spell aura types
-            m_modifier.m_amount,
-            this,
-            // prevent expire spell mods with (charges > 0 && m_stackAmount > 1)
-            // all this spell expected expire not at use but at spell proc event check
-            spellProto->StackAmount > 1 ? 0 : GetHolder()->GetAuraCharges());
-    }
-
-    ((Player*)GetTarget())->AddSpellMod(m_spellmod, apply);
-
-    ReapplyAffectedPassiveAuras();
-}
 
 /**
  * @brief Triggers the spell associated with the aura effect.
