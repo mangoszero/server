@@ -176,6 +176,12 @@ class WorkerSupervisor
          * frames are buffered per-tick and handed back here for
          * World::HandleAhInbound to dispatch.
          *
+         * [Finding 1] Reliable (mutation-class) frames staged in
+         * m_pendingReliableFrames are drained first, to exhaustion (or
+         * @p maxPerTick), and are NEVER subject to the IPC_INBOUND_QUEUE_CAP
+         * clamp: only the bounded/browse lane (m_pendingFrames) can lose
+         * frames under a flood.
+         *
          * @param out        Destination; frames are appended (not cleared).
          * @param maxPerTick Maximum frames to move; bounds per-tick work.
          */
@@ -258,11 +264,14 @@ class WorkerSupervisor
         void ClearStagedFrames();
 
         /**
-         * @brief Drain the IPC inbound queue into m_pendingFrames.
+         * @brief Drain the IPC inbound queue into m_pendingFrames /
+         *        m_pendingReliableFrames.
          *
          * Handles protocol frames (IPC_HEARTBEAT_ACK, IPC_READY,
-         * IPC_SHUTDOWN_ACK) immediately; pushes all other frames into
-         * m_pendingFrames for the public DrainInbound() to hand to
+         * IPC_SHUTDOWN_ACK) immediately. Reliable (mutation-class) frames are
+         * staged into the unbounded m_pendingReliableFrames; all other
+         * (bounded/browse) frames are staged into the capped m_pendingFrames.
+         * Both are handed to the public DrainInbound() for
          * World::HandleAhInbound.
          */
         void DrainInboundProtocol();
@@ -311,12 +320,27 @@ class WorkerSupervisor
         /// child (it stands back down once the child reports healthy again).
         bool         m_childHealthy;
 
-        /// Application frames buffered by DrainInboundProtocol each tick.
-        /// Producer-enforced HARD CAP of IPC_INBOUND_QUEUE_CAP across ticks:
-        /// DrainInboundProtocol() drops newest frames (incrementing
-        /// m_appDropped) rather than growing past the cap, so the public
-        /// DrainInbound() never has to abort to enforce the bound.
+        /// BOUNDED/browse application frames buffered by DrainInboundProtocol
+        /// each tick. Producer-enforced HARD CAP of IPC_INBOUND_QUEUE_CAP
+        /// across ticks: DrainInboundProtocol() drops newest frames
+        /// (incrementing m_appDropped) rather than growing past the cap, so
+        /// the public DrainInbound() never has to abort to enforce the
+        /// bound. Holds ONLY non-reliable frames; reliable (mutation-class)
+        /// frames are staged separately in m_pendingReliableFrames and are
+        /// never subject to this cap (Finding 1 / decision 10).
         std::vector<IpcMessage> m_pendingFrames;
+
+        /// [SP-2 decision 10 / Finding 1] UNBOUNDED staging container for
+        /// reliable (mutation-class) frames popped via IpcServer::PopReliable
+        /// (IPC_PLAYER_RESULT / IPC_RESOLVE_APPLY / IPC_INTENT_SELL / ...).
+        /// Kept SEPARATE from m_pendingFrames so the IPC_INBOUND_QUEUE_CAP
+        /// drop-newest clamp applied to that container in DrainInbound() can
+        /// never truncate a reliable frame, no matter how many are staged in
+        /// one drain interval. DrainInbound() drains this container to
+        /// exhaustion (or the per-tick budget) BEFORE touching
+        /// m_pendingFrames, preserving the "reliable frames never starve
+        /// behind a browse flood" ordering the bounded path already had.
+        std::vector<IpcMessage> m_pendingReliableFrames;
 
         /// Application frames dropped at the m_pendingFrames hard cap.
         size_t                  m_appDropped;

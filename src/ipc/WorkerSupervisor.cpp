@@ -570,6 +570,19 @@ void WorkerSupervisor::ClearStagedFrames()
         std::vector<IpcMessage>().swap(m_pendingFrames);
     }
 
+    // [SP-2 decision 10 / Finding 1] The reliable lane has its OWN staging
+    // container now (m_pendingReliableFrames), separate from m_pendingFrames,
+    // and must be purged here too: DrainInboundProtocol() may already have
+    // moved reliable frames out of the reactor's internal unbounded queue
+    // (purged below via m_ipc.ClearReliable()) into m_pendingReliableFrames
+    // before World::Update ever called DrainInbound() to consume them. Left
+    // in place, those staged-but-unconsumed frames would survive the restart
+    // and be applied under the NEXT child.
+    if (!m_pendingReliableFrames.empty())
+    {
+        std::vector<IpcMessage>().swap(m_pendingReliableFrames);
+    }
+
     // Also purge the IPC server's INBOUND queue. Clearing only m_pendingFrames
     // is not enough: the reactor thread may have already enqueued frames from
     // the dead child into the inbound BoundedQueue that DrainInboundProtocol()
@@ -617,10 +630,12 @@ void WorkerSupervisor::DrainInboundProtocol()
     // starve a mutation-class frame. Reliable frames received here are all
     // application/consumer frames (IPC_PLAYER_RESULT, IPC_RESOLVE_APPLY,
     // IPC_INTENT_SELL) destined for World::HandleAhInbound, so they are staged
-    // directly - bypassing the app/browse drop budgets and the staging cap: they
-    // carry money/item value and must NOT be dropped. Draining them first also
-    // seats them at the FRONT of m_pendingFrames, so they survive DrainInbound's
-    // over-cap tail clamp even under a simultaneous browse-result flood.
+    // directly into their OWN unbounded container (m_pendingReliableFrames) -
+    // bypassing the app/browse drop budgets AND the IPC_INBOUND_QUEUE_CAP
+    // staging cap entirely: they carry money/item value and must NOT be
+    // dropped. [Finding 1] Keeping them out of m_pendingFrames means
+    // DrainInbound()'s over-cap clamp on the bounded lane can never truncate a
+    // reliable frame, however many are staged in one drain interval.
     IpcMessage rmsg;
     while (m_ipc.PopReliable(rmsg))
     {
@@ -637,7 +652,7 @@ void WorkerSupervisor::DrainInboundProtocol()
                        static_cast<unsigned>(m_runId));
             continue;
         }
-        m_pendingFrames.push_back(rmsg);
+        m_pendingReliableFrames.push_back(rmsg);
     }
 
     IpcMessage msg;
@@ -733,11 +748,14 @@ void WorkerSupervisor::DrainInboundProtocol()
 void WorkerSupervisor::DrainInbound(std::vector<IpcMessage>& out,
                                     size_t maxPerTick)
 {
-    // The cap on m_pendingFrames is enforced UPSTREAM in
-    // DrainInboundProtocol() (drop-newest at IPC_INBOUND_QUEUE_CAP), so this
-    // can no longer be exceeded. Never abort here: if the invariant were ever
-    // violated, clamp the buffer and emit a rate-limited warning instead of
-    // taking down a live realm (the old MANGOS_ASSERT was the crash vector).
+    // [Finding 1] The IPC_INBOUND_QUEUE_CAP clamp below applies ONLY to the
+    // bounded/browse lane (m_pendingFrames). Reliable (mutation-class) frames
+    // live in the fully separate, UNBOUNDED m_pendingReliableFrames container
+    // (staged directly by DrainInboundProtocol(), bypassing this cap), so a
+    // reliable frame can never be silently dropped here regardless of how
+    // many are staged in one drain interval - the never-drop guarantee from
+    // decision 10 is therefore structural, not just accidental headroom
+    // versus the worker's RESOLVE_WINDOW.
     if (m_pendingFrames.size() > IPC_INBOUND_QUEUE_CAP)
     {
         static time_t s_lastClampWarn = 0;
@@ -754,20 +772,41 @@ void WorkerSupervisor::DrainInbound(std::vector<IpcMessage>& out,
         m_pendingFrames.resize(IPC_INBOUND_QUEUE_CAP);
     }
 
-    if (m_pendingFrames.empty())
+    if (m_pendingReliableFrames.empty() && m_pendingFrames.empty())
     {
         return;
     }
 
-    size_t avail = m_pendingFrames.size();
-    size_t take  = (avail < maxPerTick) ? avail : maxPerTick;
+    size_t remaining = maxPerTick;
 
-    // Move the first 'take' elements into out, then erase them.
-    out.insert(out.end(),
-               m_pendingFrames.begin(),
-               m_pendingFrames.begin() + static_cast<ptrdiff_t>(take));
-    m_pendingFrames.erase(m_pendingFrames.begin(),
-                          m_pendingFrames.begin() + static_cast<ptrdiff_t>(take));
+    // Drain the reliable lane first, to exhaustion (or the per-tick budget),
+    // so mutation-class frames are handed to World::HandleAhInbound ahead of
+    // bounded/browse frames and are never starved nor clamped away.
+    if (!m_pendingReliableFrames.empty() && remaining > 0)
+    {
+        size_t availReliable = m_pendingReliableFrames.size();
+        size_t takeReliable  = (availReliable < remaining) ? availReliable : remaining;
+
+        out.insert(out.end(),
+                   m_pendingReliableFrames.begin(),
+                   m_pendingReliableFrames.begin() + static_cast<ptrdiff_t>(takeReliable));
+        m_pendingReliableFrames.erase(m_pendingReliableFrames.begin(),
+                                     m_pendingReliableFrames.begin() + static_cast<ptrdiff_t>(takeReliable));
+        remaining -= takeReliable;
+    }
+
+    if (!m_pendingFrames.empty() && remaining > 0)
+    {
+        size_t avail = m_pendingFrames.size();
+        size_t take  = (avail < remaining) ? avail : remaining;
+
+        // Move the first 'take' elements into out, then erase them.
+        out.insert(out.end(),
+                   m_pendingFrames.begin(),
+                   m_pendingFrames.begin() + static_cast<ptrdiff_t>(take));
+        m_pendingFrames.erase(m_pendingFrames.begin(),
+                              m_pendingFrames.begin() + static_cast<ptrdiff_t>(take));
+    }
 }
 
 // ---------------------------------------------------------------------------
