@@ -1951,8 +1951,9 @@ Eluna.ScriptPath = "lua_scripts"
 #    Engine-style debug markers spawned server-side and visible to the GM, for
 #    map cells, line-of-sight, pathfinding, collision and terrain height. Markers
 #    are temporary gameobjects that auto-despawn; hovering a marker shows that
-#    marker's captured values. Requires the reserved gameobject_template pool from
-#    src/game/DebugVis/sql/debugvis_marker_pool.sql to be applied once.
+#    marker's captured values. Requires the reserved gameobject_template pool
+#    migration (shipped as a matching PR in the mangoszero/database repo) to be
+#    applied once.
 #
 #    DebugVis.DespawnSeconds
 #        Marker lifetime in seconds (5-600). Markers also clear with ".debug vis clear".

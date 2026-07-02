@@ -35,7 +35,8 @@ namespace DebugVis
         DV_HITPOINT     // impact point (LoS block / collision) — reticle
     };
 
-    // Reserved gameobject_template entry pool (see debugvis_marker_pool.sql).
+    // Reserved gameobject_template entry pool (seeded by the matching migration
+    // in the mangoszero/database repo).
     // Each *labeled* marker takes a distinct entry from this ring so the client
     // (which caches GO name per entry) can show that marker's own tooltip.
     enum
