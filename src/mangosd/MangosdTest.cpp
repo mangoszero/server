@@ -13,6 +13,8 @@
 #include "WorkerSupervisor.h"
 #include "Object/AhUsabilityRef.h"
 #include "AuctionHouseBot/BrowsePending.h"
+#include "AuctionHouseBot/MutationPending.h"
+#include "IpcOpcodes.h"
 #include "BrowseMessages.h"
 #include <cstdio>
 #include <ctime>
@@ -1162,6 +1164,124 @@ static int RunAhBrowsePendingTest()
     return 0;
 }
 
+/// Self-test for the SP-2 MutationPendingMap (spec 5.5): apply-all consume-once,
+/// per-player + total caps checked BEFORE any reserve, cancel-phase rearm, and
+/// the TTL sweep that tombstones in-doubt entries (emitting each newly-in-doubt
+/// uuid exactly once for the AUCTION_ERR_DATABASE result). Pure in-memory; no
+/// DB rows, no worker. Returns 0 on pass, non-zero on fail.
+static int RunAhMutPendingTest()
+{
+    MutationPendingMap pend;
+
+    // Mint sanity: two uuids differ and carry a nonzero (boot-second) high word,
+    // keeping them disjoint from worker-minted (runId << 32) | seq uuids.
+    uint64 u1 = AhMintMutationUuid();
+    uint64 u2 = AhMintMutationUuid();
+    if (u1 == u2 || (u1 >> 32) == 0u)
+    { printf("ahmutpending FAIL: uuid mint\n"); return 1; }
+
+    // (a) cap-before-reserve: MAX_PER_PLAYER entries fill player 100's slot;
+    // the next CanRegister is refused BEFORE any reserve would happen, while
+    // another player is unaffected.
+    std::vector<uint64> uuids;
+    for (size_t i = 0; i < MutationPendingMap::MAX_PER_PLAYER; ++i)
+    {
+        if (!pend.CanRegister(100u))
+        { printf("ahmutpending FAIL: CanRegister refused below cap\n"); return 1; }
+
+        PendingMutation pm;
+        pm.uuid           = AhMintMutationUuid();
+        pm.playerGuidLow  = 100u;
+        pm.op             = uint16(IPC_PLAYER_BID);
+        pm.auctionId      = uint32(9000u + i);
+        pm.state          = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec        = 1000u;
+        pm.reservedAmount = 55u;
+        pm.reserveKey     = "bid:9000:1";
+        pm.itemKey.clear();
+        pm.depKey.clear();
+        pend.Register(pm);
+        uuids.push_back(pm.uuid);
+    }
+    if (pend.CanRegister(100u))
+    { printf("ahmutpending FAIL: per-player cap not enforced\n"); return 1; }
+    if (!pend.CanRegister(101u))
+    { printf("ahmutpending FAIL: cap leaked to another player\n"); return 1; }
+
+    // (b) consume-once: Take returns the entry once, then never again; the
+    // per-player slot is released.
+    PendingMutation got;
+    if (!pend.Take(uuids[0], got) || got.playerGuidLow != 100u ||
+        got.op != uint16(IPC_PLAYER_BID) || got.reservedAmount != 55u ||
+        got.reserveKey != "bid:9000:1")
+    { printf("ahmutpending FAIL: Take(first)\n"); return 1; }
+    if (pend.Take(uuids[0], got))
+    { printf("ahmutpending FAIL: Take twice\n"); return 1; }
+    if (!pend.CanRegister(100u))
+    { printf("ahmutpending FAIL: slot not released after Take\n"); return 1; }
+
+    // (c) rearm (cancel phase 2, spec 4.2): AWAIT_RESULT (== AWAIT_PREPARE for
+    // cancels) -> AWAIT_CONFIRM in the SAME cap slot, with a fresh TTL anchor.
+    pend.RearmConfirm(uuids[1], 2000u);
+    if (!pend.Peek(uuids[1], got) || got.state != uint8(PMUT_AWAIT_CONFIRM) ||
+        got.sentSec != 2000u)
+    { printf("ahmutpending FAIL: RearmConfirm\n"); return 1; }
+
+    // (d) explicit tombstone: the entry STAYS (in-doubt, reservation
+    // non-terminal); Tombstone on a missing uuid reports false.
+    if (!pend.Tombstone(uuids[2]))
+    { printf("ahmutpending FAIL: Tombstone(existing)\n"); return 1; }
+    if (pend.Tombstone(0xDEADBEEFull))
+    { printf("ahmutpending FAIL: Tombstone(missing) returned true\n"); return 1; }
+
+    // (e) sweep-to-tombstone: at now=2005 with ttl=10, entries stamped 1000 are
+    // overdue EXCEPT the rearmed one (sentSec 2000). Already-tombstoned entries
+    // are NOT re-emitted (their AUCTION_ERR_DATABASE was already sent).
+    // Registered survivors: uuids[1..7]; uuids[1] fresh, uuids[2] pre-tombstoned
+    // -> exactly uuids[3..7] (5) are newly in doubt.
+    std::vector<uint64> inDoubt;
+    pend.SweepToTombstones(2005u, 10u, inDoubt);
+    if (inDoubt.size() != 5u)
+    { printf("ahmutpending FAIL: sweep emitted %u (want 5)\n", unsigned(inDoubt.size())); return 1; }
+    for (size_t i = 0; i < inDoubt.size(); ++i)
+    {
+        if (inDoubt[i] == uuids[1] || inDoubt[i] == uuids[2])
+        { printf("ahmutpending FAIL: sweep emitted a fresh/tombstoned uuid\n"); return 1; }
+    }
+    // A second sweep emits nothing new (everything overdue is tombstoned).
+    inDoubt.clear();
+    pend.SweepToTombstones(2005u, 10u, inDoubt);
+    if (!inDoubt.empty())
+    { printf("ahmutpending FAIL: second sweep re-emitted\n"); return 1; }
+    // Late reply against a tombstone still applies (apply-all): Take consumes it.
+    if (!pend.Take(uuids[2], got) || got.state != uint8(PMUT_TOMBSTONE))
+    { printf("ahmutpending FAIL: Take(tombstone)\n"); return 1; }
+
+    // (f) MAX_TOTAL: fill a fresh map to the global cap across many players
+    // (4 per player, under the per-player cap); a fresh player is then refused.
+    MutationPendingMap full;
+    for (size_t i = 0; i < MutationPendingMap::MAX_TOTAL; ++i)
+    {
+        PendingMutation pm;
+        pm.uuid           = 0x100000000ull + i;
+        pm.playerGuidLow  = uint32(1000u + (i / 4u));
+        pm.op             = uint16(IPC_PLAYER_SELL);
+        pm.auctionId      = uint32(i + 1u);
+        pm.state          = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec        = 1u;
+        pm.reservedAmount = 0u;
+        pm.reserveKey.clear();
+        pm.itemKey.clear();
+        pm.depKey.clear();
+        full.Register(pm);
+    }
+    if (full.CanRegister(999999u))
+    { printf("ahmutpending FAIL: MAX_TOTAL not enforced\n"); return 1; }
+
+    printf("ahmutpending OK\n");
+    return 0;
+}
+
 /// SP-2: ReleaseGoldToWallet (online + offline re-credit) and the
 /// applied-record idempotency helpers (WriteResolutionApplied / ResolutionApplied).
 static int RunAhReleaseTest()
@@ -1301,6 +1421,11 @@ int RunMangosdTest(std::string const& name)
     if (name == "ahbrowsepending")
     {
         return RunAhBrowsePendingTest();
+    }
+
+    if (name == "ahmutpending")
+    {
+        return RunAhMutPendingTest();
     }
 
     if (name == "ahrelease")
