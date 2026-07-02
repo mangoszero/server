@@ -7463,52 +7463,6 @@ const char* ObjectMgr::GetMangosString(int32 entry, int locale_idx) const
     return "<error>";
 }
 
-/**
- * @brief Loads base fishing skill requirements for areas.
- */
-void ObjectMgr::LoadFishingBaseSkillLevel()
-{
-    mFishingBaseForArea.clear();                            // for reload case
-
-    uint32 count = 0;
-    QueryResult* result = WorldDatabase.Query("SELECT `entry`,`skill` FROM `skill_fishing_base_level`");
-
-    if (!result)
-    {
-        BarGoLink bar(1);
-        bar.step();
-        sLog.outErrorDb(">> Loaded `skill_fishing_base_level`, table is empty!");
-        sLog.outString();
-        return;
-    }
-
-    BarGoLink bar(result->GetRowCount());
-
-    do
-    {
-        bar.step();
-
-        Field* fields = result->Fetch();
-        uint32 entry  = fields[0].GetUInt32();
-        int32 skill   = fields[1].GetInt32();
-
-        AreaTableEntry const* fArea = GetAreaEntryByAreaID(entry);
-        if (!fArea)
-        {
-            sLog.outErrorDb("AreaId %u defined in `skill_fishing_base_level` does not exist", entry);
-            continue;
-        }
-
-        mFishingBaseForArea[entry] = skill;
-        ++count;
-    }
-    while (result->NextRow());
-
-    delete result;
-
-    sLog.outString(">> Loaded %u areas for fishing base skill level", count);
-    sLog.outString();
-}
 
 // Check if a player meets condition conditionId
 bool ObjectMgr::IsPlayerMeetToCondition(uint16 conditionId, Player const* pPlayer, Map const* map, WorldObject const* source, ConditionSource conditionSourceType, ConditionEntry* entry) const
@@ -9701,33 +9655,6 @@ bool LoadMangosStrings(DatabaseType& db, char const* table, int32 start_value, i
     return sObjectMgr.LoadMangosStrings(db, table, start_value, end_value, extra_content);
 }
 
-/**
- * @brief Loads creature template spell assignments and validates their spell ids.
- */
-void ObjectMgr::LoadCreatureTemplateSpells()
-{
-    sCreatureTemplateSpellsStorage.Load();
-
-    for (SQLStorageBase::SQLSIterator<CreatureTemplateSpells> itr = sCreatureTemplateSpellsStorage.getDataBegin<CreatureTemplateSpells>(); itr < sCreatureTemplateSpellsStorage.getDataEnd<CreatureTemplateSpells>(); ++itr)
-    {
-        if (!sCreatureStorage.LookupEntry<CreatureInfo>(itr->entry))
-        {
-            sLog.outErrorDb("LoadCreatureTemplateSpells: Spells found for creature entry %u, but creature does not exist, skipping", itr->entry);
-            sCreatureTemplateSpellsStorage.EraseEntry(itr->entry);
-        }
-        for (uint8 i = 0; i < CREATURE_MAX_SPELLS; ++i)
-        {
-            if (itr->spells[i] && !sSpellStore.LookupEntry(itr->spells[i]))
-            {
-                sLog.outErrorDb("LoadCreatureTemplateSpells: Spells found for creature entry %u, assigned spell %u does not exist, set to 0", itr->entry, itr->spells[i]);
-                const_cast<CreatureTemplateSpells*>(*itr)->spells[i] = 0;
-            }
-        }
-    }
-
-    sLog.outString(">> Loaded %u creature_template_spells definitions", sCreatureTemplateSpellsStorage.GetRecordCount());
-    sLog.outString();
-}
 
 /**
  * @brief Retrieves a creature template from the global creature store.
