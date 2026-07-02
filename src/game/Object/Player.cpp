@@ -8633,39 +8633,6 @@ void Player::SendInitialPacketsAfterAddToMap()
 
 
 
-/**
- * @brief Sends an instance reset warning message to the client.
- *
- * @param mapid The map identifier being reset.
- * @param time The remaining time until reset in seconds.
- */
-void Player::SendInstanceResetWarning(uint32 mapid, uint32 time)
-{
-    // type of warning, based on the time remaining until reset
-    uint32 type;
-    if (time > 3600)
-    {
-        type = RAID_INSTANCE_WELCOME;
-    }
-    else if (time > 900 && time <= 3600)
-    {
-        type = RAID_INSTANCE_WARNING_HOURS;
-    }
-    else if (time > 300 && time <= 900)
-    {
-        type = RAID_INSTANCE_WARNING_MIN;
-    }
-    else
-    {
-        type = RAID_INSTANCE_WARNING_MIN_SOON;
-    }
-
-    WorldPacket data(SMSG_RAID_INSTANCE_MESSAGE, 4 + 4 + 4);
-    data << uint32(type);
-    data << uint32(mapid);
-    data << uint32(time);
-    GetSession()->SendPacket(&data);
-}
 
 /**
  * @brief Applies the default equip cooldown for item use spells.
