@@ -119,6 +119,8 @@
 #include "AuctionIntents.h"
 #include "BrowseMessages.h"
 #include "AuctionHouseBot/BrowsePending.h"
+#include "AuctionHouseBot/MutationPending.h"
+#include "PlayerMutations.h"
 
 #include <iostream>
 #include <sstream>
@@ -1319,6 +1321,11 @@ void World::Update(uint32 diff)
             {
                 HandleAhInbound(msgs[i]);
             }
+
+            // SP-2: retry failed value-finalizes and age un-answered player
+            // mutations into in-doubt tombstones (forward-only; never rolls
+            // back). Cheap no-op when both queues are empty.
+            AhProcessRedriveQueue(uint32(time(NULL)));
         }
 
         // Expire processed-uuid dedup entries. UNCONDITIONAL: the dedup cache
@@ -1672,6 +1679,22 @@ void World::HandleAhInbound(const IpcMessage& msg)
             AhAssembleBrowseListBody(finalEntries, totalcount, assembled);
             data.append(assembled.contents(), assembled.size());
             session->SendPacket(&data);
+            break;
+        }
+        case IPC_PLAYER_RESULT:
+        {
+            // SP-2 write-authority: worker mutation outcome + book facts.
+            // AhHandlePlayerMutationResult applies value only, fail-closed
+            // against the custody ledger. (IPC_RESOLVE_APPLY gets its own case
+            // in Task 12.)
+            ByteBuffer body(msg.body);
+            PlayerMutationResult res;
+            if (!res.Decode(body))
+            {
+                sLog.outError("[AHSupervisor] IPC_PLAYER_RESULT decode failed");
+                break;
+            }
+            AhHandlePlayerMutationResult(res);
             break;
         }
         default:
