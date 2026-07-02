@@ -29,12 +29,18 @@ void AntiCheatMgr::Init()
 {
     LoadConfig();
     if (m_autobanEnable)
+    {
         LoadAccounts();
+    }
     if (m_enabled)
+    {
         sLog.outString("AntiCheat: enabled (action ceiling=%u, movement=%u, physics=%u)",
                        m_actionCeiling, MovementEnabled() ? 1 : 0, PhysicsEnabled() ? 1 : 0);
+    }
     else
+    {
         sLog.outString("AntiCheat: disabled (AntiCheat.Enable = 0)");
+    }
 }
 
 void AntiCheatMgr::LoadConfig()
@@ -65,22 +71,30 @@ void AntiCheatMgr::LoadConfig()
 bool AntiCheatMgr::IsExempt(Player* player) const
 {
     if (!player)
+    {
         return true;
+    }
 
     // GMs at or above the configured security level are not validated.
     // ExemptGMLevel == 0 means "exempt nobody by level" (every account is >= 0,
     // so without this guard a value of 0 would exempt everyone).
     if (m_exemptGmLevel > 0 && player->GetSession() &&
         player->GetSession()->GetSecurity() >= (AccountTypes)m_exemptGmLevel)
+    {
         return true;
+    }
 
     // A GM with .gm on is also exempt regardless of level.
     if (player->isGameMaster())
+    {
         return true;
+    }
 
 #ifdef ENABLE_PLAYERBOTS
     if (m_exemptBots && player->GetPlayerbotAI())
+    {
         return true;
+    }
 #endif
 
     return false;
@@ -102,13 +116,23 @@ void AntiCheatMgr::RecordViolation(Player* player, AntiCheatViolationType type,
                                    float weight, AntiCheatContext const& ctx)
 {
     if (!player)
+    {
         return;
+    }
     if (!m_enabled || IsExempt(player))
+    {
         return;
+    }
 
     // Clamp weight defensively so a single buggy detector can't spike the score.
-    if (weight < 0.0f) weight = 0.0f;
-    if (weight > 100.0f) weight = 100.0f;
+    if (weight < 0.0f)
+    {
+        weight = 0.0f;
+    }
+    if (weight > 100.0f)
+    {
+        weight = 100.0f;
+    }
 
     uint32 nowMS = getMSTime();
     uint32 lowGuid = player->GetGUIDLow();
@@ -123,7 +147,9 @@ void AntiCheatMgr::RecordViolation(Player* player, AntiCheatViolationType type,
     }
 
     if (m_persist)
+    {
         Persist(player, type, score, ctx);
+    }
 
     Apply(player, score, type, ctx);
 }
@@ -140,9 +166,13 @@ void AntiCheatMgr::Apply(Player* player, float score, AntiCheatViolationType typ
         AlertGMs(player, type, score, ctx);
         // Anti-gaming autoban: count this kick against the account first.
         if (m_autobanEnable)
+        {
             AccumulateKick(player);
+        }
         if (player->GetSession())
+        {
             player->GetSession()->KickPlayer();
+        }
         return;
     }
 
@@ -202,7 +232,9 @@ void AntiCheatMgr::Persist(Player* player, AntiCheatViolationType type, float sc
 void AntiCheatMgr::Update(uint32 /*diff*/)
 {
     if (!m_enabled)
+    {
         return;
+    }
 
     // Apply any queued autobans here (world thread): AccumulateKick runs on the
     // map thread, but BanAccount touches the session list, so it is deferred.
@@ -210,7 +242,9 @@ void AntiCheatMgr::Update(uint32 /*diff*/)
     {
         std::lock_guard<std::mutex> guard(m_lock);
         if (!m_pendingBans.empty())
+        {
             bans.swap(m_pendingBans);
+        }
     }
     for (std::vector<PendingBan>::const_iterator it = bans.begin(); it != bans.end(); ++it)
     {
@@ -226,9 +260,13 @@ void AntiCheatMgr::Update(uint32 /*diff*/)
     for (std::map<uint32, ScoreState>::iterator it = m_scores.begin(); it != m_scores.end();)
     {
         if (DecayedScore(it->second, nowMS) <= 0.0f)
+        {
             m_scores.erase(it++);
+        }
         else
+        {
             ++it;
+        }
     }
 }
 
@@ -247,7 +285,9 @@ float AntiCheatMgr::DecayedKickScore(AccountState& s, uint32 nowSec) const
 void AntiCheatMgr::AccumulateKick(Player* player)
 {
     if (!player || !player->GetSession())
+    {
         return;
+    }
 
     uint32 accountId = player->GetSession()->GetAccountId();
     uint32 nowSec = uint32(sWorld.GetGameTime());
@@ -286,8 +326,10 @@ void AntiCheatMgr::AccumulateKick(Player* player)
     PersistAccount(accountId, snapshot);
 
     if (queueBan)
+    {
         sLog.outError("AntiCheat: account %u queued for autoban (%us) after repeated kicks (char '%s')",
                       accountId, duration, charName.c_str());
+    }
 }
 
 void AntiCheatMgr::PersistAccount(uint32 accountId, AccountState const& s)
@@ -306,7 +348,9 @@ void AntiCheatMgr::LoadAccounts()
     QueryResult* result = LoginDatabase.Query(
         "SELECT `account`,`kick_score`,`ban_count`,`last_update` FROM `account_anticheat`");
     if (!result)
+    {
         return;
+    }
     do
     {
         Field* f = result->Fetch();
