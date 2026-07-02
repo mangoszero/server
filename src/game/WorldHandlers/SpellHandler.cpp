@@ -47,6 +47,8 @@
 #include "Log.h"
 #include "Opcodes.h"
 #include "Spell.h"
+#include "AntiCheatMgr.h"
+#include "MovementAnticheat.h"
 #include "ScriptMgr.h"
 #include "Totem.h"
 #include "SpellAuras.h"
@@ -110,6 +112,17 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
     // not allow use item from trade (cheat way only)
     if (pItem->IsInTrade())
     {
+        // Anti-Cheat: using an item from the trade window is an exploit the core
+        // itself flags as "cheat way only".
+        if (sAntiCheatMgr->IsEnabled() && !sAntiCheatMgr->IsExempt(pUser))
+        {
+            AntiCheatContext ctx;
+            ctx.mapId = pUser->GetMapId();
+            ctx.x = pUser->GetPositionX(); ctx.y = pUser->GetPositionY(); ctx.z = pUser->GetPositionZ();
+            ctx.latency = pUser->GetSession() ? pUser->GetSession()->GetLatencyEWMA() : 0;
+            ctx.detail = "use of item in trade window";
+            sAntiCheatMgr->RecordViolation(pUser, AC_VIOLATION_ITEM, 30.0f, ctx);
+        }
         recvPacket.rpos(recvPacket.wpos());                 // prevent spam at not read packet tail
         pUser->SendEquipError(EQUIP_ERR_ITEM_NOT_FOUND, pItem, NULL);
         return;
@@ -303,6 +316,25 @@ void WorldSession::HandleGameObjectUseOpcode(WorldPacket& recv_data)
 
     if (!obj->IsWithinDistInMap(_player, obj->GetInteractionDistance()))
     {
+        // Anti-Cheat: the core already blocks this use, but a request well beyond
+        // the object's interaction distance is a remote-interact attempt worth
+        // scoring (a legit client never sends one). Generous slack vs latency so a
+        // moving/laggy player at the edge isn't flagged.
+        if (sAntiCheatMgr->IsEnabled() && !sAntiCheatMgr->IsExempt(_player))
+        {
+            uint32 lat = GetLatencyEWMA();
+            float slack = obj->GetInteractionDistance() + 8.0f
+                        + _player->GetSpeed(MOVE_RUN) * (float(lat) / 1000.0f);
+            if (_player->GetDistance(obj) > slack)
+            {
+                AntiCheatContext ctx;
+                ctx.mapId = _player->GetMapId();
+                ctx.x = _player->GetPositionX(); ctx.y = _player->GetPositionY(); ctx.z = _player->GetPositionZ();
+                ctx.latency = lat;
+                ctx.detail = "gameobject use beyond interaction distance";
+                sAntiCheatMgr->RecordViolation(_player, AC_VIOLATION_INTERACT, 15.0f, ctx);
+            }
+        }
         return;
     }
 
@@ -362,11 +394,23 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
 
     if (mover->GetTypeId() == TYPEID_PLAYER)
     {
+        Player* plMover = (Player*)mover;
+        bool hasSpell = plMover->HasActiveSpell(spellId);
         // not have spell in spellbook or spell passive and not casted by client
-        if (!((Player*)mover)->HasActiveSpell(spellId) || IsPassiveSpell(spellInfo))
+        if (!hasSpell || IsPassiveSpell(spellInfo))
         {
             sLog.outError("World: Player %u casts spell %u which he shouldn't have", mover->GetGUIDLow(), spellId);
-            // cheater? kick? ban?
+            // Anti-Cheat: casting a spell not in the spellbook is spell-ID injection
+            // (the passive-spell case is excluded to avoid false positives).
+            if (!hasSpell && sAntiCheatMgr->IsEnabled() && !sAntiCheatMgr->IsExempt(plMover))
+            {
+                AntiCheatContext ctx;
+                ctx.mapId = plMover->GetMapId();
+                ctx.x = plMover->GetPositionX(); ctx.y = plMover->GetPositionY(); ctx.z = plMover->GetPositionZ();
+                ctx.latency = plMover->GetSession() ? plMover->GetSession()->GetLatencyEWMA() : 0;
+                ctx.detail = "cast of unknown spell (injection)";
+                sAntiCheatMgr->RecordViolation(plMover, AC_VIOLATION_SPELL, 40.0f, ctx);
+            }
             recvPacket.rpos(recvPacket.wpos());             // prevent spam at ignore packet
             return;
         }
@@ -380,6 +424,15 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
             recvPacket.rpos(recvPacket.wpos());             // prevent spam at ignore packet
             return;
         }
+    }
+
+    // Anti-Cheat: spell-cast timing (GCD bypass + cast spam). Only validated casts
+    // (known, non-passive) reach here. Time-based vector akin to the move detectors.
+    if (mover->GetTypeId() == TYPEID_PLAYER && sAntiCheatMgr->MovementEnabled() &&
+        !sAntiCheatMgr->IsExempt((Player*)mover))
+    {
+        ((Player*)mover)->GetMovementAnticheat()->NotifySpellCast(
+            spellId, GetSpellCastTime(spellInfo), spellInfo->StartRecoveryTime);
     }
 
     // client provided targets
