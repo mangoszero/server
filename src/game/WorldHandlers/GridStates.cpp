@@ -47,6 +47,7 @@
 #include "GridStates.h"
 #include "ObjectGridLoader.h"
 #include "Log.h"
+#include "World.h"
 
 /**
  * @brief Destroy grid state
@@ -99,6 +100,28 @@ ActiveState::Update(Map& m, NGridType& grid, GridInfo& info, const uint32& x, co
 {
     // Only check grid activity every (grid_expiry/10) ms to avoid overhead
     info.UpdateTimeTracker(t_diff);
+    // B-Cell: downgrade a FULL anchor grid back to ENVELOPE once no player is in OR
+    // around it. A player's visibility FULL-loads adjacent grids, so in-grid playerCount
+    // alone is not enough -- a player standing in a neighbour grid re-loads this one every
+    // tick and we thrash load/unload. The timer is reset while a player is near and only
+    // accrues real time (every tick) once the area is clear, honouring the configured delay.
+    if (m.UseLivingWorldCellEnvelope()
+        && grid.isGridObjectDataLoaded())                 // FULL anchor grid
+    {
+        if (m.HasPlayerInOrAroundGrid(x, y))
+        {
+            grid.getDowngradeTimer().Reset(sWorld.getConfig(CONFIG_UINT32_LIVINGWORLD_CELL_ENVELOPE_DOWNGRADE_DELAY));
+        }
+        else
+        {
+            grid.getDowngradeTimer().Update(t_diff);
+            if (grid.getDowngradeTimer().Passed() && grid.ActiveObjectsInGrid() > 0)
+            {
+                m.DowngradeGridToEnvelope(&grid, x, y);
+            }
+        }
+    }
+
     if (info.getTimeTracker().Passed())
     {
         if (grid.ActiveObjectsInGrid() == 0 && !m.ActiveObjectsNearGrid(x, y))
@@ -132,7 +155,7 @@ IdleState::Update(Map& m, NGridType& grid, GridInfo&, const uint32& x, const uin
 {
     m.ResetGridExpiry(grid);
     grid.SetGridState(GRID_STATE_REMOVAL);
-    DEBUG_LOG("Grid[%u,%u] on map %u moved to IDLE state", x, y, m.GetId());
+    DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "Grid[%u,%u] on map %u moved to REMOVAL state", x, y, m.GetId());
 }
 
 /**
@@ -162,7 +185,7 @@ RemovalState::Update(Map& m, NGridType& grid, GridInfo& info, const uint32& x, c
         {
             if (!m.UnloadGrid(x, y, false))
             {
-                DEBUG_LOG("Grid[%u,%u] for map %u differed unloading due to players or active objects nearby", x, y, m.GetId());
+                DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "Grid[%u,%u] for map %u differed unloading due to players or active objects nearby", x, y, m.GetId());
                 m.ResetGridExpiry(grid);
             }
         }

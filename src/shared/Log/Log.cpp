@@ -40,6 +40,7 @@
 
 #include "Common/Common.h"
 #include "Log.h"
+#include "ConsoleLogWriter.h"
 #include "Policies/Singleton.h"
 #include "Config/Config.h"
 #include "Utilities/Util.h"
@@ -49,6 +50,7 @@
 #include <stdarg.h>
 #include <fstream>
 #include <iostream>
+#include <utility>
 
 #include <ace/OS_NS_unistd.h>
 
@@ -61,20 +63,23 @@ LogFilterData logFilterData[LOG_FILTER_COUNT] =
     { "visibility_changes",  "LogFilter_VisibilityChanges",  true  },
     { "",                    "",                             true  },
     { "weather",             "LogFilter_Weather",            true  },
-    { "player_stats",        "LogFilter_PlayerStats",        false },
+    { "player_stats",        "LogFilter_PlayerStats",        true  },
     { "sql_text",            "LogFilter_SQLText",            true  },
     { "player_moves",        "LogFilter_PlayerMoves",        true  },
-    { "periodic_effects",    "LogFilter_PeriodicAffects",    false },
-    { "ai_and_movegens",     "LogFilter_AIAndMovegens",      false },
-    { "damage",              "LogFilter_Damage",             false },
-    { "combat",              "LogFilter_Combat",             false },
-    { "spell_cast",          "LogFilter_SpellCast",          false },
+    { "periodic_effects",    "LogFilter_PeriodicAffects",    true  },
+    { "ai_and_movegens",     "LogFilter_AIAndMovegens",      true  },
+    { "damage",              "LogFilter_Damage",             true  },
+    { "combat",              "LogFilter_Combat",             true  },
+    { "spell_cast",          "LogFilter_SpellCast",          true  },
     { "db_stricted_check",   "LogFilter_DbStrictedCheck",    true  },
     { "ahbot_seller",        "LogFilter_AhbotSeller",        true  },
     { "ahbot_buyer",         "LogFilter_AhbotBuyer",         true  },
     { "pathfinding",         "LogFilter_Pathfinding",        true  },
-    { "map_loading",         "LogFilter_MapLoading",         true  },
+    { "map_loading",         "LogFilter_MapsLoading",        true  },
     { "event_ai_dev",        "LogFilter_EventAiDev",         true  },
+    { "cell_envelope",       "LogFilter_CellEnvelope",       true  },
+    { "grid_add",            "LogFilter_GridAdd",            true  },
+    { "db_scripts",          "LogFilter_DbScripts",          true  },
 };
 
 enum LogType
@@ -104,7 +109,8 @@ Log::Log()
     elunaErrLogfile(NULL),
 #endif /* ENABLE_ELUNA */
 
-eventAiErLogfile(NULL), scriptErrLogFile(NULL), worldLogfile(NULL), wardenLogfile(NULL), m_colored(false),
+eventAiErLogfile(NULL), scriptErrLogFile(NULL), worldLogfile(NULL), wardenLogfile(NULL),
+    m_consoleBody(NULL), m_consoleThread(NULL), m_consoleAsync(false), m_colored(false),
     m_includeTime(false), m_gmlog_per_account(false), m_scriptLibName(NULL)
 {
     Initialize();
@@ -252,7 +258,7 @@ void Log::SetLogLevel(char* level)
 
     m_logLevel = LogLevel(newLevel);
 
-    printf("LogLevel is %u\n", m_logLevel);
+    ConsoleEmitRaw("LogLevel is " + std::to_string((uint32)m_logLevel) + "\n");
 }
 
 void Log::SetLogFileLevel(char* level)
@@ -270,7 +276,228 @@ void Log::SetLogFileLevel(char* level)
 
     m_logFileLevel = LogLevel(newLevel);
 
-    printf("LogFileLevel is %u\n", m_logFileLevel);
+    ConsoleEmitRaw("LogFileLevel is " + std::to_string((uint32)m_logFileLevel) + "\n");
+}
+
+void Log::CloseLogFiles()
+{
+    if (logfile != NULL)
+    {
+        fclose(logfile);
+        logfile = NULL;
+    }
+    if (gmLogfile != NULL)
+    {
+        fclose(gmLogfile);
+        gmLogfile = NULL;
+    }
+    if (charLogfile != NULL)
+    {
+        fclose(charLogfile);
+        charLogfile = NULL;
+    }
+    if (dberLogfile != NULL)
+    {
+        fclose(dberLogfile);
+        dberLogfile = NULL;
+    }
+#ifdef ENABLE_ELUNA
+    if (elunaErrLogfile != NULL)
+    {
+        fclose(elunaErrLogfile);
+        elunaErrLogfile = NULL;
+    }
+#endif /* ENABLE_ELUNA */
+    if (eventAiErLogfile != NULL)
+    {
+        fclose(eventAiErLogfile);
+        eventAiErLogfile = NULL;
+    }
+    if (scriptErrLogFile != NULL)
+    {
+        fclose(scriptErrLogFile);
+        scriptErrLogFile = NULL;
+    }
+    if (raLogfile != NULL)
+    {
+        fclose(raLogfile);
+        raLogfile = NULL;
+    }
+    if (worldLogfile != NULL)
+    {
+        fclose(worldLogfile);
+        worldLogfile = NULL;
+    }
+    if (wardenLogfile != NULL)
+    {
+        fclose(wardenLogfile);
+        wardenLogfile = NULL;
+    }
+}
+
+void Log::Flush()
+{
+    // Push the buffered sinks to the OS. Best-effort, not a crash drain: error
+    // paths flush immediately at emit time, and shutdown flushes via fclose in
+    // CloseLogFiles(). Also flush stdout so a redirected/piped console (fully
+    // buffered when not a TTY) does not lag behind.
+    fflush(stdout);
+
+    {
+        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
+        if (logfile != NULL)
+        {
+            fflush(logfile);
+        }
+    }
+
+    {
+        ACE_GUARD(ACE_Thread_Mutex, worldGuard, m_worldLogMtx);
+        if (worldLogfile != NULL)
+        {
+            fflush(worldLogfile);
+        }
+    }
+}
+
+std::string Log::ConsoleTimePrefix() const
+{
+    if (!m_includeTime)
+    {
+        return std::string();
+    }
+
+    time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::tm aTm = safe_localtime(tt);
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%02d:%02d:%02d ", aTm.tm_hour, aTm.tm_min, aTm.tm_sec);
+    return std::string(buf);
+}
+
+void Log::ConsoleEmit(bool toStdout, Color color, bool applyColor, const char* fmt, va_list* ap)
+{
+    // Record text carries NO trailing newline: the newline is emitted after
+    // ResetColor (here and in ConsoleLogWriter::Emit) so the line terminator
+    // stays OUTSIDE the color span, byte-matching the legacy ordering
+    // (SetColor -> body -> ResetColor -> "\n").
+    std::string body;
+    body.reserve(256);
+    body += ConsoleTimePrefix();
+    body += vutf8format(fmt, ap);
+
+    if (m_consoleAsync && m_consoleBody)
+    {
+        ConsoleLogRecord rec;
+        rec.text = std::move(body);
+        rec.color = color;
+        rec.applyColor = applyColor;
+        rec.toStdout = toStdout;
+        m_consoleBody->Enqueue(rec);
+    }
+    else
+    {
+        // synchronous fallback (thread not started yet / already stopped)
+        FILE* out = toStdout ? stdout : stderr;
+        if (applyColor)
+        {
+            Log::SetColor(toStdout, color);
+        }
+        fwrite(body.data(), 1, body.size(), out);
+        if (applyColor)
+        {
+            Log::ResetColor(toStdout);
+        }
+        fputc('\n', out);
+        if (!toStdout)
+        {
+            fflush(stderr);
+        }
+    }
+}
+
+void Log::ConsoleEmitBlank(bool toStdout)
+{
+    // Uncolored variant: text is the (possibly empty) time prefix only; the
+    // newline is appended after it, matching the legacy bare fprintf("\n").
+    std::string b = ConsoleTimePrefix();
+    if (m_consoleAsync && m_consoleBody)
+    {
+        ConsoleLogRecord rec;
+        rec.text = b;
+        rec.applyColor = false;
+        rec.toStdout = toStdout;
+        m_consoleBody->Enqueue(rec);
+    }
+    else
+    {
+        FILE* out = toStdout ? stdout : stderr;
+        fwrite(b.data(), 1, b.size(), out);
+        fputc('\n', out);
+        if (!toStdout)
+        {
+            fflush(stderr);
+        }
+    }
+}
+
+void Log::ConsoleEmitRaw(const std::string& bytes)
+{
+    // Verbatim console passthrough: NO time prefix, NO color, NO appended
+    // newline. The bytes (a full progress-bar redraw, carrying their own
+    // '\r'/'\n') are handed to the writer thread as ONE atomic record so they
+    // cannot tear against concurrently-drained log lines. Before the writer is
+    // started / after it is stopped (realmd, offline tools, startup + shutdown
+    // tail) this falls back to a synchronous verbatim write, byte-identical to
+    // the legacy BarGoLink printf()+fflush().
+    if (bytes.empty())
+    {
+        return;
+    }
+    if (m_consoleAsync && m_consoleBody)
+    {
+        ConsoleLogRecord rec;
+        rec.text = bytes;
+        rec.isRaw = true;
+        rec.applyColor = false;
+        rec.toStdout = true;
+        m_consoleBody->Enqueue(rec);
+    }
+    else
+    {
+        fwrite(bytes.data(), 1, bytes.size(), stdout);
+        fflush(stdout);
+    }
+}
+
+void Log::StartConsoleThread()
+{
+    if (m_consoleThread)
+    {
+        return;                                             // idempotent (realmd double-init)
+    }
+    m_consoleBody = new ConsoleLogWriter();
+    m_consoleThread = new ACE_Based::Thread(m_consoleBody); // ctor auto-starts run()
+    m_consoleAsync = true;
+}
+
+// INVARIANT: call only after every console-producing thread is quiesced (world +
+// map-update workers and ACE tasks joined). After m_consoleAsync=false a straggler
+// producer takes the synchronous fallback, but a producer already past the
+// m_consoleAsync check in ConsoleEmit could still touch m_consoleBody while we
+// delete it; the shutdown ordering at the call site guarantees no such concurrent
+// producer exists.
+void Log::StopConsoleThread()
+{
+    if (!m_consoleBody || !m_consoleThread)
+    {
+        return;
+    }
+    m_consoleAsync = false;                                 // stragglers now take the synchronous fallback
+    m_consoleBody->Stop();                                  // m_running = false (MUST be before wait())
+    m_consoleThread->wait();                                // join: run() does its final DrainOnce then returns
+    delete m_consoleThread;                                 // ALSO deletes m_consoleBody via refcount
+    m_consoleThread = NULL;
+    m_consoleBody = NULL;
 }
 
 void Log::Initialize()
@@ -286,6 +513,12 @@ void Log::Initialize()
     }
 
     m_logsTimestamp = "_" + GetTimestampStr();
+
+    // Idempotent re-init: realmd calls Initialize() a second time after its
+    // config is loaded (the ctor's first call ran before config and opened
+    // nothing). Close any handle already open so this reopens cleanly instead
+    // of leaking the previous FILE*.
+    CloseLogFiles();
 
     /// Open specific log files
     logfile = openLogFile("LogFile", "LogTimestamp", "w");
@@ -335,7 +568,15 @@ void Log::Initialize()
 
     eventAiErLogfile = openLogFile("EventAIErrorLogFile", NULL, "a");
     raLogfile = openLogFile("RaLogFile", NULL, "a");
-    worldLogfile = openLogFile("WorldLogFile", "WorldLogTimestamp", "a");
+    // Packet logging is opt-in via PacketLoggingEnabled (default off): open the
+    // packet log only when explicitly enabled, so it stays off even on legacy
+    // configs that still set WorldLogFile with LogLevel=3 (and a disabled server
+    // creates no stray empty world-packets.log). IsPacketLoggingEnabled() keys
+    // off worldLogfile != NULL, so this open is the single gate.
+    if (sConfig.GetBoolDefault("PacketLoggingEnabled", false))
+    {
+        worldLogfile = openLogFile("WorldLogFile", "WorldLogTimestamp", "a");
+    }
     wardenLogfile = openLogFile("WardenLogFile", "WardenLogTimestamp", "a");
 
     // Main log file settings
@@ -381,7 +622,17 @@ FILE* Log::openLogFile(char const* configFileName, char const* configTimeStampFl
         }
     }
 
-    return fopen((m_logsDir + logfn).c_str(), mode);
+    FILE* fp = fopen((m_logsDir + logfn).c_str(), mode);
+    if (fp != NULL)
+    {
+        // Fully buffer log files (64 KiB). Per-line fflush is removed from the
+        // hot loggers (outString/outBasic/outDetail/outDebug); Log::Flush()
+        // (world tick + shutdown) and the error paths push the buffer to the
+        // OS. This removes the per-line flush syscall that stalled the world
+        // and map-update threads at LogFileLevel=3.
+        setvbuf(fp, NULL, _IOFBF, 64 * 1024);
+    }
+    return fp;
 }
 
 FILE* Log::openGmlogPerAccount(uint32 account)
@@ -443,19 +694,13 @@ std::string Log::GetTimestampStr()
 
 void Log::outString()
 {
-    if (m_includeTime)
-    {
-        outTime();
-    }
-    printf("\n");
+    ConsoleEmitBlank(true);
     if (logfile)
     {
+        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
         outTimestamp(logfile);
         fprintf(logfile, "\n");
-        fflush(logfile);
     }
-
-    fflush(stdout);
 }
 
 void Log::outString(const char* str, ...)
@@ -465,42 +710,22 @@ void Log::outString(const char* str, ...)
         return;
     }
 
-    if (m_colored)
-    {
-        SetColor(true, m_colors[LogNormal]);
-    }
-
-    if (m_includeTime)
-    {
-        outTime();
-    }
-
     va_list ap;
 
     va_start(ap, str);
-    vutf8printf(stdout, str, &ap);
+    ConsoleEmit(true, m_colors[LogNormal], m_colored, str, &ap);
     va_end(ap);
-
-    if (m_colored)
-    {
-        ResetColor(true);
-    }
-
-    printf("\n");
 
     if (logfile)
     {
+        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
         outTimestamp(logfile);
 
         va_start(ap, str);
         vfprintf(logfile, str, ap);
         fprintf(logfile, "\n");
         va_end(ap);
-
-        fflush(logfile);
     }
-
-    fflush(stdout);
 }
 
 void Log::outError(const char* err, ...)
@@ -510,28 +735,12 @@ void Log::outError(const char* err, ...)
         return;
     }
 
-    if (m_colored)
-    {
-        SetColor(false, m_colors[LogError]);
-    }
-
-    if (m_includeTime)
-    {
-        outTime();
-    }
-
     va_list ap;
 
     va_start(ap, err);
-    vutf8printf(stderr, err, &ap);
+    ConsoleEmit(false, m_colors[LogError], m_colored, err, &ap);
     va_end(ap);
 
-    if (m_colored)
-    {
-        ResetColor(false);
-    }
-
-    fprintf(stderr, "\n");
     if (logfile)
     {
         outTimestamp(logfile);
@@ -544,18 +753,11 @@ void Log::outError(const char* err, ...)
         fprintf(logfile, "\n");
         fflush(logfile);
     }
-
-    fflush(stderr);
 }
 
 void Log::outErrorDb()
 {
-    if (m_includeTime)
-    {
-        outTime();
-    }
-
-    fprintf(stderr, "\n");
+    ConsoleEmitBlank(false);
 
     if (logfile)
     {
@@ -570,8 +772,6 @@ void Log::outErrorDb()
         fprintf(dberLogfile, "\n");
         fflush(dberLogfile);
     }
-
-    fflush(stderr);
 }
 
 void Log::outErrorDb(const char* err, ...)
@@ -581,28 +781,11 @@ void Log::outErrorDb(const char* err, ...)
         return;
     }
 
-    if (m_colored)
-    {
-        SetColor(false, m_colors[LogError]);
-    }
-
-    if (m_includeTime)
-    {
-        outTime();
-    }
-
     va_list ap;
 
     va_start(ap, err);
-    vutf8printf(stderr, err, &ap);
+    ConsoleEmit(false, m_colors[LogError], m_colored, err, &ap);
     va_end(ap);
-
-    if (m_colored)
-    {
-        ResetColor(false);
-    }
-
-    fprintf(stderr, "\n");
 
     if (logfile)
     {
@@ -629,19 +812,12 @@ void Log::outErrorDb(const char* err, ...)
         fprintf(dberLogfile, "\n");
         fflush(dberLogfile);
     }
-
-    fflush(stderr);
 }
 
 #ifdef ENABLE_ELUNA
 void Log::outErrorEluna()
 {
-    if (m_includeTime)
-    {
-        outTime();
-    }
-
-    fprintf(stderr, "\n");
+    ConsoleEmitBlank(false);
 
     if (logfile)
     {
@@ -656,8 +832,6 @@ void Log::outErrorEluna()
         fprintf(elunaErrLogfile, "\n");
         fflush(elunaErrLogfile);
     }
-
-    fflush(stderr);
 }
 #else
 /* This is made to not fiddle with the eluna code in LuaEngine/ at all */
@@ -672,28 +846,11 @@ void Log::outErrorEluna(const char* err, ...)
         return;
     }
 
-    if (m_colored)
-    {
-        SetColor(false, m_colors[LogError]);
-    }
-
-    if (m_includeTime)
-    {
-        outTime();
-    }
-
     va_list ap;
 
     va_start(ap, err);
-    vutf8printf(stderr, err, &ap);
+    ConsoleEmit(false, m_colors[LogError], m_colored, err, &ap);
     va_end(ap);
-
-    if (m_colored)
-    {
-        ResetColor(false);
-    }
-
-    fprintf(stderr, "\n");
 
     if (logfile)
     {
@@ -720,8 +877,6 @@ void Log::outErrorEluna(const char* err, ...)
         fprintf(elunaErrLogfile, "\n");
         fflush(elunaErrLogfile);
     }
-
-    fflush(stderr);
 }
 #else
 /* This is made to not fiddle with the eluna code in LuaEngine/ at all */
@@ -730,12 +885,7 @@ void Log::outErrorEluna(const char* err, ...) {}
 
 void Log::outErrorEventAI()
 {
-    if (m_includeTime)
-    {
-        outTime();
-    }
-
-    fprintf(stderr, "\n");
+    ConsoleEmitBlank(false);
 
     if (logfile)
     {
@@ -750,8 +900,6 @@ void Log::outErrorEventAI()
         fprintf(eventAiErLogfile, "\n");
         fflush(eventAiErLogfile);
     }
-
-    fflush(stderr);
 }
 
 void Log::outErrorEventAI(const char* err, ...)
@@ -761,28 +909,11 @@ void Log::outErrorEventAI(const char* err, ...)
         return;
     }
 
-    if (m_colored)
-    {
-        SetColor(false, m_colors[LogError]);
-    }
-
-    if (m_includeTime)
-    {
-        outTime();
-    }
-
     va_list ap;
 
     va_start(ap, err);
-    vutf8printf(stderr, err, &ap);
+    ConsoleEmit(false, m_colors[LogError], m_colored, err, &ap);
     va_end(ap);
-
-    if (m_colored)
-    {
-        ResetColor(false);
-    }
-
-    fprintf(stderr, "\n");
 
     if (logfile)
     {
@@ -809,8 +940,6 @@ void Log::outErrorEventAI(const char* err, ...)
         fprintf(eventAiErLogfile, "\n");
         fflush(eventAiErLogfile);
     }
-
-    fflush(stderr);
 }
 
 void Log::outBasic(const char* str, ...)
@@ -822,41 +951,22 @@ void Log::outBasic(const char* str, ...)
 
     if (m_logLevel >= LOG_LVL_BASIC)
     {
-        if (m_colored)
-        {
-            SetColor(true, m_colors[LogDetails]);
-        }
-
-        if (m_includeTime)
-        {
-            outTime();
-        }
-
         va_list ap;
         va_start(ap, str);
-        vutf8printf(stdout, str, &ap);
+        ConsoleEmit(true, m_colors[LogDetails], m_colored, str, &ap);
         va_end(ap);
-
-        if (m_colored)
-        {
-            ResetColor(true);
-        }
-
-        printf("\n");
     }
 
     if (logfile && m_logFileLevel >= LOG_LVL_BASIC)
     {
+        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
         va_list ap;
         outTimestamp(logfile);
         va_start(ap, str);
         vfprintf(logfile, str, ap);
         fprintf(logfile, "\n");
         va_end(ap);
-        fflush(logfile);
     }
-
-    fflush(stdout);
 }
 
 void Log::outDetail(const char* str, ...)
@@ -868,31 +978,15 @@ void Log::outDetail(const char* str, ...)
 
     if (m_logLevel >= LOG_LVL_DETAIL)
     {
-        if (m_colored)
-        {
-            SetColor(true, m_colors[LogDetails]);
-        }
-
-        if (m_includeTime)
-        {
-            outTime();
-        }
-
         va_list ap;
         va_start(ap, str);
-        vutf8printf(stdout, str, &ap);
+        ConsoleEmit(true, m_colors[LogDetails], m_colored, str, &ap);
         va_end(ap);
-
-        if (m_colored)
-        {
-            ResetColor(true);
-        }
-
-        printf("\n");
     }
 
     if (logfile && m_logFileLevel >= LOG_LVL_DETAIL)
     {
+        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
         outTimestamp(logfile);
 
         va_list ap;
@@ -901,10 +995,7 @@ void Log::outDetail(const char* str, ...)
         va_end(ap);
 
         fprintf(logfile, "\n");
-        fflush(logfile);
     }
-
-    fflush(stdout);
 }
 
 void Log::outDebug(const char* str, ...)
@@ -916,31 +1007,15 @@ void Log::outDebug(const char* str, ...)
 
     if (m_logLevel >= LOG_LVL_DEBUG)
     {
-        if (m_colored)
-        {
-            SetColor(true, m_colors[LogDebug]);
-        }
-
-        if (m_includeTime)
-        {
-            outTime();
-        }
-
         va_list ap;
         va_start(ap, str);
-        vutf8printf(stdout, str, &ap);
+        ConsoleEmit(true, m_colors[LogDebug], m_colored, str, &ap);
         va_end(ap);
-
-        if (m_colored)
-        {
-            ResetColor(true);
-        }
-
-        printf("\n");
     }
 
     if (logfile && m_logFileLevel >= LOG_LVL_DEBUG)
     {
+        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
         outTimestamp(logfile);
 
         va_list ap;
@@ -949,10 +1024,7 @@ void Log::outDebug(const char* str, ...)
         va_end(ap);
 
         fprintf(logfile, "\n");
-        fflush(logfile);
     }
-
-    fflush(stdout);
 }
 
 void Log::outCommand(uint32 account, const char* str, ...)
@@ -964,27 +1036,10 @@ void Log::outCommand(uint32 account, const char* str, ...)
 
     if (m_logLevel >= LOG_LVL_DETAIL)
     {
-        if (m_colored)
-        {
-            SetColor(true, m_colors[LogDetails]);
-        }
-
-        if (m_includeTime)
-        {
-            outTime();
-        }
-
         va_list ap;
         va_start(ap, str);
-        vutf8printf(stdout, str, &ap);
+        ConsoleEmit(true, m_colors[LogDetails], m_colored, str, &ap);
         va_end(ap);
-
-        if (m_colored)
-        {
-            ResetColor(true);
-        }
-
-        printf("\n");
     }
 
     if (logfile && m_logFileLevel >= LOG_LVL_DETAIL)
@@ -1027,11 +1082,7 @@ void Log::outCommand(uint32 account, const char* str, ...)
 
 void Log::outWarden()
 {
-    if (m_includeTime)
-    {
-        outTime();
-    }
-    printf("\n");
+    ConsoleEmitBlank(true);
     if (wardenLogfile)
     {
         outTimestamp(wardenLogfile);
@@ -1050,28 +1101,11 @@ void Log::outWarden(const char* str, ...)
     }
     if (m_logLevel >= LOG_LVL_DETAIL)
     {
-        if (m_colored)
-        {
-            SetColor(true, m_colors[LogNormal]);
-        }
-
-        if (m_includeTime)
-        {
-            outTime();
-        }
-
         va_list ap;
 
         va_start(ap, str);
-        vutf8printf(stdout, str, &ap);
+        ConsoleEmit(true, m_colors[LogNormal], m_colored, str, &ap);
         va_end(ap);
-
-        if (m_colored)
-        {
-            ResetColor(true);
-        }
-
-        printf("\n");
     }
 
     if (wardenLogfile && m_logFileLevel >= LOG_LVL_DETAIL)
@@ -1113,12 +1147,7 @@ void Log::outChar(const char* str, ...)
 
 void Log::outErrorScriptLib()
 {
-    if (m_includeTime)
-    {
-        outTime();
-    }
-
-    fprintf(stderr, "\n");
+    ConsoleEmitBlank(false);
 
     if (logfile)
     {
@@ -1140,8 +1169,6 @@ void Log::outErrorScriptLib()
         fprintf(scriptErrLogFile, "\n");
         fflush(scriptErrLogFile);
     }
-
-    fflush(stderr);
 }
 
 void Log::outErrorScriptLib(const char* err, ...)
@@ -1151,28 +1178,11 @@ void Log::outErrorScriptLib(const char* err, ...)
         return;
     }
 
-    if (m_colored)
-    {
-        SetColor(false, m_colors[LogError]);
-    }
-
-    if (m_includeTime)
-    {
-        outTime();
-    }
-
     va_list ap;
 
     va_start(ap, err);
-    vutf8printf(stderr, err, &ap);
+    ConsoleEmit(false, m_colors[LogError], m_colored, err, &ap);
     va_end(ap);
-
-    if (m_colored)
-    {
-        ResetColor(false);
-    }
-
-    fprintf(stderr, "\n");
 
     if (logfile)
     {
@@ -1206,8 +1216,6 @@ void Log::outErrorScriptLib(const char* err, ...)
         fprintf(scriptErrLogFile, "\n");
         fflush(scriptErrLogFile);
     }
-
-    fflush(stderr);
 }
 
 void Log::outWorldPacketDump(uint32 socket, uint32 opcode, char const* opcodeName, ByteBuffer const* packet, bool incoming)
@@ -1221,23 +1229,36 @@ void Log::outWorldPacketDump(uint32 socket, uint32 opcode, char const* opcodeNam
 
     outTimestamp(worldLogfile);
 
-    fprintf(worldLogfile, "\n%s:\nSOCKET: %u\nLENGTH: %zu\nOPCODE: %s (0x%.4X)\nDATA:\n",
+    // Build the whole hex dump into one buffer and emit it with a single
+    // fwrite, instead of one fprintf PER BYTE (16+ stdio calls per row). Output
+    // is byte-identical to the previous format. Durability via Flush()/shutdown.
+    std::string out;
+    out.reserve(packet->size() * 3 + packet->size() / 16 + 128);
+
+    // header[512] is ample for the fixed text plus a (short, compile-time)
+    // opcode-name constant; snprintf is bounded, so output stays byte-identical
+    // to the previous fprintf for every real opcode name.
+    char header[512];
+    snprintf(header, sizeof(header), "\n%s:\nSOCKET: %u\nLENGTH: %zu\nOPCODE: %s (0x%.4X)\nDATA:\n",
         incoming ? "CLIENT" : "SERVER",
         socket, packet->size(), opcodeName, opcode);
+    out += header;
 
+    char hexbuf[4];
     size_t p = 0;
     while (p < packet->size())
     {
         for (size_t j = 0; j < 16 && p < packet->size(); ++j)
         {
-            fprintf(worldLogfile, "%.2X ", (*packet)[p++]);
+            snprintf(hexbuf, sizeof(hexbuf), "%.2X ", (*packet)[p++]);
+            out += hexbuf;
         }
 
-        fprintf(worldLogfile, "\n");
+        out += "\n";
     }
 
-    fprintf(worldLogfile, "\n\n");
-    fflush(worldLogfile);
+    out += "\n\n";
+    fwrite(out.c_str(), 1, out.size(), worldLogfile);
 }
 
 void Log::outCharDump(const char* str, uint32 account_id, uint32 guid, const char* name)

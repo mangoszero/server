@@ -3717,7 +3717,7 @@ struct SpawnCreatureInMapsWorker
     void operator()(Map* map)
     {
         // We use spawn coords to spawn
-        if (map->IsLoaded(i_data->posX, i_data->posY))
+        if (map->IsCellLoaded(i_data->posX, i_data->posY))
         {
             Creature* pCreature = new Creature;
             if (!pCreature->LoadFromDB(i_guid, map))

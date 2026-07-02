@@ -36,6 +36,12 @@
 
 #include "Chat.h"
 #include "AuctionHouseBot/AuctionHouseBot.h"
+#include "AuctionHouseBot/AuctionIntentExecutor.h"
+#include "World.h"
+#include "WorkerSupervisor.h"
+#include "IpcMessage.h"
+#include "IpcOpcodes.h"
+#include "AuctionIntents.h"
 
 /**********************************************************************
  Useful constants definition
@@ -74,11 +80,38 @@ bool ChatHandler::HandleAHBotRebuildCommand(char* args)
 /**
  * @brief Reloads the auction house bot configuration.
  *
+ * When the out-of-process AH service is active the mangosd-side config
+ * (@c sAuctionBotConfig) is refreshed AND a GMCMD_RELOAD signal is
+ * forwarded to the child so it reloads its own ahbot.conf tuning. The
+ * child replies with IPC_GMCMD_RESULT; that result is logged by
+ * World::HandleAhInbound (fire-and-forget, no per-GM reply correlation
+ * in Phase 1).
+ *
  * @param args Command arguments (not used).
- * @returns True if the reload was successful, false otherwise.
+ * @returns True if the reload was initiated, false on mangosd-side failure.
  */
 bool ChatHandler::HandleAHBotReloadCommand(char* /*args*/)
 {
+    WorkerSupervisor* sv = sWorld.GetAhSupervisor();
+    if (sv != NULL && sv->ServiceActive())
+    {
+        // Refresh the mangosd-side config (sAuctionBotConfig, bot GUID,
+        // etc.) and forward a reload signal to the child process.
+        sAuctionBot.ReloadAllConfig();
+
+        GmCmd gc;
+        gc.cmd = static_cast<uint8>(GMCMD_RELOAD);
+        IpcMessage m;
+        m.op = IPC_GMCMD;
+        gc.Encode(m.body);
+        sv->Channel().SendFrame(m);
+
+        SendSysMessage("AH bot config reloaded (mangosd); reload signal"
+                       " sent to AH service - result will be logged.");
+        return true;
+    }
+
+    // Service inactive: behave exactly as before.
     if (sAuctionBot.ReloadAllConfig())
     {
         SendSysMessage(LANG_AHBOT_RELOAD_OK);
@@ -168,6 +201,22 @@ bool ChatHandler::HandleAHBotStatusCommand(char* args)
     if (!m_session)
     {
         SendSysMessage(LANG_AHBOT_STATUS_BAR_CONSOLE);
+    }
+
+    // --- AH subprocess service state + executor stats ---
+    WorkerSupervisor* sv = sWorld.GetAhSupervisor();
+    if (sv != NULL)
+    {
+        const char* svcState = sv->ServiceActive()
+            ? "active"
+            : "inactive (in-process bot running)";
+        PSendSysMessage("[AH service] state: %s", svcState);
+        PSendSysMessage("[AH service] executor: applied=%llu rejected=%llu"
+                        " duplicate=%llu malformed=%llu",
+                        sAuctionIntentExecutor.GetApplied(),
+                        sAuctionIntentExecutor.GetRejected(),
+                        sAuctionIntentExecutor.GetDuplicate(),
+                        sAuctionIntentExecutor.GetMalformed());
     }
 
     return true;

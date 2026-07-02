@@ -78,6 +78,15 @@ bool ChatHandler::HandleCastCommand(char* args)
         return false;
     }
 
+    if (!m_session)
+    {
+        target->CastSpell(target, spell, true);
+        PSendSysMessage("Cast spell %u (%s) on %s",
+            spell, spellInfo->SpellName[GetSessionDbcLocale()],
+            target->GetName());
+        return true;
+    }
+
     if (!SpellMgr::IsSpellValid(spellInfo, m_session->GetPlayer()))
     {
         PSendSysMessage(LANG_COMMAND_SPELL_BROKEN, spell);

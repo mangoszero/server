@@ -30,6 +30,8 @@ set(SRC_GRP_MAIN
   CliThread.h
   GdbServerThread.cpp
   GdbServerThread.h
+  MangosdTest.cpp
+  MangosdTest.h
   RAThread.cpp
   RAThread.h
   WorldThread.cpp
@@ -75,6 +77,7 @@ target_compile_definitions(mangosd
 target_link_libraries(mangosd
     PRIVATE
         game
+        ah_ipc
         $<$<BOOL:${SOAP}>:gsoap>
         Threads::Threads
         OpenSSL::Crypto

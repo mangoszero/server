@@ -67,7 +67,10 @@
 class ObjectGridRespawnMover
 {
     public:
-        ObjectGridRespawnMover() {}
+        explicit ObjectGridRespawnMover(bool cellGranular = false)
+            : i_cellGranular(cellGranular)
+        {
+        }
 
         /**
          * @brief Process entire grid for respawn relocations
@@ -82,9 +85,13 @@ class ObjectGridRespawnMover
          * @param m Creature container
          *
          * For each creature, checks if its respawn point is in a different
-         * grid. If so, initiates relocation to respawn coordinates.
+         * grid (or different cell when i_cellGranular is true).
+         * If so, initiates relocation to respawn coordinates.
          */
         void Visit(CreatureMapType& m);
+
+    private:
+        bool i_cellGranular;
 };
 
 /**
@@ -132,7 +139,8 @@ ObjectGridRespawnMover::Visit(CreatureMapType& m)
         CellPair resp_val = MaNGOS::ComputeCellPair(resp_x, resp_y);
         Cell resp_cell(resp_val);
 
-        if (cur_cell.DiffGrid(resp_cell))
+        bool needsRelocation = i_cellGranular ? (cur_cell != resp_cell) : cur_cell.DiffGrid(resp_cell);
+        if (needsRelocation)
         {
             c->GetMap()->CreatureRespawnRelocation(c);
             // false result ignored: will be unloaded with other creatures at grid
@@ -361,24 +369,43 @@ ObjectGridLoader::Load(GridType& grid)
 }
 
 /**
+ * @brief Loads a single cell's DB-backed objects into the grid (idempotent).
+ *
+ * Marks the cell loaded BEFORE visiting (mirrors the grid-level guard in
+ * Map::EnsureGridLoaded) so a re-entrant load triggered while loading cannot
+ * load the same cell twice. Safe to call on an already-loaded cell (no-op).
+ */
+void ObjectGridLoader::LoadCell(uint32 cellX, uint32 cellY)
+{
+    if (i_grid.isCellObjectDataLoaded(cellX, cellY))
+    {
+        return;
+    }
+    i_grid.setCellObjectDataLoaded(cellX, cellY, true);
+
+    i_cell.data.Part.cell_x = cellX;
+    i_cell.data.Part.cell_y = cellY;
+
+    GridLoaderType loader;
+    loader.Load(i_grid(cellX, cellY), *this);
+}
+
+/**
  * @brief Loads all cells in the current grid and reports loaded object counts.
  */
 void ObjectGridLoader::LoadN(void)
 {
     i_gameObjects = 0; i_creatures = 0; i_corpses = 0;
     i_cell.data.Part.cell_y = 0;
-    GridLoaderType loader;
 
     for (unsigned int x = 0; x < MAX_NUMBER_OF_CELLS; ++x)
     {
-        i_cell.data.Part.cell_x = x;
         for (unsigned int y = 0; y < MAX_NUMBER_OF_CELLS; ++y)
         {
-            i_cell.data.Part.cell_y = y;
-            loader.Load(i_grid(x, y), *this);
+            LoadCell(x, y);
         }
     }
-    DEBUG_LOG("%u GameObjects, %u Creatures, and %u Corpses/Bones loaded for grid %u on map %u", i_gameObjects, i_creatures, i_corpses, i_grid.GetGridId(), i_map->GetId());
+    DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "%u GameObjects, %u Creatures, and %u Corpses/Bones loaded for grid %u on map %u", i_gameObjects, i_creatures, i_corpses, i_grid.GetGridId(), i_map->GetId());
 }
 
 /**
@@ -394,6 +421,16 @@ void ObjectGridUnloader::MoveToRespawnN()
             mover.Move(i_grid(x, y));
         }
     }
+}
+
+/**
+ * @brief Moves respawnable objects in a single cell back to their respawn state
+ *        (cell-scoped analog of MoveToRespawnN, used by B-Cell per-cell teardown).
+ */
+void ObjectGridUnloader::MoveToRespawnCell(uint32 cellX, uint32 cellY)
+{
+    ObjectGridRespawnMover mover(true);
+    mover.Move(i_grid(cellX, cellY));
 }
 
 void

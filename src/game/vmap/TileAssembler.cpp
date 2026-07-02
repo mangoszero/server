@@ -50,6 +50,10 @@
 #include <set>
 #include <iomanip>
 #include <sstream>
+#include <atomic>
+#include <mutex>
+#include <thread>
+#include <vector>
 
 using G3D::Vector3;
 using G3D::AABox;
@@ -125,7 +129,7 @@ namespace VMAP
     /**
      * @brief Converts the world data to a different format.
      */
-    bool TileAssembler::convertWorld2(const char *RAW_VMAP_MAGIC)
+    bool TileAssembler::convertWorld2(const char *RAW_VMAP_MAGIC, unsigned int nThreads)
     {
         bool success = readMapSpawns();
         if (!success)
@@ -133,30 +137,85 @@ namespace VMAP
             return false;
         }
 
-        // Export map data
+        uint32 threadCount = nThreads ? nThreads : std::thread::hardware_concurrency();
+        if (threadCount < 1)
+        {
+            threadCount = 1;
+        }
+
+        // Phase 1: compute the transformed bound for every spawn in ONE global
+        // parallel pass. calculateTransformedBound caches each model's vertices,
+        // so a model placed N times is read+parsed once instead of N times, and
+        // the per-spawn transforms run across all cores (a few giant continent
+        // maps no longer gate a per-map loop).
+        std::vector<ModelSpawn*> boundSpawns;
+        for (MapData::iterator mi = mapData.begin(); mi != mapData.end(); ++mi)
+        {
+            for (UniqueEntryMap::iterator e = mi->second->UniqueEntries.begin(); e != mi->second->UniqueEntries.end(); ++e)
+            {
+                boundSpawns.push_back(&e->second);
+            }
+        }
+
+        std::atomic<size_t> nextSpawn(0);
+        std::atomic<bool> boundFail(false);
+        auto boundWorker = [&]()
+        {
+            while (true)
+            {
+                size_t i = nextSpawn.fetch_add(1);
+                if (i >= boundSpawns.size() || boundFail)
+                {
+                    break;
+                }
+                ModelSpawn* s = boundSpawns[i];
+                // M2 models don't have a bound set in WDT/ADT placement data
+                if (s->flags & MOD_M2)
+                {
+                    if (!calculateTransformedBound(*s, RAW_VMAP_MAGIC))
+                    {
+                        boundFail = true;
+                    }
+                }
+                else if (s->flags & MOD_WORLDSPAWN) // WMO maps and terrain maps use different origin, so we need to adapt :/
+                {
+                    s->iBound = s->iBound + Vector3(533.33333f * 32, 533.33333f * 32, 0.f);
+                }
+            }
+        };
+
+        if (threadCount <= 1)
+        {
+            boundWorker();
+        }
+        else
+        {
+            std::vector<std::thread> bworkers;
+            bworkers.reserve(threadCount);
+            for (uint32 t = 0; t < threadCount; ++t)
+            {
+                bworkers.emplace_back(boundWorker);
+            }
+            for (std::thread& w : bworkers)
+            {
+                w.join();
+            }
+        }
+        if (boundFail)
+        {
+            success = false;
+        }
+
+        // Phase 2: build the BIH tree and write each map's files (serial; bounds
+        // are already computed above).
         for (MapData::iterator map_iter = mapData.begin(); map_iter != mapData.end() && success; ++map_iter)
         {
             // Build global map tree
             std::vector<ModelSpawn*> mapSpawns;
             UniqueEntryMap::iterator entry;
 
-            printf("Calculating model bounds for map %u...\n", map_iter->first);
             for (entry = map_iter->second->UniqueEntries.begin(); entry != map_iter->second->UniqueEntries.end(); ++entry)
             {
-                // M2 models don't have a bound set in WDT/ADT placement data, I still think they're not used for LoS at all on retail
-                if (entry->second.flags & MOD_M2)
-                {
-                    if (!calculateTransformedBound(entry->second, RAW_VMAP_MAGIC))
-                    {
-                        break;
-                    }
-                }
-                else if (entry->second.flags & MOD_WORLDSPAWN) // WMO maps and terrain maps use different origin, so we need to adapt :/
-                {
-                    // TODO: remove extractor hack and uncomment below line:
-                    // entry->second.iPos += Vector3(533.33333f*32, 533.33333f*32, 0.f);
-                    entry->second.iBound = entry->second.iBound + Vector3(533.33333f * 32, 533.33333f * 32, 0.f);
-                }
                 mapSpawns.push_back(&(entry->second));
                 spawnedModelFiles.insert(entry->second.name);
             }
@@ -271,17 +330,50 @@ namespace VMAP
         // Add an object models, listed in temp_gameobject_models file
         exportGameobjectModels(RAW_VMAP_MAGIC);
 
-        // Export objects
+        // Export objects -- each model file is independent, so convert them
+        // across the same worker pool. convertRawFile reads one raw model and
+        // writes one .vmo; no shared state.
         std::cout << "\nConverting Model Files" << std::endl;
-        for (std::set<std::string>::iterator mfile = spawnedModelFiles.begin(); mfile != spawnedModelFiles.end(); ++mfile)
+        std::vector<std::string> modelList(spawnedModelFiles.begin(), spawnedModelFiles.end());
+        std::atomic<size_t> nextModelIdx(0);
+        std::atomic<bool> convFail(false);
+        auto convWorker = [&]()
         {
-            std::cout << "Converting " << *mfile << std::endl;
-            if (!convertRawFile(*mfile, RAW_VMAP_MAGIC))
+            while (true)
             {
-                std::cout << "error converting " << *mfile << std::endl;
-                success = false;
-                break;
+                size_t idx = nextModelIdx.fetch_add(1);
+                if (idx >= modelList.size() || convFail)
+                {
+                    break;
+                }
+                if (!convertRawFile(modelList[idx], RAW_VMAP_MAGIC))
+                {
+                    std::cout << "error converting " << modelList[idx] << std::endl;
+                    convFail = true;
+                }
             }
+        };
+
+        if (threadCount <= 1)
+        {
+            convWorker();
+        }
+        else
+        {
+            std::vector<std::thread> cworkers;
+            cworkers.reserve(threadCount);
+            for (uint32 t = 0; t < threadCount; ++t)
+            {
+                cworkers.emplace_back(convWorker);
+            }
+            for (std::thread& w : cworkers)
+            {
+                w.join();
+            }
+        }
+        if (convFail)
+        {
+            success = false;
         }
 
         // Cleanup:
@@ -371,60 +463,65 @@ namespace VMAP
      */
     bool TileAssembler::calculateTransformedBound(ModelSpawn& spawn, const char* RAW_VMAP_MAGIC) const
     {
-        // Construct full path to the model file
-        std::string modelFilename = iSrcDir + "/" + spawn.name;
-
         // Initialize ModelPosition with rotation and scale
         ModelPosition modelPosition;
         modelPosition.iDir = spawn.iRot;
         modelPosition.iScale = spawn.iScale;
         modelPosition.init();
 
-        // Load the raw model data from disk
-        WorldModel_Raw raw_model;
-        if (!raw_model.Read(modelFilename.c_str(), RAW_VMAP_MAGIC))
+        // Fetch the model's raw vertices (all groups concatenated -- the bound
+        // merges across them) from the cache so each unique model is read and
+        // parsed only once, not once per spawn. std::map keeps element
+        // references stable across inserts, so the pointer stays valid while
+        // other worker threads add new entries.
+        const std::vector<Vector3>* verts = NULL;
         {
-            return false;
+            std::lock_guard<std::mutex> lk(iModelCacheMutex);
+            std::map<std::string, std::vector<Vector3> >::iterator it = iModelVertexCache.find(spawn.name);
+            if (it != iModelVertexCache.end())
+            {
+                verts = &it->second;
+            }
         }
-
-        // If the model has multiple groups, it might indicate it's not an M2
-        uint32 groups = raw_model.groupsArray.size();
-        if (groups != 1)
+        if (!verts)
         {
-            printf("Warning: '%s' does not seem to be a M2 model!\n", modelFilename.c_str());
+            std::string modelFilename = iSrcDir + "/" + spawn.name;
+            WorldModel_Raw raw_model;
+            if (!raw_model.Read(modelFilename.c_str(), RAW_VMAP_MAGIC))
+            {
+                return false;
+            }
+            std::vector<Vector3> collected;
+            for (uint32 g = 0; g < raw_model.groupsArray.size(); ++g)
+            {
+                std::vector<Vector3>& gv = raw_model.groupsArray[g].vertexArray;
+                collected.insert(collected.end(), gv.begin(), gv.end());
+            }
+            // Insert the complete vector atomically (re-check under the lock in
+            // case another worker read the same model concurrently).
+            std::lock_guard<std::mutex> lk(iModelCacheMutex);
+            std::map<std::string, std::vector<Vector3> >::iterator it = iModelVertexCache.find(spawn.name);
+            if (it == iModelVertexCache.end())
+            {
+                it = iModelVertexCache.insert(std::make_pair(spawn.name, std::move(collected))).first;
+            }
+            verts = &it->second;
         }
 
         // We'll track the bounding box of the entire model
         AABox modelBound;
         bool boundEmpty = true;
-
-        // Iterate over each group to accumulate vertex data
-        // Should be only one for M2 files...
-        for (uint32 g = 0; g < groups; ++g)
+        for (size_t i = 0; i < verts->size(); ++i)
         {
-            std::vector<Vector3>& vertices = raw_model.groupsArray[g].vertexArray;
-
-            // If no vertices, log an error about missing geometry
-            if (vertices.empty())
+            Vector3 v = modelPosition.transform((*verts)[i]);
+            if (boundEmpty)
             {
-                std::cout << "error: model '" << spawn.name << "' has no geometry!" << std::endl;
-                continue;
+                modelBound = AABox(v, v);
+                boundEmpty = false;
             }
-
-            // Transform all vertices by rotation and scale, then update bounding box
-            uint32 nvectors = vertices.size();
-            for (uint32 i = 0; i < nvectors; ++i)
+            else
             {
-                Vector3 v = modelPosition.transform(vertices[i]);
-                if (boundEmpty)
-                {
-                    modelBound = AABox(v, v);
-                    boundEmpty = false;
-                }
-                else
-                {
-                    modelBound.merge(v);
-                }
+                modelBound.merge(v);
             }
         }
 

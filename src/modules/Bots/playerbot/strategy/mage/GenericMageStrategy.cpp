@@ -48,7 +48,8 @@ class GenericMageStrategyActionNodeFactory : public NamedObjectFactory<ActionNod
             return new ActionNode ("frost nova",
                 /*P*/ NULL,
                 /*A*/ NextAction::array(0, new NextAction("flee"), NULL),
-                /*C*/ NextAction::array(0, new NextAction("flee"), NULL));
+                /*C*/ NextAction::array(0,
+                    new NextAction("flee", ACTION_NORMAL), NULL));
         }
         static ActionNode* icy_veins(PlayerbotAI* ai)
         {
@@ -104,12 +105,12 @@ void GenericMageStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     RangedCombatStrategy::InitTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
-            "remove curse",
-        NextAction::array(0, new NextAction("remove curse", 41.0f), NULL)));
+            "remove lesser curse",
+        NextAction::array(0, new NextAction("remove lesser curse", 41.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-            "remove curse on party",
-        NextAction::array(0, new NextAction("remove curse on party", 40.0f), NULL)));
+            "remove lesser curse on party",
+        NextAction::array(0, new NextAction("remove lesser curse on party", 40.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
             "enemy too close for spell",

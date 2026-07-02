@@ -53,6 +53,7 @@
 #include "Opcodes.h"
 #include "Chat.h"
 #include "Debug/GdbServer/GdbBreakpoints.h"
+#include "AuctionHouseBot/AhBotSystemOwner.h"
 
 /**
  * @brief Verifies that the player can legally access the requested mailbox.
@@ -156,6 +157,16 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
     {
         DETAIL_LOG("%s is sending mail to %s (GUID: nonexistent!) with subject %s and body %s includes %u items, %u copper and %u COD copper with unk1 = %u, unk2 = %u",
             pl->GetGuidStr().c_str(), receiver.c_str(), subject.c_str(), body.c_str(), itemGuid ? 1 : 0, money, COD, unk1, unk2);
+        pl->SendMailResult(0, MAIL_SEND, MAIL_ERR_RECIPIENT_NOT_FOUND);
+        return;
+    }
+
+    // AH bot forged system owner: players cannot mail it. Its own auction
+    // proceeds/returns use the internal MailDraft::SendMailTo path, which does
+    // not go through this handler, so the bot still receives them. Looks like an
+    // unknown recipient to the sender (kills COD scams / accidental gifts).
+    if (IsAhBotSystemOwnerGuid(rc))
+    {
         pl->SendMailResult(0, MAIL_SEND, MAIL_ERR_RECIPIENT_NOT_FOUND);
         return;
     }

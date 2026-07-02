@@ -124,7 +124,7 @@ bool PathFinder::calculate(float startX, float startY, float startZ, float destX
 #ifdef ENABLE_PLAYERBOTS
     if (m_sourceUnit->GetTypeId() == TYPEID_PLAYER &&
         ((Player*)m_sourceUnit)->GetPlayerbotAI() &&
-        (m_sourceUnit->GetMap()->GetTerrain()->IsInWater(start.x, start.y, start.z) ||
+        (m_sourceUnit->GetMap()->GetTerrain()->IsInWater(start.x, start.y, start.z + 1.0) ||
             m_sourceUnit->GetMap()->GetTerrain()->IsInWater(dest.x, dest.y, dest.z)) &&
         m_sourceUnit->GetMap()->IsInLineOfSight(start.x, start.y, start.z + 2.0f, dest.x, dest.y, dest.z + 2.0f))
     {

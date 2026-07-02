@@ -59,10 +59,20 @@ bool QueryItemUsageAction::Execute(Event event)
         {
             out << " received";
         }
-        ai->TellMaster(out);
 
-        QueryItemUsage(item);
-        QueryQuestItem(itemId);
+        string usage = QueryItemUsage(item);
+        string quest = QueryQuestItem(itemId);
+        if (!usage.empty() || !quest.empty())
+        {
+            out << " " << usage;
+            if (!usage.empty() && !quest.empty())
+            {
+                out << " ";
+            }
+            out << quest;
+        }
+
+        ai->TellMaster(out);
         return true;
     }
 
@@ -73,27 +83,23 @@ bool QueryItemUsageAction::Execute(Event event)
     return true;
 }
 
-bool QueryItemUsageAction::QueryItemUsage(ItemPrototype const *item)
+string QueryItemUsageAction::QueryItemUsage(ItemPrototype const *item)
 {
     ostringstream out; out << item->ItemId;
     ItemUsage usage = AI_VALUE2(ItemUsage, "item usage", out.str());
     switch (usage)
     {
         case ITEM_USAGE_EQUIP:
-            ai->TellMaster("Equip");
-            return true;
+            return "(Equip)";
         case ITEM_USAGE_REPLACE:
-            ai->TellMaster("Equip (replace)");
-            return true;
+            return "(Equip (replace))";
         case ITEM_USAGE_SKILL:
-            ai->TellMaster("Tradeskill");
-            return true;
+            return "(Tradeskill)";
         case ITEM_USAGE_USE:
-            ai->TellMaster("Use");
-            return true;
+            return "(Use)";
     }
 
-    return false;
+    return "";
 }
 
 void QueryItemUsageAction::QueryItemPrice(ItemPrototype const *item)
@@ -142,16 +148,34 @@ void QueryItemUsageAction::QueryItemsUsage(ItemIds items)
     for (ItemIds::iterator i = items.begin(); i != items.end(); i++)
     {
         ItemPrototype const *item = sItemStorage.LookupEntry<ItemPrototype>(*i);
-        QueryItemUsage(item);
-        QueryQuestItem(*i);
+        if (!item)
+        {
+            continue;
+        }
+
+        string usage = QueryItemUsage(item);
+        string quest = QueryQuestItem(*i);
+        if (!usage.empty() || !quest.empty())
+        {
+            ostringstream out;
+            out << chat->formatItem(item, 1);
+            out << " " << usage;
+            if (!usage.empty() && !quest.empty())
+            {
+                out << " ";
+            }
+            out << quest;
+            ai->TellMaster(out);
+        }
         QueryItemPrice(item);
     }
 }
 
-void QueryItemUsageAction::QueryQuestItem(uint32 itemId)
+string QueryItemUsageAction::QueryQuestItem(uint32 itemId)
 {
     Player *bot = ai->GetBot();
     QuestStatusMap& questMap = bot->getQuestStatusMap();
+    ostringstream result;
     for (QuestStatusMap::const_iterator i = questMap.begin(); i != questMap.end(); i++)
     {
         const Quest *questTemplate = sObjectMgr.GetQuestTemplate( i->first );
@@ -165,12 +189,21 @@ void QueryItemUsageAction::QueryQuestItem(uint32 itemId)
         if (status == QUEST_STATUS_INCOMPLETE || (status == QUEST_STATE_COMPLETE && !bot->GetQuestRewardStatus(questId)))
         {
             QuestStatusData const& questStatus = i->second;
-            QueryQuestItem(itemId, questTemplate, &questStatus);
+            string questResult = QueryQuestItem(itemId, questTemplate, &questStatus);
+            if (!questResult.empty())
+            {
+                if (!result.str().empty())
+                {
+                    result << " ";
+                }
+                result << questResult;
+            }
         }
     }
+    return result.str();
 }
 
-void QueryItemUsageAction::QueryQuestItem(uint32 itemId, const Quest *questTemplate, const QuestStatusData *questStatus)
+string QueryItemUsageAction::QueryQuestItem(uint32 itemId, const Quest *questTemplate, const QuestStatusData *questStatus)
 {
     for (int i = 0; i < QUEST_OBJECTIVES_COUNT; i++)
     {
@@ -187,7 +220,8 @@ void QueryItemUsageAction::QueryQuestItem(uint32 itemId, const Quest *questTempl
             continue;
         }
 
-        ai->TellMaster(chat->formatQuestObjective(chat->formatQuest(questTemplate), available, required));
+        return chat->formatQuestObjective(chat->formatQuest(questTemplate), available, required);
     }
+    return "";
 }
 

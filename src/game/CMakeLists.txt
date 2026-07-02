@@ -289,6 +289,7 @@ target_compile_definitions(game
 target_link_libraries(game
     PUBLIC
         shared
+        ah_ipc
         RecastNavigation::Detour
         ZLIB::ZLIB
         g3dlite

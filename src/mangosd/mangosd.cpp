@@ -72,12 +72,15 @@
 #include "RAThread.h"
 #include "GdbServerThread.h"
 #include "Debug/GdbServer/GdbServer.h"
+#include "WorkerSupervisor.h"
+#include "MangosdTest.h"
 
 #ifdef ENABLE_SOAP
 #include "SOAP/SoapThread.h"
 #endif
 
 #ifdef _WIN32
+#include <process.h>
 #include "ServiceWin32.h"
 #include "WheatyExceptionReport.h"
 
@@ -310,6 +313,16 @@ static void usage(const char* prog)
     , prog);
 }
 
+/// Progress-bar console sink: forward a fully-built bar redraw to the off-thread
+/// console writer (verbatim, no prefix/color/newline) so the bar shares one
+/// serialized stdout with the log lines and cannot tear against them. Installed
+/// once the writer thread is running; before that BarGoLink uses its default
+/// synchronous sink.
+static void MangosBarConsoleSink(char const* bytes, size_t len)
+{
+    sLog.ConsoleEmitRaw(std::string(bytes, len));
+}
+
 /// Launch the mangos server
 int main(int argc, char** argv)
 {
@@ -322,13 +335,14 @@ int main(int argc, char** argv)
     ///- Command line parsing
     char const* cfg_file = MANGOSD_CONFIG_LOCATION;
 
-    char const* options = ":a:c:s:";
+    char const* options = ":a:c:s:t:";
 
     ACE_Get_Opt cmd_opts(argc, argv, options);
     cmd_opts.long_option("version", 'v', ACE_Get_Opt::NO_ARG);
     cmd_opts.long_option("ahbot", 'a', ACE_Get_Opt::ARG_REQUIRED);
 
     char serviceDaemonMode = '\0';
+    std::string testMode;
 
     int option;
     while ((option = cmd_opts()) != EOF)
@@ -376,6 +390,9 @@ int main(int argc, char** argv)
                 }
                 break;
             }
+            case 't':
+                testMode = cmd_opts.opt_arg();
+                break;
             case ':':
                 sLog.outError("Runtime-Error: -%c option requires an input argument", cmd_opts.opt_opt());
                 usage(argv[0]);
@@ -486,6 +503,29 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    if (!testMode.empty())
+    {
+        int rc = RunMangosdTest(testMode);
+        sLog.outString("mangosd test '%s' exit %d", testMode.c_str(), rc);
+        fflush(stdout);
+        _exit(rc);
+    }
+
+    // Move the console emit off the world/map-update threads. Started only after
+    // the fallible init above (OpenSSL / PID file / DB) so the early-return error
+    // paths never leave a writer thread running into stdio teardown; still placed
+    // before SetInitialWorldSettings() -- the LivingWorld spawn burst -- so the
+    // hot console path is covered. Config/InitColors already applied, so colors
+    // are set; from here the per-call console flush runs on the writer thread.
+    sLog.StartConsoleThread();
+
+    // Now the writer owns stdout: route progress-bar redraws through it too, so
+    // the bars (previously raw printf on the loading/world thread) no longer
+    // race the writer thread. Must follow StartConsoleThread so the async path
+    // is live; SetConsoleSink is a plain pointer swap (ConsoleEmitRaw itself
+    // falls back to a synchronous write whenever the writer is not running).
+    BarGoLink::SetConsoleSink(&MangosBarConsoleSink);
+
     ///- Set Realm to Offline, if crash happens. Only used once.
     LoginDatabase.DirectPExecute("UPDATE `realmlist` SET `realmflags` = `realmflags` | %u WHERE `id` = '%u'", REALM_FLAG_OFFLINE, realmID);
 
@@ -589,7 +629,39 @@ int main(int argc, char** argv)
     freezeThread->open(NULL);
 
     //************************************************************************************************************************
-    // 5. Start the console thread
+    // 5. Start the AH subprocess worker (optional, default-off)
+    //************************************************************************************************************************
+    WorkerSupervisor* ahSupervisor = NULL;
+    if (sConfig.GetBoolDefault("AH.Service.Enabled", false))
+    {
+        // SP-1 coordinator authority: the worker is the configured AH read
+        // authority from here on. Set BEFORE Start() so that even if Start()
+        // fails (missing exe / port taken / bad bot GUID) and the supervisor is
+        // torn down below, the read handlers still send "AH unavailable" rather
+        // than silently reverting to in-process reads.
+        sWorld.SetAhServiceConfigured(true);
+
+        ahSupervisor = new WorkerSupervisor(
+            "ah-service",
+            sConfig.GetStringDefault("AH.Service.Path", "service-workers/ah-service/ah-service"),
+            uint16(sConfig.GetIntDefault("AH.Service.Port", 5760)),
+            sConfig.GetStringDefault("AH.Service.Secret", "changeme"),
+            sAuctionBotConfig.GetAHBotId(),
+            sConfig.GetStringDefault("AH.Service.Config", "ah-service.conf"));
+
+        if (!ahSupervisor->Start())
+        {
+            sLog.outError("AH service failed to start; falling back to in-process bot");
+            delete ahSupervisor;
+            ahSupervisor = NULL;
+        }
+    }
+    // Expose supervisor to World so the "ah console" command can reach it.
+    // Per-tick Tick()/drain wiring is deferred to Task 6.
+    sWorld.SetAhSupervisor(ahSupervisor);
+
+    //************************************************************************************************************************
+    // 6. Start the console thread
     //************************************************************************************************************************
     CliThread* cliThread = NULL;
 #ifdef _WIN32
@@ -633,6 +705,16 @@ int main(int argc, char** argv)
         delete gdbThread;
     }
 
+    // Shut down the AH subprocess supervisor BEFORE deleting worldThread.
+    // worldThread->wait() has already returned, so the world tick loop is
+    // stopped and no concurrent Tick() calls can race with Shutdown().
+    if (ahSupervisor)
+    {
+        ahSupervisor->Shutdown();
+        delete ahSupervisor;
+        ahSupervisor = NULL;
+    }
+
     delete worldThread;
 
     ///- Remove signal handling before leaving
@@ -668,7 +750,33 @@ int main(int argc, char** argv)
     _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
 #endif
 
+#ifdef ENABLE_SOAP
+    // Join the SOAP listener before stopping the console writer. SOAP runs on a
+    // std::thread (NOT an ACE task), so ACE_Thread_Manager::wait() above did NOT
+    // join it; its shared_ptr deleter would otherwise join only at main() scope
+    // exit -- AFTER StopConsoleThread() deletes the writer -- leaving a window
+    // where a late SOAP log could enqueue into a freed ConsoleLogWriter (UAF).
+    // Resetting here runs the deleter (join + delete) now, so the writer's
+    // quiescence invariant holds for SOAP too.
+    soapThread.reset();
+#endif
+
+    // Stop and join the off-thread console writer before the final shutdown lines:
+    // later lines ("Bye!") then take the synchronous fallback. Placed after EVERY
+    // console-producing thread is gone -- world/map ACE workers (joined by
+    // ACE_Thread_Manager::wait above), the CLI thread, and the SOAP std::thread
+    // (joined just above) -- so no concurrent producer can race the writer delete.
+    // The remaining main-thread shutdown lines are drained by the still-running
+    // writer before it joins. Precedes the final Flush.
+    sLog.StopConsoleThread();
+
     sLog.outString("Bye!");
+
+    // Final flush of the buffered file logs before exit. ~Log/CloseLogFiles also
+    // flush via fclose, but this guarantees "Bye!" and any late shutdown lines
+    // reach disk first.
+    sLog.Flush();
+
     return code;
 }
 /// @}
