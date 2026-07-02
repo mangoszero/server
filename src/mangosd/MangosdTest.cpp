@@ -2036,7 +2036,7 @@ static int RunAhResolveTest()
     sObjectMgr.SetHighestGuids();       // mail ids collide otherwise (RunMailTest)
 
     CharacterDatabase.DirectExecute(
-        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (991001,991002,991003,991004)");
+        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (991001,991002,991003,991004,991005)");
     CharacterDatabase.DirectExecute(
         "DELETE FROM `mail` WHERE `receiver`=1 AND `subject` LIKE '19019:%'");
     CharacterDatabase.DirectExecute("DELETE FROM `characters` WHERE `guid`=1");
@@ -2114,6 +2114,55 @@ static int RunAhResolveTest()
         { printf("ahresolve FAIL: WON second apply not RES_DUPLICATE\n"); pass = false; }
         if (mailCount(850u, "19019:0:2") != 1u)
         { printf("ahresolve FAIL: WON duplicate double-applied payout mail\n"); pass = false; }
+    }
+
+    // ---- RESOLVE_WON fail-closed [F2]: a REAL winner (curBidderGuid != 0) with
+    // NO live bid row must pay/deliver NOTHING and return RES_FAILED (mirror
+    // AhFinalizeBidOk), so the winner's RESERVED bid can never leak and the
+    // resolution re-drives. Seed dep + item but NO bid row: pre-fix this path
+    // silently skipped the bid terminal yet STILL paid the seller + wrote the
+    // applied-record. (A legit BOT win has curBidderGuid == 0 and no bid row --
+    // that proceed case is exercised by the REPAIR/bot-win paths.)
+    {
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('dep:991005',0,0,0,1,0,30,0,991005,0,0),"
+            "       ('item:991005',1,3,0,1,0,0,424245,991005,0,0)");
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahresolve FAIL: seed commit (won fail-closed)\n");
+            return 2;
+        }
+
+        ResolveApply ra;
+        ra.uuid = 0xB5ull;
+        ra.kind = uint8(RESOLVE_WON);
+        ra.facts = MutationFacts();
+        ra.facts.auctionId = 991005u;
+        ra.facts.houseId = 7;
+        ra.facts.itemGuid = 424245u;
+        ra.facts.itemTemplate = 19019u;
+        ra.facts.randomPropertyId = 0;
+        ra.facts.sellerGuid = 1u;           // would get a payout mail if wrongly paid
+        ra.facts.deposit = 30u;
+        ra.facts.effectiveBid = 700u;
+        ra.facts.curBid = 700u;
+        ra.facts.curBidderGuid = 99999u;    // REAL winner, but NO live bid row seeded
+        ra.facts.buyout = 700u;
+
+        if (AhHandleResolveApply(ra) != uint8(RES_FAILED))
+        { printf("ahresolve FAIL: WON-fail-closed not RES_FAILED\n"); pass = false; }
+        if (CustodyService::ResolutionApplied(0xB5ull))
+        { printf("ahresolve FAIL: WON-fail-closed wrote applied-record\n"); pass = false; }
+        if (mailCount(730u, "19019:0:2") != 0u)    // seller must NOT be paid (700+30-cut0)
+        { printf("ahresolve FAIL: WON-fail-closed paid the seller\n"); pass = false; }
+        if (rowState("dep:991005") != 0u)          // rolled back -> still RESERVED
+        { printf("ahresolve FAIL: WON-fail-closed dep row not rolled back\n"); pass = false; }
+        if (rowState("item:991005") != 0u)         // rolled back -> still RESERVED
+        { printf("ahresolve FAIL: WON-fail-closed item row not rolled back\n"); pass = false; }
     }
 
     // ---- RESOLVE_EXPIRED_NOBID: deposit forfeit + item returned ----
@@ -2237,7 +2286,7 @@ static int RunAhResolveTest()
 
     // Clean up.
     CharacterDatabase.DirectExecute(
-        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (991001,991002,991003,991004)");
+        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (991001,991002,991003,991004,991005)");
     CharacterDatabase.DirectExecute(
         "DELETE FROM `mail` WHERE `receiver`=1 AND `subject` LIKE '19019:%'");
     CharacterDatabase.DirectExecute("DELETE FROM `characters` WHERE `guid`=1");

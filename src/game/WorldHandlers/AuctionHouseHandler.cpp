@@ -3073,6 +3073,12 @@ uint8 AhHandleResolveApply(ResolveApply const& ra)
 
     MutationFacts const& f = ra.facts;
     CustodyDeferred def;
+    // [F1] A RESOLVE_CANCELLED_UNLOCK release credits an ONLINE owner's wallet
+    // immediately (in-memory ModifyMoney, non-transactional); only the ledger
+    // flip is in the checked txn. Capture that credit so a commit failure can
+    // undo it (X6) before RES_FAILED -- mirrors the five sibling finalize sites.
+    Player* releasedCutOnline = NULL;
+    uint32  releasedCutAmount = 0u;
     CharacterDatabase.BeginTransaction();
 
     switch (ra.kind)
@@ -3088,7 +3094,20 @@ uint8 AhHandleResolveApply(ResolveApply const& ra)
             std::string const depKey  = "dep:" + std::to_string(f.auctionId);
             std::string const itemKey = "item:" + std::to_string(f.auctionId);
             CustodyRow bidRow;
-            if (CustodyLedger::GetSingleLiveBidRow(f.auctionId, bidRow))
+            bool const haveBidRow = CustodyLedger::GetSingleLiveBidRow(f.auctionId, bidRow);
+            // [F2] A REAL winner (curBidderGuid != 0) MUST have exactly one live
+            // bid reservation. If it is missing/ambiguous, fail-closed (mirror
+            // AhFinalizeBidOk): pay/deliver NOTHING and roll back, so the winner's
+            // RESERVED bid never leaks and the resolution re-drives. A BOT win has
+            // curBidderGuid == 0 and correctly holds NO bid row -> it proceeds.
+            if (f.curBidderGuid != 0u && !haveBidRow)
+            {
+                CharacterDatabase.RollbackTransaction();
+                sLog.outError("[AHMut] PROTOCOL FAULT: RESOLVE_WON winner bid row"
+                              " missing/ambiguous for auction %u - RES_FAILED", f.auctionId);
+                return uint8(RES_FAILED);
+            }
+            if (haveBidRow)
             {
                 CustodyService::CommitGoldLedgerOnly(bidRow.idemKey);
             }
@@ -3116,10 +3135,21 @@ uint8 AhHandleResolveApply(ResolveApply const& ra)
             CustodyRow cutRow;
             if (AhFindLiveCutRow(f.auctionId, cutRow))
             {
-                Player* seller = sObjectMgr.GetPlayer(
-                    ObjectGuid(HIGHGUID_PLAYER, f.sellerGuid));
-                CustodyService::ReleaseGoldToWallet(def, f.sellerGuid, seller,
+                // [F3] Release to the guid actually debited at reserve time (the
+                // reserved row's authoritative owner), NOT the worker-supplied
+                // seller facts -- used for both the release owner and the lookup.
+                Player* owner = sObjectMgr.GetPlayer(
+                    ObjectGuid(HIGHGUID_PLAYER, cutRow.ownerGuid));
+                CustodyService::ReleaseGoldToWallet(def, cutRow.ownerGuid, owner,
                                                     cutRow.amount, cutRow.idemKey);
+                // [F1] An online owner was credited in-memory now; remember it so
+                // a checked-commit failure can undo the credit (offline owners are
+                // an in-txn UPDATE that rolls back on failure -- nothing to undo).
+                if (owner)
+                {
+                    releasedCutOnline = owner;
+                    releasedCutAmount = cutRow.amount;
+                }
             }
             break;
         }
@@ -3162,6 +3192,13 @@ uint8 AhHandleResolveApply(ResolveApply const& ra)
         // Keep the worker's row RESOLVING: it re-sends on its cadence and we
         // DUPLICATE-answer once it finally applies (spec 4.3; never roll the
         // worker book back on a mangosd-side failure).
+        // [F1] Undo the online owner's in-memory cut credit (the ledger flip +
+        // any offline UPDATE already rolled back with the txn). Mirrors the X6
+        // sibling undo: ModifyMoney only, since the DB write was transactional.
+        if (releasedCutOnline && releasedCutAmount > 0u)
+        {
+            releasedCutOnline->ModifyMoney(-int32(releasedCutAmount));   // X6: undo the in-memory credit
+        }
         sLog.outError("[AHMut] resolve kind %u (auction %u) commit failed - RES_FAILED",
                       uint32(ra.kind), f.auctionId);
         return uint8(RES_FAILED);
