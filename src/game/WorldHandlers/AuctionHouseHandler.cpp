@@ -118,6 +118,19 @@ uint16 AhClassifyBidForward(uint32 auctionId, uint32 bidderGuidLow, uint32 price
 
     // Same-bidder raise (spec I9): only the delta is reserved; the finalize
     // applies the top-up. The intent still carries the full new price.
+    //
+    // KNOWN DIVERGENCE (SP-3 deferred): if this same-bidder "raise" is actually
+    // the CURRENT HIGH BIDDER clicking Buyout (price >= the auction's buyout),
+    // it is routed here as IPC_PLAYER_BID, and the worker's ValidateBid
+    // silent-rejects any bid at/over buyout -> the buyout no-ops. Gold is
+    // conserved (no dupe/loss): the player stays high bidder and wins at expiry
+    // at their standing bid, but the immediate buyout is silently dropped. A
+    // proper fix is coupled to the finalize path (T11 F1) -- mangosd does not
+    // hold the buyout price here (the book, incl. buyout, is worker-owned) so it
+    // cannot classify this as a buyout without a book read -- and is deferred to
+    // SP-3. Documented in doc/AuctionHouseBot.md and sp2_differential.md; the
+    // mandatory pre-enable live smoke MUST exercise "current high bidder clicks
+    // Buyout".
     reserveAmount = price - liveRow.amount;
     return uint16(IPC_PLAYER_BID);
 }
@@ -2995,6 +3008,18 @@ static void AhHandleCancelPrepared(PlayerMutationResult const& res)
         return;
     }
 
+    // [FIX D] Duplicate-PREPARED guard: only a slot still in AWAIT_RESULT is
+    // awaiting its first PREPARE reply. A slot already advanced past it (CONFIRM
+    // sent -> AWAIT_CONFIRM) that receives a second PREPARE frame must be ignored:
+    // re-running the affordability gate would re-reserve the cut on an already-
+    // confirmed slot. (TOMBSTONE is handled above.)
+    if (pm.state != uint8(PMUT_AWAIT_RESULT))
+    {
+        sLog.outError("[AHMut] duplicate PREPARED for uuid " UI64FMTD " in state %u"
+                      " (not AWAIT_RESULT); ignoring", res.uuid, uint32(pm.state));
+        return;
+    }
+
     MutationFacts const& f = res.facts;
     uint32 const cut = f.curBid ? AhCutFor(f.houseId, f.curBid) : 0;
     Player* pl = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, pm.playerGuidLow));
@@ -3352,19 +3377,44 @@ struct AhJournalPeek
     bool          factsOk;
 };
 
-// Read one journal row by uuid directly from the shared Character DB. Returns
-// false when the row is ABSENT (the "worker never committed" signal, spec 8)
-// OR when the table is missing (PQuery -> NULL), which degrades safely to the
-// release path. The facts BLOB is stored as ASCII hex (NUL-safe); decode it in
-// place (mirrors AhJournal::HexDecode + MutationFacts::Decode).
-static bool AhReadWorkerJournal(uint64 uuid, AhJournalPeek& out)
+// [FIX C.2] Tri-state result of a journal peek. mangos `PQuery` returns NULL for
+// BOTH "no rows" and "query could not be executed" (table missing / transient DB
+// error), so a bare bool conflates a genuine row-absent (release the reservation)
+// with a query failure (must NOT release -- the worker may have committed).
+enum AhJournalRead
+{
+    AHJRN_FOUND        = 0,  ///< row present; @p out is populated
+    AHJRN_ABSENT       = 1,  ///< row genuinely absent (table present) -> release
+    AHJRN_QUERY_FAILED = 2   ///< table missing / DB error -> in-doubt, do NOT release
+};
+
+// Read one journal row by uuid directly from the shared Character DB. On a NULL
+// row query, a `SHOW TABLES` probe distinguishes a genuine absent row (table
+// present -> AHJRN_ABSENT, the "worker never committed" release signal, spec 8)
+// from a query that could not run (table missing or transient DB error, both
+// NULL -> AHJRN_QUERY_FAILED, which the caller leaves in-doubt rather than
+// releasing a possibly-committed reservation). The facts BLOB is stored as ASCII
+// hex (NUL-safe); decode it in place (mirrors AhJournal::HexDecode +
+// MutationFacts::Decode).
+static AhJournalRead AhReadWorkerJournal(uint64 uuid, AhJournalPeek& out)
 {
     QueryResult* q = CharacterDatabase.PQuery(
         "SELECT `state`, `kind`, `facts` FROM `ah_worker_journal` WHERE `uuid` = %llu",
         static_cast<unsigned long long>(uuid));
     if (q == NULL)
     {
-        return false;
+        // Row query returned NULL: probe whether the table exists at all. If the
+        // probe finds the table, the row is genuinely absent (release). If the
+        // probe ALSO returns NULL -- table missing OR the DB is unreachable (a
+        // transient error hits both queries) -- the peek could not be executed;
+        // report QUERY_FAILED so the caller keeps the pending in-doubt.
+        QueryResult* probe = CharacterDatabase.Query("SHOW TABLES LIKE 'ah_worker_journal'");
+        if (probe == NULL)
+        {
+            return AHJRN_QUERY_FAILED;
+        }
+        delete probe;
+        return AHJRN_ABSENT;
     }
     Field* fld = q->Fetch();
     out.state = static_cast<uint8>(fld[0].GetUInt32());
@@ -3396,7 +3446,7 @@ static bool AhReadWorkerJournal(uint64 uuid, AhJournalPeek& out)
             out.factsOk = out.facts.Decode(bb);
         }
     }
-    return true;
+    return AHJRN_FOUND;
 }
 
 // [SP-2] Release whatever reservations a pending player mutation still holds
@@ -3581,7 +3631,22 @@ void AhReconcileOnReconnect()
     {
         PendingMutation const& pm = inflight[i];
         AhJournalPeek jp;
-        if (AhReadWorkerJournal(pm.uuid, jp))
+        AhJournalRead const rd = AhReadWorkerJournal(pm.uuid, jp);
+
+        // [FIX C.2] The journal peek could not be executed (table missing or a
+        // transient DB error): do NOT release -- the worker may have committed
+        // this mutation. Leave the pending in-doubt (tombstone, reservation held)
+        // so a later reconcile or an operator resolves it. Consumes no slot.
+        if (rd == AHJRN_QUERY_FAILED)
+        {
+            sLog.outError("[AHMut] reconcile uuid " UI64FMTD ": journal peek FAILED"
+                          " (table missing / DB error); holding reservation in-doubt",
+                          pm.uuid);
+            sWorld.GetMutationPending().Tombstone(pm.uuid);
+            continue;
+        }
+
+        if (rd == AHJRN_FOUND)
         {
             // COMMITTED(1) / APPLIED(3): the worker committed the book -> value forward.
             if (jp.state == 1u || jp.state == 3u)
@@ -3600,8 +3665,8 @@ void AhReconcileOnReconnect()
             sLog.outError("[AHMut] reconcile uuid " UI64FMTD ": unexpected journal state %u;"
                           " releasing reservation", pm.uuid, uint32(jp.state));
         }
-        // Absent journal row (or anomalous state): the worker never committed ->
-        // release the reservation (forward-only, spec 8).
+        // Row genuinely absent (AHJRN_ABSENT), or an anomalous present state: the
+        // worker never committed -> release the reservation (forward-only, spec 8).
         AhReconcileReleaseAndConsume(pm);
     }
 }

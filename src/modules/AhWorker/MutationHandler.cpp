@@ -1185,6 +1185,26 @@ void MutationHandler::PrimeResolvingFromJournal(
             continue;
         }
 
+        // [FIX A] Cross-restart runId-reuse hazard. The supervisor's runId is
+        // NOT persistent: it resets to 1 on every mangosd process restart, and
+        // the minter (m_nextSeq) restarts at 0x80000000. An adopted JRN_RESOLVING
+        // row keeps its ORIGINAL worker-minted uuid but never advanced the fresh
+        // minter, so if this run reuses the runId that minted an adopted row,
+        // NextWorkerUuid could re-mint that row's low word for a DIFFERENT
+        // auction -> mangosd's ResolutionApplied(uuid) is already true ->
+        // RES_DUPLICATE -> that auction's value is silently dropped while the
+        // worker deletes its book row (gold/item loss). Skip the minter past any
+        // adopted low word owned by THIS run's id so a reused runId cannot
+        // collide: m_nextSeq = max(m_nextSeq, low32(uuid) + 1).
+        if (static_cast<uint32>(jr.uuid >> 32) == m_runId)
+        {
+            uint32 const adoptedSeq = static_cast<uint32>(jr.uuid & 0xFFFFFFFFu);
+            if (adoptedSeq != 0xFFFFFFFFu && m_nextSeq <= adoptedSeq)
+            {
+                m_nextSeq = adoptedSeq + 1u;
+            }
+        }
+
         // 4.3 at-least-once: track it and re-send the stored ResolveApply
         // blob verbatim, immediately (the first loop pass drains it).
         TrackAndSend(jr.uuid, jr.auctionId, jr.kind, jr.facts,
@@ -1372,6 +1392,23 @@ void MutationHandler::OnBotSellResult(uint64 uuid, uint8 status, uint8 reason,
                 static_cast<unsigned>(uuid >> 32),
                 static_cast<unsigned>(uuid & 0xFFFFFFFFu),
                 static_cast<unsigned>(reason));
+        RetireIntentPending(uuid);
+        m_pendingSells.erase(it);
+        return;
+    }
+
+    // [FIX B] Belt-and-suspenders: INTENT_OK must carry a real item guid AND a
+    // real auction id. A zero in either (only a first-party mangosd bug could
+    // produce it) would build a book row with id 0; fail safe instead -- treat
+    // it as a rejection (retire the pending + drop it), never a book commit.
+    if (itemGuid == 0u || auctionId == 0u)
+    {
+        fprintf(stderr, "ah-service: bot sell uuid=%08x:%08x INTENT_OK with"
+                        " zero id (item=%u auction=%u) - rejecting, not"
+                        " committing\n",
+                static_cast<unsigned>(uuid >> 32),
+                static_cast<unsigned>(uuid & 0xFFFFFFFFu),
+                itemGuid, auctionId);
         RetireIntentPending(uuid);
         m_pendingSells.erase(it);
         return;

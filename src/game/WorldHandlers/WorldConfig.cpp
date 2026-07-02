@@ -582,6 +582,26 @@ void World::LoadConfigSettings(bool reload)
             setConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY, false);
         }
 
+        // [FIX C.1] Boot preflight: WriteAuthority hard-requires the
+        // `ah_worker_journal` migration. reconcile-on-reconnect reads that table
+        // to decide finalize-forward vs release; a missing table makes the read
+        // return "row absent" for a mutation the worker actually committed, so a
+        // committed bid gets refunded while the worker still shows the bidder ->
+        // double-credit. Refuse to run write-authority without the journal table.
+        if (getConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY))
+        {
+            QueryResult* jrnCheck = CharacterDatabase.Query("SHOW TABLES LIKE 'ah_worker_journal'");
+            if (!jrnCheck)
+            {
+                sLog.outError("AH.Service.WriteAuthority = 1 but the `ah_worker_journal` table is missing; apply the SP-2 migration first. Forcing WriteAuthority OFF.");
+                setConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY, false);
+            }
+            else
+            {
+                delete jrnCheck;
+            }
+        }
+
         // Advisory only: with no worker configured, every AH mutation will
         // report unavailable (spec 5.5: no in-process fallback).
         if (getConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY) && !sConfig.GetBoolDefault("AH.Service.Enabled", false))

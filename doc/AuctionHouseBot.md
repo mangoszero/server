@@ -352,6 +352,19 @@ transient `AuctionEntry`, so existing Lua AH scripts keep working.
 > `-t` unit harness has no cut reservation to validate it. Mandatory pre-enable
 > live smoke.
 
+> **OPERATOR WARNING 4 -- known SP-3-deferred functional divergence: current high
+> bidder's Buyout no-ops.** Under `WriteAuthority`, a player who is ALREADY the
+> current high bidder and then clicks Buyout (price >= buyout) is silently
+> dropped: mangosd routes it as a same-bidder bid raise and the worker rejects a
+> bid at/over buyout. Gold is conserved (no duplication or loss) but the buyout
+> no-ops -- the player stays high bidder and wins at expiry at their standing bid
+> rather than buying out immediately at the buyout price. This is a functional
+> divergence (it changes the surviving auction, who-pays-what, and timing), listed
+> as divergence 6 in `src/modules/AhWorker/tools/sp2_differential.md`. A proper fix
+> is coupled to the finalize path (T11 F1) and is deferred to SP-3. The mandatory
+> pre-enable live smoke MUST exercise "current high bidder clicks Buyout" and
+> record this divergence.
+
 #### SP-2 crash-injection seams (TEST ONLY)
 
 The custody `AH.Service.CustodyCrashAt` pattern (which fires `_exit(3)` at a named
@@ -426,7 +439,7 @@ Do not enable `AH.Service.WriteAuthority` on a real realm until every item is gr
 - [ ] A/B differential (`src/modules/AhWorker/tools/sp2_differential.md`): the
       serialized list/bid/buyout/cancel/expire workload diffs to zero on `auction`
       / `item_instance` / `custody_ledger` end-state and on per-session packet
-      order; every remaining difference is one of the five documented divergences.
+      order; every remaining difference is one of the six documented divergences.
 - [ ] All four crash seams recover clean (procedure above): no lost/duplicated
       gold or items, `ah repair` reports zero drift; `finalize-fail` redrives
       without rolling the worker book back.
@@ -436,6 +449,9 @@ Do not enable `AH.Service.WriteAuthority` on a real realm until every item is gr
 - [ ] **MANDATORY:** the live smoke exercises the **nonzero-cut CANCEL path**
       (OPERATOR WARNING 3) -- this leg has no `-t` coverage and must be observed
       end-to-end against a live custody ledger.
+- [ ] **MANDATORY:** the live smoke exercises **current high bidder clicks Buyout**
+      (OPERATOR WARNING 4 / divergence 6) -- confirm the known SP-3-deferred no-op
+      behavior (gold conserved, buyout silently dropped) and record it explicitly.
 - [ ] Both `ah_worker_journal` and custody migrations applied (OPERATOR WARNING 2).
 
 The `.ai_tools/ah_custody_harness` SP-2 mode (inject -> resolve under

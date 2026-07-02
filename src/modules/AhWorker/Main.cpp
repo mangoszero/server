@@ -2277,6 +2277,66 @@ static int RunResolveOutboxSelfTest()
         }
     }
 
+    // --- [FIX A] cross-restart runId-reuse collision guard -----------------
+    // A worker that restarts with a REUSED runId (the supervisor's runId is NOT
+    // persistent -- it resets to 1) adopts surviving RESOLVING rows minted by
+    // the previous run under that same runId, while the minter (m_nextSeq)
+    // restarts at 0x80000000. Without the fix the next mint (0x80000000) re-uses
+    // an already-in-flight uuid for a DIFFERENT auction -> mangosd answers
+    // RES_DUPLICATE -> silent value loss. Adopt rows whose high-32 == this run's
+    // runId with known low words, then assert the next minted worker uuid's low
+    // word is strictly greater than the highest adopted low word.
+    {
+        uint32 const reuseRunId = 1u;                 // restart resets runId to 1
+
+        // Two out-of-order low words prove max() semantics (skip past the
+        // HIGHEST adopted low word, not merely the last one seen).
+        uint32 const adoptedHi = 0x80000003u;         // highest adopted low word
+        uint32 const adoptedLo = 0x80000001u;         // a lower one, seen after
+
+        std::vector<AhJournal::JournalRow> areuse;
+        uint32 const seqs[2] = { adoptedHi, adoptedLo };
+        uint32 const aucs[2] = { 21u, 22u };
+        for (size_t k = 0; k < 2u; ++k)
+        {
+            ResolveApply asrc;
+            asrc.uuid  = (static_cast<uint64>(reuseRunId) << 32) | seqs[k];
+            asrc.kind  = static_cast<uint8>(RESOLVE_WON);
+            asrc.facts = MutationHandler::FactsFromRow(
+                MakeBookRow(aucs[k], 1000u, 77u, 250u));
+            ByteBuffer ab;
+            asrc.Encode(ab);
+
+            AhJournal::JournalRow ajr;
+            ajr.uuid         = asrc.uuid;
+            ajr.auctionId    = aucs[k];
+            ajr.kind         = asrc.kind;
+            ajr.state        = static_cast<uint8>(AhJournal::JRN_RESOLVING);
+            ajr.facts        = std::string(
+                reinterpret_cast<const char*>(ab.contents()), ab.size());
+            ajr.createdTime  = 1500u;
+            ajr.resolvedTime = 0u;
+            areuse.push_back(ajr);
+        }
+
+        AuctionBook book3(NULL);
+        TestMutationHandler h3(book3, &dummyDb, reuseRunId);
+        h3.PrimeResolvingFromJournal(areuse);
+
+        uint64 const minted = h3.NextUuid();
+        if (static_cast<uint32>(minted >> 32) != reuseRunId)
+        {
+            return OutboxFail("FIX A: minted uuid runId mismatch");
+        }
+        // RED without the fix: m_nextSeq stays 0x80000000 -> minted low word
+        // 0x80000000 <= adoptedHi. GREEN with the fix: minter skipped to
+        // adoptedHi + 1.
+        if (static_cast<uint32>(minted & 0xFFFFFFFFu) <= adoptedHi)
+        {
+            return OutboxFail("FIX A: minter did not skip past adopted low word");
+        }
+    }
+
     printf("resolve outbox selftest OK\n");
     fflush(stdout);
     return 0;

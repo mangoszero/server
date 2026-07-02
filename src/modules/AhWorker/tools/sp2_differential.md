@@ -118,8 +118,11 @@ For the **packet sequence**, extract each session's ordered opcode stream from
 
 ### Expected divergences (documented, accepted -- spec section 12)
 
-These are the ONLY differences allowed; each is invisible in the must-be-zero
-end-state and visible only to a concurrent observer or in absolute timing:
+Items 1-5 are the ONLY differences allowed in the base workload; each is invisible
+in the must-be-zero end-state and visible only to a concurrent observer or in
+absolute timing. Item 6 is a KNOWN FUNCTIONAL divergence (it DOES change end-state)
+that is deferred to SP-3 -- the base workload above deliberately avoids it, and a
+run that exercises it must account for it by hand:
 
 1. **Rejected/in-doubt debit-then-recredit.** A rejected bid/buyout in run B
    debits then re-credits gold the legacy path never touched. Zero net in
@@ -138,6 +141,17 @@ end-state and visible only to a concurrent observer or in absolute timing:
    legacy-style rejection at reply latency rather than instantly, and a
    reject-then-ABORT cancel sequence can emit two command results where legacy
    emitted one. Accepted.
+6. **[SP-3 deferred] Current high bidder's Buyout no-ops.** A player who is the
+   CURRENT HIGH BIDDER clicking Buyout (price >= buyout) is silently dropped under
+   WriteAuthority: `AhClassifyBidForward` routes a same-bidder raise as
+   `IPC_PLAYER_BID` and the worker's `ValidateBid` silent-rejects a bid at/over
+   buyout. Gold is conserved (no dupe/loss) but the buyout no-ops -- the player
+   stays high bidder and wins at expiry at their standing bid instead of buying
+   out immediately at the buyout price. Unlike 1-5 this DOES change end-state
+   (surviving `auction` row + who-pays-what + timing), so the base workload
+   avoids it. A proper fix is coupled to the finalize path (T11 F1) and is
+   deferred to SP-3. The mandatory pre-enable live smoke MUST exercise "current
+   high bidder clicks Buyout" and record the divergence explicitly.
 
 Server-side-only effects that are NOT player-visible (e.g. GM-log lines that the
 worker emits process-side rather than in mangosd, and Eluna `OnAdd`/`OnRemove`
@@ -149,8 +163,9 @@ are out of the player-visible bar and are not diffed here.
 The differential passes when, for the full workload:
 
 - all four must-be-zero categories diff to empty between clone A and clone B, and
-- every observed difference is attributable to one of the five documented
-  divergences above.
+- every observed difference is attributable to one of the six documented
+  divergences above (divergence 6 only if the run exercised a current-high-bidder
+  buyout, which the base workload avoids).
 
 Record the diffs (or their absence) per workload row. This runbook plus the
 `doc/AuctionHouseBot.md` crash-injection procedure together constitute the
