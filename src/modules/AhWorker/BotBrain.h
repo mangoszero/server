@@ -190,6 +190,27 @@ class BotBrain
         /// @brief True if any buyer house is enabled.
         bool BuyerEnabled() const { return m_buyerEnabled; }
 
+        /**
+         * @brief Cross-restart uuid-collision guard for the bot minter.
+         *
+         * This minter owns the LOW half [1, 0x7FFFFFFF] of the per-runId seq
+         * space (MutationHandler::m_nextSeq owns [0x80000000+]); its uuids
+         * become ah_worker_journal PRIMARY KEYs via bot sells (BotSellBegin) and
+         * simple bot bids (PersistBotBidSimple). The supervisor runId resets to
+         * 1 each mangosd restart and @c m_seq restarts at 0, so a reused runId
+         * would re-mint a retained bot uuid -> duplicate-PK INSERT (silently
+         * dropped). @p maxSeq = the highest LOW-half seq already persisted for
+         * this runId (AhJournal::MaxSeqForRunId(highHalf=false); 0 = none). Skip
+         * @c m_seq past it. 0x7FFFFFFF is the low-half exhaustion sentinel: never
+         * advance to where the next ++m_seq would cross into the high half.
+         * Call once at boot, before the first mint.
+         */
+        void SeedSeqPast(uint32 maxSeq);
+
+        /// @brief Current low-32 uuid counter (introspection / test hook). The
+        /// next NextUuid() mints @c CurrentSeq()+1.
+        uint32 CurrentSeq() const { return m_seq; }
+
     private:
         // --- Orchestration ------------------------------------------------
         bool SellerUpdate(uint8 houseType, std::vector<EmittedIntent>& out);

@@ -106,6 +106,19 @@ uint64 BotBrain::NextUuid()
     return (static_cast<uint64>(m_runId) << 32) | static_cast<uint64>(m_seq);
 }
 
+void BotBrain::SeedSeqPast(uint32 maxSeq)
+{
+    // maxSeq = highest low-half seq [1, 0x7FFFFFFF] already persisted for this
+    // runId (0 = none). Skip m_seq past it so the next NextUuid() (which does
+    // ++m_seq) mints maxSeq+1 and cannot re-collide with a retained bot uuid.
+    // 0x7FFFFFFF sentinel: never advance to where ++m_seq would spill into the
+    // MutationHandler minter's high half [0x80000000+].
+    if (maxSeq != 0u && maxSeq != 0x7FFFFFFFu && m_seq < maxSeq)
+    {
+        m_seq = maxSeq;
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Config helpers (mirror AuctionBotConfig::getConfigItemAmountRatio etc.)
 // ---------------------------------------------------------------------------

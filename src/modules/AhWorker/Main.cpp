@@ -2337,6 +2337,35 @@ static int RunResolveOutboxSelfTest()
         }
     }
 
+    // --- [FIX A generalization] retained terminal-row minter seed ----------
+    // FIX A only advances the minter past adopted JRN_RESOLVING rows, but
+    // retained terminal JRN_APPLIED rows (state 3) linger until pruned and are
+    // invisible to LoadActive (state IN 1,2,4,5) and to PrimeResolvingFromJournal.
+    // Under a reused runId the minter must still skip past their seq, which
+    // SeedMinterPast does from AhJournal::MaxSeqForRunId's max low-32. RED
+    // without the fix: the minter stays at 0x80000000 <= the retained seq -> a
+    // re-mint collides -> the journal INSERT trips a duplicate PRIMARY KEY.
+    {
+        uint32 const retainedSeq = 0x80000087u;         // max seq of a runId-1 APPLIED row
+
+        AuctionBook book4(NULL);
+        TestMutationHandler h4(book4, &dummyDb, 1u);     // reused runId, minter @ 0x80000000
+        h4.SeedMinterPast(retainedSeq);
+        if (static_cast<uint32>(h4.NextUuid() & 0xFFFFFFFFu) <= retainedSeq)
+        {
+            return OutboxFail("SeedMinterPast: minter not seeded past retained terminal seq");
+        }
+
+        // Empty-run case: MaxSeqForRunId returns 0 -> the minter must not move.
+        AuctionBook book5(NULL);
+        TestMutationHandler h5(book5, &dummyDb, 1u);
+        h5.SeedMinterPast(0u);
+        if (static_cast<uint32>(h5.NextUuid() & 0xFFFFFFFFu) != 0x80000000u)
+        {
+            return OutboxFail("SeedMinterPast(0): empty run must not move the minter");
+        }
+    }
+
     printf("resolve outbox selftest OK\n");
     fflush(stdout);
     return 0;
@@ -2539,6 +2568,40 @@ static int RunBotFoldInSelfTest()
         if (pres.status == static_cast<uint8>(MUT_OK))
         {
             return FoldFail("player bid on CANCEL_PREPARED must not be MUT_OK");
+        }
+    }
+
+    // --- Bot minter cross-restart seed (BotBrain::SeedSeqPast) --------------
+    // BotBrain::m_seq is the SECOND journal-PK minter (low half [1,0x7FFFFFFF]),
+    // which also restarts at 0 on a runId-reuse restart; retained bot-sell /
+    // simple-bot-bid rows would re-collide (duplicate PRIMARY KEY) unless boot
+    // seeds it past the low-half retained max
+    // (AhJournal::MaxSeqForRunId(highHalf=false)). Construction touches no DB --
+    // ItemPool/MarketSnapshot only query on Build()/Refresh().
+    {
+        ServiceConfig  botCfg;
+        ItemPool       botItemPool(botCfg, dummyDb);
+        MarketSnapshot botMkt(dummyDb);
+        BotBrain       brain(botCfg, botItemPool, botMkt, 77u /*botGuid*/, 1u /*runId*/);
+
+        if (brain.CurrentSeq() != 0u)
+        {
+            return FoldFail("fresh BotBrain minter must start at seq 0");
+        }
+        // Retained low-half rows up to seq 150 -> skip the minter to 150 so the
+        // next NextUuid() (++m_seq) mints 151, clear of the retained rows. RED
+        // without the seed: m_seq stays 0 -> first mint 1 collides.
+        brain.SeedSeqPast(150u);
+        if (brain.CurrentSeq() != 150u)
+        {
+            return FoldFail("SeedSeqPast must skip the bot minter past the retained low-half seq");
+        }
+        // Monotonic: a lower or empty (0) seed never rewinds the minter.
+        brain.SeedSeqPast(100u);
+        brain.SeedSeqPast(0u);
+        if (brain.CurrentSeq() != 150u)
+        {
+            return FoldFail("SeedSeqPast must never rewind the bot minter");
         }
     }
 
@@ -3481,6 +3544,34 @@ int main(int argc, char** argv)
             return 1;
         }
         ahHandler = new MutationHandler(*ahBook, &botDb, cli.RunId());
+        // Cross-restart uuid-collision guard (no duplicate-PK journal INSERT
+        // after a runId-reuse restart). The supervisor resets runId to 1 each
+        // mangosd restart, so BOTH journal-PK minters restart low and would
+        // re-mint retained uuids. They partition this runId's low-32 space by
+        // the high bit -- MutationHandler owns [0x80000000+] (player mutations,
+        // resolves, bot buyout); BotBrain owns [1, 0x7FFFFFFF] (bot sells,
+        // simple bot bids) -- and terminal JRN_APPLIED rows linger, invisible to
+        // LoadActive, so EACH minter is seeded past its own half's retained max.
+        // Fail closed if either seed query errors (an unsafe seed would re-open
+        // the collision).
+        uint32 playerMaxSeq = 0u;
+        uint32 botMaxSeq    = 0u;
+        if (!AhJournal::MaxSeqForRunId(botDb, cli.RunId(), true,  playerMaxSeq) ||
+            !AhJournal::MaxSeqForRunId(botDb, cli.RunId(), false, botMaxSeq))
+        {
+            fprintf(stderr, "ah-service: journal minter-seed query failed -"
+                            " refusing to mint (duplicate-PK risk); exiting\n");
+            delete ahHandler;
+            delete ahBook;
+            delete botBrain;
+            delete botSnap;
+            delete botPool;
+            botDb.Shutdown();
+            cli.Stop();
+            return 1;
+        }
+        ahHandler->SeedMinterPast(playerMaxSeq);
+        botBrain->SeedSeqPast(botMaxSeq);
         ahHandler->AdoptActiveJournal(activeJournal);
         // SP-2 Task 7 (spec 4.3 at-least-once): re-send EVERY RESOLVING
         // journal entry immediately; the first loop pass drains the frames.

@@ -133,6 +133,23 @@ class MutationHandler
         void PrimeResolvingFromJournal(
             std::vector<AhJournal::JournalRow> const& activeJournal);
 
+        /**
+         * @brief Cross-restart uuid-collision guard for THIS minter's half.
+         *        Seed the minter past @p maxSeq -- the highest seq persisted in
+         *        this minter's HIGH half [0x80000000+] for this runId (0 = none),
+         *        from AhJournal::MaxSeqForRunId(highHalf=true). The BotBrain
+         *        minter owns the low half and is seeded by BotBrain::SeedSeqPast.
+         *        Generalizes the RESOLVING-only [FIX A] advance in
+         *        PrimeResolvingFromJournal to EVERY retained high-half row --
+         *        including terminal JRN_APPLIED, which LoadActive
+         *        (state IN 1,2,4,5) never returns. The supervisor runId resets
+         *        to 1 each mangosd restart and the minter restarts at
+         *        0x80000000, so without this a retained uuid gets re-minted and
+         *        its journal INSERT hits a duplicate PRIMARY KEY. Call once at
+         *        boot, before the first mint.
+         */
+        void SeedMinterPast(uint32 maxSeq);
+
         /// Drain handler-queued outbound frames (caller sends them).
         void TakeOutbound(std::vector<IpcMessage>& out);
 

@@ -75,6 +75,23 @@ namespace AhJournal
     /// Synchronous load of every non-terminal row (state IN 1,2,4,5) at boot.
     void LoadActive(ServiceDatabase& db, std::vector<JournalRow>& out);
 
+    /// Highest low-32 (seq) of a persisted journal uuid for @p runId within ONE
+    /// minter's half of the seq space, across ALL states (incl. terminal
+    /// JRN_APPLIED rows that LoadActive omits). The worker has TWO independent
+    /// journal-PK minters that share the runId high word but partition the
+    /// low-32 space by its high bit: MutationHandler::m_nextSeq owns the HIGH
+    /// half [0x80000000, 0xFFFFFFFF] (player mutations + resolves + bot buyout),
+    /// BotBrain::m_seq owns the LOW half [1, 0x7FFFFFFF] (bot sells + simple bot
+    /// bids). Each must be seeded from its OWN half, so @p highHalf selects it.
+    /// On success writes the max seq (0 when that half is empty for this runId)
+    /// to @p outMaxSeq and returns true. Returns false on a query ERROR: a
+    /// no-GROUP-BY MAX() always yields one row (NULL when empty), so a NULL
+    /// result means the query failed -- the boot caller must abort rather than
+    /// seed unsafely (a 0 seq would silently disarm the guard). Uses a sargable
+    /// PRIMARY KEY(uuid) range so MariaDB range-scans instead of full-scanning.
+    bool MaxSeqForRunId(ServiceDatabase& db, uint32 runId, bool highHalf,
+                        uint32& outMaxSeq);
+
     /// Prune JRN_APPLIED rows with resolved_time < @p cutoff (standalone).
     void DeleteAppliedOlderThan(ServiceDatabase& db, uint64 cutoff);
 }

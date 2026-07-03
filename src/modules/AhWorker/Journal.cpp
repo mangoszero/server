@@ -121,6 +121,39 @@ bool AhJournal::Get(ServiceDatabase& db, uint64 uuid, JournalRow& out)
     return true;
 }
 
+bool AhJournal::MaxSeqForRunId(ServiceDatabase& db, uint32 runId, bool highHalf,
+                              uint32& outMaxSeq)
+{
+    // Contiguous PRIMARY KEY(uuid) sub-range for the requested minter's half of
+    // this runId's low-32 space -- a sargable range scan (no function wraps the
+    // indexed column). HIGH half = the MutationHandler minter [0x80000000+];
+    // LOW half = the BotBrain minter [1, 0x7FFFFFFF] (seq 0 is never minted).
+    uint64 const runBase = static_cast<uint64>(runId) << 32;
+    uint64 const lo = runBase | (highHalf ? 0x80000000ULL : 0x00000001ULL);
+    uint64 const hi = runBase | (highHalf ? 0xFFFFFFFFULL : 0x7FFFFFFFULL);
+
+    QueryResult* result = db.Character().PQuery(
+        "SELECT MAX(`uuid`) FROM `ah_worker_journal` "
+        "WHERE `uuid` BETWEEN %llu AND %llu",
+        static_cast<unsigned long long>(lo),
+        static_cast<unsigned long long>(hi));
+    if (result == NULL)
+    {
+        // A no-GROUP-BY MAX() ALWAYS returns exactly one row (NULL when the
+        // range is empty), so a NULL RESULT is a genuine query error, never an
+        // empty run. Fail closed: a 0 seq here would silently disarm the seed
+        // and re-open the duplicate-PK collision.
+        return false;
+    }
+    Field* f = result->Fetch();
+    // Empty range -> MAX is NULL -> GetUInt64 yields 0 -> seq 0 (nothing to skip
+    // past). GetUInt64 (not GetUInt32) because the low-32 can reach 0xFFFFFFFF,
+    // above the signed-int parse range.
+    outMaxSeq = static_cast<uint32>(f[0].GetUInt64() & 0xFFFFFFFFULL);
+    delete result;
+    return true;
+}
+
 void AhJournal::LoadActive(ServiceDatabase& db, std::vector<JournalRow>& out)
 {
     QueryResult* result = db.Character().PQuery(

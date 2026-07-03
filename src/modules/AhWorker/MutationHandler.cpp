@@ -1218,6 +1218,25 @@ void MutationHandler::PrimeResolvingFromJournal(
     }
 }
 
+void MutationHandler::SeedMinterPast(uint32 maxSeq)
+{
+    // Generalizes [FIX A] (see PrimeResolvingFromJournal) to EVERY retained
+    // journal row in THIS minter's half of the seq space -- not just adopted
+    // JRN_RESOLVING ones. This minter owns the HIGH half [0x80000000+]; the
+    // BotBrain minter owns the low half and is seeded separately by
+    // BotBrain::SeedSeqPast. maxSeq = MAX high-half seq for this runId
+    // (AhJournal::MaxSeqForRunId(highHalf=true), 0 = none). Terminal JRN_APPLIED
+    // rows are retained until pruned, and LoadActive (state IN 1,2,4,5) never
+    // returns them, so after a restart that reuses runId=1 the minter -- which
+    // restarts at 0x80000000 -- would re-mint a retained uuid and its journal
+    // INSERT would hit a duplicate PRIMARY KEY. 0xFFFFFFFF is the seq-exhaustion
+    // sentinel: never advance the minter into wraparound.
+    if (maxSeq != 0u && maxSeq != 0xFFFFFFFFu && m_nextSeq <= maxSeq)
+    {
+        m_nextSeq = maxSeq + 1u;
+    }
+}
+
 // ---------------------------------------------------------------------------
 // SP-2 Task 8: bot fold-in (in-process book writes + sell materialization)
 // ---------------------------------------------------------------------------
