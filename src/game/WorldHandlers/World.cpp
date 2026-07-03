@@ -943,8 +943,17 @@ void World::SetInitialWorldSettings()
     }
     else
     {
-        sLog.outString("AuctionHouseBot: in-process bot disabled"
-                       " (AH.Service.WriteAuthority = 1; worker drives listings)");
+        // SP-2: the in-process bot AGENTS must not run under WriteAuthority (the
+        // worker's bot brain drives listings), but the bot owner GUID must still
+        // be resolved -- the worker's supervisor refuses to spawn on a 0 GUID,
+        // and the forged system owner is resolved as a side effect of loading
+        // the config. So load the config (which calls SetAHBotId -> the
+        // AHBOT_SYSTEM_OWNER name intercept, needing no real character) WITHOUT
+        // calling InitializeAgents().
+        sLog.outString("AuctionHouseBot: in-process agents disabled"
+                       " (AH.Service.WriteAuthority = 1; worker drives listings);"
+                       " resolving bot owner GUID for the worker supervisor");
+        sAuctionBotConfig.Initialize();
         sLog.outString();
     }
 
