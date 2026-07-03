@@ -574,8 +574,15 @@ struct LockEntry
 struct MailTemplateEntry
 {
     uint32      ID;                                         // 0        m_ID
-    // char*       subject[8];                              // 1-8      m_subject_lang
-    // 9 string flags
+    // char*       Body_lang;                                // 1        Body_lang (string) - server-unused
+    // char*       Body_lang_loc2;                            // 2        Body_lang_loc2 (string) - server-unused
+    // char*       Body_lang_loc3;                            // 3        Body_lang_loc3 (string) - server-unused
+    // char*       Body_lang_loc4;                            // 4        Body_lang_loc4 (string) - server-unused
+    // char*       Body_lang_loc5;                            // 5        Body_lang_loc5 (string) - server-unused
+    // char*       Body_lang_loc6;                            // 6        Body_lang_loc6 (string) - server-unused
+    // char*       Body_lang_loc7;                            // 7        Body_lang_loc7 (string) - server-unused
+    // char*       Body_lang_loc8;                            // 8        Body_lang_loc8 (string) - server-unused
+    // uint32      Body_lang_flags;                           // 9        Body_lang_flags (uint) - server-unused
 };
 
 /**
