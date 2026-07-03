@@ -307,7 +307,7 @@ void WorldSession::HandleMoveSplineDoneOpcode(WorldPacket& recv_data)
             TaxiPathNodeEntry const& node = flight->GetPath()[flight->GetCurrentNode()];
             flight->SkipCurrentNode();
 
-            _player->TeleportTo(curDestNode->map_id, node.x, node.y, node.z, _player->GetOrientation());
+            _player->TeleportTo(curDestNode->map_id, node.LocX, node.LocY, node.LocZ, _player->GetOrientation());
         }
         return;
     }

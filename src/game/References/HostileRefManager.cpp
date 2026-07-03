@@ -187,7 +187,7 @@ void HostileRefManager::deleteReferencesForFaction(uint32 faction)
     while (ref)
     {
         HostileReference* nextRef = ref->next();
-        if (ref->getSource()->getOwner()->getFactionTemplateEntry()->faction == faction)
+        if (ref->getSource()->getOwner()->getFactionTemplateEntry()->Faction == faction)
         {
             ref->removeReference();
             delete ref;

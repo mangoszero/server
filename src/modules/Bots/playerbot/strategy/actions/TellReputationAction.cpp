@@ -25,12 +25,12 @@ bool TellReputationAction::Execute(Event event)
     }
 
     const FactionTemplateEntry *factionTemplate = unit->getFactionTemplateEntry();
-    uint32 faction = factionTemplate->faction;
+    uint32 faction = factionTemplate->Faction;
     const FactionEntry* entry = sFactionStore.LookupEntry(faction);
     int32 reputation = bot->GetReputationMgr().GetReputation(faction);
 
     ostringstream out;
-    out << entry->name[0] << ": ";
+    out << entry->Name_lang[0] << ": ";
     out << "|cff";
     ReputationRank rank = bot->GetReputationMgr().GetRank(entry);
     switch (rank)

@@ -606,7 +606,7 @@ bool Creature::UpdateEntry(uint32 Entry, Team team, const CreatureData* data /*=
     // checked and error show at loading templates
     if (FactionTemplateEntry const* factionTemplate = sFactionTemplateStore.LookupEntry(GetCreatureInfo()->FactionAlliance))
     {
-        if (factionTemplate->factionFlags & FACTION_TEMPLATE_FLAG_PVP)
+        if (factionTemplate->Flags & FACTION_TEMPLATE_FLAG_PVP)
         {
             SetPvP(true);
         }
@@ -1246,7 +1246,7 @@ bool Creature::IsTrainerOf(Player* pPlayer, bool msg) const
                 // Allowed to train if exalted
                 if (FactionTemplateEntry const* faction_template = getFactionTemplateEntry())
                 {
-                    if (pPlayer->GetReputationRank(faction_template->faction) == REP_EXALTED)
+                    if (pPlayer->GetReputationRank(faction_template->Faction) == REP_EXALTED)
                     {
                         return true;
                     }

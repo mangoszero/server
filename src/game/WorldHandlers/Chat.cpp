@@ -1897,7 +1897,7 @@ void ChatHandler::LogCommand(char const* fullcmd)
 // Shared Helpers between command implementation files
 void ChatHandler::ShowFactionListHelper(FactionEntry const* factionEntry, LocaleConstant loc, FactionState const* repState /*= NULL*/, Player* target /*= NULL */)
 {
-    std::string name = factionEntry->name[loc];
+    std::string name = factionEntry->Name_lang[loc];
     // send faction in "id - [faction] rank reputation [visible] [at war] [own team] [unknown] [invisible] [inactive]" format
     // or              "id - [faction] [no reputation]" format
     std::ostringstream ss;
@@ -2077,7 +2077,7 @@ bool ChatHandler::ShowPlayerListHelper(QueryResult* result, uint32* limit, bool 
             ChrRacesEntry const* raceEntry = sChrRacesStore.LookupEntry(race);
             ChrClassesEntry const* classEntry = sChrClassesStore.LookupEntry(class_);
 
-            char const* race_name = raceEntry ? raceEntry->name[GetSessionDbcLocale()] : "<?>";
+            char const* race_name = raceEntry ? raceEntry->Name_lang[GetSessionDbcLocale()] : "<?>";
             char const* class_name = classEntry ? classEntry->Name_lang[GetSessionDbcLocale()] : "<?>";
 
             if (!m_session)

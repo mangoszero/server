@@ -146,7 +146,7 @@ void PlayerTaxi::InitTaxiNodes(uint32 race, uint32 /*level*/)
     memset(m_taximask, 0, sizeof(m_taximask));
     // capital and taxi hub masks
     ChrRacesEntry const* rEntry = sChrRacesStore.LookupEntry(race);
-    m_taximask[0] = rEntry->startingTaxiMask;
+    m_taximask[0] = rEntry->StartingTaxiNodes;
 }
 
 
@@ -3540,13 +3540,13 @@ Team Player::TeamForRace(uint8 race)
         return ALLIANCE;
     }
 
-    switch (rEntry->TeamID)
+    switch (rEntry->BaseLanguage)
     {
         case 7: return ALLIANCE;
         case 1: return HORDE;
     }
 
-    sLog.outError("Race %u have wrong teamid %u in DBC: wrong DBC files?", uint32(race), rEntry->TeamID);
+    sLog.outError("Race %u have wrong teamid %u in DBC: wrong DBC files?", uint32(race), rEntry->BaseLanguage);
     return TEAM_NONE;
 }
 
@@ -5310,7 +5310,7 @@ bool Player::BuyItemFromVendor(ObjectGuid vendorGuid, uint32 item, uint8 count, 
     uint32 reqFaction = pProto->RequiredReputationFaction;
     if (!reqFaction && pProto->RequiredReputationRank > 0)
     {
-        reqFaction = pCreature->getFactionTemplateEntry()->faction;
+        reqFaction = pCreature->getFactionTemplateEntry()->Faction;
     }
 
     if (uint32(GetReputationRank(reqFaction)) < pProto->RequiredReputationRank)
@@ -5848,13 +5848,13 @@ BattleGroundBracketId Player::GetBattleGroundBracketIdFromLevel(BattleGroundType
 float Player::GetReputationPriceDiscount(Creature const* pCreature) const
 {
     FactionTemplateEntry const* vendor_faction = pCreature->getFactionTemplateEntry();
-    if (!vendor_faction || !vendor_faction->faction)
+    if (!vendor_faction || !vendor_faction->Faction)
     {
         return 1.0f;
     }
 
     uint32 discount = 100;
-    ReputationRank rank = GetReputationRank(vendor_faction->faction);   // get repution rank for that specific vendor faction
+    ReputationRank rank = GetReputationRank(vendor_faction->Faction);   // get repution rank for that specific vendor faction
     if (rank >= REP_HONORED)                                            // give 10% reduction if rank is at least honored
     {
         discount -= 10;
@@ -5912,18 +5912,18 @@ bool Player::IsSpellFitByClassAndRace(uint32 spell_id, uint32* pReqlevel /*= NUL
         for (SkillRaceClassInfoMap::const_iterator itr = raceBounds.first; itr != raceBounds.second; ++itr)
         {
             SkillRaceClassInfoEntry const* skillRCEntry = itr->second;
-            if ((skillRCEntry->raceMask & racemask) && (skillRCEntry->classMask & classmask))
+            if ((skillRCEntry->RaceMask & racemask) && (skillRCEntry->ClassMask & classmask))
             {
-                if (skillRCEntry->flags & ABILITY_SKILL_NONTRAINABLE)
+                if (skillRCEntry->Flags & ABILITY_SKILL_NONTRAINABLE)
                 {
                     return false;
                 }
 
                 if (pReqlevel)                              // show trainers list case
                 {
-                    if (skillRCEntry->reqLevel)
+                    if (skillRCEntry->MinLevel)
                     {
-                        *pReqlevel = skillRCEntry->reqLevel;
+                        *pReqlevel = skillRCEntry->MinLevel;
                         return true;
                     }
                 }
@@ -5947,7 +5947,7 @@ bool Player::IsSpellFitByClassAndRace(uint32 spell_id, uint32* pReqlevel /*= NUL
                             }
                             break;
                         default: // any other spell
-                            if (skillRCEntry->reqLevel && getLevel() < skillRCEntry->reqLevel)
+                            if (skillRCEntry->MinLevel && getLevel() < skillRCEntry->MinLevel)
                             {
                                 return false;
                             }

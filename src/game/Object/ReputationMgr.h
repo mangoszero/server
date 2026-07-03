@@ -79,7 +79,7 @@ class ReputationMgr
 
         FactionState const* GetState(FactionEntry const* factionEntry) const
         {
-            return factionEntry->reputationListID >= 0 ? GetState(factionEntry->reputationListID) : NULL;
+            return factionEntry->ReputationIndex >= 0 ? GetState(factionEntry->ReputationIndex) : NULL;
         }
 
         FactionState const* GetState(RepListID id) const
@@ -97,7 +97,7 @@ class ReputationMgr
 
         ReputationRank const* GetForcedRankIfAny(FactionTemplateEntry const* factionTemplateEntry) const
         {
-            ForcedReactions::const_iterator forceItr = m_forcedReactions.find(factionTemplateEntry->faction);
+            ForcedReactions::const_iterator forceItr = m_forcedReactions.find(factionTemplateEntry->Faction);
             return forceItr != m_forcedReactions.end() ? &forceItr->second : NULL;
         }
 

@@ -76,16 +76,16 @@ struct AreaTableEntry
  */
 struct AreaTriggerEntry
 {
-    uint32    id;                                           // 0 - ID of the Area within the DBC.
+    uint32    ID;                                           // 0 - ID of the Area within the DBC.
     uint32    mapid;                                        // 1 - ID of the Continent in DBC (0 = Azeroth, 1 = Kalimdor, ...)
     float     x;                                            // 2 - X position of the Area Trigger Entry.
     float     y;                                            // 3 - Y position of the Area Trigger Entry.
     float     z;                                            // 4 - Z position of the Area Trigger Entry.
     float     radius;                                       // 5 - Radius around the Area Trigger point.
-    float     box_x;                                        // 6 - extent x edge
-    float     box_y;                                        // 7 - extent y edge
-    float     box_z;                                        // 8 - extent z edge
-    float     box_orientation;                              // 9 - extent rotation by about z axis
+    float     box_length;                                   // 6 - extent x edge
+    float     box_width;                                    // 7 - extent y edge
+    float     box_height;                                   // 8 - extent z edge
+    float     box_yaw;                                      // 9 - extent rotation by about z axis
 };
 
 /**
@@ -186,27 +186,28 @@ struct ChrClassesEntry
  */
 struct ChrRacesEntry
 {
-    uint32      RaceID;                                     // 0        m_ID - ID of the Char Race in DBC.
-    // 1        m_flags
+    uint32      ID;                                        // 0        m_ID - ID of the Char Race in DBC.
+    // uint32   Flags;                                      // 1        Flags (uint) - server-unused
     uint32      FactionID;                                  // 2        m_factionID - ID of the faction in DBC. (See Faction.dbc)
-    // 3        m_ExplorationSoundID
-    uint32      model_m;                                    // 4        m_MaleDisplayId - ID of the Male Display.
-    uint32      model_f;                                    // 5        m_FemaleDisplayId - ID of the Female Display.
-    // 6        m_ClientPrefix
-    // 7        unused
-    uint32      TeamID;                                     // 8        m_BaseLanguage - ID of the Major Playable Faction (7-Alliance 1-Horde).
-    // 9        m_creatureType
-    // 10       unused, all 836
-    // 11       unused, all 1604
-    // 12       m_ResSicknessSpellID
-    // 13       m_SplashSoundID
-    uint32      startingTaxiMask;                           // 14        Starting Taxi Max for the given Race (already discovered Taxi Nodes).
-    // 15       m_clientFileString
+    // uint32   ExplorationSoundID;                         // 3        ExplorationSoundID (uint) - server-unused
+    uint32      MaleDisplayID;                              // 4        m_MaleDisplayId - ID of the Male Display.
+    uint32      FemaleDisplayID;                            // 5        m_FemaleDisplayId - ID of the Female Display.
+    // char*    ClientPrefix;                               // 6        ClientPrefix (string) - server-unused
+    // float    MountScale;                                 // 7        MountScale (float) - server-unused
+    uint32      BaseLanguage;                               // 8        m_BaseLanguage - ID of the Major Playable Faction (7-Alliance 1-Horde).
+    // uint32   CreatureType;                               // 9        CreatureType (uint) - server-unused
+    // uint32   LoginEffectSpellID;                         // 10       LoginEffectSpellID (uint) - server-unused
+    // uint32   CombatStunSpellID;                          // 11       CombatStunSpellID (uint) - server-unused
+    // uint32   ResSicknessSpellID;                         // 12       ResSicknessSpellID (uint) - server-unused
+    // uint32   SplashSoundID;                              // 13       SplashSoundID (uint) - server-unused
+    uint32      StartingTaxiNodes;                          // 14        Starting Taxi Max for the given Race (already discovered Taxi Nodes).
+    // char*    ClientFileString;                           // 15       ClientFileString (string) - server-unused
     uint32      CinematicSequence;                          // 16       m_cinematicSequenceID - Cinematic Sequence ID.
-    char*       name[8];                                    // 17-24    m_name_lang used for DBC language detection/selection
-    // 25 string flags
-    // 26-27    m_facialHairCustomization[2]
-    // 28       m_hairCustomization
+    char*       Name_lang[8];                               // 17-24    m_name_lang used for DBC language detection/selection
+    // uint32   Name_lang_flags;                            // 25       Name_lang_flags (uint) - server-unused
+    // char*    FacialHairCustomization_0;                  // 26       FacialHairCustomization_0 (string) - server-unused
+    // char*    FacialHairCustomization_1;                  // 27       FacialHairCustomization_1 (string) - server-unused
+    // char*    HairCustomization;                          // 28       HairCustomization (string) - server-unused
 };
 
 /**
@@ -280,13 +281,15 @@ struct CreatureDisplayInfoExtraEntry
 struct CreatureFamilyEntry
 {
     uint32    ID;                                           // 0 - ID in DBC.
-    float     minScale;                                     // 1 - Min Scale of creature within the game.
-    uint32    minScaleLevel;                                // 2 0/1 - Minimum level for which the minScale is applicable.
-    float     maxScale;                                     // 3 - Max Scale of creature within the game.
-    uint32    maxScaleLevel;                                // 4 0/60 - Maximum level for which the maxScale is applicable.
-    uint32    skillLine[2];                                 // 5-6 - Skill Lines (See SkillLine.dbc).
-    uint32    petFoodMask;                                  // 7 - Food Mask for the given pet.
-    char*     Name[8];
+    float     MinScale;                                     // 1 - Min Scale of creature within the game.
+    uint32    MinScaleLevel;                                // 2 0/1 - Minimum level for which the MinScale is applicable.
+    float     MaxScale;                                     // 3 - Max Scale of creature within the game.
+    uint32    MaxScaleLevel;                                // 4 0/60 - Maximum level for which the MaxScale is applicable.
+    uint32    SkillLine[2];                                 // 5-6 - Skill Lines (See SkillLine.dbc).
+    uint32    PetFoodMask;                                  // 7 - Food Mask for the given pet.
+    char*     Name_lang[8];                                 // 8-15 - m_name_lang.
+    // uint32   Name_lang_flags;                            // 16       Name_lang_flags (uint) - server-unused
+    // char*    IconFile;                                   // 17       IconFile (string) - server-unused
 };
 
 #define MAX_CREATURE_SPELL_DATA_SLOT 4
@@ -393,16 +396,16 @@ struct EmotesTextEntry
 struct FactionEntry
 {
     uint32      ID;                                         // 0        m_ID - ID in DBC.
-    int32       reputationListID;                           // 1        m_reputationIndex - ID of the Reputation List.
-    uint32      BaseRepRaceMask[4];                         // 2-5      m_reputationRaceMask -
-    uint32      BaseRepClassMask[4];                        // 6-9      m_reputationClassMask
-    int32       BaseRepValue[4];                            // 10-13    m_reputationBase
+    int32       ReputationIndex;                            // 1        m_reputationIndex - ID of the Reputation List.
+    uint32      ReputationRaceMask[4];                      // 2-5      m_reputationRaceMask -
+    uint32      ReputationClassMask[4];                     // 6-9      m_reputationClassMask
+    int32       ReputationBase[4];                          // 10-13    m_reputationBase
     uint32      ReputationFlags[4];                         // 14-17    m_reputationFlags
-    uint32      team;                                       // 18       m_parentFactionID
-    char*       name[8];                                    // 19-26    m_name_lang
-    // 27 string flags
-    // char*     description[8];                            // 28-35    m_description_lang
-    // 36 string flags
+    uint32      ParentFactionID;                            // 18       m_parentFactionID
+    char*       Name_lang[8];                               // 19-26    m_name_lang
+    // uint32   Name_lang_flags;                            // 27       Name_lang_flags (uint) - server-unused
+    // char*    Description_lang[8];                        // 28-35    Description_lang (string) - server-unused
+    // uint32   Description_lang_flags;                     // 36       Description_lang_flags (uint) - server-unused
 
     // helpers
 
@@ -410,8 +413,8 @@ struct FactionEntry
     {
         for (int i = 0; i < 4; ++i)
         {
-            if ((BaseRepRaceMask[i] == 0 || (BaseRepRaceMask[i] & raceMask)) &&
-                (BaseRepClassMask[i] == 0 || (BaseRepClassMask[i] & classMask)))
+            if ((ReputationRaceMask[i] == 0 || (ReputationRaceMask[i] & raceMask)) &&
+                (ReputationClassMask[i] == 0 || (ReputationClassMask[i] & classMask)))
             {
                 return i;
             }
@@ -430,29 +433,29 @@ struct FactionTemplateEntry
     /// 0
     uint32      ID;
     /// 1
-    uint32      faction;
+    uint32      Faction;
     /// 2 specific flags for that faction
-    uint32      factionFlags;
+    uint32      Flags;
     /// 3 if mask set (see FactionMasks) then faction included in masked team
-    uint32      ourMask;
+    uint32      FactionGroup;
     /// 4 if mask set (see FactionMasks) then faction friendly to masked team
-    uint32      friendlyMask;
+    uint32      FriendGroup;
     /// 5 if mask set (see FactionMasks) then faction hostile to masked team
-    uint32      hostileMask;
+    uint32      EnemyGroup;
     /// 6-9
-    uint32      enemyFaction[4];
+    uint32      Enemies[4];
     /// 10-13
-    uint32      friendFaction[4];
+    uint32      Friend[4];
     //-------------------------------------------------------  end structure
 
     // helpers
     bool IsFriendlyTo(FactionTemplateEntry const& entry) const
     {
-        if (entry.faction)
+        if (entry.Faction)
         {
             for (int i = 0; i < 4; ++i)
             {
-                if (enemyFaction[i]  == entry.faction)
+                if (Enemies[i]  == entry.Faction)
                 {
                     return false;
                 }
@@ -460,22 +463,22 @@ struct FactionTemplateEntry
 
             for (int i = 0; i < 4; ++i)
             {
-                if (friendFaction[i] == entry.faction)
+                if (Friend[i] == entry.Faction)
                 {
                     return true;
                 }
             }
         }
-        return (friendlyMask & entry.ourMask) || (ourMask & entry.friendlyMask);
+        return (FriendGroup & entry.FactionGroup) || (FactionGroup & entry.FriendGroup);
     }
 
     bool IsHostileTo(FactionTemplateEntry const& entry) const
     {
-        if (entry.faction)
+        if (entry.Faction)
         {
             for (int i = 0; i < 4; ++i)
             {
-                if (enemyFaction[i]  == entry.faction)
+                if (Enemies[i]  == entry.Faction)
                 {
                     return true;
                 }
@@ -483,29 +486,29 @@ struct FactionTemplateEntry
 
             for (int i = 0; i < 4; ++i)
             {
-                if (friendFaction[i] == entry.faction)
+                if (Friend[i] == entry.Faction)
                 {
                     return false;
                 }
             }
         }
-        return (hostileMask & entry.ourMask) != 0;
+        return (EnemyGroup & entry.FactionGroup) != 0;
     }
 
-    bool IsHostileToPlayers() const { return (hostileMask & FACTION_MASK_PLAYER) != 0; }
+    bool IsHostileToPlayers() const { return (EnemyGroup & FACTION_MASK_PLAYER) != 0; }
     bool IsNeutralToAll() const
     {
         for (int i = 0; i < 4; ++i)
         {
-            if (enemyFaction[i] != 0)
+            if (Enemies[i] != 0)
             {
                 return false;
             }
         }
-        return hostileMask == 0 && friendlyMask == 0;
+        return EnemyGroup == 0 && FriendGroup == 0;
     }
 
-    bool IsContestedGuardFaction() const { return (factionFlags & FACTION_TEMPLATE_FLAG_CONTESTED_GUARD) != 0; }
+    bool IsContestedGuardFaction() const { return (Flags & FACTION_TEMPLATE_FLAG_CONTESTED_GUARD) != 0; }
 };
 
 /**
@@ -591,13 +594,13 @@ struct ItemRandomPropertiesEntry
 struct ItemSetEntry
 {
     // uint32    id                                         // 0        m_ID
-    char*     name[8];                                      // 1-8      m_name_lang
-    // 9 string flags
-    // uint32    itemId[17];                                // 10-26    m_itemID
-    uint32    spells[8];                                    // 27-34    m_setSpellID
-    uint32    items_to_triggerspell[8];                     // 35-42    m_setThreshold
-    uint32    required_skill_id;                            // 43       m_requiredSkill
-    uint32    required_skill_value;                         // 44       m_requiredSkillRank
+    char*     Name_lang[8];                                 // 1-8      m_name_lang
+    // uint32   Name_lang_flags;                            // 9        Name_lang_flags (uint) - server-unused
+    // uint32   ItemID[17];                                 // 10-26    ItemID (uint) - server-unused
+    uint32    SetSpellID[8];                                // 27-34    m_setSpellID
+    uint32    SetThreshold[8];                              // 35-42    m_setThreshold
+    uint32    RequiredSkill;                                // 43       m_requiredSkill
+    uint32    RequiredSkillRank;                            // 44       m_requiredSkillRank
 };
 
 /**
@@ -746,13 +749,13 @@ struct QuestSortEntry
 struct SkillRaceClassInfoEntry
 {
     // uint32    id;                                        // 0        m_ID
-    uint32    skillId;                                      // 1        m_skillID
-    uint32    raceMask;                                     // 2        m_raceMask
-    uint32    classMask;                                    // 3        m_classMask
-    uint32    flags;                                        // 4        m_flags
-    uint32    reqLevel;                                     // 5        m_minLevel
-    // uint32    skillTierId;                               // 6        m_skillTierID
-    // uint32    skillCostID;                               // 7        m_skillCostIndex
+    uint32    SkillID;                                      // 1        m_skillID
+    uint32    RaceMask;                                     // 2        m_raceMask
+    uint32    ClassMask;                                    // 3        m_classMask
+    uint32    Flags;                                        // 4        m_flags
+    uint32    MinLevel;                                     // 5        m_minLevel
+    // uint32   SkillTierID;                                // 6        SkillTierID (uint) - server-unused
+    // uint32   SkillCostIndex;                             // 7        SkillCostIndex (uint) - server-unused
 };
 
 /**
@@ -1229,14 +1232,14 @@ struct SpellFocusObjectEntry
 struct SpellItemEnchantmentEntry
 {
     uint32      ID;                                         // 0        m_ID
-    uint32      type[3];                                    // 1-3      m_effect[3]
-    uint32      amount[3];                                  // 4-6      m_effectPointsMin[3]
-    // uint32      amount2[3]                               // 7-9      m_effectPointsMax[3]
-    uint32      spellid[3];                                 // 10-12    m_effectArg[3]
-    char*       description[8];                             // 13-20    m_name_lang[8]
-    // 21 string flags
-    uint32      aura_id;                                    // 22       m_itemVisual
-    uint32      slot;                                       // 23       m_flags
+    uint32      Effect[3];                                  // 1-3      m_effect[3]
+    uint32      EffectPointsMin[3];                         // 4-6      m_effectPointsMin[3]
+    // uint32   EffectPointsMax[3];                         // 7-9      EffectPointsMax (uint) - server-unused
+    uint32      EffectArg[3];                               // 10-12    m_effectArg[3]
+    char*       Name_lang[8];                               // 13-20    m_name_lang[8]
+    // uint32   Name_lang_flags;                            // 21       Name_lang_flags (uint) - server-unused
+    uint32      ItemVisual;                                 // 22       m_itemVisual
+    uint32      Flags;                                      // 23       m_flags
 };
 
 /**
@@ -1341,14 +1344,14 @@ struct TaxiPathEntry
 struct TaxiPathNodeEntry
 {
     // 0        m_ID - ID in the DBC.
-    uint32    path;                                         // 1        m_PathID - ID of the path in the DBC.
-    uint32    index;                                        // 2        m_NodeIndex - Index of the Node in the path.
-    uint32    mapid;                                        // 3        m_ContinentID - ID of the Continent in DBC (0 = Azeroth, 1 = Kalimdor, 30 = Alterac Valley)
-    float     x;                                            // 4        m_LocX - X position of the Node.
-    float     y;                                            // 5        m_LocY - Y position of the Node.
-    float     z;                                            // 6        m_LocZ - Z position of the Node.
-    uint32    actionFlag;                                   // 7        m_flags - Unknown usage.
-    uint32    delay;                                        // 8        m_delay - Unknown usage.
+    uint32    PathID;                                       // 1        m_PathID - ID of the path in the DBC.
+    uint32    NodeIndex;                                    // 2        m_NodeIndex - Index of the Node in the path.
+    uint32    ContinentID;                                  // 3        m_ContinentID - ID of the Continent in DBC (0 = Azeroth, 1 = Kalimdor, 30 = Alterac Valley)
+    float     LocX;                                         // 4        m_LocX - X position of the Node.
+    float     LocY;                                         // 5        m_LocY - Y position of the Node.
+    float     LocZ;                                         // 6        m_LocZ - Z position of the Node.
+    uint32    Flags;                                        // 7        m_flags - Unknown usage.
+    uint32    Delay;                                        // 8        m_delay - Unknown usage.
 };
 
 /**
@@ -1357,19 +1360,19 @@ struct TaxiPathNodeEntry
  */
 struct WMOAreaTableEntry
 {
-    uint32 Id;                                              // 0        m_ID index
-    int32 rootId;                                           // 1        m_WMOID used in root WMO
-    int32 adtId;                                            // 2        m_NameSetID used in adt file
-    int32 groupId;                                          // 3        m_WMOGroupID used in group WMO
-    // uint32 field4;                                       // 4        m_SoundProviderPref
-    // uint32 field5;                                       // 5        m_SoundProviderPrefUnderwater
-    // uint32 field6;                                       // 6        m_AmbienceID
-    // uint32 field7;                                       // 7        m_ZoneMusic
-    // uint32 field8;                                       // 8        m_IntroSound
+    uint32 ID;                                              // 0        m_ID index
+    int32 WMOID;                                            // 1        m_WMOID used in root WMO
+    int32 NameSetID;                                        // 2        m_NameSetID used in adt file
+    int32 WMOGroupID;                                       // 3        m_WMOGroupID used in group WMO
+    // int32 SoundProviderPref;                             // 4        SoundProviderPref (int) - server-unused
+    // int32 SoundProviderPrefUnderwater;                   // 5        SoundProviderPrefUnderwater (int) - server-unused
+    // int32 AmbienceID;                                    // 6        AmbienceID (int) - server-unused
+    // int32 ZoneMusic;                                     // 7        ZoneMusic (int) - server-unused
+    // int32 IntroSound;                                    // 8        IntroSound (int) - server-unused
     uint32 Flags;                                           // 9        m_flags (used for indoor/outdoor determination)
-    uint32 areaId;                                          // 10       m_AreaTableID (AreaTable.dbc)
-    // char *Name[8];                                       //          m_AreaName_lang
-    // uint32 nameFlags;
+    uint32 AreaTableID;                                     // 10       m_AreaTableID (AreaTable.dbc)
+    // char* AreaName_lang[8];                              // 11-18    AreaName_lang (string) - server-unused
+    // uint32 AreaName_lang_flags;                          // 19       AreaName_lang_flags (uint) - server-unused
 };
 
 /**
@@ -1378,14 +1381,14 @@ struct WMOAreaTableEntry
  */
 struct WorldMapAreaEntry
 {
-    // uint32  ID;                                          // 0        m_ID
-    uint32  map_id;                                         // 1        m_mapID
-    uint32  area_id;                                        // 2        m_areaID index (continent 0 areas ignored)
-    // char* internal_name                                  // 3        m_areaName
-    float   y1;                                             // 4        m_locLeft
-    float   y2;                                             // 5        m_locRight
-    float   x1;                                             // 6        m_locTop
-    float   x2;                                             // 7        m_locBottom
+    // uint32  ID;                                          // 0        ID (uint) - server-unused
+    uint32  MapID;                                          // 1        m_mapID
+    uint32  AreaID;                                         // 2        m_areaID index (continent 0 areas ignored)
+    // char*   AreaName;                                    // 3        AreaName (string) - server-unused
+    float   LocLeft;                                        // 4        m_locLeft
+    float   LocRight;                                       // 5        m_locRight
+    float   LocTop;                                         // 6        m_locTop
+    float   LocBottom;                                      // 7        m_locBottom
 };
 
 /**

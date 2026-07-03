@@ -288,8 +288,8 @@ void ObjectMgr::LoadPlayerInfo()
             pInfo->positionZ   = positionZ;
             pInfo->orientation = orientation;
 
-            pInfo->displayId_m = rEntry->model_m;
-            pInfo->displayId_f = rEntry->model_f;
+            pInfo->displayId_m = rEntry->MaleDisplayID;
+            pInfo->displayId_f = rEntry->FemaleDisplayID;
 
             bar.step();
             ++count;

@@ -342,7 +342,7 @@ void PlayerbotFactory::InitPet()
     if (cInfo && cInfo->Family)
     {
         CreatureFamilyEntry const* cFamily = sCreatureFamilyStore.LookupEntry(cInfo->Family);
-        if (cFamily && (cFamily->skillLine[0] || cFamily->skillLine[1]))
+        if (cFamily && (cFamily->SkillLine[0] || cFamily->SkillLine[1]))
         {
             for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
             {
@@ -352,7 +352,7 @@ void PlayerbotFactory::InitPet()
                     continue;
                 }
 
-                if (slab->skillId != cFamily->skillLine[0] && slab->skillId != cFamily->skillLine[1])
+                if (slab->skillId != cFamily->SkillLine[0] && slab->skillId != cFamily->SkillLine[1])
                 {
                     continue;
                 }
@@ -1192,7 +1192,7 @@ void PlayerbotFactory::EnchantItem(Item* item)
             }
 
             SpellItemEnchantmentEntry const* enchant = sSpellItemEnchantmentStore.LookupEntry(enchant_id);
-            if (!enchant || enchant->slot != PERM_ENCHANTMENT_SLOT)
+            if (!enchant || enchant->Flags != PERM_ENCHANTMENT_SLOT)
             {
                 continue;
             }
@@ -1200,12 +1200,12 @@ void PlayerbotFactory::EnchantItem(Item* item)
             uint8 sp = 0, ap = 0, tank = 0;
             for (int i = 0; i < 3; ++i)
             {
-                if (enchant->type[i] != ITEM_ENCHANTMENT_TYPE_STAT)
+                if (enchant->Effect[i] != ITEM_ENCHANTMENT_TYPE_STAT)
                 {
                     continue;
                 }
 
-                AddItemStats(enchant->spellid[i], sp, ap, tank);
+                AddItemStats(enchant->EffectArg[i], sp, ap, tank);
             }
 
             if (!CheckItemStats(sp, ap, tank))

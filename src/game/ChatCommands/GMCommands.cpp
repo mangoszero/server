@@ -153,7 +153,7 @@ bool ChatHandler::HandlePInfoCommand(char* args)
 
     ChrRacesEntry const* raceEntry = sChrRacesStore.LookupEntry(race);
     ChrClassesEntry const* classEntry = sChrClassesStore.LookupEntry(class_);
-    char const* race_name = raceEntry ? raceEntry->name[GetSessionDbcLocale()] : "<unknown>";
+    char const* race_name = raceEntry ? raceEntry->Name_lang[GetSessionDbcLocale()] : "<unknown>";
     char const* class_name = classEntry ? classEntry->Name_lang[GetSessionDbcLocale()] : "<unknown>";
     //PSendSysMessage(LANG_PINFO_RACE_CLASS, race_name, class_name);
     PSendSysMessage("Race: %s, Class: %s", race_name, class_name);

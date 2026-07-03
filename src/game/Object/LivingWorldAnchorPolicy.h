@@ -166,7 +166,7 @@ inline uint32 GetLivingWorldDefenderCategory(CreatureInfo const* cInfo, MapEntry
     }
     if (FactionTemplateEntry const* ft = sFactionTemplateStore.LookupEntry(cInfo->FactionAlliance))
     {
-        if (IsLivingWorldDefenderFactionMasks(ft->ourMask, ft->friendlyMask, ft->hostileMask))
+        if (IsLivingWorldDefenderFactionMasks(ft->FactionGroup, ft->FriendGroup, ft->EnemyGroup))
         {
             return LW_ANCHOR_SETTLEMENT_DEFENDER;
         }
@@ -175,7 +175,7 @@ inline uint32 GetLivingWorldDefenderCategory(CreatureInfo const* cInfo, MapEntry
     {
         if (FactionTemplateEntry const* ft = sFactionTemplateStore.LookupEntry(cInfo->FactionHorde))
         {
-            if (IsLivingWorldDefenderFactionMasks(ft->ourMask, ft->friendlyMask, ft->hostileMask))
+            if (IsLivingWorldDefenderFactionMasks(ft->FactionGroup, ft->FriendGroup, ft->EnemyGroup))
             {
                 return LW_ANCHOR_SETTLEMENT_DEFENDER;
             }

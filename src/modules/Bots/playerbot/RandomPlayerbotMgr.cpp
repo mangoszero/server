@@ -1009,11 +1009,11 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
         {
             FactionTemplateEntry const* factionTemplate = sFactionTemplateStore.LookupEntry(cInfo->FactionAlliance);
             if (factionTemplate && !factionTemplate->IsContestedGuardFaction() &&
-                !(factionTemplate->hostileMask & FACTION_MASK_PLAYER))
+                !(factionTemplate->EnemyGroup & FACTION_MASK_PLAYER))
             {
-                if (factionTemplate->hostileMask & FACTION_MASK_HORDE)
+                if (factionTemplate->EnemyGroup & FACTION_MASK_HORDE)
                     m_allianceGuardAreas.insert(areaId);
-                if (factionTemplate->hostileMask & FACTION_MASK_ALLIANCE)
+                if (factionTemplate->EnemyGroup & FACTION_MASK_ALLIANCE)
                     m_hordeGuardAreas.insert(areaId);
             }
             continue;
