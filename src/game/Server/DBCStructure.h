@@ -284,9 +284,16 @@ struct CreatureSpellDataEntry
 struct CreatureTypeEntry
 {
     uint32    ID;                                           // 0        m_ID
-    // char*   Name[8];                                     // 1-8      m_name_lang
-    // 9 string flags
-    // uint32    no_expirience;                             // 10       m_flags
+    // char*   Name_lang;                                   // 1        Name_lang (string) - server-unused
+    // char*   Name_lang_loc2;                               // 2        Name_lang_loc2 (string) - server-unused
+    // char*   Name_lang_loc3;                               // 3        Name_lang_loc3 (string) - server-unused
+    // char*   Name_lang_loc4;                               // 4        Name_lang_loc4 (string) - server-unused
+    // char*   Name_lang_loc5;                               // 5        Name_lang_loc5 (string) - server-unused
+    // char*   Name_lang_loc6;                               // 6        Name_lang_loc6 (string) - server-unused
+    // char*   Name_lang_loc7;                               // 7        Name_lang_loc7 (string) - server-unused
+    // char*   Name_lang_loc8;                               // 8        Name_lang_loc8 (string) - server-unused
+    // uint32  Name_lang_flags;                              // 9        Name_lang_flags (uint) - server-unused
+    // uint32  Flags;                                        // 10       Flags (uint) - server-unused
 };
 
 /**
