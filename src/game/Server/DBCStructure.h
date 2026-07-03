@@ -309,12 +309,12 @@ struct DurabilityQualityEntry
 struct EmotesEntry
 {
     uint32  Id;                                             // 0        m_ID - ID in DBC.
-    // char*   Name;                                        // 1        m_EmoteSlashCommand
-    // uint32  AnimationId;                                 // 2        m_AnimID
-    //uint32  Flags;                                          // 3        m_EmoteFlags
+    // char*   EmoteSlashCommand;                           // 1        EmoteSlashCommand (string) - server-unused
+    // uint32  AnimID;                                      // 2        AnimID (uint) - server-unused
+    // uint32  EmoteFlags;                                  // 3        EmoteFlags (uint) - server-unused
     uint32  EmoteType;                                      // 4        m_EmoteSpecProc (determine how emote are shown)
-    //uint32  UnitStandState;                                 // 5        m_EmoteSpecProcParam
-    // uint32  SoundId;                                     // 6        m_EventSoundID
+    // uint32  EmoteSpecProcParam;                          // 5        EmoteSpecProcParam (uint) - server-unused
+    // uint32  EventSoundID;                                // 6        EventSoundID (uint) - server-unused
 };
 
 /**
