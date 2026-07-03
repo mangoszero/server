@@ -238,14 +238,23 @@ struct CreatureDisplayInfoExtraEntry
 {
     uint32      DisplayExtraId;                             // 0        m_ID - ID in DBC.
     uint32      Race;                                       // 1        m_DisplayRaceID - Race to which it's applicable.
-    // uint32    Gender;                                    // 2        m_DisplaySexID
-    // uint32    SkinColor;                                 // 3        m_SkinID
-    // uint32    FaceType;                                  // 4        m_FaceID
-    // uint32    HairType;                                  // 5        m_HairStyleID
-    // uint32    HairStyle;                                 // 6        m_HairColorID
-    // uint32    BeardStyle;                                // 7        m_FacialHairID
-    // uint32    Equipment[10];                             // 8-17     m_NPCItemDisplay equipped static items EQUIPMENT_SLOT_HEAD..EQUIPMENT_SLOT_HANDS, client show its by self
-    // char*                                                // 18       m_BakeName CreatureDisplayExtra-*.blp
+    // uint32    Gender;                                    // 2        Gender (uint) - server-unused
+    // uint32    SkinColor;                                 // 3        SkinColor (uint) - server-unused
+    // uint32    FaceType;                                  // 4        FaceType (uint) - server-unused
+    // uint32    HairType;                                  // 5        HairType (uint) - server-unused
+    // uint32    HairStyle;                                 // 6        HairStyle (uint) - server-unused
+    // uint32    BeardStyle;                                // 7        BeardStyle (uint) - server-unused
+    // uint32    EquipmentHead;                              // 8        EquipmentHead (uint) - server-unused
+    // uint32    EquipmentNeck;                              // 9        EquipmentNeck (uint) - server-unused
+    // uint32    EquipmentShoulders;                         // 10       EquipmentShoulders (uint) - server-unused
+    // uint32    EquipmentBody;                              // 11       EquipmentBody (uint) - server-unused
+    // uint32    EquipmentChest;                             // 12       EquipmentChest (uint) - server-unused
+    // uint32    EquipmentWaist;                             // 13       EquipmentWaist (uint) - server-unused
+    // uint32    EquipmentLegs;                              // 14       EquipmentLegs (uint) - server-unused
+    // uint32    EquipmentFeet;                               // 15       EquipmentFeet (uint) - server-unused
+    // uint32    EquipmentWrist;                              // 16       EquipmentWrist (uint) - server-unused
+    // uint32    EquipmentHands;                              // 17       EquipmentHands (uint) - server-unused
+    // char*     BakeName;                                    // 18       BakeName (string) - server-unused (CreatureDisplayExtra-*.blp)
 };
 
 /**
