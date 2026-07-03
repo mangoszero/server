@@ -543,7 +543,14 @@ struct LockEntry
     uint32      Type[MAX_LOCK_CASE];                        // 1-5      m_Type
     uint32      Index[MAX_LOCK_CASE];                       // 9-16     m_Index
     uint32      Skill[MAX_LOCK_CASE];                       // 17-24    m_Skill
-    // uint32      Action[MAX_LOCK_CASE];                   // 25-32    m_Action
+    // uint32      Action1;                                 // 25       Action1 (uint) - server-unused
+    // uint32      Action2;                                 // 26       Action2 (uint) - server-unused
+    // uint32      Action3;                                 // 27       Action3 (uint) - server-unused
+    // uint32      Action4;                                 // 28       Action4 (uint) - server-unused
+    // uint32      Action5;                                 // 29       Action5 (uint) - server-unused
+    // uint32      Action6;                                 // 30       Action6 (uint) - server-unused
+    // uint32      Action7;                                 // 31       Action7 (uint) - server-unused
+    // uint32      Action8;                                 // 32       Action8 (uint) - server-unused
 };
 
 /**
