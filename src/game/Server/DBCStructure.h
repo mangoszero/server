@@ -723,16 +723,34 @@ struct SkillLineAbilityEntry
 struct SoundEntriesEntry
 {
     uint32    Id;                                           // 0        m_ID
-    // uint32    Type;                                      // 1        m_soundType
-    // char*     InternalName;                              // 2        m_name
-    // char*     FileName[10];                              // 3-12     m_File[10]
-    // uint32    Unk13[10];                                 // 13-22    m_Freq[10]
-    // char*     Path;                                      // 23       m_DirectoryBase
-    // 24       m_volumeFloat
-    // 25       m_flags
-    // 26       m_minDistance
-    // 27       m_distanceCutoff
-    // 28       m_EAXDef
+    // int32     SoundType;                                 // 1        SoundType (int) - server-unused
+    // char*     Name;                                      // 2        Name (string) - server-unused
+    // char*     File_0;                                    // 3        File_0 (string) - server-unused
+    // char*     File_1;                                    // 4        File_1 (string) - server-unused
+    // char*     File_2;                                    // 5        File_2 (string) - server-unused
+    // char*     File_3;                                    // 6        File_3 (string) - server-unused
+    // char*     File_4;                                    // 7        File_4 (string) - server-unused
+    // char*     File_5;                                    // 8        File_5 (string) - server-unused
+    // char*     File_6;                                    // 9        File_6 (string) - server-unused
+    // char*     File_7;                                    // 10       File_7 (string) - server-unused
+    // char*     File_8;                                    // 11       File_8 (string) - server-unused
+    // char*     File_9;                                    // 12       File_9 (string) - server-unused
+    // int32     Freq_0;                                    // 13       Freq_0 (int) - server-unused
+    // int32     Freq_1;                                    // 14       Freq_1 (int) - server-unused
+    // int32     Freq_2;                                    // 15       Freq_2 (int) - server-unused
+    // int32     Freq_3;                                    // 16       Freq_3 (int) - server-unused
+    // int32     Freq_4;                                    // 17       Freq_4 (int) - server-unused
+    // int32     Freq_5;                                    // 18       Freq_5 (int) - server-unused
+    // int32     Freq_6;                                    // 19       Freq_6 (int) - server-unused
+    // int32     Freq_7;                                    // 20       Freq_7 (int) - server-unused
+    // int32     Freq_8;                                    // 21       Freq_8 (int) - server-unused
+    // int32     Freq_9;                                    // 22       Freq_9 (int) - server-unused
+    // char*     DirectoryBase;                              // 23       DirectoryBase (string) - server-unused
+    // float     VolumeFloat;                                // 24       VolumeFloat (float) - server-unused
+    // uint32    Flags;                                      // 25       Flags (uint) - server-unused
+    // float     MinDistance;                                // 26       MinDistance (float) - server-unused
+    // float     DistanceCutoff;                              // 27       DistanceCutoff (float) - server-unused
+    // int32     EAXDef;                                     // 28       EAXDef (int) - server-unused
 };
 
 /**
