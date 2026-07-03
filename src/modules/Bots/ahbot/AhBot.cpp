@@ -89,6 +89,20 @@ void AhBot::Init()
         return;
     }
 
+    // SP-2: the ike3 AhBot writes the auction table directly; under
+    // AH.Service.WriteAuthority the out-of-process worker is the sole writer, so
+    // running ike3 would double-write and corrupt the worker's book. Force it
+    // off with a clear operator message. (Running ike3 through the worker under
+    // write-authority is future work; see Memory/Future_Work/AH_SubProcess.)
+    if (sAhBotConfig.enabled && sWorld.IsAhWriteAuthority())
+    {
+        sLog.outError("AhBot: AhBot.Enabled = 1 is incompatible with "
+                      "AH.Service.WriteAuthority = 1; disabling the ike3 AhBot to avoid "
+                      "double-writing the `auction` table.");
+        sAhBotConfig.enabled = false;
+        return;
+    }
+
     factions[1] = 1;
     factions[2] = 1;
     factions[3] = 1;
@@ -142,6 +156,13 @@ void AhBot::Update()
 
 void AhBot::ForceUpdate()
 {
+    // SP-2: the out-of-process auction worker owns the auction book under
+    // AH.Service.WriteAuthority; the ike3 AhBot must not double-write it.
+    if (sWorld.IsAhWriteAuthority())
+    {
+        return;
+    }
+
     if (!sAhBotConfig.enabled)
     {
         return;
@@ -659,6 +680,14 @@ int AhBot::AddAuction(int auction, Category* category, ItemPrototype const* prot
 
 void AhBot::HandleCommand(string command)
 {
+    // SP-2: disabled while the out-of-process worker owns the auction book.
+    if (sWorld.IsAhWriteAuthority())
+    {
+        sLog.outString("AhBot: `.ahbot` is disabled while AH.Service.WriteAuthority = 1 "
+                       "(the SP-2 auction worker owns the auction book).");
+        return;
+    }
+
     if (!sAhBotConfig.enabled)
     {
         return;

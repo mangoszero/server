@@ -14,7 +14,9 @@ ConfVersion=2010102201
 AuctionHouseBot.Seller.Enabled = 0
 AuctionHouseBot.Buyer.Enabled = 0
 
-# Replace with the new AhBot
+# Replace with the new AhBot.
+# NOTE: incompatible with AH.Service.WriteAuthority = 1 -- the SP-2 auction
+# worker owns the auction book, so the ike3 AhBot is force-disabled in that case.
 AhBot.Enabled = 1
 
 # Should be used only if random bots are disabled
