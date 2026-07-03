@@ -98,8 +98,15 @@ struct AuctionHouseEntry
     uint32    faction;                                      // 1        m_factionID - ID of the Faction (see faction.dbc).
     uint32    depositPercent;                               // 2        m_depositRate - Percentage taken for any deposit.
     uint32    cutPercent;                                   // 3        m_consignmentRate - Percentage taken for any sell.
-    // char*     name[8];                                   // 4-11     m_name_lang
-    // 12 string flags
+    // char*     Name_lang;                                 // 4        Name_lang (string) - server-unused
+    // char*     Name_lang_loc2;                             // 5        Name_lang_loc2 (string) - server-unused
+    // char*     Name_lang_loc3;                             // 6        Name_lang_loc3 (string) - server-unused
+    // char*     Name_lang_loc4;                             // 7        Name_lang_loc4 (string) - server-unused
+    // char*     Name_lang_loc5;                             // 8        Name_lang_loc5 (string) - server-unused
+    // char*     Name_lang_loc6;                             // 9        Name_lang_loc6 (string) - server-unused
+    // char*     Name_lang_loc7;                             // 10       Name_lang_loc7 (string) - server-unused
+    // char*     Name_lang_loc8;                             // 11       Name_lang_loc8 (string) - server-unused
+    // uint32    Name_lang_flags;                            // 12       Name_lang_flags (uint) - server-unused
 };
 
 /**
