@@ -869,15 +869,13 @@ bool Player::Create(uint32 guidlow, const std::string& name, uint8 race, uint8 c
         addActionButton(action_itr->button, action_itr->action, action_itr->type);
     }
 
-    // Initialize player's starting items
-    uint32 raceClassGender = GetUInt32Value(UNIT_FIELD_BYTES_0) & 0x00FFFFFF;
-
+    // Initialize player's starting items (match on race/class/gender; outfit deliberately excluded)
     CharStartOutfitEntry const* oEntry = NULL;
     for (uint32 i = 1; i < sCharStartOutfitStore.GetNumRows(); ++i)
     {
         if (CharStartOutfitEntry const* entry = sCharStartOutfitStore.LookupEntry(i))
         {
-            if (entry->RaceClassGender == raceClassGender)
+            if (entry->RaceID == race && entry->ClassID == class_ && entry->SexID == gender)
             {
                 oEntry = entry;
                 break;

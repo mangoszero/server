@@ -121,15 +121,17 @@ struct BankBagSlotPricesEntry
  */
 struct CharStartOutfitEntry
 {
-    // uint32 Id;                                           // 0        m_ID
-    uint32 RaceClassGender;                                 // 1        m_raceID m_classID m_sexID m_outfitID (UNIT_FIELD_BYTES_0 & 0x00FFFFFF) comparable (0 byte = race, 1 byte = class, 2 byte = gender)
-    int32 ItemId[MAX_OUTFIT_ITEMS];                         // 2-13     m_ItemID
-    // int32 ItemDisplayId[MAX_OUTFIT_ITEMS];               // 14-25    m_DisplayItemID not required at server side
-    // int32 ItemInventorySlot[MAX_OUTFIT_ITEMS];           // 26-37    m_InventoryType not required at server side
-    // uint32 Unknown1;                                     // 38, unique values (index-like with gaps ordered in other way as ids)
-    // uint32 Unknown2;                                     // 39
-    // uint32 Unknown3;                                     // 40
-};
+    // uint32 Id;                                           // 0        m_ID (index, not stored)
+    uint8  RaceID;                                          // 1        m_raceID
+    uint8  ClassID;                                         // 2        m_classID
+    uint8  SexID;                                           // 3        m_sexID
+    uint8  OutfitID;                                        // 4        m_outfitID (kept active to 4-align the byte group; server keys on race/class/sex)
+    int32  ItemId[MAX_OUTFIT_ITEMS];                        // 5-16     m_ItemID
+    // int32 ItemDisplayId[MAX_OUTFIT_ITEMS];               // 17-28    m_DisplayItemID   - server-unused ('x'); ready to activate
+    // int32 ItemInventorySlot[MAX_OUTFIT_ITEMS];           // 29-40    m_InventoryType   - server-unused ('x'); ready to activate
+    // NOTE: 41 fields / 152 bytes. The former Unknown1-3 (fields 38-40) did not exist -
+    //       they were an artefact of modelling the four byte fields as one uint32.
+};  // sizeof == 52 == GetFormatRecordSize(CharStartOutfitEntryfmt)
 
 /**
  * \struct ChatChannelsEntry
