@@ -1336,7 +1336,7 @@ bool ChatHandler::HandleLookupTaxiNodeCommand(char* args)
         if (nodeEntry)
         {
             int loc = GetSessionDbcLocale();
-            std::string name = nodeEntry->name[loc];
+            std::string name = nodeEntry->Name_lang[loc];
             if (name.empty())
             {
                 continue;
@@ -1352,7 +1352,7 @@ bool ChatHandler::HandleLookupTaxiNodeCommand(char* args)
                         continue;
                     }
 
-                    name = nodeEntry->name[loc];
+                    name = nodeEntry->Name_lang[loc];
                     if (name.empty())
                     {
                         continue;

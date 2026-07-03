@@ -380,7 +380,7 @@ void SpellMgr::LoadSpellChains()
                     continue;
                 }
 
-                if (node.req != talentEntry->DependsOnSpell)
+                if (node.req != talentEntry->RequiredSpellID)
                 {
                     sLog.outErrorDb("Talent %u (prev: %u, first: %u, rank: %d, req: %u) listed in `spell_chain` has wrong required spell.",
                         spell_id, node.prev, node.first, node.rank, node.req);

@@ -610,7 +610,7 @@ void WorldSession::HandleBuyBankSlotOpcode(WorldPacket& recvPacket)
         return;
     }
 
-    uint32 price = slotEntry->price;
+    uint32 price = slotEntry->Price;
 
     if (_player->GetMoney() < price)
     {

@@ -150,7 +150,7 @@ uint32 StatsAction::EstRepair(uint16 pos)
             return TotalCost;
         }
 
-        uint32 dmultiplier = dcost->multiplier[ItemSubClassToDurabilityMultiplierId(ditemProto->Class,ditemProto->SubClass)];
+        uint32 dmultiplier = dcost->WeaponSubClassCost[ItemSubClassToDurabilityMultiplierId(ditemProto->Class,ditemProto->SubClass)];
         uint32 costs = uint32(LostDurability*dmultiplier*double(dQualitymodEntry->quality_mod));
 
         if (costs==0)                                   //fix for ITEM_QUALITY_ARTIFACT

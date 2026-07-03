@@ -473,12 +473,12 @@ void ObjectMgr::LoadItemPrototypes()
 
         for (int j = 0; j < MAX_OUTFIT_ITEMS; ++j)
         {
-            if (entry->ItemId[j] <= 0)
+            if (entry->ItemID[j] <= 0)
             {
                 continue;
             }
 
-            uint32 item_id = entry->ItemId[j];
+            uint32 item_id = entry->ItemID[j];
 
             if (!GetItemPrototype(item_id))
             {

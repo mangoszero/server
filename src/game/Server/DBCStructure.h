@@ -116,7 +116,7 @@ struct AuctionHouseEntry
 struct BankBagSlotPricesEntry
 {
     uint32  ID;                                             // 0        m_ID - ID of the Bank Bag Slot in the DBC.
-    uint32  price;                                          // 1        m_Cost - Price of the Bank Bag Slot.
+    uint32  Price;                                          // 1        Price - Price of the Bank Bag Slot.
 };
 
 #define MAX_OUTFIT_ITEMS 12
@@ -133,7 +133,7 @@ struct CharStartOutfitEntry
     uint8  ClassID;                                         // 2        m_classID
     uint8  SexID;                                           // 3        m_sexID
     uint8  OutfitID;                                        // 4        m_outfitID (kept active to 4-align the byte group; server keys on race/class/sex)
-    int32  ItemId[MAX_OUTFIT_ITEMS];                        // 5-16     m_ItemID
+    int32  ItemID[MAX_OUTFIT_ITEMS];                        // 5-16     ItemID
     // int32 ItemDisplayId[MAX_OUTFIT_ITEMS];               // 17-28    m_DisplayItemID   - server-unused ('x'); ready to activate
     // int32 ItemInventorySlot[MAX_OUTFIT_ITEMS];           // 29-40    m_InventoryType   - server-unused ('x'); ready to activate
     // NOTE: 41 fields / 152 bytes. The former Unknown1-3 (fields 38-40) did not exist -
@@ -207,9 +207,16 @@ struct ChrRacesEntry
  */
 struct CinematicSequencesEntry
 {
-    uint32      Id;                                         // 0        m_ID - ID in DBC.
-    // uint32      unk1;                                    // 1        m_soundID
-    // uint32      cinematicCamera;                         // 2        m_camera[8]
+    uint32      ID;                                         // 0        ID - ID in DBC.
+    // uint32      SoundID;                                 // 1        SoundID (uint) - server-unused
+    // uint32      Camera1;                                 // 2        Camera1 (uint) - server-unused
+    // uint32      Camera2;                                 // 3        Camera2 (uint) - server-unused
+    // uint32      Camera3;                                 // 4        Camera3 (uint) - server-unused
+    // uint32      Camera4;                                 // 5        Camera4 (uint) - server-unused
+    // uint32      Camera5;                                 // 6        Camera5 (uint) - server-unused
+    // uint32      Camera6;                                 // 7        Camera6 (uint) - server-unused
+    // uint32      Camera7;                                 // 8        Camera7 (uint) - server-unused
+    // uint32      Camera8;                                 // 9        Camera8 (uint) - server-unused
 };
 
 /**
@@ -282,8 +289,11 @@ struct CreatureFamilyEntry
 struct CreatureSpellDataEntry
 {
     uint32    ID;                                           // 0        m_ID - ID in DBC.
-    uint32    spellId[MAX_CREATURE_SPELL_DATA_SLOT];        // 1-4      m_spells[4] - Spell ID's (see Spell.dbc).
-    // uint32    availability[MAX_CREATURE_SPELL_DATA_SLOT];// 4-7      m_availability[4]
+    uint32    SpellId[MAX_CREATURE_SPELL_DATA_SLOT];        // 1-4      SpellId[4] - Spell ID's (see Spell.dbc).
+    // uint32    Availability_1;                            // 5        Availability_1 (uint) - server-unused
+    // uint32    Availability_2;                            // 6        Availability_2 (uint) - server-unused
+    // uint32    Availability_3;                             // 7        Availability_3 (uint) - server-unused
+    // uint32    Availability_4;                             // 8        Availability_4 (uint) - server-unused
 };
 
 /**
@@ -311,8 +321,8 @@ struct CreatureTypeEntry
  */
 struct DurabilityCostsEntry
 {
-    uint32    Itemlvl;                                      // 0        m_ID - ID in DBC.
-    uint32    multiplier[29];                               // 1-29     m_weaponSubClassCost m_armorSubClassCost
+    uint32    ID;                                           // 0        ID - ID in DBC.
+    uint32    WeaponSubClassCost[29];                       // 1-29     WeaponSubClassCost - WeaponSubClassCost_0-20 (idx 1-21), ArmorSubClassCost_0-7 (idx 22-29).
 };
 
 /**
@@ -513,10 +523,10 @@ struct ItemBagFamilyEntry
 struct ItemClassEntry
 {
     uint32   ID;                                            // 0        m_ID
-    // uint32   unk1;                                       // 1
-    // uint32   unk2;                                       // 2        only weapon have 1 in field, other 0
-    char*    name[8];                                       // 3-11     m_name_lang
-    //                                                      // 12       name flags
+    // uint32   Unk1;                                       // 1        Unk1 (uint) - server-unused
+    // uint32   Flags;                                      // 2        Flags (uint) - server-unused (only weapon has 1 in field, others 0)
+    char*    ClassName_lang[8];                        // 3-10     ClassName_lang
+    // uint32   ClassName_lang_flags;                       // 11       ClassName_lang_flags (uint) - server-unused
 };
 
 /**
@@ -526,11 +536,19 @@ struct ItemClassEntry
 struct ItemRandomPropertiesEntry
 {
     uint32    ID;                                           // 0        m_ID
-    // char*     internalName                               // 1        m_Name
-    uint32    enchant_id[3];                                // 2-4      m_Enchantment
-    // 5-6 unused, 0 only values, reserved for additional enchantments
-    // char*     nameSuffix[8];                             // 7-14     m_name_lang
-    // 15 string flags
+    // char*     Name;                                      // 1        Name (string) - server-unused
+    uint32    Enchantment[3];                               // 2-4      Enchantment
+    // uint32    Enchantment_3;                              // 5        Enchantment_3 (uint) - server-unused
+    // uint32    Enchantment_4;                              // 6        Enchantment_4 (uint) - server-unused
+    // char*     Name_lang;                                  // 7        Name_lang (string) - server-unused
+    // char*     Name_lang_loc2;                              // 8        Name_lang_loc2 (string) - server-unused
+    // char*     Name_lang_loc3;                              // 9        Name_lang_loc3 (string) - server-unused
+    // char*     Name_lang_loc4;                              // 10       Name_lang_loc4 (string) - server-unused
+    // char*     Name_lang_loc5;                              // 11       Name_lang_loc5 (string) - server-unused
+    // char*     Name_lang_loc6;                              // 12       Name_lang_loc6 (string) - server-unused
+    // char*     Name_lang_loc7;                              // 13       Name_lang_loc7 (string) - server-unused
+    // char*     Name_lang_loc8;                              // 14       Name_lang_loc8 (string) - server-unused
+    // uint32    Name_lang_flags;                             // 15       Name_lang_flags (uint) - server-unused
 };
 
 /**
@@ -657,9 +675,16 @@ struct MovieEntry
  */
 struct QuestSortEntry
 {
-    uint32      id;                                         // 0        m_ID
-    // char*       name[8];                                 // 1-8      m_SortName_lang
-    // 9 string flags
+    uint32      ID;                                         // 0        ID
+    // char*       SortName_lang;                           // 1        SortName_lang (string) - server-unused
+    // char*       SortName_lang_loc2;                      // 2        SortName_lang_loc2 (string) - server-unused
+    // char*       SortName_lang_loc3;                      // 3        SortName_lang_loc3 (string) - server-unused
+    // char*       SortName_lang_loc4;                      // 4        SortName_lang_loc4 (string) - server-unused
+    // char*       SortName_lang_loc5;                      // 5        SortName_lang_loc5 (string) - server-unused
+    // char*       SortName_lang_loc6;                      // 6        SortName_lang_loc6 (string) - server-unused
+    // char*       SortName_lang_loc7;                      // 7        SortName_lang_loc7 (string) - server-unused
+    // char*       SortName_lang_loc8;                      // 8        SortName_lang_loc8 (string) - server-unused
+    // uint32      SortName_lang_flags;                     // 9        SortName_lang_flags (uint) - server-unused
 };
 
 /**
@@ -1041,9 +1066,9 @@ struct SpellEntry
 struct SpellCastTimesEntry
 {
     uint32    ID;                                           // 0        m_ID
-    int32     CastTime;                                     // 1        m_base
-    // float     CastTimePerLevel;                          // 2        m_perLevel
-    // int32     MinCastTime;                               // 3        m_minimum
+    int32     Base;                                         // 1        Base
+    // int32     PerLevel;                                  // 2        PerLevel (int) - server-unused
+    // int32     Minimum;                                   // 3        Minimum (int) - server-unused
 };
 
 /**
@@ -1157,13 +1182,18 @@ struct TalentEntry
     uint32    Row;                                          // 2        m_tierID
     uint32    Col;                                          // 3        m_columnIndex
     uint32    RankID[MAX_TALENT_RANK];                      // 4-8      m_spellRank
-    // 9-12 part of prev field
+    // uint32    RankID_5;                                  // 9        RankID_5 (uint) - server-unused
+    // uint32    RankID_6;                                  // 10       RankID_6 (uint) - server-unused
+    // uint32    RankID_7;                                  // 11       RankID_7 (uint) - server-unused
+    // uint32    RankID_8;                                  // 12       RankID_8 (uint) - server-unused
     uint32    DependsOn;                                    // 13       m_prereqTalent (Talent.dbc)
-    // 14-15 part of prev field
+    // uint32    DependsOn_1;                                // 14       DependsOn_1 (uint) - server-unused
+    // uint32    DependsOn_2;                                // 15       DependsOn_2 (uint) - server-unused
     uint32    DependsOnRank;                                // 16       m_prereqRank
-    // 17-18 part of prev field
-    // uint32  needAddInSpellBook;                          // 19       m_flags also need disable higest ranks on reset talent tree
-    uint32    DependsOnSpell;                               // 20       m_requiredSpellID req.spell
+    // uint32    DependsOnRank_1;                            // 17       DependsOnRank_1 (uint) - server-unused
+    // uint32    DependsOnRank_2;                            // 18       DependsOnRank_2 (uint) - server-unused
+    // uint32    Flags;                                     // 19       Flags (uint) - server-unused (also needed to disable highest ranks on reset talent tree)
+    uint32    RequiredSpellID;                              // 20       RequiredSpellID req.spell
 };
 
 /**
@@ -1198,8 +1228,8 @@ struct TaxiNodesEntry
     float     x;                                            // 2        m_x - X position of the Taxi Node.
     float     y;                                            // 3        m_y - Y position of the Taxi Node.
     float     z;                                            // 4        m_z - Z position of the Taxi Node.
-    char*     name[8];                                      // 5-12     m_Name_lang - Name of the Taxi Node (relies on locale).
-    // 13 string flags
+    char*     Name_lang[8];                                 // 5-12     Name_lang - Name of the Taxi Node (relies on locale).
+    // uint32    Name_lang_flags;                           // 13       Name_lang_flags (uint) - server-unused
     uint32    MountCreatureID[2];                           // 14-15    m_MountCreatureID[2] - Creature ID (indicates as well the Taxi Node type : horde[14]-alliance[15])
 };
 

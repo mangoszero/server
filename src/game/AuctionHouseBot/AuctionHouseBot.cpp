@@ -862,7 +862,7 @@ bool AuctionBotConfig::Reload()
 char const* AuctionBotConfig::GetItemClassName(ItemClass itemclass)
 {
     ItemClassEntry const* itemClassEntry = sItemClassStore.LookupEntry(itemclass);
-    return itemClassEntry ? itemClassEntry->name[sWorld.GetDefaultDbcLocale()] : "";
+    return itemClassEntry ? itemClassEntry->ClassName_lang[sWorld.GetDefaultDbcLocale()] : "";
 }
 
 /**

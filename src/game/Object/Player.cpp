@@ -887,12 +887,12 @@ bool Player::Create(uint32 guidlow, const std::string& name, uint8 race, uint8 c
     {
         for (int j = 0; j < MAX_OUTFIT_ITEMS; ++j)
         {
-            if (oEntry->ItemId[j] <= 0)
+            if (oEntry->ItemID[j] <= 0)
             {
                 continue;
             }
 
-            uint32 item_id = oEntry->ItemId[j];
+            uint32 item_id = oEntry->ItemID[j];
 
             // Just skip, reported in ObjectMgr::LoadItemPrototypes
             ItemPrototype const* iProto = ObjectMgr::GetItemPrototype(item_id);

@@ -1276,7 +1276,7 @@ void ObjectMgr::LoadPetCreateSpells()
         PetCreateSpellEntry PetCreateSpell;
         for (int i = 0; i < MAX_CREATURE_SPELL_DATA_SLOT; ++i)
         {
-            uint32 petspell_id = petSpellEntry->spellId[i];
+            uint32 petspell_id = petSpellEntry->SpellId[i];
             if (petspell_id)
             {
                 // in dbc stored spell for pet use, but for teaching work we need learn spell ids

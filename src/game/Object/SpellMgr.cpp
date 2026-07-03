@@ -196,7 +196,7 @@ uint32 GetSpellCastTime(SpellEntry const* spellInfo, Spell const* spell)
         return 0;
     }
 
-    int32 castTime = spellCastTimeEntry->CastTime;
+    int32 castTime = spellCastTimeEntry->Base;
 
     if (spell)
     {

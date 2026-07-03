@@ -168,7 +168,7 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
     }
 
     // Check if it requires spell
-    if (talentInfo->DependsOnSpell && !HasSpell(talentInfo->DependsOnSpell))
+    if (talentInfo->RequiredSpellID && !HasSpell(talentInfo->RequiredSpellID))
     {
         return;
     }
