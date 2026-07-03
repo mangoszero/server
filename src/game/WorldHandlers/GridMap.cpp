@@ -774,13 +774,13 @@ GridMapLiquidStatus GridMap::getLiquidStatus(float x, float y, float z, uint8 Re
                 // actualy only Naxxramas raid be overrided here
                 if (AreaTableEntry const* area = sAreaStore.LookupEntry(getArea(x, y)))
                 {
-                    uint32 overrideLiquid = area->LiquidTypeOverride;
-                    if (!overrideLiquid && area->zone)
+                    uint32 overrideLiquid = area->LiquidTypeID_3;
+                    if (!overrideLiquid && area->ParentAreaID)
                     {
-                        area = GetAreaEntryByAreaID(area->zone);
+                        area = GetAreaEntryByAreaID(area->ParentAreaID);
                         if (area)
                         {
-                            overrideLiquid = area->LiquidTypeOverride;
+                            overrideLiquid = area->LiquidTypeID_3;
                         }
                     }
 
@@ -1263,7 +1263,7 @@ uint16 TerrainInfo::GetAreaFlag(float x, float y, float z, bool* isOutdoors) con
     uint16 areaflag;
     if (atEntry)
     {
-        areaflag = atEntry->exploreFlag;
+        areaflag = atEntry->AreaBit;
     }
     else
     {
@@ -1766,7 +1766,7 @@ uint32 TerrainManager::GetZoneIdByAreaFlag(uint16 areaflag, uint32 map_id)
 
     if (entry)
     {
-        return (entry->zone != 0) ? entry->zone : entry->ID;
+        return (entry->ParentAreaID != 0) ? entry->ParentAreaID : entry->ID;
     }
     else
     {
@@ -1787,5 +1787,5 @@ void TerrainManager::GetZoneAndAreaIdByAreaFlag(uint32& zoneid, uint32& areaid, 
     AreaTableEntry const* entry = GetAreaEntryByAreaFlagAndMap(areaflag, map_id);
 
     areaid = entry ? entry->ID : 0;
-    zoneid = entry ? ((entry->zone != 0) ? entry->zone : entry->ID) : 0;
+    zoneid = entry ? ((entry->ParentAreaID != 0) ? entry->ParentAreaID : entry->ID) : 0;
 }

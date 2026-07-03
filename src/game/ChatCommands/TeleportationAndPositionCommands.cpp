@@ -670,8 +670,8 @@ bool ChatHandler::HandleGPSCommand(char* args)
 
     PSendSysMessage(LANG_MAP_POSITION,
         obj->GetMapId(), (mapEntry ? mapEntry->MapName_lang[GetSessionDbcLocale()] : "<unknown>"),
-        zone_id, (zoneEntry ? zoneEntry->area_name[GetSessionDbcLocale()] : "<unknown>"),
-        area_id, (areaEntry ? areaEntry->area_name[GetSessionDbcLocale()] : "<unknown>"),
+        zone_id, (zoneEntry ? zoneEntry->AreaName_lang[GetSessionDbcLocale()] : "<unknown>"),
+        area_id, (areaEntry ? areaEntry->AreaName_lang[GetSessionDbcLocale()] : "<unknown>"),
         obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), obj->GetOrientation(),
         cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), obj->GetInstanceId(),
         zone_x, zone_y, ground_z, floor_z, have_map, have_vmap);
@@ -683,8 +683,8 @@ bool ChatHandler::HandleGPSCommand(char* args)
 
     DEBUG_LOG(GetMangosString(LANG_MAP_POSITION),
         obj->GetMapId(), (mapEntry ? mapEntry->MapName_lang[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
-        zone_id, (zoneEntry ? zoneEntry->area_name[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
-        area_id, (areaEntry ? areaEntry->area_name[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
+        zone_id, (zoneEntry ? zoneEntry->AreaName_lang[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
+        area_id, (areaEntry ? areaEntry->AreaName_lang[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
         obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), obj->GetOrientation(),
         cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), obj->GetInstanceId(),
         zone_x, zone_y, ground_z, floor_z, have_map, have_vmap);
@@ -1070,13 +1070,13 @@ bool ChatHandler::HandleGoZoneXYCommand(char* args)
     }
 
     // update to parent zone if exist (client map show only zones without parents)
-    AreaTableEntry const* zoneEntry = areaEntry->zone ? GetAreaEntryByAreaID(areaEntry->zone) : areaEntry;
+    AreaTableEntry const* zoneEntry = areaEntry->ParentAreaID ? GetAreaEntryByAreaID(areaEntry->ParentAreaID) : areaEntry;
 
-    MapEntry const* mapEntry = sMapStore.LookupEntry(zoneEntry->mapid);
+    MapEntry const* mapEntry = sMapStore.LookupEntry(zoneEntry->ContinentID);
 
     if (mapEntry->Instanceable())
     {
-        PSendSysMessage(LANG_INVALID_ZONE_MAP, areaEntry->ID, areaEntry->area_name[GetSessionDbcLocale()],
+        PSendSysMessage(LANG_INVALID_ZONE_MAP, areaEntry->ID, areaEntry->AreaName_lang[GetSessionDbcLocale()],
             mapEntry->MapID, mapEntry->MapName_lang[GetSessionDbcLocale()]);
         SetSentErrorMessage(true);
         return false;
@@ -1084,7 +1084,7 @@ bool ChatHandler::HandleGoZoneXYCommand(char* args)
 
     if (!Zone2MapCoordinates(x, y, zoneEntry->ID))
     {
-        PSendSysMessage(LANG_INVALID_ZONE_MAP, areaEntry->ID, areaEntry->area_name[GetSessionDbcLocale()],
+        PSendSysMessage(LANG_INVALID_ZONE_MAP, areaEntry->ID, areaEntry->AreaName_lang[GetSessionDbcLocale()],
             mapEntry->MapID, mapEntry->MapName_lang[GetSessionDbcLocale()]);
         SetSentErrorMessage(true);
         return false;

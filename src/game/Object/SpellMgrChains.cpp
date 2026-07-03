@@ -177,7 +177,7 @@ void SpellMgr::LoadSpellChains()
             }
 
             // ignore spell without forwards (non ranked or missing info in skill abilities)
-            uint32 forward_id = ab_itr->second->forward_spellid;
+            uint32 forward_id = ab_itr->second->SupercededBySpell;
 
             // by some strange reason < 3.x clients not have forward spell for 2366
             if (spell_id == 2366)                           // Herb Gathering, Apprentice

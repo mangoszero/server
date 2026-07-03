@@ -718,7 +718,7 @@ void Pet::InitPetCreateSpells()
 
             for (SkillLineAbilityMap::const_iterator _spell_idx = bounds.first; _spell_idx != bounds.second; ++_spell_idx)
             {
-                usedtrainpoints += _spell_idx->second->reqtrainpoints;
+                usedtrainpoints += _spell_idx->second->ReqTrainPoints;
                 break;
             }
         }

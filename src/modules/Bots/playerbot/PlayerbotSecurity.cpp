@@ -191,7 +191,7 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
                         const AreaTableEntry* entry = sAreaStore.LookupEntry(area);
                         if (entry)
                         {
-                            out << " |cffffffff(|cffff0000" << entry->area_name[0] << "|cffffffff)";
+                            out << " |cffffffff(|cffff0000" << entry->AreaName_lang[0] << "|cffffffff)";
                         }
                     }
                     break;

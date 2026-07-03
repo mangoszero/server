@@ -426,7 +426,7 @@ bool ChatHandler::HandleListPlayersCommand(char* args)
             player->getLevel(),
             mapId,
             zoneId,
-            (zoneEntry ? zoneEntry->area_name[GetSessionDbcLocale()] : "Unknown"));
+            (zoneEntry ? zoneEntry->AreaName_lang[GetSessionDbcLocale()] : "Unknown"));
 
         count++;
     });

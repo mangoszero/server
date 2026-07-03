@@ -413,7 +413,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
         for (SkillLineAbilityMap::const_iterator _spell_idx = skill_bounds.first; _spell_idx != skill_bounds.second; ++_spell_idx)
         {
             SkillLineAbilityEntry const* skillAbility = _spell_idx->second;
-            SkillLineEntry const* pSkill = sSkillLineStore.LookupEntry(skillAbility->skillId);
+            SkillLineEntry const* pSkill = sSkillLineStore.LookupEntry(skillAbility->SkillLine);
             if (!pSkill)
             {
                 continue;
@@ -424,13 +424,13 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
                 continue;
             }
 
-            if (skillAbility->learnOnGetSkill == ABILITY_LEARNED_ON_GET_RACE_OR_CLASS_SKILL ||
+            if (skillAbility->AcquireMethod == ABILITY_LEARNED_ON_GET_RACE_OR_CLASS_SKILL ||
                 // poison special case, not have ABILITY_LEARNED_ON_GET_RACE_OR_CLASS_SKILL
-                (pSkill->ID == SKILL_POISONS && skillAbility->max_value == 0) ||
+                (pSkill->ID == SKILL_POISONS && skillAbility->TrivialSkillLineRankHigh == 0) ||
                 // lockpicking special case, not have ABILITY_LEARNED_ON_GET_RACE_OR_CLASS_SKILL
-                (pSkill->ID == SKILL_LOCKPICKING && skillAbility->max_value == 0))
+                (pSkill->ID == SKILL_LOCKPICKING && skillAbility->TrivialSkillLineRankHigh == 0))
             {
-                switch (GetSkillRangeType(pSkill, skillAbility->racemask != 0))
+                switch (GetSkillRangeType(pSkill, skillAbility->RaceMask != 0))
                 {
                     case SKILL_RANGE_LANGUAGE:
                         SetSkill(pSkill->ID, 300, 300);
@@ -687,20 +687,20 @@ void Player::removeSpell(uint32 spell_id, bool disabled, bool learn_low_rank)
         for (SkillLineAbilityMap::const_iterator _spell_idx = bounds.first; _spell_idx != bounds.second; ++_spell_idx)
         {
             SkillLineAbilityEntry const* skillAbility = _spell_idx->second;
-            SkillLineEntry const* pSkill = sSkillLineStore.LookupEntry(skillAbility->skillId);
+            SkillLineEntry const* pSkill = sSkillLineStore.LookupEntry(skillAbility->SkillLine);
             if (!pSkill)
             {
                 continue;
             }
 
-            if ((skillAbility->learnOnGetSkill == ABILITY_LEARNED_ON_GET_RACE_OR_CLASS_SKILL &&
+            if ((skillAbility->AcquireMethod == ABILITY_LEARNED_ON_GET_RACE_OR_CLASS_SKILL &&
                 pSkill->CategoryID != SKILL_CATEGORY_CLASS) ||// not unlearn class skills (spellbook/talent pages)
                 // poisons/lockpicking special case, not have ABILITY_LEARNED_ON_GET_RACE_OR_CLASS_SKILL
-                ((pSkill->ID == SKILL_POISONS || pSkill->ID == SKILL_LOCKPICKING) && skillAbility->max_value == 0))
+                ((pSkill->ID == SKILL_POISONS || pSkill->ID == SKILL_LOCKPICKING) && skillAbility->TrivialSkillLineRankHigh == 0))
             {
                 // not reset skills for professions and racial abilities
                 if ((pSkill->CategoryID == SKILL_CATEGORY_SECONDARY || pSkill->CategoryID == SKILL_CATEGORY_PROFESSION) &&
-                    (IsProfessionSkill(pSkill->ID) || skillAbility->racemask != 0))
+                    (IsProfessionSkill(pSkill->ID) || skillAbility->RaceMask != 0))
                 {
                     continue;
                 }

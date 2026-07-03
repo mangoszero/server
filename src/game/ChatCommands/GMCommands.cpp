@@ -174,7 +174,7 @@ bool ChatHandler::HandlePInfoCommand(char* args)
             mapId,
             (mapEntry ? mapEntry->MapName_lang[GetSessionDbcLocale()] : "<unknown>"),
             zoneId,
-            (zoneEntry ? zoneEntry->area_name[GetSessionDbcLocale()] : "<unknown>"));
+            (zoneEntry ? zoneEntry->AreaName_lang[GetSessionDbcLocale()] : "<unknown>"));
 
         PSendSysMessage("Coordinates: X=%.2f Y=%.2f Z=%.2f O=%.2f",
             posX, posY, posZ, orientation);

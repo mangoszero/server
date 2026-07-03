@@ -385,7 +385,7 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
             continue;
         }
 
-        sLog.outDetail("Random teleporting bot %s to %s %f,%f,%f", bot->GetName(), area->area_name[0], x, y, z);
+        sLog.outDetail("Random teleporting bot %s to %s %f,%f,%f", bot->GetName(), area->AreaName_lang[0], x, y, z);
         float height = map->GetTerrain()->GetHeightStatic(x, y, 0.5f + z, true, MAX_HEIGHT);
         if (height <= INVALID_HEIGHT)
         {
@@ -777,15 +777,15 @@ bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, fl
         return true;
     }
 
-    if (area->team != AREATEAM_NONE)
+    if (area->FactionGroupMask != AREATEAM_NONE)
     {
         bool botIsAlliance = IsAlliance(bot->getRace());
-        if (botIsAlliance && area->team != AREATEAM_ALLY)
+        if (botIsAlliance && area->FactionGroupMask != AREATEAM_ALLY)
         {
             return false;
         }
 
-        if (!botIsAlliance && area->team != AREATEAM_HORDE)
+        if (!botIsAlliance && area->FactionGroupMask != AREATEAM_HORDE)
         {
             return false;
         }

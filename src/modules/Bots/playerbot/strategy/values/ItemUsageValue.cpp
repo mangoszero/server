@@ -95,11 +95,11 @@ static bool IsClothMaterial(uint32 itemId, uint32 botSkill)
         for (uint32 i = 0; i < sSkillLineAbilityStore.GetNumRows(); ++i)
         {
             SkillLineAbilityEntry const* entry = sSkillLineAbilityStore.LookupEntry(i);
-            if (!entry || entry->skillId != SKILL_FIRST_AID)
+            if (!entry || entry->SkillLine != SKILL_FIRST_AID)
             {
                 continue;
             }
-            SpellEntry const* spell = sSpellStore.LookupEntry(entry->spellId);
+            SpellEntry const* spell = sSpellStore.LookupEntry(entry->Spell);
             if (!spell)
             {
                 continue;
@@ -111,7 +111,7 @@ static bool IsClothMaterial(uint32 itemId, uint32 botSkill)
                     continue;
                 }
                 uint32 reagentId = (uint32)spell->Reagent[r];
-                uint32 greyAt = entry->max_value;
+                uint32 greyAt = entry->TrivialSkillLineRankHigh;
                 auto it = firstAidMaterials.find(reagentId);
                 if (it == firstAidMaterials.end() || greyAt > it->second)
                 {
@@ -136,11 +136,11 @@ static bool IsSkillMaterial(uint32 skillId, uint32 itemId)
         for (uint32 i = 0; i < sSkillLineAbilityStore.GetNumRows(); ++i)
         {
             SkillLineAbilityEntry const* entry = sSkillLineAbilityStore.LookupEntry(i);
-            if (!entry || entry->skillId != skillId)
+            if (!entry || entry->SkillLine != skillId)
             {
                 continue;
             }
-            SpellEntry const* spell = sSpellStore.LookupEntry(entry->spellId);
+            SpellEntry const* spell = sSpellStore.LookupEntry(entry->Spell);
             if (!spell)
             {
                 continue;

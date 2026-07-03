@@ -664,12 +664,12 @@ int32 Pet::GetTPForSpell(uint32 spellid)
     SkillLineAbilityMapBounds bounds = sSpellMgr.GetSkillLineAbilityMapBounds(spellid);
     for (SkillLineAbilityMap::const_iterator _spell_idx = bounds.first; _spell_idx != bounds.second; ++_spell_idx)
     {
-        if (!_spell_idx->second->reqtrainpoints)
+        if (!_spell_idx->second->ReqTrainPoints)
         {
             return 0;
         }
 
-        basetrainp = _spell_idx->second->reqtrainpoints;
+        basetrainp = _spell_idx->second->ReqTrainPoints;
         break;
     }
 
@@ -689,9 +689,9 @@ int32 Pet::GetTPForSpell(uint32 spellid)
 
             for (SkillLineAbilityMap::const_iterator _spell_idx2 = _bounds.first; _spell_idx2 != _bounds.second; ++_spell_idx2)
             {
-                if (_spell_idx2->second->reqtrainpoints > spenttrainp)
+                if (_spell_idx2->second->ReqTrainPoints > spenttrainp)
                 {
-                    spenttrainp = _spell_idx2->second->reqtrainpoints;
+                    spenttrainp = _spell_idx2->second->ReqTrainPoints;
                     break;
                 }
             }

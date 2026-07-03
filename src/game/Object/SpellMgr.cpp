@@ -1599,7 +1599,7 @@ bool SpellMgr::canStackSpellRanksInSpellBook(SpellEntry const* spellInfo) const
     SkillLineAbilityMap::const_iterator itr = mSkillLineAbilityMap.find(spellInfo->Id);
     if (itr != mSkillLineAbilityMap.end())
     {
-        if (itr->second->forward_spellid != 0)
+        if (itr->second->SupercededBySpell != 0)
         {
             return false;
         }
@@ -2667,12 +2667,12 @@ bool SpellMgr::IsSkillBonusSpell(uint32 spellId) const
     for (SkillLineAbilityMap::const_iterator _spell_idx = bounds.first; _spell_idx != bounds.second; ++_spell_idx)
     {
         SkillLineAbilityEntry const* pAbility = _spell_idx->second;
-        if (!pAbility || pAbility->learnOnGetSkill != ABILITY_LEARNED_ON_GET_PROFESSION_SKILL)
+        if (!pAbility || pAbility->AcquireMethod != ABILITY_LEARNED_ON_GET_PROFESSION_SKILL)
         {
             continue;
         }
 
-        if (pAbility->req_skill_value > 0)
+        if (pAbility->MinSkillLineRank > 0)
         {
             return true;
         }

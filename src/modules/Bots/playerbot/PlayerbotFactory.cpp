@@ -347,17 +347,17 @@ void PlayerbotFactory::InitPet()
             for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
             {
                 SkillLineAbilityEntry const* slab = sSkillLineAbilityStore.LookupEntry(j);
-                if (!slab || !slab->spellId)
+                if (!slab || !slab->Spell)
                 {
                     continue;
                 }
 
-                if (slab->skillId != cFamily->SkillLine[0] && slab->skillId != cFamily->SkillLine[1])
+                if (slab->SkillLine != cFamily->SkillLine[0] && slab->SkillLine != cFamily->SkillLine[1])
                 {
                     continue;
                 }
 
-                SpellEntry const* spellInfo = sSpellStore.LookupEntry(slab->spellId);
+                SpellEntry const* spellInfo = sSpellStore.LookupEntry(slab->Spell);
                 if (!spellInfo || IsPassiveSpell(spellInfo))
                 {
                     continue;
@@ -367,7 +367,7 @@ void PlayerbotFactory::InitPet()
                 {
                     continue;
                 }
-                pet->learnSpell(slab->spellId);
+                pet->learnSpell(slab->Spell);
             }
         }
     }

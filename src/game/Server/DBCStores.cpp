@@ -280,12 +280,12 @@ void LoadDBCStores(const std::string& dataPath)
         if (AreaTableEntry const* area = sAreaStore.LookupEntry(i))
         {
             // fill AreaId->DBC records
-            sAreaIDByAreaFlag.insert(AreaIDByAreaFlag::value_type(uint16(area->exploreFlag), area->ID));
+            sAreaIDByAreaFlag.insert(AreaIDByAreaFlag::value_type(uint16(area->AreaBit), area->ID));
 
             // fill MapId->DBC records ( skip sub zones and continents )
-            if (area->zone == 0 && area->mapid != 0 && area->mapid != 1)
+            if (area->ParentAreaID == 0 && area->ContinentID != 0 && area->ContinentID != 1)
             {
-                sAreaFlagByMapID.insert(AreaFlagByMapID::value_type(area->mapid, area->exploreFlag));
+                sAreaFlagByMapID.insert(AreaFlagByMapID::value_type(area->ContinentID, area->AreaBit));
             }
         }
     }
@@ -362,7 +362,7 @@ void LoadDBCStores(const std::string& dataPath)
             continue;
         }
 
-        SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->spellId);
+        SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->Spell);
         if (spellInfo && (spellInfo->Attributes & (SPELL_ATTR_ABILITY | SPELL_ATTR_PASSIVE | SPELL_ATTR_HIDDEN_CLIENTSIDE | SPELL_ATTR_HIDE_IN_COMBAT_LOG)) == (SPELL_ATTR_ABILITY | SPELL_ATTR_PASSIVE | SPELL_ATTR_HIDDEN_CLIENTSIDE | SPELL_ATTR_HIDE_IN_COMBAT_LOG))
         {
             for (unsigned int i = 1; i < sCreatureFamilyStore.GetNumRows(); ++i)
@@ -373,7 +373,7 @@ void LoadDBCStores(const std::string& dataPath)
                     continue;
                 }
 
-                if (skillLine->skillId != cFamily->SkillLine[0] && skillLine->skillId != cFamily->SkillLine[1])
+                if (skillLine->SkillLine != cFamily->SkillLine[0] && skillLine->SkillLine != cFamily->SkillLine[1])
                 {
                     continue;
                 }
@@ -730,7 +730,7 @@ int32 GetAreaFlagByAreaID(uint32 area_id)
         return -1;
     }
 
-    return AreaEntry->exploreFlag;
+    return AreaEntry->AreaBit;
 }
 
 /**
@@ -787,10 +787,10 @@ AreaTableEntry const* GetAreaEntryByAreaFlagAndMap(uint32 area_flag, uint32 map_
         {
             if (AreaTableEntry const* AreaEntry = sAreaStore.LookupEntry(i))
             {
-                if (AreaEntry->exploreFlag == area_flag)
+                if (AreaEntry->AreaBit == area_flag)
                 {
                     // area_flag found but it lets test map_id too
-                    if (AreaEntry->mapid == map_id)
+                    if (AreaEntry->ContinentID == map_id)
                     {
                         cache[cacheKey] = AreaEntry;
                         return AreaEntry; // area_flag and map_id are ok so we can return value

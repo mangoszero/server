@@ -303,7 +303,7 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
         std::string aname;
         if (AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(pzoneid))
         {
-            aname = areaEntry->area_name[GetSessionDbcLocale()];
+            aname = areaEntry->AreaName_lang[GetSessionDbcLocale()];
         }
 
         bool s_show = true;

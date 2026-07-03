@@ -86,7 +86,7 @@ void LFGQueue::AddToQueue(Player* leader, uint32 queAreaID)
 
     if (AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(queAreaID))
     {
-        if (DisableMgr::IsDisabledFor(DISABLE_TYPE_MAP, areaEntry->mapid))
+        if (DisableMgr::IsDisabledFor(DISABLE_TYPE_MAP, areaEntry->ContinentID))
         {
             ChatHandler(leader->GetSession()).SendSysMessage(LANG_MAP_IS_DISABLED);
             return;

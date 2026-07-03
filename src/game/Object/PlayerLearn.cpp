@@ -259,36 +259,36 @@ void Player::learnSkillRewardedSpells(uint32 skill_id, uint32 skill_value)
     for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
     {
         SkillLineAbilityEntry const* pAbility = sSkillLineAbilityStore.LookupEntry(j);
-        if (!pAbility || pAbility->skillId != skill_id || pAbility->learnOnGetSkill != ABILITY_LEARNED_ON_GET_PROFESSION_SKILL)
+        if (!pAbility || pAbility->SkillLine != skill_id || pAbility->AcquireMethod != ABILITY_LEARNED_ON_GET_PROFESSION_SKILL)
         {
             continue;
         }
         // Check race if set
-        if (pAbility->racemask && !(pAbility->racemask & raceMask))
+        if (pAbility->RaceMask && !(pAbility->RaceMask & raceMask))
         {
             continue;
         }
         // Check class if set
-        if (pAbility->classmask && !(pAbility->classmask & classMask))
+        if (pAbility->ClassMask && !(pAbility->ClassMask & classMask))
         {
             continue;
         }
 
-        if (sSpellStore.LookupEntry(pAbility->spellId))
+        if (sSpellStore.LookupEntry(pAbility->Spell))
         {
             // need unlearn spell
-            if (skill_value < pAbility->req_skill_value)
+            if (skill_value < pAbility->MinSkillLineRank)
             {
-                removeSpell(pAbility->spellId);
+                removeSpell(pAbility->Spell);
             }
             // need learn
             else if (!IsInWorld())
             {
-                addSpell(pAbility->spellId, true, true, true, false);
+                addSpell(pAbility->Spell, true, true, true, false);
             }
             else
             {
-                learnSpell(pAbility->spellId, true);
+                learnSpell(pAbility->Spell, true);
             }
         }
     }

@@ -312,14 +312,14 @@ void Spell::EffectDuel(SpellEffectIndex eff_idx)
 
     // Players can only fight a duel with each other outside (=not inside dungeons and not in capital cities)
     AreaTableEntry const* casterAreaEntry = GetAreaEntryByAreaID(caster->GetAreaId());
-    if (casterAreaEntry && !(casterAreaEntry->flags & AREA_FLAG_DUEL))
+    if (casterAreaEntry && !(casterAreaEntry->Flags & AREA_FLAG_DUEL))
     {
         SendCastResult(SPELL_FAILED_NO_DUELING);            // Dueling isn't allowed here
         return;
     }
 
     AreaTableEntry const* targetAreaEntry = GetAreaEntryByAreaID(target->GetAreaId());
-    if (targetAreaEntry && !(targetAreaEntry->flags & AREA_FLAG_DUEL))
+    if (targetAreaEntry && !(targetAreaEntry->Flags & AREA_FLAG_DUEL))
     {
         SendCastResult(SPELL_FAILED_NO_DUELING);            // Dueling isn't allowed here
         return;

@@ -105,7 +105,7 @@ void WorldSession::HandleJoinChannelOpcode(WorldPacket& recvPacket)
 
         if (area && channel)
         {
-            snprintf(tmpStr, 255, channel->Name_lang[GetSessionDbcLocale()], area->area_name[GetSessionDbcLocale()]);
+            snprintf(tmpStr, 255, channel->Name_lang[GetSessionDbcLocale()], area->AreaName_lang[GetSessionDbcLocale()]);
             //With a format string
             if (strcmp(tmpStr, channelName.c_str()) == 0 ||
                 strcmp(channel->Name_lang[0], channelName.c_str()) == 0)

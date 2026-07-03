@@ -496,7 +496,7 @@ bool ChatHandler::isValidChatMessage(const char* message)
                                 return false;
                             }
 
-                            SkillLineEntry const* skillLine = sSkillLineStore.LookupEntry(skillInfo->skillId);
+                            SkillLineEntry const* skillLine = sSkillLineStore.LookupEntry(skillInfo->SkillLine);
                             if (!skillLine)
                             {
                                 return false;

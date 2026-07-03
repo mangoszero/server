@@ -5897,18 +5897,18 @@ bool Player::IsSpellFitByClassAndRace(uint32 spell_id, uint32* pReqlevel /*= NUL
     {
         SkillLineAbilityEntry const* abilityEntry = _spell_idx->second;
         // skip wrong race skills
-        if (abilityEntry->racemask && (abilityEntry->racemask & racemask) == 0)
+        if (abilityEntry->RaceMask && (abilityEntry->RaceMask & racemask) == 0)
         {
             continue;
         }
 
         // skip wrong class skills
-        if (abilityEntry->classmask && (abilityEntry->classmask & classmask) == 0)
+        if (abilityEntry->ClassMask && (abilityEntry->ClassMask & classmask) == 0)
         {
             continue;
         }
 
-        SkillRaceClassInfoMapBounds raceBounds = sSpellMgr.GetSkillRaceClassInfoMapBounds(abilityEntry->skillId);
+        SkillRaceClassInfoMapBounds raceBounds = sSpellMgr.GetSkillRaceClassInfoMapBounds(abilityEntry->SkillLine);
         for (SkillRaceClassInfoMap::const_iterator itr = raceBounds.first; itr != raceBounds.second; ++itr)
         {
             SkillRaceClassInfoEntry const* skillRCEntry = itr->second;

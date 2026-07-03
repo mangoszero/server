@@ -142,7 +142,7 @@ void Player::UpdateLocalChannels(uint32 newZone)
         return;
     }
 
-    std::string current_zone_name = current_zone->area_name[GetSession()->GetSessionDbcLocale()];
+    std::string current_zone_name = current_zone->AreaName_lang[GetSession()->GetSessionDbcLocale()];
 
     for (JoinedChannelsList::iterator i = m_channels.begin(), next; i != m_channels.end(); i = next)
     {

@@ -2638,7 +2638,7 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
             WorldObject const* searcher = source ? source : player;
             if (AreaTableEntry const* pAreaEntry = GetAreaEntryByAreaID(searcher->GetAreaId()))
             {
-                if ((!m_value1 || (pAreaEntry->flags & m_value1)) && (!m_value2 || !(pAreaEntry->flags & m_value2)))
+                if ((!m_value1 || (pAreaEntry->Flags & m_value1)) && (!m_value2 || !(pAreaEntry->Flags & m_value2)))
                 {
                     return true;
                 }
@@ -2746,25 +2746,25 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
                 }
 
                 // doesn't have skill
-                if (!player->HasSkill(skillInfo->skillId))
+                if (!player->HasSkill(skillInfo->SkillLine))
                 {
                     return false;
                 }
 
                 // doesn't match class
-                if (skillInfo->classmask && (skillInfo->classmask & player->getClassMask()) == 0)
+                if (skillInfo->ClassMask && (skillInfo->ClassMask & player->getClassMask()) == 0)
                 {
                     return false;
                 }
 
                 // doesn't match race
-                if (skillInfo->racemask && (skillInfo->racemask & player->getRaceMask()) == 0)
+                if (skillInfo->RaceMask && (skillInfo->RaceMask & player->getRaceMask()) == 0)
                 {
                     return false;
                 }
 
                 // skill level too low
-                if (skillInfo->min_value > player->GetSkillValue(skillInfo->skillId))
+                if (skillInfo->TrivialSkillLineRankLow > player->GetSkillValue(skillInfo->SkillLine))
                 {
                     return false;
                 }

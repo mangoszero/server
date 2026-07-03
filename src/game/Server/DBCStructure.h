@@ -53,21 +53,23 @@
 struct AreaTableEntry
 {
     uint32  ID;                                             // 0        m_ID - ID of the Area within the DBC.
-    uint32  mapid;                                          // 1        m_ContinentID - ID of the Continent in DBC (0 = Azeroth, 1 = Kalimdor, ...)
-    uint32  zone;                                           // 2        m_ParentAreaID - ID of the parent area.
-    uint32  exploreFlag;                                    // 3        m_AreaBit -
-    uint32  flags;                                          // 4        m_flags -
-    // 5        m_SoundProviderPref
-    // 6        m_SoundProviderPrefUnderwater
-    // 7        m_AmbienceID
-    // 8        m_ZoneMusic
-    // 9        m_IntroSound
-    int32   area_level;                                     // 10       m_ExplorationLevel - Level of Area, used for XP reward calculation.
-    char*   area_name[8];                                   // 11-18    m_AreaName_lang - Area Name, position is relying on locale.
-    // 19 string flags
-    uint32  team;                                           // 20       m_factionGroupMask - Define the faction owning the area (see AreaTeams for values).
-    // 21-23    uknown/unused
-    uint32  LiquidTypeOverride;                             // 24       m_liquidTypeID - Override for water type (only used for Naxxramass ATM).
+    uint32  ContinentID;                                    // 1        m_ContinentID - ID of the Continent in DBC (0 = Azeroth, 1 = Kalimdor, ...)
+    uint32  ParentAreaID;                                   // 2        m_ParentAreaID - ID of the parent area.
+    uint32  AreaBit;                                        // 3        m_AreaBit -
+    uint32  Flags;                                          // 4        m_flags -
+    // uint32    SoundProviderPref;                         // 5        SoundProviderPref (uint) - server-unused
+    // uint32    SoundProviderPrefUnderwater;               // 6        SoundProviderPrefUnderwater (uint) - server-unused
+    // uint32    AmbienceID;                                // 7        AmbienceID (uint) - server-unused
+    // uint32    ZoneMusic;                                 // 8        ZoneMusic (uint) - server-unused
+    // uint32    IntroSound;                                // 9        IntroSound (uint) - server-unused
+    int32   ExplorationLevel;                               // 10       m_ExplorationLevel - Level of Area, used for XP reward calculation.
+    char*   AreaName_lang[8];                               // 11-18    m_AreaName_lang - Area Name, position is relying on locale.
+    // uint32    AreaName_lang_flags;                       // 19       AreaName_lang_flags (uint) - server-unused
+    uint32  FactionGroupMask;                               // 20       m_factionGroupMask - Define the faction owning the area (see AreaTeams for values).
+    // int32     LiquidTypeID_0;                            // 21       LiquidTypeID_0 (int) - server-unused
+    // int32     LiquidTypeID_1;                            // 22       LiquidTypeID_1 (int) - server-unused
+    // int32     LiquidTypeID_2;                            // 23       LiquidTypeID_2 (int) - server-unused
+    uint32  LiquidTypeID_3;                                 // 24       m_liquidTypeID - Override for water type (only used for Naxxramass ATM).
 };
 
 /**
@@ -787,20 +789,21 @@ struct SkillLineEntry
  */
 struct SkillLineAbilityEntry
 {
-    uint32    id;                                           // 0, INDEX
-    uint32    skillId;                                      // 1
-    uint32    spellId;                                      // 2
-    uint32    racemask;                                     // 3
-    uint32    classmask;                                    // 4
-    // uint32    racemaskNot;                               // 5 always 0 in 2.4.2
-    // uint32    classmaskNot;                              // 6 always 0 in 2.4.2
-    uint32    req_skill_value;                              // 7 for trade skill.not for training.
-    uint32    forward_spellid;                              // 8
-    uint32    learnOnGetSkill;                              // 9 can be 1 or 2 for spells learned on get skill
-    uint32    max_value;                                    // 10
-    uint32    min_value;                                    // 11
-    // 12-13, unknown, always 0
-    uint32    reqtrainpoints;                               // 14
+    uint32    ID;                                           // 0, INDEX
+    uint32    SkillLine;                                    // 1
+    uint32    Spell;                                        // 2
+    uint32    RaceMask;                                     // 3
+    uint32    ClassMask;                                    // 4
+    // uint32    ExcludeRace;                               // 5        ExcludeRace (uint) - always 0 in 2.4.2
+    // uint32    ExcludeClass;                              // 6        ExcludeClass (uint) - always 0 in 2.4.2
+    uint32    MinSkillLineRank;                             // 7 for trade skill.not for training.
+    uint32    SupercededBySpell;                            // 8
+    uint32    AcquireMethod;                                // 9 can be 1 or 2 for spells learned on get skill
+    uint32    TrivialSkillLineRankHigh;                     // 10
+    uint32    TrivialSkillLineRankLow;                      // 11
+    // uint32    Abandonable;                               // 12       Abandonable (uint) - always 0
+    // uint32    CharacterPoints_0;                         // 13       CharacterPoints_0 (uint) - always 0
+    uint32    ReqTrainPoints;                               // 14
 };
 
 /**
