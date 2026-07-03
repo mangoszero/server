@@ -1248,8 +1248,15 @@ struct WorldSafeLocsEntry
     float     x;                                            // 2        m_locX
     float     y;                                            // 3        m_locY
     float     z;                                            // 4        m_locZ
-    // char*   name[8]                                      // 5-12     m_AreaName_lang
-    // 13 string flags
+    // char*   AreaName_lang;                                // 5        AreaName_lang (string) - server-unused
+    // char*   AreaName_lang_loc2;                            // 6        AreaName_lang_loc2 (string) - server-unused
+    // char*   AreaName_lang_loc3;                            // 7        AreaName_lang_loc3 (string) - server-unused
+    // char*   AreaName_lang_loc4;                            // 8        AreaName_lang_loc4 (string) - server-unused
+    // char*   AreaName_lang_loc5;                            // 9        AreaName_lang_loc5 (string) - server-unused
+    // char*   AreaName_lang_loc6;                            // 10       AreaName_lang_loc6 (string) - server-unused
+    // char*   AreaName_lang_loc7;                            // 11       AreaName_lang_loc7 (string) - server-unused
+    // char*   AreaName_lang_loc8;                            // 12       AreaName_lang_loc8 (string) - server-unused
+    // uint32  AreaName_lang_flags;                           // 13       AreaName_lang_flags (uint) - server-unused
 };
 
 // GCC have alternative #pragma pack() syntax and old gcc version not support pack(pop), also any gcc version not support it at some platform
