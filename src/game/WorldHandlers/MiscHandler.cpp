@@ -842,7 +842,7 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
         if (!instance_map)
         {
             player->GetSession()->SendAreaTriggerMessage("You can not enter %s while in a ghost mode",
-                targetMapEntry->name[player->GetSession()->GetSessionDbcLocale()]);
+                targetMapEntry->MapName_lang[player->GetSession()->GetSessionDbcLocale()]);
             return;
         }
 

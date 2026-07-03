@@ -402,7 +402,7 @@ time_t DungeonPersistentState::GetResetTimeForDB() const
 {
     // only state the reset time for normal instances
     const MapEntry* entry = sMapStore.LookupEntry(GetMapId());
-    if (!entry || entry->map_type == MAP_RAID)
+    if (!entry || entry->InstanceType == MAP_RAID)
     {
         return 0;
     }
@@ -781,7 +781,7 @@ MapPersistentState* MapPersistentStateManager::AddPersistentState(MapEntry const
         {
             // initialize reset time
             // for normal instances if no creatures are killed the instance will reset in two hours
-            if (mapEntry->map_type == MAP_RAID)
+            if (mapEntry->InstanceType == MAP_RAID)
             {
                 resetTime = m_Scheduler.GetResetTimeFor(mapEntry->MapID);
             }

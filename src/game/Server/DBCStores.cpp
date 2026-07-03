@@ -469,7 +469,7 @@ void LoadDBCStores(const std::string& dataPath)
                 // TODO: WHAT, WHY... surely this is a mistake
             }
 
-            sTalentTabPages[cls][talentTabInfo->tabpage] = talentTabId;
+            sTalentTabPages[cls][talentTabInfo->OrderIndex] = talentTabId;
 
             // add total amount bits for first rank starting from talent tab first talent rank pos.
             uint32 pos = 0;
@@ -810,7 +810,7 @@ AreaTableEntry const* GetAreaEntryByAreaFlagAndMap(uint32 area_flag, uint32 map_
 
     if (MapEntry const* mapEntry = sMapStore.LookupEntry(map_id))
     {
-        AreaTableEntry const* result = GetAreaEntryByAreaID(mapEntry->linked_zone);
+        AreaTableEntry const* result = GetAreaEntryByAreaID(mapEntry->AreaTableID);
         cache[cacheKey] = result;
         return result;
     }
@@ -850,7 +850,7 @@ ChatChannelsEntry const* GetChannelEntryFor(uint32 channel_id)
     for (uint32 i = 0; i < sChatChannelsStore.GetNumRows(); ++i)
     {
         ChatChannelsEntry const* ch = sChatChannelsStore.LookupEntry(i);
-        if (ch && ch->ChannelID == channel_id)
+        if (ch && ch->ID == channel_id)
         {
             return ch;
         }
@@ -875,7 +875,7 @@ ChatChannelsEntry const* GetChannelEntryFor(const std::string& name)
         if (ch)
         {
             // need to remove %s from entryName if it exists before we match
-            std::string entryName(ch->pattern[0]);
+            std::string entryName(ch->Name_lang[0]);
             std::size_t removeString = entryName.find("%s");
 
             if (removeString != std::string::npos)

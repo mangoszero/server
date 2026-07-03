@@ -107,11 +107,11 @@ uint32 GetSpellCastTimeForBonus(SpellEntry const* spellProto, DamageEffectType d
 float CalculateDefaultCoefficient(SpellEntry const* spellProto, DamageEffectType const damagetype);
 inline float GetSpellMinRange(SpellRangeEntry const* range)
 {
-    return (range ? range->minRange : 0);
+    return (range ? range->RangeMin : 0);
 }
 inline float GetSpellMaxRange(SpellRangeEntry const* range)
 {
-    return (range ? range->maxRange : 0);
+    return (range ? range->RangeMax : 0);
 }
 inline uint32 GetSpellRecoveryTime(SpellEntry const* spellInfo) { return spellInfo->RecoveryTime > spellInfo->CategoryRecoveryTime ? spellInfo->RecoveryTime : spellInfo->CategoryRecoveryTime; }
 

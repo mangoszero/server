@@ -732,7 +732,7 @@ void BattleGroundMgr::CreateInitialBattleGrounds()
 
         if (MapEntry const* mapEntry = sMapStore.LookupEntry(mapId))
         {
-            name = mapEntry->name[sWorld.GetDefaultDbcLocale()];
+            name = mapEntry->MapName_lang[sWorld.GetDefaultDbcLocale()];
         }
         else
         {

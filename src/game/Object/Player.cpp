@@ -782,7 +782,7 @@ bool Player::Create(uint32 guidlow, const std::string& name, uint8 race, uint8 c
     SetMap(sMapMgr.CreateMap(info->mapId, this));
 
     // Set player's power type based on class
-    uint8 powertype = cEntry->powerType;
+    uint8 powertype = cEntry->DisplayPower;
 
     // Set player's faction based on race
     setFactionForRace(race);
@@ -5162,9 +5162,9 @@ void Player::InitDataForForm(bool reapplyMods)
             SetRegularAttackTime();
 
             ChrClassesEntry const* cEntry = sChrClassesStore.LookupEntry(getClass());
-            if (cEntry && cEntry->powerType < MAX_POWERS && uint32(GetPowerType()) != cEntry->powerType)
+            if (cEntry && cEntry->DisplayPower < MAX_POWERS && uint32(GetPowerType()) != cEntry->DisplayPower)
             {
-                SetPowerType(Powers(cEntry->powerType));
+                SetPowerType(Powers(cEntry->DisplayPower));
             }
 
             break;
@@ -6376,9 +6376,9 @@ void Player::UpdateUnderwaterState(Map* m, float x, float y, float z)
     if (!res)
     {
         m_MirrorTimerFlags &= ~(UNDERWATER_INWATER | UNDERWATER_INLAVA | UNDERWATER_INSLIME | UNDERWATER_INDARKWATER);
-        if (m_lastLiquid && m_lastLiquid->SpellId)
+        if (m_lastLiquid && m_lastLiquid->SpellID)
         {
-            RemoveAurasDueToSpell(m_lastLiquid->SpellId);
+            RemoveAurasDueToSpell(m_lastLiquid->SpellID);
         }
         m_lastLiquid = NULL;
         return;
@@ -6387,31 +6387,31 @@ void Player::UpdateUnderwaterState(Map* m, float x, float y, float z)
     if (uint32 liqEntry = liquid_status.entry)
     {
         LiquidTypeEntry const* liquid = sLiquidTypeStore.LookupEntry(liqEntry);
-        if (m_lastLiquid && m_lastLiquid->SpellId && m_lastLiquid->Id != liqEntry)
+        if (m_lastLiquid && m_lastLiquid->SpellID && m_lastLiquid->ID != liqEntry)
         {
-            RemoveAurasDueToSpell(m_lastLiquid->SpellId);
+            RemoveAurasDueToSpell(m_lastLiquid->SpellID);
         }
 
-        if (liquid && liquid->SpellId)
+        if (liquid && liquid->SpellID)
         {
             if (res & (LIQUID_MAP_UNDER_WATER | LIQUID_MAP_IN_WATER))
             {
-                if (!HasAura(liquid->SpellId))
+                if (!HasAura(liquid->SpellID))
                 {
-                    CastSpell(this, liquid->SpellId, true);
+                    CastSpell(this, liquid->SpellID, true);
                 }
             }
             else
             {
-                RemoveAurasDueToSpell(liquid->SpellId);
+                RemoveAurasDueToSpell(liquid->SpellID);
             }
         }
 
         m_lastLiquid = liquid;
     }
-    else if (m_lastLiquid && m_lastLiquid->SpellId)
+    else if (m_lastLiquid && m_lastLiquid->SpellID)
     {
-        RemoveAurasDueToSpell(m_lastLiquid->SpellId);
+        RemoveAurasDueToSpell(m_lastLiquid->SpellID);
         m_lastLiquid = NULL;
     }
 

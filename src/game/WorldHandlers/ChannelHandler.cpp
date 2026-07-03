@@ -101,17 +101,17 @@ void WorldSession::HandleJoinChannelOpcode(WorldPacket& recvPacket)
     {
         ChatChannelsEntry const* channel = sChatChannelsStore.LookupEntry(i);
         AreaTableEntry const* area = channel ? sAreaStore.LookupEntry(
-            (channel->ChannelID == tradeChannelID || channel->ChannelID == guildRecruitmentChannelID) ? cityLookupAreaID : playerZoneId) : NULL;
+            (channel->ID == tradeChannelID || channel->ID == guildRecruitmentChannelID) ? cityLookupAreaID : playerZoneId) : NULL;
 
         if (area && channel)
         {
-            snprintf(tmpStr, 255, channel->pattern[GetSessionDbcLocale()], area->area_name[GetSessionDbcLocale()]);
+            snprintf(tmpStr, 255, channel->Name_lang[GetSessionDbcLocale()], area->area_name[GetSessionDbcLocale()]);
             //With a format string
             if (strcmp(tmpStr, channelName.c_str()) == 0 ||
-                strcmp(channel->pattern[0], channelName.c_str()) == 0)
+                strcmp(channel->Name_lang[0], channelName.c_str()) == 0)
             {
                 // Without one, used for ie: World Defense
-                channelId = channel->ChannelID;
+                channelId = channel->ID;
                 break;
             }
         }

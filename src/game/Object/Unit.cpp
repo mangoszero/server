@@ -4351,9 +4351,9 @@ uint32 Unit::GetCreatureType() const
     if (GetTypeId() == TYPEID_PLAYER)
     {
         SpellShapeshiftFormEntry const* ssEntry = sSpellShapeshiftFormStore.LookupEntry(GetShapeshiftForm());
-        if (ssEntry && ssEntry->creatureType > 0)
+        if (ssEntry && ssEntry->CreatureType > 0)
         {
-            return ssEntry->creatureType;
+            return ssEntry->CreatureType;
         }
         else
         {

@@ -765,7 +765,7 @@ GridMapLiquidStatus GridMap::getLiquidStatus(float x, float y, float z, uint8 Re
     {
         if (LiquidTypeEntry const* liquidEntry = sLiquidTypeStore.LookupEntry(m_liquidEntry[idx]))
         {
-            entry = liquidEntry->Id;
+            entry = liquidEntry->ID;
             type &= MAP_LIQUID_TYPE_DARK_WATER;
             uint32 liqTypeIdx = liquidEntry->Type;
             if ((entry < 21) && (type & MAP_LIQUID_TYPE_WATER))
@@ -1582,7 +1582,7 @@ GridMap* TerrainInfo::LoadMapAndVMap(const uint32 x, const uint32 y)
 
             // load VMAPs for current map/grid...
             const MapEntry* i_mapEntry = sMapStore.LookupEntry(m_mapId);
-            const char* mapName = i_mapEntry ? i_mapEntry->name[sWorld.GetDefaultDbcLocale()] : "UNNAMEDMAP\x0";
+            const char* mapName = i_mapEntry ? i_mapEntry->MapName_lang[sWorld.GetDefaultDbcLocale()] : "UNNAMEDMAP\x0";
 
             int vmapLoadResult = VMAP::VMapFactory::createOrGetVMapManager()->loadMap((sWorld.GetDataPath() + "vmaps").c_str(),  m_mapId, x, y);
             switch (vmapLoadResult)

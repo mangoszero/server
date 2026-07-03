@@ -146,13 +146,20 @@ struct CharStartOutfitEntry
  */
 struct ChatChannelsEntry
 {
-    uint32  ChannelID;                                      // 0        m_ID - ID of the Channel in DBC.
-    uint32  flags;                                          // 1        m_flags - Flags indicating the type of channel (trading, guid recruitment, ...).
-    // 2        m_factionGroup
-    char const*   pattern[8];                               // 3-10     m_name_lang - Channel Name (using locales).
-    // 11 string flags
-    // char*       name[8];                                 // 12-19    m_shortcut_lang
-    // 20 string flag
+    uint32  ID;                                             // 0        ID - ID of the Channel in DBC.
+    uint32  Flags;                                          // 1        Flags - Flags indicating the type of channel (trading, guid recruitment, ...).
+    // int32   FactionGroup;                                // 2        FactionGroup (int) - server-unused
+    char const*   Name_lang[8];                             // 3-10     Name_lang - Channel Name (using locales).
+    // uint32  Name_lang_flags;                              // 11       Name_lang_flags (uint) - server-unused
+    // char*   Shortcut_lang;                                // 12       Shortcut_lang (string) - server-unused
+    // char*   Shortcut_lang_loc2;                           // 13       Shortcut_lang_loc2 (string) - server-unused
+    // char*   Shortcut_lang_loc3;                           // 14       Shortcut_lang_loc3 (string) - server-unused
+    // char*   Shortcut_lang_loc4;                           // 15       Shortcut_lang_loc4 (string) - server-unused
+    // char*   Shortcut_lang_loc5;                           // 16       Shortcut_lang_loc5 (string) - server-unused
+    // char*   Shortcut_lang_loc6;                           // 17       Shortcut_lang_loc6 (string) - server-unused
+    // char*   Shortcut_lang_loc7;                           // 18       Shortcut_lang_loc7 (string) - server-unused
+    // char*   Shortcut_lang_loc8;                           // 19       Shortcut_lang_loc8 (string) - server-unused
+    // uint32  Shortcut_lang_flags;                          // 20       Shortcut_lang_flags (uint) - server-unused
 };
 
 /**
@@ -161,16 +168,16 @@ struct ChatChannelsEntry
  */
 struct ChrClassesEntry
 {
-    uint32  ClassID;                                        // 0        m_ID - ID of the Char Class in DBC.
-    // uint32 unk1;                                         // 1 unknown, all 1
-    // uint32 flags;                                        // 2 unknown
-    uint32  powerType;                                      // 3        m_DisplayPower - Power Type, (1 = Rage, 3 = Energy, 0 = Mana).
-    // 4        m_petNameToken
-    char const* name[8];                                    // 5-12     m_name_lang - Class Name (using locales).
-    // 13 string flags
-    // 14       m_filename
-    uint32  spellfamily;                                    // 15       m_spellClassSet - Spell Class ID (3 = Mage, 4 = Warrior, 5 = Warlock, ...)
-    // uint32 flags2;                                       // 16       m_flags (0x1 HasRelicSlot)
+    uint32  ID;                                             // 0        ID - ID of the Char Class in DBC.
+    // uint32 Unknown1;                                     // 1        Unknown1 (uint) - server-unused
+    // uint32 DamageBonusStat;                              // 2        DamageBonusStat (uint) - server-unused
+    uint32  DisplayPower;                                   // 3        DisplayPower - Power Type, (1 = Rage, 3 = Energy, 0 = Mana).
+    // char*  PetNameToken;                                 // 4        PetNameToken (string) - server-unused
+    char const* Name_lang[8];                               // 5-12     Name_lang - Class Name (using locales).
+    // uint32 Name_lang_flags;                              // 13       Name_lang_flags (uint) - server-unused
+    // char*  Filename;                                     // 14       Filename (string) - server-unused
+    uint32  SpellClassSet;                                  // 15       SpellClassSet - Spell Class ID (3 = Mage, 4 = Warrior, 5 = Warlock, ...)
+    // uint32 Flags;                                        // 16       Flags (uint) - server-unused
 };
 
 /**
@@ -225,16 +232,18 @@ struct CinematicSequencesEntry
  */
 struct CreatureDisplayInfoEntry
 {
-    uint32      Displayid;                                  // 0        m_ID - ID in DBC.
-    // 1        m_modelID
-    // 2        m_soundID
+    uint32      ID;                                         // 0        ID - ID in DBC.
+    // uint32      ModelID;                                 // 1        ModelID (uint) - server-unused
+    // uint32      SoundID;                                 // 2        SoundID (uint) - server-unused
     uint32      ExtendedDisplayInfoID;                      // 3        m_extendedDisplayInfoID - Extended info (see CreatureDisplayInfoExtraEntry).
-    float       scale;                                      // 4        m_creatureModelScale - Scale of the Creature.
-    // 5        m_creatureModelAlpha
-    // 6-8      m_textureVariation[3]
-    // 9        m_portraitTextureName
-    // 10       m_bloodID
-    // 11       m_NPCSoundID
+    float       CreatureModelScale;                         // 4        CreatureModelScale - Scale of the Creature.
+    // int32       CreatureModelAlpha;                      // 5        CreatureModelAlpha (int) - server-unused
+    // char*       TextureVariation_0;                      // 6        TextureVariation_0 (string) - server-unused
+    // char*       TextureVariation_1;                      // 7        TextureVariation_1 (string) - server-unused
+    // char*       TextureVariation_2;                      // 8        TextureVariation_2 (string) - server-unused
+    // int32       SizeClass;                                // 9        SizeClass (int) - server-unused
+    // uint32      BloodID;                                  // 10       BloodID (uint) - server-unused
+    // uint32      NPCSoundID;                                // 11       NPCSoundID (uint) - server-unused
 };
 
 /**
@@ -356,10 +365,25 @@ struct EmotesEntry
  */
 struct EmotesTextEntry
 {
-    uint32  Id;                                             //          m_ID - ID in DBC.
-    //          m_name
-    uint32  textid;                                         //          m_emoteID - ID of the text.
-    //          m_emoteText
+    uint32  ID;                                             // 0        ID - ID in DBC.
+    // char*  Name;                                         // 1        Name (string) - server-unused
+    uint32  EmoteID;                                        // 2        EmoteID - ID of the text.
+    // uint32  EmoteText1;                                  // 3        EmoteText1 (uint) - server-unused
+    // uint32  EmoteText2;                                  // 4        EmoteText2 (uint) - server-unused
+    // uint32  EmoteText3;                                  // 5        EmoteText3 (uint) - server-unused
+    // uint32  EmoteText4;                                  // 6        EmoteText4 (uint) - server-unused
+    // uint32  EmoteText5;                                  // 7        EmoteText5 (uint) - server-unused
+    // uint32  EmoteText6;                                  // 8        EmoteText6 (uint) - server-unused
+    // uint32  EmoteText7;                                  // 9        EmoteText7 (uint) - server-unused
+    // uint32  EmoteText8;                                  // 10       EmoteText8 (uint) - server-unused
+    // uint32  EmoteText9;                                  // 11       EmoteText9 (uint) - server-unused
+    // uint32  EmoteText10;                                 // 12       EmoteText10 (uint) - server-unused
+    // uint32  EmoteText11;                                 // 13       EmoteText11 (uint) - server-unused
+    // uint32  EmoteText12;                                 // 14       EmoteText12 (uint) - server-unused
+    // uint32  EmoteText13;                                 // 15       EmoteText13 (uint) - server-unused
+    // uint32  EmoteText14;                                 // 16       EmoteText14 (uint) - server-unused
+    // uint32  EmoteText15;                                 // 17       EmoteText15 (uint) - server-unused
+    // uint32  EmoteText16;                                 // 18       EmoteText16 (uint) - server-unused
 };
 
 /**
@@ -490,9 +514,18 @@ struct FactionTemplateEntry
  */
 struct GameObjectDisplayInfoEntry
 {
-    uint32      Displayid;                                  // 0        m_ID - ID in DBC.
-    char*       filename;                                   // 1        m_modelName - File name for  the object.
-    // uint32   m_Sound[10];                                // 2-11     m_Sound
+    uint32      ID;                                         // 0        ID - ID in DBC.
+    char*       ModelName;                                  // 1        ModelName - File name for  the object.
+    // uint32      Sound_0;                                  // 2        Sound_0 (uint) - server-unused
+    // uint32      Sound_1;                                  // 3        Sound_1 (uint) - server-unused
+    // uint32      Sound_2;                                  // 4        Sound_2 (uint) - server-unused
+    // uint32      Sound_3;                                  // 5        Sound_3 (uint) - server-unused
+    // uint32      Sound_4;                                  // 6        Sound_4 (uint) - server-unused
+    // uint32      Sound_5;                                  // 7        Sound_5 (uint) - server-unused
+    // uint32      Sound_6;                                  // 8        Sound_6 (uint) - server-unused
+    // uint32      Sound_7;                                  // 9        Sound_7 (uint) - server-unused
+    // uint32      Sound_8;                                  // 10       Sound_8 (uint) - server-unused
+    // uint32      Sound_9;                                  // 11       Sound_9 (uint) - server-unused
 };
 
 // All Gt* DBC store data for 100 levels, some by 100 per class/race
@@ -573,10 +606,10 @@ struct ItemSetEntry
  */
 struct LiquidTypeEntry
 {
-    uint32 Id;                                              // 0
+    uint32 ID;                                              // 0        ID
     uint32 LiquidId;                                        // 1        23: Water; 29: Ocean; 35: Magma; 41: Slime; 47: Naxxramas - Slime.
     uint32 Type;                                            // 2        0: Magma; 2: Slime; 3: Water.
-    uint32 SpellId;                                         // 3        Reference to Spell.dbc
+    uint32 SpellID;                                         // 3        SpellID - Reference to Spell.dbc
 };
 
 #define MAX_LOCK_CASE 8
@@ -626,29 +659,48 @@ struct MailTemplateEntry
 struct MapEntry
 {
     uint32  MapID;                                          // 0        m_ID
-    // char*       internalname;                            // 1        m_Directory
-    uint32  map_type;                                       // 2        m_InstanceType
-    // uint32 isPvP;                                        // 3        m_PVP 0 or 1 for battlegrounds (not arenas)
-    char*   name[8];                                        // 4-11     m_MapName_lang
-    // 12 string flags
-    // 13-15 unused (something PvPZone related - levels?)
-    // 16-18
-    uint32  linked_zone;                                    // 19       m_areaTableID
-    // char*     hordeIntro[8];                             // 20-27    m_MapDescription0_lang
-    // 28 string flags
-    // char*     allianceIntro[8];                          // 29-36    m_MapDescription1_lang
-    // 37 string flags
-    uint32  multimap_id;                                    // 38       m_LoadingScreenID (LoadingScreens.dbc)
-    // 39-40 not used
-    // float   BattlefieldMapIconScale;                     // 41       m_minimapIconScale
+    // char*   Directory;                                   // 1        Directory (string) - server-unused
+    uint32  InstanceType;                                   // 2        InstanceType
+    // uint32  PVP;                                         // 3        PVP (uint) - server-unused
+    char*   MapName_lang[8];                                // 4-11     MapName_lang
+    // uint32  MapName_lang_flags;                          // 12       MapName_lang_flags (uint) - server-unused
+    // int32   MinLevel;                                    // 13       MinLevel (int) - server-unused
+    // int32   MaxLevel;                                    // 14       MaxLevel (int) - server-unused
+    // int32   MaxPlayers;                                  // 15       MaxPlayers (int) - server-unused
+    // int32   Unk0;                                        // 16       Unk0 (int) - server-unused
+    // float   Unk1;                                        // 17       Unk1 (float) - server-unused
+    // float   Unk2;                                        // 18       Unk2 (float) - server-unused
+    uint32  AreaTableID;                                    // 19       AreaTableID
+    // char*   MapDescription0_lang;                        // 20       MapDescription0_lang (string) - server-unused
+    // char*   MapDescription0_lang_loc2;                   // 21       MapDescription0_lang_loc2 (string) - server-unused
+    // char*   MapDescription0_lang_loc3;                   // 22       MapDescription0_lang_loc3 (string) - server-unused
+    // char*   MapDescription0_lang_loc4;                   // 23       MapDescription0_lang_loc4 (string) - server-unused
+    // char*   MapDescription0_lang_loc5;                   // 24       MapDescription0_lang_loc5 (string) - server-unused
+    // char*   MapDescription0_lang_loc6;                   // 25       MapDescription0_lang_loc6 (string) - server-unused
+    // char*   MapDescription0_lang_loc7;                   // 26       MapDescription0_lang_loc7 (string) - server-unused
+    // char*   MapDescription0_lang_loc8;                   // 27       MapDescription0_lang_loc8 (string) - server-unused
+    // uint32  MapDescription0_lang_flags;                  // 28       MapDescription0_lang_flags (uint) - server-unused
+    // char*   MapDescription1_lang;                        // 29       MapDescription1_lang (string) - server-unused
+    // char*   MapDescription1_lang_loc2;                   // 30       MapDescription1_lang_loc2 (string) - server-unused
+    // char*   MapDescription1_lang_loc3;                   // 31       MapDescription1_lang_loc3 (string) - server-unused
+    // char*   MapDescription1_lang_loc4;                   // 32       MapDescription1_lang_loc4 (string) - server-unused
+    // char*   MapDescription1_lang_loc5;                   // 33       MapDescription1_lang_loc5 (string) - server-unused
+    // char*   MapDescription1_lang_loc6;                   // 34       MapDescription1_lang_loc6 (string) - server-unused
+    // char*   MapDescription1_lang_loc7;                   // 35       MapDescription1_lang_loc7 (string) - server-unused
+    // char*   MapDescription1_lang_loc8;                   // 36       MapDescription1_lang_loc8 (string) - server-unused
+    // uint32  MapDescription1_lang_flags;                  // 37       MapDescription1_lang_flags (uint) - server-unused
+    uint32  LoadingScreenID;                                // 38       LoadingScreenID (LoadingScreens.dbc)
+    // int32   RaidOffset;                                  // 39       RaidOffset (int) - server-unused
+    // int32   Continentname;                                // 40       Continentname (int) - server-unused
+    // float   BattlefieldMapIconScale;                     // 41       BattlefieldMapIconScale (float) - server-unused
 
     // Helpers
 
-    bool IsDungeon() const { return map_type == MAP_INSTANCE || map_type == MAP_RAID; }
-    bool IsNonRaidDungeon() const { return map_type == MAP_INSTANCE; }
-    bool Instanceable() const { return map_type == MAP_INSTANCE || map_type == MAP_RAID || map_type == MAP_BATTLEGROUND; }
-    bool IsRaid() const { return map_type == MAP_RAID; }
-    bool IsBattleGround() const { return map_type == MAP_BATTLEGROUND; }
+    bool IsDungeon() const { return InstanceType == MAP_INSTANCE || InstanceType == MAP_RAID; }
+    bool IsNonRaidDungeon() const { return InstanceType == MAP_INSTANCE; }
+    bool Instanceable() const { return InstanceType == MAP_INSTANCE || InstanceType == MAP_RAID || InstanceType == MAP_BATTLEGROUND; }
+    bool IsRaid() const { return InstanceType == MAP_RAID; }
+    bool IsBattleGround() const { return InstanceType == MAP_BATTLEGROUND; }
 
     bool IsMountAllowed() const
     {
@@ -709,14 +761,21 @@ struct SkillRaceClassInfoEntry
  */
 struct SkillLineEntry
 {
-    uint32    id;                                           // 0        m_ID
-    int32     categoryId;                                   // 1        m_categoryID
-    // uint32    skillCostID;                               // 2        m_skillCostsID
-    char*     name[8];                                      // 3-10     m_displayName_lang
-    // 11 string flags
-    // char*     description[8];                            // 12-19    m_description_lang
-    // 20 string flags
-    // uint32    spellIcon;                                    // 21       m_spellIconID
+    uint32    ID;                                           // 0        ID
+    int32     CategoryID;                                   // 1        CategoryID
+    // uint32    SkillCostsID;                               // 2        SkillCostsID (uint) - server-unused
+    char*     DisplayName_lang[8];                          // 3-10     DisplayName_lang
+    // uint32    DisplayName_lang_flags;                     // 11       DisplayName_lang_flags (uint) - server-unused
+    // char*     Description_lang;                           // 12       Description_lang (string) - server-unused
+    // char*     Description_lang_loc2;                      // 13       Description_lang_loc2 (string) - server-unused
+    // char*     Description_lang_loc3;                      // 14       Description_lang_loc3 (string) - server-unused
+    // char*     Description_lang_loc4;                      // 15       Description_lang_loc4 (string) - server-unused
+    // char*     Description_lang_loc5;                      // 16       Description_lang_loc5 (string) - server-unused
+    // char*     Description_lang_loc6;                      // 17       Description_lang_loc6 (string) - server-unused
+    // char*     Description_lang_loc7;                      // 18       Description_lang_loc7 (string) - server-unused
+    // char*     Description_lang_loc8;                      // 19       Description_lang_loc8 (string) - server-unused
+    // uint32    Description_lang_flags;                     // 20       Description_lang_flags (uint) - server-unused
+    // uint32    SpellIconID;                                // 21       SpellIconID (uint) - server-unused
 };
 
 /**
@@ -1090,13 +1149,27 @@ struct SpellRadiusEntry
 struct SpellRangeEntry
 {
     uint32    ID;                                           // 0        m_ID
-    float     minRange;                                     // 1        m_rangeMin
-    float     maxRange;                                     // 2        m_rangeMax
-    // uint32  Flags;                                       // 3        m_flags
-    // char*  Name[8];                                      // 4-11     m_displayName_lang
-    // uint32 NameFlags;                                    // 12 string flags
-    // char*  ShortName[8];                                 // 13-20    m_displayNameShort_lang
-    // uint32 NameFlags;                                    // 21 string flags
+    float     RangeMin;                                     // 1        RangeMin
+    float     RangeMax;                                     // 2        RangeMax
+    // uint32  Flags;                                       // 3        Flags (uint) - server-unused
+    // char*  DisplayName_lang;                              // 4        DisplayName_lang (string) - server-unused
+    // char*  DisplayName_lang_loc2;                         // 5        DisplayName_lang_loc2 (string) - server-unused
+    // char*  DisplayName_lang_loc3;                         // 6        DisplayName_lang_loc3 (string) - server-unused
+    // char*  DisplayName_lang_loc4;                         // 7        DisplayName_lang_loc4 (string) - server-unused
+    // char*  DisplayName_lang_loc5;                         // 8        DisplayName_lang_loc5 (string) - server-unused
+    // char*  DisplayName_lang_loc6;                         // 9        DisplayName_lang_loc6 (string) - server-unused
+    // char*  DisplayName_lang_loc7;                         // 10       DisplayName_lang_loc7 (string) - server-unused
+    // char*  DisplayName_lang_loc8;                         // 11       DisplayName_lang_loc8 (string) - server-unused
+    // uint32 DisplayName_lang_flags;                        // 12       DisplayName_lang_flags (uint) - server-unused
+    // char*  DisplayNameShort_lang;                         // 13       DisplayNameShort_lang (string) - server-unused
+    // char*  DisplayNameShort_lang_loc2;                    // 14       DisplayNameShort_lang_loc2 (string) - server-unused
+    // char*  DisplayNameShort_lang_loc3;                    // 15       DisplayNameShort_lang_loc3 (string) - server-unused
+    // char*  DisplayNameShort_lang_loc4;                    // 16       DisplayNameShort_lang_loc4 (string) - server-unused
+    // char*  DisplayNameShort_lang_loc5;                    // 17       DisplayNameShort_lang_loc5 (string) - server-unused
+    // char*  DisplayNameShort_lang_loc6;                    // 18       DisplayNameShort_lang_loc6 (string) - server-unused
+    // char*  DisplayNameShort_lang_loc7;                    // 19       DisplayNameShort_lang_loc7 (string) - server-unused
+    // char*  DisplayNameShort_lang_loc8;                    // 20       DisplayNameShort_lang_loc8 (string) - server-unused
+    // uint32 DisplayNameShort_lang_flags;                   // 21       DisplayNameShort_lang_flags (uint) - server-unused
 };
 
 /**
@@ -1106,12 +1179,19 @@ struct SpellRangeEntry
 struct SpellShapeshiftFormEntry
 {
     uint32 ID;                                              // 0        m_ID
-    // uint32 buttonPosition;                               // 1        m_bonusActionBar
-    // char*  Name[8];                                      // 2-9      m_name_lang
-    // uint32 NameFlags;                                    // 10 string flags
-    uint32 flags1;                                          // 11       m_flags
-    int32  creatureType;                                    // 12       m_creatureType <=0 humanoid, other normal creature types
-    // uint32 unk1;                                         // 13       m_attackIconID
+    // uint32 BonusActionBar;                               // 1        BonusActionBar (uint) - server-unused
+    // char*  Name_lang;                                    // 2        Name_lang (string) - server-unused
+    // char*  Name_lang_loc2;                                // 3        Name_lang_loc2 (string) - server-unused
+    // char*  Name_lang_loc3;                                // 4        Name_lang_loc3 (string) - server-unused
+    // char*  Name_lang_loc4;                                // 5        Name_lang_loc4 (string) - server-unused
+    // char*  Name_lang_loc5;                                // 6        Name_lang_loc5 (string) - server-unused
+    // char*  Name_lang_loc6;                                // 7        Name_lang_loc6 (string) - server-unused
+    // char*  Name_lang_loc7;                                // 8        Name_lang_loc7 (string) - server-unused
+    // char*  Name_lang_loc8;                                // 9        Name_lang_loc8 (string) - server-unused
+    // uint32 Name_lang_flags;                               // 10       Name_lang_flags (uint) - server-unused
+    uint32 Flags;                                           // 11       Flags
+    int32  CreatureType;                                    // 12       CreatureType <=0 humanoid, other normal creature types
+    // uint32 AttackIconID;                                 // 13       AttackIconID (uint) - server-unused
 };
 
 /**
@@ -1202,14 +1282,21 @@ struct TalentEntry
  */
 struct TalentTabEntry
 {
-    uint32  TalentTabID;                                    // 0        m_ID
-    // char* name[8];                                       // 1-8      m_name_lang
-    // uint32  nameFlags;                                   // 9 string flags
-    // unit32  spellicon;                                   // 10       m_spellIconID
-    // 11       m_raceMask
+    uint32  ID;                                             // 0        ID
+    // char*   Name_lang;                                   // 1        Name_lang (string) - server-unused
+    // char*   Name_lang_loc2;                               // 2        Name_lang_loc2 (string) - server-unused
+    // char*   Name_lang_loc3;                               // 3        Name_lang_loc3 (string) - server-unused
+    // char*   Name_lang_loc4;                               // 4        Name_lang_loc4 (string) - server-unused
+    // char*   Name_lang_loc5;                               // 5        Name_lang_loc5 (string) - server-unused
+    // char*   Name_lang_loc6;                               // 6        Name_lang_loc6 (string) - server-unused
+    // char*   Name_lang_loc7;                               // 7        Name_lang_loc7 (string) - server-unused
+    // char*   Name_lang_loc8;                               // 8        Name_lang_loc8 (string) - server-unused
+    // uint32  Name_lang_flags;                              // 9        Name_lang_flags (uint) - server-unused
+    // uint32  SpellIconID;                                  // 10       SpellIconID (uint) - server-unused
+    // uint32  RaceMask;                                     // 11       RaceMask (uint) - server-unused
     uint32  ClassMask;                                      // 12       m_classMask
-    uint32  tabpage;                                        // 13       m_orderIndex
-    // char* internalname;                                  // 14       m_backgroundFile
+    uint32  OrderIndex;                                     // 13       OrderIndex
+    // char*   BackgroundFile;                               // 14       BackgroundFile (string) - server-unused
 };
 
 /**

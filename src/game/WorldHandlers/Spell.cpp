@@ -1107,7 +1107,7 @@ bool Spell::IsLockInRange(GameObject* go)
     float dy = m_caster->GetPositionY() - go->GetPositionY();
     float dz = m_caster->GetPositionZ() - go->GetPositionZ();
 
-    return (dx * dx + dy * dy + dz * dz < srange->maxRange);
+    return (dx * dx + dy * dy + dz * dz < srange->RangeMax);
 }
 
 /**

@@ -47,7 +47,7 @@ bool IsPrimaryProfessionSkill(uint32 skill)
         return false;
     }
 
-    if (pSkill->categoryId != SKILL_CATEGORY_PROFESSION)
+    if (pSkill->CategoryID != SKILL_CATEGORY_PROFESSION)
     {
         return false;
     }
@@ -1377,7 +1377,7 @@ SpellCastResult GetErrorAtShapeshiftedCast(SpellEntry const* spellInfo, uint32 f
             sLog.outError("GetErrorAtShapeshiftedCast: unknown shapeshift %u", form);
             return SPELL_CAST_OK;
         }
-        actAsShifted = !(shapeInfo->flags1 & 1);            // shapeshift acts as normal form for spells
+        actAsShifted = !(shapeInfo->Flags & 1);            // shapeshift acts as normal form for spells
     }
 
     if (actAsShifted)

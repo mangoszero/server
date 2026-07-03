@@ -134,7 +134,7 @@ GameObjectModel::~GameObjectModel()
  */
 bool GameObjectModel::initialize(const GameObject* const pGo, const GameObjectDisplayInfoEntry* const pDisplayInfo)
 {
-    ModelList::const_iterator it = model_list.find(pDisplayInfo->Displayid);
+    ModelList::const_iterator it = model_list.find(pDisplayInfo->ID);
     if (it == model_list.end())
     {
         return false;

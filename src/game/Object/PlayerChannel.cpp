@@ -160,14 +160,14 @@ void Player::UpdateLocalChannels(uint32 newZone)
             continue;
         }
 
-        if ((ch->flags & 4) == 4)                           // global channel without zone name in pattern
+        if ((ch->Flags & 4) == 4)                           // global channel without zone name in pattern
         {
             continue;
         }
 
         //  new channel
         char new_channel_name_buf[100];
-        snprintf(new_channel_name_buf, 100, ch->pattern[m_session->GetSessionDbcLocale()], current_zone_name.c_str());
+        snprintf(new_channel_name_buf, 100, ch->Name_lang[m_session->GetSessionDbcLocale()], current_zone_name.c_str());
         Channel* new_channel = cMgr->GetJoinChannel(new_channel_name_buf);
 
         if ((*i) != new_channel)

@@ -141,7 +141,7 @@ void Pet::SetDeathState(DeathState s)                       // overwrite virtual
 
             // lose happiness when died and not in BG
             MapEntry const* mapEntry = sMapStore.LookupEntry(GetMapId());
-            if (!mapEntry || (mapEntry->map_type != MAP_BATTLEGROUND))
+            if (!mapEntry || (mapEntry->InstanceType != MAP_BATTLEGROUND))
             {
                 ModifyPower(POWER_HAPPINESS, -HAPPINESS_LEVEL_SIZE);
             }

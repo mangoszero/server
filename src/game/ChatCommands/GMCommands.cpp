@@ -154,7 +154,7 @@ bool ChatHandler::HandlePInfoCommand(char* args)
     ChrRacesEntry const* raceEntry = sChrRacesStore.LookupEntry(race);
     ChrClassesEntry const* classEntry = sChrClassesStore.LookupEntry(class_);
     char const* race_name = raceEntry ? raceEntry->name[GetSessionDbcLocale()] : "<unknown>";
-    char const* class_name = classEntry ? classEntry->name[GetSessionDbcLocale()] : "<unknown>";
+    char const* class_name = classEntry ? classEntry->Name_lang[GetSessionDbcLocale()] : "<unknown>";
     //PSendSysMessage(LANG_PINFO_RACE_CLASS, race_name, class_name);
     PSendSysMessage("Race: %s, Class: %s", race_name, class_name);
 
@@ -172,7 +172,7 @@ bool ChatHandler::HandlePInfoCommand(char* args)
 
         PSendSysMessage("Location: Map %u (%s), Zone %u (%s)",
             mapId,
-            (mapEntry ? mapEntry->name[GetSessionDbcLocale()] : "<unknown>"),
+            (mapEntry ? mapEntry->MapName_lang[GetSessionDbcLocale()] : "<unknown>"),
             zoneId,
             (zoneEntry ? zoneEntry->area_name[GetSessionDbcLocale()] : "<unknown>"));
 
@@ -198,7 +198,7 @@ bool ChatHandler::HandlePInfoCommand(char* args)
                 {
                     continue;
                 }
-                std::string name = sl->name[loc];
+                std::string name = sl->DisplayName_lang[loc];
                 if (name.empty())
                 {
                     int fallbackLoc = 0;
@@ -208,7 +208,7 @@ bool ChatHandler::HandlePInfoCommand(char* args)
                         {
                             continue;
                         }
-                        name = sl->name[fallbackLoc];
+                        name = sl->DisplayName_lang[fallbackLoc];
                         if (!name.empty())
                         {
                             break;
@@ -247,7 +247,7 @@ bool ChatHandler::HandlePInfoCommand(char* args)
                     {
                         continue;
                     }
-                    std::string name = sl->name[loc];
+                    std::string name = sl->DisplayName_lang[loc];
                     if (name.empty())
                     {
                         int fallbackLoc = 0;
@@ -257,7 +257,7 @@ bool ChatHandler::HandlePInfoCommand(char* args)
                             {
                                 continue;
                             }
-                            name = sl->name[fallbackLoc];
+                            name = sl->DisplayName_lang[fallbackLoc];
                             if (!name.empty())
                             {
                                 break;

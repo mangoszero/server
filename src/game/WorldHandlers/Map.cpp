@@ -1831,7 +1831,7 @@ bool Map::CheckGridIntegrity(Creature* c, bool moved) const
  */
 const char* Map::GetMapName() const
 {
-    return i_mapEntry ? i_mapEntry->name[sWorld.GetDefaultDbcLocale()] : "UNNAMEDMAP\x0";
+    return i_mapEntry ? i_mapEntry->MapName_lang[sWorld.GetDefaultDbcLocale()] : "UNNAMEDMAP\x0";
 }
 
 /**
