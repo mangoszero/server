@@ -40,6 +40,8 @@
 #include "GMTicketMgr.h"
 #include "Mail.h"
 
+#include <iomanip>
+
 // show ticket (helper)
 void ChatHandler::ShowTicket(GMTicket const* ticket)
 {
@@ -747,8 +749,68 @@ bool ChatHandler::HandleTicketPayloadPingCommand(char* /*args*/)
     return true;
 }
 
-// Temporary stubs so the command table links; real bodies land in Tasks 4-5.
-bool ChatHandler::HandleTicketPayloadShowCommand(char* /*args*/) { return false; }
+bool ChatHandler::HandleTicketPayloadShowCommand(char* args)
+{
+    char* px = ExtractLiteralArg(&args);
+    if (!px)
+    {
+        return false;
+    }
+
+    GMTicket* ticket = NULL;
+    uint32 num;
+    if (ExtractUInt32(&px, num))
+    {
+        if (num == 0)
+        {
+            return false;
+        }
+        ticket = sTicketMgr.GetGMTicket(num);
+        if (!ticket)
+        {
+            PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST, num);
+            SetSentErrorMessage(true);
+            return false;
+        }
+    }
+    else
+    {
+        ObjectGuid target_guid; std::string target_name;
+        if (!ExtractPlayerTarget(&px, NULL, &target_guid, &target_name))
+        {
+            return false;
+        }
+        ticket = sTicketMgr.GetGMTicket(target_guid);
+        if (!ticket)
+        {
+            PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST_NAME, target_name.c_str());
+            SetSentErrorMessage(true);
+            return false;
+        }
+    }
+
+    std::string name; bool online; float x, y, z; uint32 mapId;
+    bool posValid = ResolveTicketCreator(ticket->GetPlayerGuid(), name, online, x, y, z, mapId);
+
+    std::string text = ticket->GetText();
+    if (text.size() > 500)
+    {
+        text.resize(500);
+    }
+    std::string resp = ticket->GetResponse();
+    if (resp.size() > 500)
+    {
+        resp.resize(500);
+    }
+
+    std::ostringstream b;
+    b << ticket->GetId() << "\t" << TicketEscapeField(name) << "\t" << (online ? "1" : "0")
+      << "\t" << (posValid ? "1" : "0")
+      << "\t" << std::fixed << std::setprecision(2) << x << "\t" << y << "\t" << z
+      << "\t" << mapId << "\t" << TicketEscapeField(text) << "\t" << TicketEscapeField(resp);
+    SendTicketPayload('D', b.str());
+    return true;
+}
 
 bool ChatHandler::ResolveTicketCreator(ObjectGuid guid, std::string& name, bool& online,
                                        float& x, float& y, float& z, uint32& mapId)
