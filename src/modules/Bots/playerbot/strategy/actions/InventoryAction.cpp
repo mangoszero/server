@@ -399,3 +399,70 @@ list<Item*> InventoryAction::parseItems(string text)
 
     return result;
 }
+
+bool InventoryAction::EquipFromBag(Player* bot, Item* pItem)
+{
+    uint16 dest;
+    InventoryResult msg = bot->CanEquipItem(NULL_SLOT, dest, pItem, !pItem->IsBag());
+    if (msg != EQUIP_ERR_OK)
+    {
+        return false;
+    }
+
+    uint8 srcbag = pItem->GetBagSlot();
+    uint8 srcslot = pItem->GetSlot();
+    uint16 src = pItem->GetPos();
+
+    if (dest == src)
+    {
+        return false;
+    }
+
+    Item* pDstItem = bot->GetItemByPos(dest);
+    if (!pDstItem)
+    {
+        bot->RemoveItem(srcbag, srcslot, true);
+        bot->EquipItem(dest, pItem, true);
+        bot->AutoUnequipOffhandIfNeed();
+        return true;
+    }
+
+    uint8 dstbag = pDstItem->GetBagSlot();
+    uint8 dstslot = pDstItem->GetSlot();
+
+    msg = bot->CanUnequipItem(dest, !pItem->IsBag());
+    if (msg != EQUIP_ERR_OK)
+    {
+        return false;
+    }
+
+    ItemPosCountVec sSrc;
+    if (bot->IsInventoryPos(src))
+    {
+        msg = bot->CanStoreItem(srcbag, srcslot, sSrc, pDstItem, true);
+        if (msg != EQUIP_ERR_OK)
+        {
+            msg = bot->CanStoreItem(srcbag, NULL_SLOT, sSrc, pDstItem, true);
+        }
+        if (msg != EQUIP_ERR_OK)
+        {
+            msg = bot->CanStoreItem(NULL_BAG, NULL_SLOT, sSrc, pDstItem, true);
+        }
+    }
+    else
+    {
+        msg = bot->CanStoreItem(NULL_BAG, NULL_SLOT, sSrc, pDstItem, true);
+    }
+
+    if (msg != EQUIP_ERR_OK)
+    {
+        return false;
+    }
+
+    bot->RemoveItem(dstbag, dstslot, false);
+    bot->RemoveItem(srcbag, srcslot, false);
+    bot->EquipItem(dest, pItem, true);
+    bot->StoreItem(sSrc, pDstItem, true);
+    bot->AutoUnequipOffhandIfNeed();
+    return true;
+}

@@ -9,4 +9,8 @@ void CombatStrategy::InitTriggers(list<TriggerNode*> &triggers)
     triggers.push_back(new TriggerNode(
             "invalid target",
         NextAction::array(0, new NextAction("drop target", ACTION_HIGH + 9), NULL)));
+
+    triggers.push_back(new TriggerNode(
+            "weapons are saved",
+        NextAction::array(0, new NextAction("restore weapons", ACTION_HIGH), NULL)));
 }

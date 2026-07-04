@@ -5,6 +5,8 @@
 #include "LootTriggers.h"
 #include "../triggers/GenericTriggers.h"
 #include "LfgTriggers.h"
+#include "MasterIsFishingTrigger.h"
+#include "WeaponsAreSavedTrigger.h"
 
 namespace ai
 {
@@ -96,11 +98,15 @@ namespace ai
                 creators["critical aoe heal"] = &TriggerContext::critical_aoe_heal;
                 creators["low aoe heal"] = &TriggerContext::low_aoe_heal;
                 creators["medium aoe heal"] = &TriggerContext::medium_aoe_heal;
+                creators["master is fishing"] = &TriggerContext::master_is_fishing;
+                creators["weapons are saved"] = &TriggerContext::weapons_are_saved;
                 creators["invalid target"] = &TriggerContext::invalid_target;
                 creators["lfg proposal active"] = &TriggerContext::lfg_proposal_active;
             }
 
         private:
+            static Trigger* master_is_fishing(PlayerbotAI* ai) { return new MasterIsFishingTrigger(ai); }
+            static Trigger* weapons_are_saved(PlayerbotAI* ai) { return new WeaponsAreSavedTrigger(ai); }
             static Trigger* lfg_proposal_active(PlayerbotAI* ai) { return new LfgProposalActiveTrigger(ai); }
             static Trigger* invalid_target(PlayerbotAI* ai) { return new InvalidTargetTrigger(ai); }
             static Trigger* critical_aoe_heal(PlayerbotAI* ai) { return new AoeHealTrigger(ai, "critical aoe heal", "critical", 2); }

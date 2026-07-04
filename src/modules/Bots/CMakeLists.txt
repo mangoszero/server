@@ -94,6 +94,8 @@ set(BOT_SRCS
     playerbot/strategy/actions/EquipAction.h
     playerbot/strategy/actions/FollowActions.cpp
     playerbot/strategy/actions/FollowActions.h
+    playerbot/strategy/actions/FishWithMasterAction.cpp
+    playerbot/strategy/actions/FishWithMasterAction.h
     playerbot/strategy/actions/GenericActions.cpp
     playerbot/strategy/actions/GenericActions.h
     playerbot/strategy/actions/GenericSpellActions.cpp
@@ -147,6 +149,7 @@ set(BOT_SRCS
     playerbot/strategy/actions/QuestAction.h
     playerbot/strategy/actions/ReachTargetActions.h
     playerbot/strategy/actions/ReachTargetActions.cpp
+    playerbot/strategy/actions/ReachTargetActions.h
     playerbot/strategy/actions/ReadyCheckAction.cpp
     playerbot/strategy/actions/ReadyCheckAction.h
     playerbot/strategy/actions/ReleaseSpiritAction.h
@@ -157,6 +160,8 @@ set(BOT_SRCS
     playerbot/strategy/actions/RepairAllAction.h
     playerbot/strategy/actions/ResetAiAction.cpp
     playerbot/strategy/actions/ResetAiAction.h
+    playerbot/strategy/actions/RestoreWeaponsAction.cpp
+    playerbot/strategy/actions/RestoreWeaponsAction.h
     playerbot/strategy/actions/ReviveFromCorpseAction.cpp
     playerbot/strategy/actions/ReviveFromCorpseAction.h
     playerbot/strategy/actions/RewardAction.cpp
@@ -462,9 +467,11 @@ set(BOT_SRCS
     playerbot/strategy/triggers/LfgTriggers.h
     playerbot/strategy/triggers/LootTriggers.cpp
     playerbot/strategy/triggers/LootTriggers.h
+    playerbot/strategy/triggers/MasterIsFishingTrigger.h
     playerbot/strategy/triggers/RangeTriggers.h
     playerbot/strategy/triggers/TriggerContext.h
     playerbot/strategy/triggers/WithinAreaTrigger.h
+    playerbot/strategy/triggers/WeaponsAreSavedTrigger.h
     playerbot/strategy/triggers/WorldPacketTrigger.h
     playerbot/strategy/triggers/WorldPacketTriggerContext.h
     playerbot/strategy/Value.cpp
@@ -522,6 +529,7 @@ set(BOT_SRCS
     playerbot/strategy/values/LogLevelValue.h
     playerbot/strategy/values/LootStrategyValue.h
     playerbot/strategy/values/ManaSaveLevelValue.h
+    playerbot/strategy/values/MasterBobberValue.h
     playerbot/strategy/values/MasterTargetValue.h
     playerbot/strategy/values/NearestAdsValue.cpp
     playerbot/strategy/values/NearestAdsValue.h

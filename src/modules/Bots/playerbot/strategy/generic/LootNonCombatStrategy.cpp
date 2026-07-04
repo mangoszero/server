@@ -24,5 +24,13 @@ void GatherStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     triggers.push_back(new TriggerNode(
             "no possible targets",
         NextAction::array(0, new NextAction("add gathering loot", 2.0f), NULL)));
+
+    triggers.push_back(new TriggerNode(
+            "master is fishing",
+        NextAction::array(0, new NextAction("fish with master", ACTION_HIGH + 5), NULL)));
+
+    triggers.push_back(new TriggerNode(
+            "weapons are saved",
+        NextAction::array(0, new NextAction("restore weapons", ACTION_NORMAL), NULL)));
 }
 

@@ -14,6 +14,8 @@
 #include "PositionAction.h"
 #include "AttackAction.h"
 #include "PullActions.h"
+#include "FishWithMasterAction.h"
+#include "RestoreWeaponsAction.h"
 
 namespace ai
 {
@@ -82,6 +84,8 @@ namespace ai
                 creators["start pull"] = &ActionContext::start_pull;
                 creators["watch group pull"] = &ActionContext::watch_group_pull;
                 creators["reach shoot range"] = &ActionContext::reach_shoot_range;
+                creators["fish with master"] = &ActionContext::fish_with_master;
+                creators["restore weapons"] = &ActionContext::restore_weapons;
                 creators["swim to surface"] = &ActionContext::swim_to_surface;
             }
 
@@ -145,6 +149,8 @@ namespace ai
             static Action* watch_group_pull(PlayerbotAI* ai) { return new WatchGroupPullAction(ai); }
             static Action* start_pull(PlayerbotAI* ai) { return new StartPullAction(ai); }
             static Action* reach_shoot_range(PlayerbotAI* ai) { return new ReachShootRangeAction(ai); }
+            static Action* fish_with_master(PlayerbotAI* ai) { return new FishWithMasterAction(ai); }
+            static Action* restore_weapons(PlayerbotAI* ai) { return new RestoreWeaponsAction(ai); }
             static Action* swim_to_surface(PlayerbotAI* ai) { return new SwimToSurfaceAction(ai); }
 
     };

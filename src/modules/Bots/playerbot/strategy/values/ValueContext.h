@@ -59,6 +59,7 @@
 #include "PullerTargetValue.h"
 #include "SpellRangeValue.h"
 #include "LastTargetPositionValue.h"
+#include "MasterBobberValue.h"
 
 namespace ai
 {
@@ -146,6 +147,10 @@ namespace ai
                 creators["bag space"] = &ValueContext::bag_space;
                 creators["enemy healer target"] = &ValueContext::enemy_healer_target;
                 creators["item usage"] = &ValueContext::item_usage;
+                creators["master bobber"] = &ValueContext::master_bobber;
+                creators["master is fishing"] = &ValueContext::master_is_fishing;
+                creators["saved mainhand weapon"] = &ValueContext::saved_mainhand_weapon;
+                creators["saved offhand weapon"] = &ValueContext::saved_offhand_weapon;
                 creators["reach spell distance"] = &ValueContext::reach_spell_distance;
                 creators["puller target"] = &ValueContext::puller_target;
                 creators["spell range"] = &ValueContext::spell_range;
@@ -154,6 +159,10 @@ namespace ai
 
         private:
             static UntypedValue* item_usage(PlayerbotAI* ai) { return new ItemUsageValue(ai); }
+            static UntypedValue* master_bobber(PlayerbotAI* ai) { return new MasterBobberValue(ai); }
+            static UntypedValue* master_is_fishing(PlayerbotAI* ai) { return new ManualSetValue<bool>(ai, false, "master is fishing"); }
+            static UntypedValue* saved_mainhand_weapon(PlayerbotAI* ai) { return new ManualSetValue<ObjectGuid>(ai, ObjectGuid(), "saved mainhand weapon"); }
+            static UntypedValue* saved_offhand_weapon(PlayerbotAI* ai) { return new ManualSetValue<ObjectGuid>(ai, ObjectGuid(), "saved offhand weapon"); }
             static UntypedValue* reach_spell_distance(PlayerbotAI* ai) { return new ManualSetValue<float>(ai, sPlayerbotAIConfig.spellDistance, "reach spell distance"); }
             static UntypedValue* mana_save_level(PlayerbotAI* ai) { return new ManaSaveLevelValue(ai); }
             static UntypedValue* invalid_target(PlayerbotAI* ai) { return new InvalidTargetValue(ai); }

@@ -10,6 +10,7 @@ namespace ai
         public:
             InventoryAction(PlayerbotAI* ai, string name) : Action(ai, name) {}
             static Item* FindPlayerItem(Player* player, FindItemVisitor* visitor);
+            static bool EquipFromBag(Player* bot, Item* pItem);
 
         protected:
             void IterateItems(IterateItemsVisitor* visitor, IterateItemsMask mask = ITERATE_ITEMS_IN_BAGS);
