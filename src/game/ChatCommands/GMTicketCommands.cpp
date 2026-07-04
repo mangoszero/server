@@ -34,7 +34,9 @@
 
 #include "Chat.h"
 #include "ObjectMgr.h"
+#include "Opcodes.h"
 #include "World.h"
+#include "WorldPacket.h"
 #include "GMTicketMgr.h"
 #include "Mail.h"
 
@@ -673,3 +675,78 @@ bool ChatHandler::HandleTickerSurveyClose(char* args)
 
     return true;
 }
+
+static std::string TicketEscapeField(const std::string& in)
+{
+    std::string out;
+    out.reserve(in.size());
+    for (size_t i = 0; i < in.size(); ++i)
+    {
+        char c = in[i];
+        switch (c)
+        {
+        case '\\': out += "\\\\"; break;
+        case '\t': out += "\\t"; break;
+        case '\n': out += "\\n"; break;
+        case '\r': out += "\\r"; break;
+        default:   out += c;
+        }
+    }
+    return out;
+}
+
+void ChatHandler::SendTicketPayload(char kind, const std::string& body)
+{
+    if (!m_session || !m_session->GetPlayer())
+    {
+        return;
+    }
+
+    const size_t CHUNK = 200;
+    const size_t MAXCHUNKS = 16;
+
+    std::string b = body;
+    if (b.size() > CHUNK * MAXCHUNKS)
+    {
+        b.resize(CHUNK * MAXCHUNKS);
+    }
+
+    size_t total = b.empty() ? 1 : ((b.size() + CHUNK - 1) / CHUNK);
+    ObjectGuid sender = m_session->GetPlayer()->GetObjectGuid();
+
+    for (size_t seq = 1; seq <= total; ++seq)
+    {
+        std::string chunk = b.empty() ? std::string() : b.substr((seq - 1) * CHUNK, CHUNK);
+        std::ostringstream framed;
+        framed << "ZGMTKT\t" << kind << "\t" << seq << "\t" << total << "\t" << chunk;
+        std::string msg = framed.str();
+
+        WorldPacket data(SMSG_MESSAGECHAT, msg.size() + 32);
+        data << uint8(CHAT_MSG_WHISPER);
+        data << int32(LANG_ADDON);
+        data << sender;
+        data << uint32(msg.length() + 1);
+        data << msg;
+        data << uint8(0);
+        m_session->SendPacket(&data);
+    }
+}
+
+bool ChatHandler::HandleTicketPayloadPingCommand(char* /*args*/)
+{
+    // Stress the whisper channel exactly where real payloads are fragile:
+    // a 2-chunk body whose 200-byte boundary lands on a space (chunk 1 ends in a
+    // space) and whose last chunk ends in a trailing space, plus an empty-body 'L'
+    // frame (empty final chunk). The spike confirms these survive intact.
+    std::string body(199, 'a');
+    body += ' ';                       // byte 200 -> chunk 1 ends in a space
+    body += std::string(199, 'b');
+    body += ' ';                       // trailing space on the final chunk
+    SendTicketPayload('P', body);
+    SendTicketPayload('L', "");        // empty-body frame (empty chunk, total=1)
+    return true;
+}
+
+// Temporary stubs so the command table links; real bodies land in Tasks 4-5.
+bool ChatHandler::HandleTicketPayloadListCommand(char* /*args*/) { SendTicketPayload('L', ""); return true; }
+bool ChatHandler::HandleTicketPayloadShowCommand(char* /*args*/) { return false; }

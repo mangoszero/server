@@ -685,6 +685,10 @@ class ChatHandler
         bool HandleTicketShowCommand(char* args);
         bool HandleTickerSurveyClose(char* args);
 
+        bool HandleTicketPayloadListCommand(char* args);
+        bool HandleTicketPayloadShowCommand(char* args);
+        bool HandleTicketPayloadPingCommand(char* args);
+
         bool HandleMaxSkillCommand(char* args);
         bool HandleSetSkillCommand(char* args);
         bool HandleRespawnCommand(char* args);
@@ -772,6 +776,7 @@ class ChatHandler
         void ShowSpellListHelper(Player* target, SpellEntry const* spellInfo, LocaleConstant loc);
         void ShowPoolListHelper(uint16 pool_id);
         void ShowTicket(GMTicket const* ticket);
+        void SendTicketPayload(char kind, const std::string& body);
         void ShowTriggerListHelper(AreaTriggerEntry const* atEntry);
         void ShowTriggerTargetListHelper(uint32 id, AreaTrigger const* at, bool subpart = false);
         bool LookupPlayerSearchCommand(QueryResult* result, uint32* limit = NULL);
