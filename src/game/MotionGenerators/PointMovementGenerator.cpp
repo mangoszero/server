@@ -29,6 +29,7 @@
 #include "World.h"
 #include "movement/MoveSplineInit.h"
 #include "movement/MoveSpline.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 
 //----- Point Movement Generator
 
@@ -142,6 +143,8 @@ template <>
  */
 void PointMovementGenerator<Creature>::MovementInform(Creature& unit)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(MovementInform, 0);
     if (unit.AI())
     {
         unit.AI()->MovementInform(POINT_MOTION_TYPE, id);

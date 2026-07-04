@@ -25,6 +25,7 @@
 
 
 #include "GameObject.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "QuestDef.h"
 #include "ObjectMgr.h"
 #include "PoolManager.h"
@@ -63,6 +64,8 @@
  */
 void GameObject::Use(Unit* user)
 {
+    // GDB-server game breakpoint: pause when a game object of a given entry is used.
+    GDB_BREAK(GameObjectUse, GetEntry());
     // user must be provided
     MANGOS_ASSERT(user || PrintEntryError("GameObject::Use (without user)"));
 

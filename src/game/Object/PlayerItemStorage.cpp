@@ -25,6 +25,7 @@
 
 
 #include "Player.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "Log.h"
 #include "Opcodes.h"
 #include "WorldPacket.h"
@@ -275,6 +276,8 @@ Item* Player::EquipNewItem(uint16 pos, uint32 item, bool update)
  */
 Item* Player::EquipItem(uint16 pos, Item* pItem, bool update)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(ItemEquip, pItem ? pItem->GetEntry() : 0);
     AddEnchantmentDurations(pItem);
     AddItemDurations(pItem);
 
@@ -610,6 +613,8 @@ void Player::MoveItemToInventory(ItemPosCountVec const& dest, Item* pItem, bool 
  */
 void Player::DestroyItem(uint8 bag, uint8 slot, bool update)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(ItemDestroy, GetItemByPos(bag, slot) ? GetItemByPos(bag, slot)->GetEntry() : 0);
     Item* pItem = GetItemByPos(bag, slot);
     if (pItem)
     {

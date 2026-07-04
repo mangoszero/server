@@ -25,6 +25,7 @@
 
 
 #include "Player.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
@@ -145,6 +146,8 @@ void Player::SendLootRelease(ObjectGuid guid)
  */
 void Player::SendLoot(ObjectGuid guid, LootType loot_type)
 {
+    // GDB-server game breakpoint: pause when loot of a given type is opened.
+    GDB_BREAK(Loot, loot_type);
     if (ObjectGuid lootGuid = GetLootGuid())
     {
         m_session->DoLootRelease(lootGuid);

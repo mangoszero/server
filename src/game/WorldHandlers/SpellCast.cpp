@@ -46,6 +46,7 @@
 
 
 #include "Spell.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -151,6 +152,8 @@ void Spell::cancel()
  */
 void Spell::cast(bool skipCheck)
 {
+    // GDB-server game breakpoint: pause when this spell is cast.
+    GDB_BREAK(SpellCast, m_spellInfo->Id);
     SetExecutedCurrently(true);
 
     if (!m_caster->CheckAndIncreaseCastCounter())

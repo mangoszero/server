@@ -23,6 +23,7 @@
  */
 
 #include "GameObject.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "G3D/Quat.h"
 #include "QuestDef.h"
 #include "ObjectMgr.h"
@@ -1675,7 +1676,6 @@ bool GameObject::HasStaticDBSpawnData() const
 {
     return sObjectMgr.GetGOData(GetGUIDLow()) != NULL;
 }
-
 
 
 /**

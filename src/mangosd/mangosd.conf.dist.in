@@ -1792,6 +1792,36 @@ Network.KickOnBadPacket = 0
 #        SOAP port
 #        Default: 7878
 #
+#    GdbServer.Enable
+#        Enable the GDB-server debug endpoint. Lets a debugger (gdb, lldb,
+#        IDA's remote GDB backend) or an AI agent attach to the running
+#        mangosd and drive it: read process memory, inspect live game state,
+#        and run server commands via the 'monitor mangos ...' surface.
+#        WARNING: anyone who can reach the port gets full memory and command
+#        access. Keep it bound to localhost. Disabled by default.
+#                 0 - off
+#        Default: 0 - off
+#
+#    GdbServer.IP
+#        Bind address for the GDB-server. Do NOT expose this publicly.
+#        Default: 127.0.0.1
+#
+#    GdbServer.Port
+#        GDB Remote Serial Protocol (RSP) port. Connect with
+#        'gdb -ex "target remote <ip>:<port>"'.
+#        Default: 2345
+#
+#    GdbServer.MonitorPort
+#        Plain-text monitor bridge port for AI agents / non-RSP debuggers.
+#        Send 'mangos help' as a line and read the text reply. 0 to disable.
+#        Default: 2346
+#
+#    GdbServer.AllowMemWrite
+#        Allow the RSP 'M' (write memory) packet to modify live process
+#        memory. Dangerous; off by default.
+#                 0 - off
+#        Default: 0 - off
+#
 ################################################################################
 
 Console.Enable = 1
@@ -1807,6 +1837,11 @@ SOAP.Enabled   = 0
 SOAP.IP        = 127.0.0.1
 SOAP.Port      = 7878
 
+GdbServer.Enable        = 0
+GdbServer.IP            = 127.0.0.1
+GdbServer.Port          = 2345
+GdbServer.MonitorPort   = 2346
+GdbServer.AllowMemWrite = 0
 ###############################################################################
 #    AH.Service.Enabled
 #        Run the auction house bot as a separate supervised child process.

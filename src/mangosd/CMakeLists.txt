@@ -28,6 +28,8 @@ set(SRC_GRP_MAIN
   AFThread.h
   CliThread.cpp
   CliThread.h
+  GdbServerThread.cpp
+  GdbServerThread.h
   MangosdTest.cpp
   MangosdTest.h
   RAThread.cpp

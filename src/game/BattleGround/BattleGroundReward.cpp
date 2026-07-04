@@ -39,6 +39,7 @@
 
 
 #include "BattleGround.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "Object.h"
 #include "Player.h"
 #include "BattleGroundMgr.h"
@@ -174,6 +175,8 @@ void BattleGround::UpdateWorldStateForPlayer(uint32 Field, uint32 Value, Player*
  */
 void BattleGround::EndBattleGround(Team winner)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(BgEnd, GetTypeID());
 #ifdef ENABLE_ELUNA
     if (Eluna* e = GetBgMap()->GetEluna())
     {

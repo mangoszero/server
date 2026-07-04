@@ -58,6 +58,7 @@
 #ifdef ENABLE_ELUNA
 #include "ElunaConfig.h"
 #endif /* ENABLE_ELUNA */
+#include "Debug/GdbServer/GdbBreakpoints.h"
 
 #define CLASS_LOCK MaNGOS::ClassLevelLockable<MapManager, ACE_Recursive_Thread_Mutex>
     INSTANTIATE_SINGLETON_2(MapManager, CLASS_LOCK);
@@ -512,6 +513,8 @@ Map* MapManager::CreateInstance(uint32 id, Player* player)
  */
 DungeonMap* MapManager::CreateDungeonMap(uint32 id, uint32 InstanceId, DungeonPersistentState* save)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(InstanceCreate, id);
     // make sure we have a valid map id
     const MapEntry* entry = sMapStore.LookupEntry(id);
     if (!entry)

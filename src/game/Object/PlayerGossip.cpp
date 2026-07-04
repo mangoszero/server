@@ -25,6 +25,7 @@
 
 
 #include "Player.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
@@ -345,6 +346,8 @@ void Player::SendPreparedGossip(WorldObject* pSource)
  */
 void Player::OnGossipSelect(WorldObject* pSource, uint32 gossipListId)
 {
+    // GDB-server game breakpoint: pause when a gossip option is selected.
+    GDB_BREAK(GossipSelect, gossipListId);
     GossipMenu& gossipmenu = PlayerTalkClass->GetGossipMenu();
 
     if (gossipListId >= gossipmenu.MenuItemCount())

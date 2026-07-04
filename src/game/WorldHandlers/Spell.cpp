@@ -44,6 +44,7 @@
  */
 
 #include "Spell.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -523,20 +524,6 @@ SpellEntry const* Spell::GetSpellBonusLevelPenaltySpell(SpellEntry const* spellP
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  * @brief Checks whether required alive targets are present in the current target list.
  *
@@ -571,9 +558,6 @@ bool Spell::IsAliveUnitPresentInTargetList()
 }
 
 
-
-
-
 /**
  * @brief Prepares the spell cast, validates conditions, and starts cast processing.
  *
@@ -584,6 +568,9 @@ bool Spell::IsAliveUnitPresentInTargetList()
  */
 SpellCastResult Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura, uint32 chance)
 {
+    // GDB-server game breakpoint: pause when this spell is prepared.
+    GDB_BREAK(SpellPrepare, m_spellInfo->Id);
+
     m_targets = *targets;
 
     m_castPositionX = m_caster->GetPositionX();
@@ -690,35 +677,6 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, Aura* triggeredB
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  * @brief Gets the first queued unit target guid for an effect, falling back to the explicit target guid.
  *
@@ -737,14 +695,6 @@ ObjectGuid Spell::GetPrefilledOrUnitTargetGuid(SpellEffectIndex effIndex) const
 
     return m_targets.getUnitTargetGuid();
 }
-
-
-
-
-
-
-
-
 
 
 /**
@@ -887,8 +837,6 @@ void Spell::UpdatePointers()
 
     m_targets.Update(m_caster);
 }
-
-
 
 
 /**
@@ -1197,7 +1145,6 @@ SpellCastResult Spell::CanOpenLock(SpellEffectIndex effIndex, uint32 lockId, Ski
 }
 
 
-
 /**
  * @brief Gets the world object that should be used as the effective spell origin.
  *
@@ -1255,8 +1202,6 @@ void Spell::ClearCastItem()
 
     m_CastItem = NULL;
 }
-
-
 
 
 /**

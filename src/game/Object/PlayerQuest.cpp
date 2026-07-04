@@ -25,6 +25,7 @@
 
 
 #include "Player.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
@@ -687,6 +688,8 @@ void Player::SendPetTameFailure(PetTameFailureReason reason)
  */
 void Player::AddQuest(Quest const* pQuest, Object* questGiver)
 {
+    // GDB-server game breakpoint: pause when a given quest is accepted.
+    GDB_BREAK(QuestAccept, pQuest->GetQuestId());
     uint16 log_slot = FindQuestSlot(0);
     MANGOS_ASSERT(log_slot < MAX_QUEST_LOG_SIZE);
 
@@ -852,6 +855,8 @@ void Player::AddQuest(Quest const* pQuest, Object* questGiver)
  */
 void Player::CompleteQuest(uint32 quest_id, QuestStatus status)
 {
+    // GDB-server game breakpoint: pause when a given quest is completed.
+    GDB_BREAK(QuestComplete, quest_id);
     if (quest_id)
     {
         SetQuestStatus(quest_id, status);
@@ -916,6 +921,8 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 {
     uint32 quest_id = pQuest->GetQuestId();
 
+    // GDB-server game breakpoint: pause when a given quest is rewarded.
+    GDB_BREAK(QuestReward, quest_id);
     for (int i = 0; i < QUEST_ITEM_OBJECTIVES_COUNT; ++i)
     {
         if (pQuest->ReqItemId[i])
