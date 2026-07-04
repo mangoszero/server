@@ -748,5 +748,70 @@ bool ChatHandler::HandleTicketPayloadPingCommand(char* /*args*/)
 }
 
 // Temporary stubs so the command table links; real bodies land in Tasks 4-5.
-bool ChatHandler::HandleTicketPayloadListCommand(char* /*args*/) { SendTicketPayload('L', ""); return true; }
 bool ChatHandler::HandleTicketPayloadShowCommand(char* /*args*/) { return false; }
+
+bool ChatHandler::ResolveTicketCreator(ObjectGuid guid, std::string& name, bool& online,
+                                       float& x, float& y, float& z, uint32& mapId)
+{
+    if (Player* p = sObjectMgr.GetPlayer(guid))
+    {
+        online = true;
+        name = p->GetName();
+        x = p->GetPositionX(); y = p->GetPositionY(); z = p->GetPositionZ();
+        mapId = p->GetMapId();
+        return true;
+    }
+
+    online = false; x = 0.0f; y = 0.0f; z = 0.0f; mapId = 0; name = "<offline>";
+    QueryResult* res = CharacterDatabase.PQuery(
+        "SELECT `name`, `position_x`, `position_y`, `position_z`, `map` "
+        "FROM `characters` WHERE `guid` = '%u'", guid.GetCounter());
+    if (res)
+    {
+        Field* fld = res->Fetch();
+        name = fld[0].GetCppString();
+        x = fld[1].GetFloat(); y = fld[2].GetFloat(); z = fld[3].GetFloat();
+        mapId = fld[4].GetUInt32();
+        delete res;
+        return true;
+    }
+    return false;
+}
+
+bool ChatHandler::HandleTicketPayloadListCommand(char* /*args*/)
+{
+    std::string body;
+    // Cap like HandleTicketListCommand so the joined body stays well under 200*16 bytes;
+    // an uncapped body would hit the SendTicketPayload cap and truncate the last record.
+    uint16 numToShow = std::min(uint16(sTicketMgr.GetTicketCount()),
+                                uint16(sWorld.getConfig(CONFIG_UINT32_GM_TICKET_LIST_SIZE)));
+    for (uint16 i = 0; i < numToShow; ++i)
+    {
+        GMTicket* t = sTicketMgr.GetGMTicketByOrderPos(i);
+        if (!t)
+        {
+            continue;
+        }
+
+        std::string name; bool online; float x, y, z; uint32 mapId;
+        ResolveTicketCreator(t->GetPlayerGuid(), name, online, x, y, z, mapId);
+
+        std::string snippet = t->GetText();
+        if (snippet.size() > 40)
+        {
+            snippet.resize(40);
+        }
+
+        uint32 age = uint32(time(NULL) - t->GetLastUpdate());
+        std::ostringstream rec;
+        rec << t->GetId() << "\t" << TicketEscapeField(name) << "\t" << age << "\t"
+            << (online ? "1" : "0") << "\t" << TicketEscapeField(snippet);
+        if (!body.empty())
+        {
+            body += "\n";
+        }
+        body += rec.str();
+    }
+    SendTicketPayload('L', body);
+    return true;
+}

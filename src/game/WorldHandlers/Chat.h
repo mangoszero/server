@@ -777,6 +777,7 @@ class ChatHandler
         void ShowPoolListHelper(uint16 pool_id);
         void ShowTicket(GMTicket const* ticket);
         void SendTicketPayload(char kind, const std::string& body);
+        bool ResolveTicketCreator(ObjectGuid guid, std::string& name, bool& online, float& x, float& y, float& z, uint32& mapId);
         void ShowTriggerListHelper(AreaTriggerEntry const* atEntry);
         void ShowTriggerTargetListHelper(uint32 id, AreaTrigger const* at, bool subpart = false);
         bool LookupPlayerSearchCommand(QueryResult* result, uint32* limit = NULL);
