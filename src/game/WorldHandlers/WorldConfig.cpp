@@ -567,6 +567,17 @@ void World::LoadConfigSettings(bool reload)
     // AH Service custody escrow ledger
     setConfig(CONFIG_BOOL_AH_CUSTODY, "AH.Service.Custody", false);
 
+    // Movement subsystem: other-player smoothing (heartbeat extrapolation for stale
+    // movers, A/B netcode so OFF by default) + a global player speed-rate knob and
+    // optional per-move-type multipliers.
+    setConfig(CONFIG_BOOL_MOVEMENT_SMOOTHING,       "Movement.Smoothing", false);
+    setConfigMinMax(CONFIG_UINT32_MOVEMENT_HEARTBEAT_MS,      "Movement.HeartbeatMs", 250, 100, 2000);
+    setConfigMinMax(CONFIG_UINT32_MOVEMENT_MAX_EXTRAPOLATE_MS,"Movement.MaxExtrapolateMs", 400, 100, 3000);
+    setConfigMinMax(CONFIG_UINT32_MOVEMENT_SPEED_RATE,       "Movement.PlayerSpeedRate", 100, 10, 1000);
+    setConfigMinMax(CONFIG_UINT32_MOVEMENT_RUN_RATE,         "Movement.RunSpeedRate", 100, 10, 1000);
+    setConfigMinMax(CONFIG_UINT32_MOVEMENT_SWIM_RATE,        "Movement.SwimSpeedRate", 100, 10, 1000);
+    setConfigMinMax(CONFIG_UINT32_MOVEMENT_WALK_RATE,        "Movement.WalkSpeedRate", 100, 10, 1000);
+
     m_relocation_ai_notify_delay = sConfig.GetIntDefault("Visibility.AIRelocationNotifyDelay", 1000u);
     m_relocation_lower_limit_sq  = pow(sConfig.GetFloatDefault("Visibility.RelocationLowerLimit", 10), 2);
 
