@@ -222,7 +222,7 @@ void Player::SaveToDB()
 
     uberInsert.addUInt32(m_ExtraFlags);
 
-    uberInsert.addUInt32(uint32(m_stableSlots));            // to prevent save uint8 as char
+    uberInsert.addUInt32(uint32(GetStableSlots()));         // to prevent save uint8 as char
 
     uberInsert.addUInt32(uint32(m_atLoginFlags));
 

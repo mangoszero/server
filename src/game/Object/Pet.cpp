@@ -254,7 +254,11 @@ void Pet::UpdateTransport(Player* plOwner)
         float dx = GetPositionX() - plOwner->GetPositionX();
         float dy = GetPositionY() - plOwner->GetPositionY();
         float dist2d = sqrt(dx*dx + dy*dy);
-        if (dist2d <= 6.0f)
+        if (dist2d <= 8.0f
+#ifdef ENABLE_PLAYERBOTS
+            || plOwner->GetPlayerbotAI()
+#endif
+            )
         {
             tr->AddPassenger(this);
             m_transport = tr;
@@ -279,7 +283,14 @@ void Pet::UpdateTransport(Player* plOwner)
                 moveData << uint8(Movement::MonsterMoveStop);
                 SendMessageToSet(&moveData, true);
             }
-            SendCreateUpdateToPlayer(plOwner);
+            for (UnitSet::const_iterator itr = m_transport->GetPassengers().begin();
+                 itr != m_transport->GetPassengers().end(); ++itr)
+            {
+                if ((*itr)->GetTypeId() == TYPEID_PLAYER)
+                {
+                    SendCreateUpdateToPlayer(static_cast<Player*>(*itr));
+                }
+            }
         }
     }
 

@@ -46,7 +46,7 @@ namespace
      * @param startZ Leg start Z-coordinate.
      * @param endNode Waypoint the leg ends at.
      * @param pathPoints Path being built; the leg start point is added only when empty.
-     * @return True if a real navmesh leg of at least two points was appended.
+     * @return True if the leg was pathfound; near-duplicate points are dropped, so a degenerate leg may append nothing.
      */
     bool AppendWaypointPathSegment(Creature& creature, float startX, float startY, float startZ, WaypointNode const& endNode, Movement::PointsArray& pathPoints)
     {
@@ -74,6 +74,11 @@ namespace
 
         for (Movement::PointsArray::const_iterator itr = segment.begin() + 1; itr != segment.end(); ++itr)
         {
+            if ((*itr - pathPoints.back()).length() < WAYPOINT_SMOOTHING_MIN_SEGMENT_LENGTH)
+            {
+                continue;
+            }
+
             pathPoints.push_back(*itr);
         }
 
@@ -439,7 +444,7 @@ void WaypointMovementGenerator<Creature>::BuildSmoothPath(Creature& creature, Wa
         currPoint = nextPoint;
     }
 
-    if (m_activeSegmentWaypoints.size() <= 1)
+    if (m_activeSegmentWaypoints.size() <= 1 || pathPoints.size() < 2)
     {
         ClearActiveSegment();
         pathPoints.clear();

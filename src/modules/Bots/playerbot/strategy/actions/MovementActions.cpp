@@ -273,6 +273,10 @@ bool MovementAction::FollowOnTransport(Unit* target, Player* master)
         bot->m_movementInfo.Write(data);
         bot->SendMessageToSet(&data, false);
         AI_VALUE(LastMovement&, "last movement").Set(target);
+        if(bot->GetPet())
+        {
+            bot->GetPet()->UpdateTransport(bot);
+        }
         return true;
 
     }
@@ -320,6 +324,10 @@ bool MovementAction::FollowOffTransport(Unit* target, Player* master)
         bot->m_movementInfo.Write(data);
         bot->SendMessageToSet(&data, false);
         AI_VALUE(LastMovement&, "last movement").Set(target);
+        if(bot->GetPet())
+        {
+            bot->GetPet()->UpdateTransport(master);
+        }
     }
     else
     {

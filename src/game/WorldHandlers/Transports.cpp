@@ -27,6 +27,7 @@
 #include "Transports.h"
 #include "Map.h"
 #include "Creature.h"
+#include "Player.h"
 #include "MapManager.h"
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"
@@ -179,15 +180,24 @@ void Transport::UpdateCreaturePassengerPositions()
     float sin_o = sin(to);
     for (Unit* unit : m_passengers)
     {
+        Position const* tpos = unit->m_movementInfo.GetTransportPos();
+        float wx = tx + cos_o * tpos->x - sin_o * tpos->y;
+        float wy = ty + sin_o * tpos->x + cos_o * tpos->y;
+        float wz = tz + tpos->z;
+        float wo = to + tpos->o;
         if (Creature* c = unit->ToCreature())
         {
-            Position const* tpos = c->m_movementInfo.GetTransportPos();
-            float wx = tx + cos_o * tpos->x - sin_o * tpos->y;
-            float wy = ty + sin_o * tpos->x + cos_o * tpos->y;
-            float wz = tz + tpos->z;
-            float wo = to + tpos->o;
             GetMap()->CreatureRelocation(c, wx, wy, wz, wo);
         }
+#ifdef ENABLE_PLAYERBOTS
+        else if (Player* p = unit->ToPlayer())
+        {
+            if (p->GetPlayerbotAI())
+            {
+                GetMap()->PlayerRelocation(p, wx, wy, wz, wo);
+            }
+        }
+#endif
     }
 }
 
