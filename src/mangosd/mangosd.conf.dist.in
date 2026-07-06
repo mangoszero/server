@@ -2028,3 +2028,54 @@ Eluna.CompatibilityMode = false
 Eluna.OnlyOnMaps = ""
 Eluna.TraceBack = false
 Eluna.ScriptPath = "lua_scripts"
+
+###################################################################################################
+# SERVER-SIDE DEBUG-DRAW TOOLKIT (.debug vis)
+#
+#    Engine-style debug markers spawned server-side and visible to the GM, for
+#    map cells, line-of-sight, pathfinding, collision and terrain height. Markers
+#    are temporary gameobjects that auto-despawn; hovering a marker shows that
+#    marker's captured values. Requires the reserved gameobject_template pool
+#    migration (shipped as a matching PR in the mangoszero/database repo) to be
+#    applied once.
+#
+#    DebugVis.DespawnSeconds
+#        Marker lifetime in seconds (5-600). Markers also clear with ".debug vis clear".
+#    DebugVis.Style
+#        0 = colour-coded crystals (default), 1 = assorted-crystal alternate set.
+#    DebugVis.Disp.<Category>
+#        Override the GameObjectDisplayInfo.dbc display id per category
+#        (Cell/LosOk/LosBlock/Path/PathBad/Collision/Height/HitPoint/Generic).
+#        NOTE: only SOLID models are hover-able; particle/effect models render but
+#        cannot be moused over.
+#    DebugVis.Glow / DebugVis.GlowDisp.<Category>
+#        Optional colour-matched glow effect co-located with each marker (1 = on).
+#    DebugVis.Scale[.Collision|.HitPoint]
+#        Per-marker scale; the collision/impact crystals render large, so they are
+#        shrunk by default.
+###################################################################################################
+
+DebugVis.DespawnSeconds = 30
+DebugVis.Style          = 0
+#DebugVis.Disp.Cell      = 5912
+#DebugVis.Disp.LosOk     = 2972
+#DebugVis.Disp.LosBlock  = 2973
+#DebugVis.Disp.Path      = 2972
+#DebugVis.Disp.PathBad   = 2973
+#DebugVis.Disp.Collision = 1667
+#DebugVis.Disp.Height    = 2974
+#DebugVis.Disp.HitPoint  = 5746
+#DebugVis.Disp.Generic   = 5811
+DebugVis.Glow           = 1
+#DebugVis.GlowDisp.Cell      = 0
+#DebugVis.GlowDisp.LosOk     = 3993
+#DebugVis.GlowDisp.LosBlock  = 327
+#DebugVis.GlowDisp.Path      = 3993
+#DebugVis.GlowDisp.PathBad   = 327
+#DebugVis.GlowDisp.Collision = 363
+#DebugVis.GlowDisp.Height    = 266
+#DebugVis.GlowDisp.HitPoint  = 6430
+#DebugVis.GlowDisp.Generic   = 6679
+#DebugVis.Scale           = 1.0
+#DebugVis.Scale.Collision = 0.5
+#DebugVis.Scale.HitPoint  = 0.6

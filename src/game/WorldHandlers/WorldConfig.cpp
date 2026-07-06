@@ -567,6 +567,9 @@ void World::LoadConfigSettings(bool reload)
     // AH Service custody escrow ledger
     setConfig(CONFIG_BOOL_AH_CUSTODY, "AH.Service.Custody", false);
 
+    // Server-side debug-draw toolkit (.debug vis): marker auto-despawn seconds.
+    setConfigMinMax(CONFIG_UINT32_DEBUGVIS_DESPAWN, "DebugVis.DespawnSeconds", 30, 5, 600);
+
     m_relocation_ai_notify_delay = sConfig.GetIntDefault("Visibility.AIRelocationNotifyDelay", 1000u);
     m_relocation_lower_limit_sq  = pow(sConfig.GetFloatDefault("Visibility.RelocationLowerLimit", 10), 2);
 

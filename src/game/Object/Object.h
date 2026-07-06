@@ -904,6 +904,10 @@ class WorldObject : public Object
         void PlayDistanceSound(uint32 sound_id, Player const* target = NULL) const;
         void PlayDirectSound(uint32 sound_id, Player const* target = NULL) const;
         void PlayMusic(uint32 sound_id, Player const* target = NULL) const;
+        // Play a SpellVisualKit on this object (SMSG_PLAY_SPELL_VISUAL). Broadcast
+        // to nearby players, or to a single target if given. Used by the debug
+        // visualizer for dynamic, on-unit visual cues.
+        void PlaySpellVisual(uint32 kitId, Player const* target = NULL) const;
 
         void SendObjectDeSpawnAnim(ObjectGuid guid);
 
@@ -933,7 +937,7 @@ class WorldObject : public Object
         void BuildUpdateData(UpdateDataMapType&) override;
 
         Creature* SummonCreature(uint32 id, float x, float y, float z, float ang, TempSpawnType spwtype, uint32 despwtime, bool asActiveObject = false, bool setRun = false);
-        GameObject* SummonGameObject(uint32 id, float x, float y, float z, float angle, uint32 despwtime);
+        GameObject* SummonGameObject(uint32 id, float x, float y, float z, float angle, uint32 despwtime, uint32 displayId = 0, float scale = 0.0f);
 
         bool IsActiveObject() const { return m_isActiveObject || m_viewPoint.hasViewers(); }
         bool isActiveObject() const { return IsActiveObject(); } // This is for Eluna to build. Should be removed in the future!

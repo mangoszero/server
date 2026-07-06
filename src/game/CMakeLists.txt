@@ -69,6 +69,10 @@ source_group("Tool" FILES ${SRC_GRP_TOOL})
 file(GLOB SRC_GRP_VMAPS vmap/*.cpp vmap/*.h)
 source_group("vmaps" FILES ${SRC_GRP_VMAPS})
 
+#DebugVis group
+file(GLOB SRC_GRP_DEBUGVIS DebugVis/*.cpp DebugVis/*.h)
+source_group("DebugVis" FILES ${SRC_GRP_DEBUGVIS})
+
 #Warden group
 file(GLOB SRC_GRP_WARDEN Warden/*.cpp Warden/*.h)
 source_group("Warden" FILES ${SRC_GRP_WARDEN})
@@ -235,6 +239,7 @@ add_library(game STATIC
     ${SRC_GRP_TIME}
     ${SRC_GRP_TOOL}
     ${SRC_GRP_VMAPS}
+    ${SRC_GRP_DEBUGVIS}
     ${SRC_GRP_WARDEN}
     ${SRC_GRP_WARDEN_MODULES}
     ${SRC_GRP_WORLD_HANDLERS}
@@ -257,6 +262,7 @@ target_include_directories(game
         Time
         Tools
         vmap
+        DebugVis
         Warden
         Warden/Modules
         WorldHandlers

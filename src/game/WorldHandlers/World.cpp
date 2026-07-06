@@ -111,6 +111,7 @@
 
 // WARDEN
 #include "WardenCheckMgr.h"
+#include "PerformanceMonitor.h"
 
 // AH subprocess supervisor (Task 5+)
 #include "WorkerSupervisor.h"
@@ -1098,6 +1099,9 @@ void World::DetectDBCLang()
 /// Update the World !
 void World::Update(uint32 diff)
 {
+    ///- Record world-tick timing for the performance monitor (.debug perf)
+    PerformanceMonitor::TrackUpdate(diff);
+
     ///- Update the different timers
     for (int i = 0; i < WUPDATE_COUNT; ++i)
     {
