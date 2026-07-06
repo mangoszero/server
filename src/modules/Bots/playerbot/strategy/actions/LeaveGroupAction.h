@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Action.h"
+#include "../../PlayerbotAIConfig.h"
 #include "../../RandomPlayerbotMgr.h"
 
 namespace ai
@@ -34,6 +35,16 @@ namespace ai
                 ai->ChangeStrategy("-follow master", BOT_STATE_NON_COMBAT);
                 ai->ChangeStrategy("-follow master", BOT_STATE_DEAD);
                 ai->ChangeStrategy("-follow master", BOT_STATE_COMBAT);
+
+                if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() != FLIGHT_MOTION_TYPE && !bot->IsTaxiFlying())
+                {
+                    bot->GetMotionMaster()->Clear();
+                    bot->GetMotionMaster()->MoveIdle();
+                    bot->clearUnitState(UNIT_STAT_CHASE);
+                    bot->clearUnitState(UNIT_STAT_FOLLOW);
+                }
+
+                ai->ChangeStrategy("+stay", BOT_STATE_DEAD);
                 return true;
             }
     };
@@ -70,22 +81,44 @@ namespace ai
     class UninviteAction : public LeaveGroupAction
     {
         public:
-            UninviteAction(PlayerbotAI* ai) : LeaveGroupAction(ai, "party command") {}
+            UninviteAction(PlayerbotAI* ai) : LeaveGroupAction(ai, "uninvite") {}
 
             virtual bool Execute(Event event)
             {
                 WorldPacket& p = event.getPacket();
                 p.rpos(0);
-                ObjectGuid guid;
 
-                p >> guid;
+                bool match = false;
+                if (p.GetOpcode() == CMSG_GROUP_UNINVITE)
+                {
+                    string membername;
+                    p >> membername;
+                    match = (bot->GetName() == membername);
+                }
+                else
+                {
+                    ObjectGuid guid;
+                    p >> guid;
+                    match = (bot->GetObjectGuid() == guid);
+                }
 
-                if (bot->GetObjectGuid() == guid)
+                if (match)
                 {
                     return LeaveGroupAction::Execute(event);
                 }
 
                 return false;
+            }
+    };
+
+    class DisbandAction : public LeaveGroupAction
+    {
+        public:
+            DisbandAction(PlayerbotAI* ai) : LeaveGroupAction(ai, "disband") {}
+
+            virtual bool Execute(Event event)
+            {
+                return LeaveGroupAction::Execute(event);
             }
     };
 }

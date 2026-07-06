@@ -127,7 +127,9 @@ PlayerbotAI::PlayerbotAI(Player* bot)
     masterIncomingPacketHandlers.AddHandler(CMSG_ACTIVATETAXI, "activate taxi");
     masterIncomingPacketHandlers.AddHandler(CMSG_ACTIVATETAXIEXPRESS, "activate taxi");
     masterIncomingPacketHandlers.AddHandler(CMSG_MOVE_SPLINE_DONE, "taxi done");
+    masterIncomingPacketHandlers.AddHandler(CMSG_GROUP_DISBAND, "disband");
     masterIncomingPacketHandlers.AddHandler(CMSG_GROUP_UNINVITE_GUID, "uninvite");
+    masterIncomingPacketHandlers.AddHandler(CMSG_GROUP_UNINVITE, "uninvite");
     masterIncomingPacketHandlers.AddHandler(CMSG_PUSHQUESTTOPARTY, "quest share");
     masterIncomingPacketHandlers.AddHandler(CMSG_REPOP_REQUEST, "master released spirit");
     masterIncomingPacketHandlers.AddHandler(CMSG_SPIRIT_HEALER_ACTIVATE, "master spirit healer");

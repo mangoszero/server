@@ -108,6 +108,7 @@ WorldPacketHandlerStrategy::WorldPacketHandlerStrategy(PlayerbotAI* ai) : PassTr
     supported.push_back("party command");
     supported.push_back("ready check");
     supported.push_back("uninvite");
+    supported.push_back("disband");
     supported.push_back("lfg role check");
 }
 

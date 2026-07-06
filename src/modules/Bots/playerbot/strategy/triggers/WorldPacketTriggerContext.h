@@ -38,6 +38,7 @@ namespace ai
                 creators["ready check"] = &WorldPacketTriggerContext::ready_check;
                 creators["ready check finished"] = &WorldPacketTriggerContext::ready_check_finished;
                 creators["uninvite"] = &WorldPacketTriggerContext::uninvite;
+                creators["disband"] = &WorldPacketTriggerContext::disband;
                 creators["lfg join"] = &WorldPacketTriggerContext::lfg_update;
                 creators["lfg proposal"] = &WorldPacketTriggerContext::lfg_proposal;
                 creators["lfg role check"] = &WorldPacketTriggerContext::lfg_role_check;
@@ -58,6 +59,7 @@ namespace ai
             static Trigger* lfg_role_check(PlayerbotAI* ai) { return new WorldPacketTrigger(ai, "lfg role check"); }
             static Trigger* lfg_update(PlayerbotAI* ai) { return new WorldPacketTrigger(ai, "lfg join"); }
             static Trigger* uninvite(PlayerbotAI* ai) { return new WorldPacketTrigger(ai, "uninvite"); }
+            static Trigger* disband(PlayerbotAI* ai) { return new WorldPacketTrigger(ai, "disband"); }
             static Trigger* ready_check_finished(PlayerbotAI* ai) { return new WorldPacketTrigger(ai, "ready check finished"); }
             static Trigger* ready_check(PlayerbotAI* ai) { return new WorldPacketTrigger(ai, "ready check"); }
             static Trigger* duel_requested(PlayerbotAI* ai) { return new WorldPacketTrigger(ai, "duel requested"); }
