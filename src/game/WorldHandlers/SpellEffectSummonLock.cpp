@@ -99,10 +99,10 @@ void Spell::SendLoot(ObjectGuid guid, LootType loottype, LockType lockType)
                     gameObjTarget->SetLootState(GO_JUST_DEACTIVATED);
                     return;
                 }
-                sLog.outError("Spell::SendLoot unhandled locktype %u for GameObject trap (entry %u) for spell %u.", lockType, gameObjTarget->GetEntry(), m_spellInfo->Id);
+                sLog.outError("Spell::SendLoot unhandled locktype %u for GameObject trap (entry %u) for spell %u.", lockType, gameObjTarget->GetEntry(), m_spellInfo->ID);
                 return;
             default:
-                sLog.outError("Spell::SendLoot unhandled GameObject type %u (entry %u) for spell %u.", gameObjTarget->GetGoType(), gameObjTarget->GetEntry(), m_spellInfo->Id);
+                sLog.outError("Spell::SendLoot unhandled GameObject type %u (entry %u) for spell %u.", gameObjTarget->GetGoType(), gameObjTarget->GetEntry(), m_spellInfo->ID);
                 return;
         }
     }
@@ -278,7 +278,7 @@ void Spell::EffectProficiency(SpellEffectIndex /*eff_idx*/)
     }
     Player* p_target = (Player*)unitTarget;
 
-    uint32 subClassMask = m_spellInfo->EquippedItemSubClassMask;
+    uint32 subClassMask = m_spellInfo->EquippedItemSubclass;
     if (m_spellInfo->EquippedItemClass == ITEM_CLASS_WEAPON && !(p_target->GetWeaponProficiency() & subClassMask))
     {
         p_target->AddWeaponProficiency(subClassMask);

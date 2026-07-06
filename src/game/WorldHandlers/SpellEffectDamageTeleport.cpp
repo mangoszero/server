@@ -115,7 +115,7 @@ void Spell::EffectInstaKill(SpellEffectIndex /*eff_idx*/)
     }
 
     // Demonic Sacrifice
-    if (m_spellInfo->Id == 18788 && unitTarget->GetTypeId() == TYPEID_UNIT)
+    if (m_spellInfo->ID == 18788 && unitTarget->GetTypeId() == TYPEID_UNIT)
     {
         uint32 entry = unitTarget->GetEntry();
         uint32 spellID;
@@ -138,7 +138,7 @@ void Spell::EffectInstaKill(SpellEffectIndex /*eff_idx*/)
         finish();
         WorldPacket data(SMSG_SPELLINSTAKILLLOG, (8 + 4));  // sent for selfkill only, other type is logged at SpellExecute
         data << m_caster->GetObjectGuid();
-        data << uint32(m_spellInfo->Id);
+        data << uint32(m_spellInfo->ID);
         m_caster->SendMessageToSet(&data, true);
     }
 
@@ -162,7 +162,7 @@ void Spell::EffectEnvironmentalDMG(SpellEffectIndex eff_idx)
 
     m_caster->CalculateDamageAbsorbAndResist(m_caster, GetSpellSchoolMask(m_spellInfo), SPELL_DIRECT_DAMAGE, damage, &absorb, &resist);
 
-    m_caster->SendSpellNonMeleeDamageLog(m_caster, m_spellInfo->Id, damage, GetSpellSchoolMask(m_spellInfo), absorb, resist, false, 0, false);
+    m_caster->SendSpellNonMeleeDamageLog(m_caster, m_spellInfo->ID, damage, GetSpellSchoolMask(m_spellInfo), absorb, resist, false, 0, false);
     if (m_caster->GetTypeId() == TYPEID_PLAYER)
     {
         ((Player*)m_caster)->EnvironmentalDamage(DAMAGE_FIRE, damage);
@@ -178,11 +178,11 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
 {
     if (unitTarget && unitTarget->IsAlive())
     {
-        switch (m_spellInfo->SpellFamilyName)
+        switch (m_spellInfo->SpellClassSet)
         {
             case SPELLFAMILY_GENERIC:
             {
-                switch (m_spellInfo->Id)                    // better way to check unknown
+                switch (m_spellInfo->ID)                    // better way to check unknown
                 {
                     // Meteor like spells (divided damage to targets)
                     case 24340: case 26558: case 28884:     // Meteor
@@ -228,12 +228,12 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
             case SPELLFAMILY_WARRIOR:
             {
                 // Bloodthirst
-                if (m_spellInfo->SpellIconID == 38 && m_spellInfo->SpellFamilyFlags & UI64LIT(0x2000000))
+                if (m_spellInfo->SpellIconID == 38 && m_spellInfo->SpellClassMask & UI64LIT(0x2000000))
                 {
                     damage = uint32(damage * (m_caster->GetTotalAttackPowerValue(BASE_ATTACK)) / 100);
                 }
                 // Shield Slam
-                else if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x100000000))
+                else if (m_spellInfo->SpellClassMask & UI64LIT(0x100000000))
                 {
                     damage += int32(m_caster->GetShieldBlockValue());
                 }
@@ -242,7 +242,7 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
             case SPELLFAMILY_WARLOCK:
             {
                 // Conflagrate - consumes Immolate
-                if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000000000200))
+                if (m_spellInfo->SpellClassMask & UI64LIT(0x0000000000000200))
                 {
                     // for caster applied auras only
                     Unit::AuraList const& mPeriodic = unitTarget->GetAurasByType(SPELL_AURA_PERIODIC_DAMAGE);
@@ -262,10 +262,10 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
             case SPELLFAMILY_DRUID:
             {
                 // Ferocious Bite
-                if ((m_spellInfo->SpellFamilyFlags & UI64LIT(0x000800000)) && m_spellInfo->SpellVisual == 6587)
+                if ((m_spellInfo->SpellClassMask & UI64LIT(0x000800000)) && m_spellInfo->SpellVisualID == 6587)
                 {
                     // converts each extra point of energy into ($f1+$AP/630) additional damage
-                    float multiple = m_caster->GetTotalAttackPowerValue(BASE_ATTACK) / 630 + m_spellInfo->DmgMultiplier[effect_idx];
+                    float multiple = m_caster->GetTotalAttackPowerValue(BASE_ATTACK) / 630 + m_spellInfo->EffectChainAmplitude[effect_idx];
                     damage += int32(m_caster->GetPower(POWER_ENERGY) * multiple);
                     m_caster->SetPower(POWER_ENERGY, 0);
                 }
@@ -274,7 +274,7 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
             case SPELLFAMILY_ROGUE:
             {
                 // Eviscerate
-                if ((m_spellInfo->SpellFamilyFlags & UI64LIT(0x00020000)) && m_caster->GetTypeId() == TYPEID_PLAYER)
+                if ((m_spellInfo->SpellClassMask & UI64LIT(0x00020000)) && m_caster->GetTypeId() == TYPEID_PLAYER)
                 {
                     if (uint32 combo = ((Player*)m_caster)->GetComboPoints())
                     {
@@ -308,7 +308,7 @@ void Spell::EffectTriggerSpell(SpellEffectIndex eff_idx)
     {
         if (gameObjTarget || itemTarget)
         {
-            sLog.outError("Spell::EffectTriggerSpell (Spell: %u): Unsupported non-unit case!", m_spellInfo->Id);
+            sLog.outError("Spell::EffectTriggerSpell (Spell: %u): Unsupported non-unit case!", m_spellInfo->ID);
         }
         return;
     }
@@ -365,7 +365,7 @@ void Spell::EffectTriggerSpell(SpellEffectIndex eff_idx)
 
                 if (spellInfo->IsFitToFamily(SPELLFAMILY_ROGUE, UI64LIT(0x0000000000400000)))
                 {
-                    spellId = spellInfo->Id;
+                    spellId = spellInfo->ID;
                     break;
                 }
             }
@@ -419,7 +419,7 @@ void Spell::EffectTriggerSpell(SpellEffectIndex eff_idx)
     SpellEntry const* spellInfo = sSpellStore.LookupEntry(triggered_spell_id);
     if (!spellInfo)
     {
-        sLog.outError("EffectTriggerSpell of spell %u: triggering unknown spell id %i", m_spellInfo->Id, triggered_spell_id);
+        sLog.outError("EffectTriggerSpell of spell %u: triggering unknown spell id %i", m_spellInfo->ID, triggered_spell_id);
         return;
     }
 
@@ -430,7 +430,7 @@ void Spell::EffectTriggerSpell(SpellEffectIndex eff_idx)
     if (spellInfo->EquippedItemClass >= 0 && m_caster->GetTypeId() == TYPEID_PLAYER)
     {
         // main hand weapon required
-        if (spellInfo->AttributesEx3 & SPELL_ATTR_EX3_MAIN_HAND)
+        if (spellInfo->AttributesExC & SPELL_ATTR_EX3_MAIN_HAND)
         {
             Item* item = ((Player*)m_caster)->GetWeaponForAttack(BASE_ATTACK, true, false);
 
@@ -448,7 +448,7 @@ void Spell::EffectTriggerSpell(SpellEffectIndex eff_idx)
         }
 
         // offhand hand weapon required
-        if (spellInfo->AttributesEx3 & SPELL_ATTR_EX3_REQ_OFFHAND)
+        if (spellInfo->AttributesExC & SPELL_ATTR_EX3_REQ_OFFHAND)
         {
             Item* item = ((Player*)m_caster)->GetWeaponForAttack(OFF_ATTACK, true, false);
 
@@ -491,20 +491,20 @@ void Spell::EffectTriggerMissileSpell(SpellEffectIndex effect_idx)
     {
         if (unitTarget)
         {
-            DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell ScriptStart spellid %u in EffectTriggerMissileSpell", m_spellInfo->Id);
-            m_caster->GetMap()->ScriptsStart(DBS_ON_SPELL, m_spellInfo->Id, m_caster, unitTarget);
+            DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell ScriptStart spellid %u in EffectTriggerMissileSpell", m_spellInfo->ID);
+            m_caster->GetMap()->ScriptsStart(DBS_ON_SPELL, m_spellInfo->ID, m_caster, unitTarget);
         }
         else
         {
             sLog.outError("EffectTriggerMissileSpell of spell %u (eff: %u): triggering unknown spell id %u",
-                m_spellInfo->Id, effect_idx, triggered_spell_id);
+                m_spellInfo->ID, effect_idx, triggered_spell_id);
         }
         return;
     }
 
     if (m_CastItem)
     {
-        DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "WORLD: cast Item spellId - %i", spellInfo->Id);
+        DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "WORLD: cast Item spellId - %i", spellInfo->ID);
     }
 
     m_caster->CastSpell(m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, spellInfo, true, m_CastItem, NULL, m_originalCasterGUID, m_spellInfo);
@@ -518,10 +518,10 @@ void Spell::EffectTeleportUnits(SpellEffectIndex eff_idx)   // TODO - Use target
     }
 
     // Target dependend on TargetB, if there is none provided, decide dependend on A
-    uint32 targetType = m_spellInfo->EffectImplicitTargetB[eff_idx];
+    uint32 targetType = m_spellInfo->ImplicitTargetB[eff_idx];
     if (!targetType)
     {
-        targetType = m_spellInfo->EffectImplicitTargetA[eff_idx];
+        targetType = m_spellInfo->ImplicitTargetA[eff_idx];
     }
 
     switch (targetType)
@@ -540,10 +540,10 @@ void Spell::EffectTeleportUnits(SpellEffectIndex eff_idx)   // TODO - Use target
         case TARGET_AREAEFFECT_INSTANT:                     // in all cases first TARGET_TABLE_X_Y_Z_COORDINATES
         case TARGET_TABLE_X_Y_Z_COORDINATES:
         {
-            SpellTargetPosition const* st = sSpellMgr.GetSpellTargetPosition(m_spellInfo->Id);
+            SpellTargetPosition const* st = sSpellMgr.GetSpellTargetPosition(m_spellInfo->ID);
             if (!st)
             {
-                sLog.outError("Spell::EffectTeleportUnits - unknown Teleport coordinates for spell ID %u", m_spellInfo->Id);
+                sLog.outError("Spell::EffectTeleportUnits - unknown Teleport coordinates for spell ID %u", m_spellInfo->ID);
                 return;
             }
 
@@ -574,7 +574,7 @@ void Spell::EffectTeleportUnits(SpellEffectIndex eff_idx)   // TODO - Use target
             // If not exist data for dest location - return
             if (!(m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION))
             {
-                sLog.outError("Spell::EffectTeleportUnits - unknown EffectImplicitTargetB[%u] = %u for spell ID %u", eff_idx, m_spellInfo->EffectImplicitTargetB[eff_idx], m_spellInfo->Id);
+                sLog.outError("Spell::EffectTeleportUnits - unknown EffectImplicitTargetB[%u] = %u for spell ID %u", eff_idx, m_spellInfo->ImplicitTargetB[eff_idx], m_spellInfo->ID);
                 return;
             }
             // Init dest coordinates
@@ -589,7 +589,7 @@ void Spell::EffectTeleportUnits(SpellEffectIndex eff_idx)   // TODO - Use target
     }
 
     // post effects for TARGET_TABLE_X_Y_Z_COORDINATES
-    switch (m_spellInfo->Id)
+    switch (m_spellInfo->ID)
     {
         // Dimensional Ripper - Everlook
         case 23442:

@@ -1032,18 +1032,18 @@ void Player::_LoadAuras(QueryResult* result, uint32 timediff)
             }
 
             // prevent wrong values of remaincharges
-            if (spellproto->procCharges == 0)
+            if (spellproto->ProcCharges == 0)
             {
                 remaincharges = 0;
             }
 
-            if (!spellproto->StackAmount)
+            if (!spellproto->CumulativeAura)
             {
                 stackcount = 1;
             }
-            else if (spellproto->StackAmount < stackcount)
+            else if (spellproto->CumulativeAura < stackcount)
             {
-                stackcount = spellproto->StackAmount;
+                stackcount = spellproto->CumulativeAura;
             }
             else if (!stackcount)
             {
@@ -1079,7 +1079,7 @@ void Player::_LoadAuras(QueryResult* result, uint32 timediff)
                 }
 
                 AddSpellAuraHolder(holder);
-                DETAIL_LOG("Added auras from spellid %u", spellproto->Id);
+                DETAIL_LOG("Added auras from spellid %u", spellproto->ID);
             }
             else
             {

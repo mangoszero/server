@@ -455,7 +455,7 @@ void WorldSession::HandleTrainerBuySpellOpcode(WorldPacket& recv_data)
     SendPacket(&data);
 
     Spell* spell;
-    if (proto->SpellVisual == 222)
+    if (proto->SpellVisualID == 222)
     {
         spell = new Spell(_player, proto, false);
     }

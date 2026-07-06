@@ -110,7 +110,7 @@ void AddItemsSetItem(Player* player, Item* item)
         uint32 z = 0;
         for (; z < 8; ++z)
         {
-            if (eff->spells[z] && eff->spells[z]->Id == set->SetSpellID[x])
+            if (eff->spells[z] && eff->spells[z]->ID == set->SetSpellID[x])
             {
                 break;
             }
@@ -194,7 +194,7 @@ void RemoveItemsSetItem(Player* player, ItemPrototype const* proto)
 
         for (uint32 z = 0; z < 8; ++z)
         {
-            if (eff->spells[z] && eff->spells[z]->Id == set->SetSpellID[x])
+            if (eff->spells[z] && eff->spells[z]->ID == set->SetSpellID[x])
             {
                 // spell can be not active if not fit form requirement
                 player->ApplyEquipSpell(eff->spells[z], NULL, false);
@@ -715,7 +715,7 @@ bool Item::IsFitToSpellRequirements(SpellEntry const* spellInfo) const
 
     if (spellInfo->EquippedItemClass != -1)                 // -1 == any item class
     {
-        if (spellInfo->Id == 13419 && 4 == int32(proto->Class))      // Special case for Enchant cloak minor Agility dbc file is wrong
+        if (spellInfo->ID == 13419 && 4 == int32(proto->Class))      // Special case for Enchant cloak minor Agility dbc file is wrong
         {
             return true;
         }
@@ -725,9 +725,9 @@ bool Item::IsFitToSpellRequirements(SpellEntry const* spellInfo) const
             return false; //  wrong item class
         }
 
-        if (spellInfo->EquippedItemSubClassMask != 0)       // 0 == any subclass
+        if (spellInfo->EquippedItemSubclass != 0)       // 0 == any subclass
         {
-            if ((spellInfo->EquippedItemSubClassMask & (1 << proto->SubClass)) == 0)
+            if ((spellInfo->EquippedItemSubclass & (1 << proto->SubClass)) == 0)
             {
                 return false; // subclass not present in mask
             }
@@ -737,9 +737,9 @@ bool Item::IsFitToSpellRequirements(SpellEntry const* spellInfo) const
     // Only check for item enchantments (TARGET_FLAG_ITEM), all other spells are either NPC spells
     // or spells where slot requirements are already handled with AttributesEx3 fields
     // and special code (Titan's Grip, Windfury Attack). Check clearly not applicable for Lava Lash.
-    if (spellInfo->EquippedItemInventoryTypeMask != 0 && (spellInfo->Targets & TARGET_FLAG_ITEM))    // 0 == any inventory type
+    if (spellInfo->EquippedItemInvTypes != 0 && (spellInfo->Targets & TARGET_FLAG_ITEM))    // 0 == any inventory type
     {
-        if ((spellInfo->EquippedItemInventoryTypeMask  & (1 << proto->InventoryType)) == 0)
+        if ((spellInfo->EquippedItemInvTypes  & (1 << proto->InventoryType)) == 0)
         {
             return false; // inventory type not present in mask
         }

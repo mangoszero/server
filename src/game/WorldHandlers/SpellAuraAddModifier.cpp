@@ -98,7 +98,7 @@ void Aura::HandleAddModifier(bool apply, bool Real)
         SpellEntry const* spellProto = GetSpellProto();
 
         // Add custom charges for some mod aura
-        switch (spellProto->Id)
+        switch (spellProto->ID)
         {
             case 17941:                                     // Shadow Trance
             case 22008:                                     // Netherwind Focus
@@ -113,7 +113,7 @@ void Aura::HandleAddModifier(bool apply, bool Real)
             this,
             // prevent expire spell mods with (charges > 0 && m_stackAmount > 1)
             // all this spell expected expire not at use but at spell proc event check
-            spellProto->StackAmount > 1 ? 0 : GetHolder()->GetAuraCharges());
+            spellProto->CumulativeAura > 1 ? 0 : GetHolder()->GetAuraCharges());
     }
 
     ((Player*)GetTarget())->AddSpellMod(m_spellmod, apply);

@@ -58,7 +58,7 @@ bool CheckMountStateAction::Mount()
         }
 
         const SpellEntry* spellInfo = sSpellStore.LookupEntry(spellId);
-        if (!spellInfo || spellInfo->EffectApplyAuraName[0] != SPELL_AURA_MOUNTED)
+        if (!spellInfo || spellInfo->EffectAura[0] != SPELL_AURA_MOUNTED)
         {
             continue;
         }

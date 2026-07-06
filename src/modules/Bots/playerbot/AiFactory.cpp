@@ -182,11 +182,11 @@ bool AiFactory::IsFeralCatSpec(Player* bot)
             if (spellid && bot->HasSpell(spellid))
             {
                 SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellid);
-                if (!spellInfo || !spellInfo->SpellName[0])
+                if (!spellInfo || !spellInfo->Name_lang[0])
                 {
                     continue;
                 }
-                std::string name = spellInfo->SpellName[0];
+                std::string name = spellInfo->Name_lang[0];
                 if (name == "Feline Swiftness")           catPoints++;
                 else if (name == "Thick Hide")            bearPoints++;
                 else if (name == "Feral Charge")          bearPoints++;

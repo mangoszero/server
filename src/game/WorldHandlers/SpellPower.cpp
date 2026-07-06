@@ -161,7 +161,7 @@ void Spell::TakePower()
     }
 
     // health as power used
-    if (m_spellInfo->powerType == POWER_HEALTH)
+    if (m_spellInfo->PowerType == POWER_HEALTH)
     {
         m_caster->ModifyHealth(-(int32)m_powerCost);
         return;
@@ -170,14 +170,14 @@ void Spell::TakePower()
     // the static data (m_spellInfo) should be checked elsewhere
     // [+ZERO] actual DBC power values are 0..3 and uint32(-2)
 
-    Powers powerType = Powers(m_spellInfo->powerType);
+    Powers powerType = Powers(m_spellInfo->PowerType);
 
     bool hit = true;
     for (uint8 j = 0; j < 3; ++j)
     {
         // Spell targets a single enemy
-        if (m_spellInfo->EffectImplicitTargetA[j] == TARGET_CHAIN_DAMAGE ||
-            m_spellInfo->EffectImplicitTargetA[j] == TARGET_CURRENT_ENEMY_COORDINATES)
+        if (m_spellInfo->ImplicitTargetA[j] == TARGET_CHAIN_DAMAGE ||
+            m_spellInfo->ImplicitTargetA[j] == TARGET_CURRENT_ENEMY_COORDINATES)
         {
             if (m_caster->GetTypeId() == TYPEID_PLAYER)
             {
@@ -283,7 +283,7 @@ void Spell::HandleThreatSpells()
         return;
     }
 
-    SpellThreatEntry const* threatEntry = sSpellMgr.GetSpellThreatEntry(m_spellInfo->Id);
+    SpellThreatEntry const* threatEntry = sSpellMgr.GetSpellThreatEntry(m_spellInfo->ID);
 
     if (!threatEntry || (!threatEntry->threat && threatEntry->ap_bonus == 0.0f))
     {
@@ -312,7 +312,7 @@ void Spell::HandleThreatSpells()
         // so abort when only some effects are negative.
         if ((m_negativeEffectMask & effectMask) != effectMask)
         {
-            DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell %u, rank %u, is not clearly positive or negative, ignoring bonus threat", m_spellInfo->Id, sSpellMgr.GetSpellRank(m_spellInfo->Id));
+            DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell %u, rank %u, is not clearly positive or negative, ignoring bonus threat", m_spellInfo->ID, sSpellMgr.GetSpellRank(m_spellInfo->ID));
             return;
         }
         positive = false;
@@ -354,5 +354,5 @@ void Spell::HandleThreatSpells()
         }
     }
 
-    DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell %u added an additional %f threat for %s %zu target(s)", m_spellInfo->Id, threat, positive ? "assisting" : "harming", m_UniqueTargetInfo.size());
+    DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell %u added an additional %f threat for %s %zu target(s)", m_spellInfo->ID, threat, positive ? "assisting" : "harming", m_UniqueTargetInfo.size());
 }

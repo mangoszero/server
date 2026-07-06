@@ -426,7 +426,7 @@ uint32 Unit::CalculateDamage(WeaponAttackType attType, bool normalized)
  */
 float Unit::CalculateLevelPenalty(SpellEntry const* spellProto) const
 {
-    uint32 spellLevel = spellProto->spellLevel;
+    uint32 spellLevel = spellProto->SpellLevel;
     if (spellLevel <= 0)
     {
         return 1.0f;
@@ -553,7 +553,7 @@ float Unit::MeleeSpellMissChance(Unit* pVictim, WeaponAttackType attType, int32 
     // Spellmod from SPELLMOD_RESIST_MISS_CHANCE
     if (Player* modOwner = GetSpellModOwner())
     {
-        modOwner->ApplySpellMod(spell->Id, SPELLMOD_RESIST_MISS_CHANCE, hitChance);
+        modOwner->ApplySpellMod(spell->ID, SPELLMOD_RESIST_MISS_CHANCE, hitChance);
     }
 
     // Miss = 100 - hit
@@ -586,7 +586,7 @@ SpellMissInfo Unit::MeleeSpellHitResult(Unit* pVictim, SpellEntry const* spell)
 {
     WeaponAttackType attType = BASE_ATTACK;
 
-    if (spell->DmgClass == SPELL_DAMAGE_CLASS_RANGED)
+    if (spell->DefenseType == SPELL_DAMAGE_CLASS_RANGED)
     {
         attType = RANGED_ATTACK;
     }
@@ -739,7 +739,7 @@ SpellMissInfo Unit::MagicSpellHitResult(Unit* pVictim, SpellEntry const* spell)
     // Spellmod from SPELLMOD_RESIST_MISS_CHANCE
     if (Player* modOwner = GetSpellModOwner())
     {
-        modOwner->ApplySpellMod(spell->Id, SPELLMOD_RESIST_MISS_CHANCE, modHitChance);
+        modOwner->ApplySpellMod(spell->ID, SPELLMOD_RESIST_MISS_CHANCE, modHitChance);
     }
     // Chance hit from victim SPELL_AURA_MOD_ATTACKER_SPELL_HIT_CHANCE auras
     modHitChance += pVictim->GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_ATTACKER_SPELL_HIT_CHANCE, schoolMask);
@@ -767,7 +767,7 @@ SpellMissInfo Unit::MagicSpellHitResult(Unit* pVictim, SpellEntry const* spell)
     modHitChance -= resist_mech;
 
     // Chance resist debuff
-    modHitChance -= pVictim->GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_DEBUFF_RESISTANCE, int32(spell->Dispel));
+    modHitChance -= pVictim->GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_DEBUFF_RESISTANCE, int32(spell->DispelType));
 
     int32 HitChance = modHitChance * 100;
     // Increase hit chance from attacker SPELL_AURA_MOD_SPELL_HIT_CHANCE and attacker ratings
@@ -808,7 +808,7 @@ SpellMissInfo Unit::SpellHitResult(Unit* pVictim, SpellEntry const* spell, bool 
     SpellSchoolMask schoolMask = GetSpellSchoolMask(spell);
 
     // wand case
-    bool wand = spell->Id == 5019;
+    bool wand = spell->ID == 5019;
     if (wand && !!(getClassMask() & CLASSMASK_WAND_USERS) && GetTypeId() == TYPEID_PLAYER)
     {
         schoolMask = GetSchoolMask(GetWeaponDamageSchool(RANGED_ATTACK));
@@ -828,7 +828,7 @@ SpellMissInfo Unit::SpellHitResult(Unit* pVictim, SpellEntry const* spell, bool 
 
     // All positive spells can`t miss
     // TODO: client not show miss log for this spells - so need find info for this in dbc and use it!
-    if (IsPositiveSpell(spell->Id))
+    if (IsPositiveSpell(spell->ID))
     {
         return SPELL_MISS_NONE;
     }
@@ -860,7 +860,7 @@ SpellMissInfo Unit::SpellHitResult(Unit* pVictim, SpellEntry const* spell, bool 
         }
     }
 
-    switch (spell->DmgClass)
+    switch (spell->DefenseType)
     {
         case SPELL_DAMAGE_CLASS_NONE:
             return SPELL_MISS_NONE;

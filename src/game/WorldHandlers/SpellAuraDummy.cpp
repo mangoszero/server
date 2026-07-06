@@ -96,7 +96,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
     // AT APPLY
     if (apply)
     {
-        switch (GetSpellProto()->SpellFamilyName)
+        switch (GetSpellProto()->SpellClassSet)
         {
             case SPELLFAMILY_GENERIC:
             {
@@ -295,7 +295,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
         if (m_removeMode == AURA_REMOVE_BY_DEATH)
         {
             // Stop caster Arcane Missle chanelling on death
-            if (GetSpellProto()->SpellFamilyName == SPELLFAMILY_MAGE && (GetSpellProto()->SpellFamilyFlags & UI64LIT(0x0000000000000800)))
+            if (GetSpellProto()->SpellClassSet == SPELLFAMILY_MAGE && (GetSpellProto()->SpellClassMask & UI64LIT(0x0000000000000800)))
             {
                 if (Unit* caster = GetCaster())
                 {
@@ -308,7 +308,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
     }
 
     // AT APPLY & REMOVE
-    switch (GetSpellProto()->SpellFamilyName)
+    switch (GetSpellProto()->SpellClassSet)
     {
         case SPELLFAMILY_GENERIC:
         {
@@ -439,7 +439,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
         case SPELLFAMILY_PALADIN:
         {
             // Seal of the Crusader deals less damage with each attack. -28% damage,multiple tests.
-            if (GetSpellProto()->SpellIconID == 237 && GetSpellProto()->SpellFamilyFlags & UI64LIT(0x00000200))
+            if (GetSpellProto()->SpellIconID == 237 && GetSpellProto()->SpellClassMask & UI64LIT(0x00000200))
             {
                 target->HandleStatModifier(UNIT_MOD_DAMAGE_MAINHAND, TOTAL_PCT, -28.0f, apply);
             }

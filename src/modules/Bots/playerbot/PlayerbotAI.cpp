@@ -1285,7 +1285,7 @@ bool IsRealAura(Player* bot, Aura* aura, Unit* unit)
     }
 
     uint32 stacks = aura->GetHolder()->GetStackAmount();
-    if (stacks >= aura->GetHolder()->GetSpellProto()->StackAmount)
+    if (stacks >= aura->GetHolder()->GetSpellProto()->CumulativeAura)
     {
         return true;
     }
@@ -1336,7 +1336,7 @@ bool PlayerbotAI::HasAura(string name, Unit* unit)
                 continue;
             }
 
-            const string auraName = aura->GetSpellProto()->SpellName[0];
+            const string auraName = aura->GetSpellProto()->Name_lang[0];
             if (auraName.empty() || auraName.length() != wnamepart.length() || !Utf8FitTo(auraName, wnamepart))
             {
                 continue;
@@ -1686,18 +1686,18 @@ void PlayerbotAI::InterruptSpell()
         WorldPacket data(SMSG_SPELL_FAILURE, 8 + 1 + 4 + 1);
         data << bot->GetPackGUID();
         data << uint8(1);
-        data << uint32(spell->m_spellInfo->Id);
+        data << uint32(spell->m_spellInfo->ID);
         data << uint8(0);
         bot->SendMessageToSet(&data, true);
 
         data.Initialize(SMSG_SPELL_FAILED_OTHER, 8 + 1 + 4 + 1);
         data << bot->GetObjectGuid();
         data << uint8(1);
-        data << uint32(spell->m_spellInfo->Id);
+        data << uint32(spell->m_spellInfo->ID);
         data << uint8(0);
         bot->SendMessageToSet(&data, true);
 
-        SpellInterrupted(spell->m_spellInfo->Id);
+        SpellInterrupted(spell->m_spellInfo->ID);
     }
 
     SpellInterrupted(lastSpell.id);
@@ -1775,7 +1775,7 @@ bool PlayerbotAI::HasAuraToDispel(Unit* target, uint32 dispelType)
         {
             const Aura* aura = *itr;
             const SpellEntry* entry = aura->GetSpellProto();
-            uint32 spellId = entry->Id;
+            uint32 spellId = entry->ID;
 
             // Check if the spell is positive or negative
             bool isPositiveSpell = IsPositiveSpell(spellId);
@@ -1823,19 +1823,19 @@ inline int strcmpi(const char* s1, const char* s2)
  */
 bool PlayerbotAI::canDispel(const SpellEntry* entry, uint32 dispelType)
 {
-    if (entry->Dispel != dispelType)
+    if (entry->DispelType != dispelType)
     {
         return false;
     }
 
     // Check if the spell name matches any of the known non-dispellable spells
-    return !entry->SpellName[0] ||
-        (strcmpi((const char*)entry->SpellName[0], "demon skin") &&
-        strcmpi((const char*)entry->SpellName[0], "mage armor") &&
-        strcmpi((const char*)entry->SpellName[0], "frost armor") &&
-        strcmpi((const char*)entry->SpellName[0], "wavering will") &&
-        strcmpi((const char*)entry->SpellName[0], "chilled") &&
-        strcmpi((const char*)entry->SpellName[0], "ice armor"));
+    return !entry->Name_lang[0] ||
+        (strcmpi((const char*)entry->Name_lang[0], "demon skin") &&
+        strcmpi((const char*)entry->Name_lang[0], "mage armor") &&
+        strcmpi((const char*)entry->Name_lang[0], "frost armor") &&
+        strcmpi((const char*)entry->Name_lang[0], "wavering will") &&
+        strcmpi((const char*)entry->Name_lang[0], "chilled") &&
+        strcmpi((const char*)entry->Name_lang[0], "ice armor"));
 }
 
 /**

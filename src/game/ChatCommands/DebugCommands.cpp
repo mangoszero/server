@@ -1570,7 +1570,7 @@ bool ChatHandler::HandleDebugSpellCoefsCommand(char* args)
     {
         // Heals (Also count Mana Shield and Absorb effects as heals)
         if (spellEntry->Effect[i] == SPELL_EFFECT_HEAL || spellEntry->Effect[i] == SPELL_EFFECT_HEAL_MAX_HEALTH ||
-            (spellEntry->Effect[i] == SPELL_EFFECT_APPLY_AURA && (spellEntry->EffectApplyAuraName[i] == SPELL_AURA_SCHOOL_ABSORB || spellEntry->EffectApplyAuraName[i] == SPELL_AURA_PERIODIC_HEAL)))
+            (spellEntry->Effect[i] == SPELL_EFFECT_APPLY_AURA && (spellEntry->EffectAura[i] == SPELL_AURA_SCHOOL_ABSORB || spellEntry->EffectAura[i] == SPELL_AURA_PERIODIC_HEAL)))
         {
             isDirectHeal = true;
             break;
@@ -1581,7 +1581,7 @@ bool ChatHandler::HandleDebugSpellCoefsCommand(char* args)
     for (int i = 0; i < 3; ++i)
     {
         // Periodic Heals
-        if (spellEntry->Effect[i] == SPELL_EFFECT_APPLY_AURA && spellEntry->EffectApplyAuraName[i] == SPELL_AURA_PERIODIC_HEAL)
+        if (spellEntry->Effect[i] == SPELL_EFFECT_APPLY_AURA && spellEntry->EffectAura[i] == SPELL_AURA_PERIODIC_HEAL)
         {
             isDotHeal = true;
             break;

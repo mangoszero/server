@@ -41,7 +41,7 @@ bool ListSpellsAction::Execute(Event event)
         //|| name.find("Teleport") != -1
 
         std::string comp = ",";
-        comp.append(pSpellInfo->SpellName[loc]);
+        comp.append(pSpellInfo->Name_lang[loc]);
         comp.append(",");
 
         if (!(ignoreList.find(comp) == std::string::npos && alreadySeenList.find(comp) == std::string::npos))
@@ -49,23 +49,23 @@ bool ListSpellsAction::Execute(Event event)
             continue;
         }
 
-        if (!filter.empty() && !strstri(pSpellInfo->SpellName[loc], filter.c_str()))
+        if (!filter.empty() && !strstri(pSpellInfo->Name_lang[loc], filter.c_str()))
         {
             continue;
         }
 
-        alreadySeenList += pSpellInfo->SpellName[loc];
+        alreadySeenList += pSpellInfo->Name_lang[loc];
         alreadySeenList += ",";
 
         if (IsPositiveSpell(spellId))
         {
             posOut << " |cffffffff|Hspell:" << spellId << "|h["
-                   << pSpellInfo->SpellName[loc] << "]|h|r";
+                   << pSpellInfo->Name_lang[loc] << "]|h|r";
         }
         else
         {
             negOut << " |cffffffff|Hspell:" << spellId << "|h["
-                   << pSpellInfo->SpellName[loc] << "]|h|r";
+                   << pSpellInfo->Name_lang[loc] << "]|h|r";
         }
     }
 

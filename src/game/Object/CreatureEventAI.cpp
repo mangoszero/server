@@ -1694,7 +1694,7 @@ void CreatureEventAI::SpellHit(Unit* pUnit, const SpellEntry* pSpell)
         if (i->Event.event_type == EVENT_T_SPELLHIT)
         {
             // If spell id matches (or no spell id) & if spell school matches (or no spell school)
-            if (!i->Event.spell_hit.spellId || pSpell->Id == i->Event.spell_hit.spellId)
+            if (!i->Event.spell_hit.spellId || pSpell->ID == i->Event.spell_hit.spellId)
             {
                 if (GetSchoolMask(pSpell->School) & i->Event.spell_hit.schoolMask)
                 {
@@ -2118,7 +2118,7 @@ void CreatureEventAI::OnSpellCastChange(const SpellEntry* pSpell, SpellCastResul
 {
     //sLog.outError("Received reason %u for %s, spell %u (curSpell = %u)", reason, m_creature->GetGuidStr().c_str(), pSpell->Id, m_currSpell);
 
-    if (!pSpell || pSpell->Id != m_currSpell)
+    if (!pSpell || pSpell->ID != m_currSpell)
     {
         return;
     }

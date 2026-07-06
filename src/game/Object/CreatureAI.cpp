@@ -109,7 +109,7 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, 
         }
 
         // Check for power (also done by Spell::CheckCast())
-        if (m_creature->GetPower((Powers)pSpell->powerType) < Spell::CalculatePowerCost(pSpell, m_creature))
+        if (m_creature->GetPower((Powers)pSpell->PowerType) < Spell::CalculatePowerCost(pSpell, m_creature))
         {
             return CAST_FAIL_POWER;
         }
@@ -120,12 +120,12 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, 
         return CAST_FAIL_NO_LOS;
     }
 
-    if (const SpellRangeEntry* pSpellRange = sSpellRangeStore.LookupEntry(pSpell->rangeIndex))
+    if (const SpellRangeEntry* pSpellRange = sSpellRangeStore.LookupEntry(pSpell->RangeIndex))
     {
         if (pTarget != m_creature)
         {
             // pTarget is out of range of this spell (also done by Spell::CheckCast())
-            float fDistance = m_creature->GetCombatDistance(pTarget, pSpell->rangeIndex == SPELL_RANGE_IDX_COMBAT);
+            float fDistance = m_creature->GetCombatDistance(pTarget, pSpell->RangeIndex == SPELL_RANGE_IDX_COMBAT);
 
             if (fDistance > pSpellRange->RangeMax)
             {
@@ -385,7 +385,7 @@ void CreatureAI::DoSpellsListCasts(uint32 const uiDiff)
             // Checked on startup.
             SpellEntry const* pSpellInfo = sSpellStore.LookupEntry(spell.spellId);
 
-            Unit* pTarget = GetTargetByType(m_creature, m_creature, spell.castTarget, spell.targetParam1 ? spell.targetParam1 : sSpellRangeStore.LookupEntry(pSpellInfo->rangeIndex)->RangeMax, spell.targetParam2);
+            Unit* pTarget = GetTargetByType(m_creature, m_creature, spell.castTarget, spell.targetParam1 ? spell.targetParam1 : sSpellRangeStore.LookupEntry(pSpellInfo->RangeIndex)->RangeMax, spell.targetParam2);
 
             SpellCastResult result = m_creature->TryToCast(pTarget, pSpellInfo, spell.castFlags, spell.probability);
 

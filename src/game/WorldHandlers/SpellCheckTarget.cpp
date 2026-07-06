@@ -91,7 +91,7 @@ bool Spell::CheckTargetCreatureType(Unit* target) const
     uint32 spellCreatureTargetMask = m_spellInfo->TargetCreatureType;
 
     // Curse of Doom : not find another way to fix spell target check :/
-    if (m_spellInfo->Id == 603)                             // in 1.12 "Curse of doom" have only 1 rank.
+    if (m_spellInfo->ID == 603)                             // in 1.12 "Curse of doom" have only 1 rank.
     {
         // not allow cast at player
         if (target->GetTypeId() == TYPEID_PLAYER)
@@ -103,7 +103,7 @@ bool Spell::CheckTargetCreatureType(Unit* target) const
     }
 
     // Dismiss Pet and Taming Lesson skipped
-    if (m_spellInfo->Id == 2641 || m_spellInfo->Id == 23356)
+    if (m_spellInfo->ID == 2641 || m_spellInfo->ID == 23356)
     {
         spellCreatureTargetMask =  0;
     }
@@ -152,7 +152,7 @@ CurrentSpellTypes Spell::GetCurrentContainer()
 bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
 {
     // Check targets for creature type mask and remove not appropriate (skip explicit self target case, maybe need other explicit targets)
-    if (m_spellInfo->EffectImplicitTargetA[eff] != TARGET_SELF)
+    if (m_spellInfo->ImplicitTargetA[eff] != TARGET_SELF)
     {
         if (!CheckTargetCreatureType(target))
         {
@@ -174,14 +174,14 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
         // in case TARGET_SCRIPT target selected by server always and can't be cheated
         if ((!m_IsTriggeredSpell || target != m_targets.getUnitTarget()) &&
             target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE) &&
-            m_spellInfo->EffectImplicitTargetA[eff] != TARGET_SCRIPT &&
-            m_spellInfo->EffectImplicitTargetB[eff] != TARGET_SCRIPT &&
-            m_spellInfo->EffectImplicitTargetA[eff] != TARGET_AREAEFFECT_INSTANT &&
-            m_spellInfo->EffectImplicitTargetB[eff] != TARGET_AREAEFFECT_INSTANT &&
-            m_spellInfo->EffectImplicitTargetA[eff] != TARGET_AREAEFFECT_CUSTOM &&
-            m_spellInfo->EffectImplicitTargetB[eff] != TARGET_AREAEFFECT_CUSTOM &&
-            m_spellInfo->EffectImplicitTargetA[eff] != TARGET_NARROW_FRONTAL_CONE &&
-            m_spellInfo->EffectImplicitTargetB[eff] != TARGET_NARROW_FRONTAL_CONE)
+            m_spellInfo->ImplicitTargetA[eff] != TARGET_SCRIPT &&
+            m_spellInfo->ImplicitTargetB[eff] != TARGET_SCRIPT &&
+            m_spellInfo->ImplicitTargetA[eff] != TARGET_AREAEFFECT_INSTANT &&
+            m_spellInfo->ImplicitTargetB[eff] != TARGET_AREAEFFECT_INSTANT &&
+            m_spellInfo->ImplicitTargetA[eff] != TARGET_AREAEFFECT_CUSTOM &&
+            m_spellInfo->ImplicitTargetB[eff] != TARGET_AREAEFFECT_CUSTOM &&
+            m_spellInfo->ImplicitTargetA[eff] != TARGET_NARROW_FRONTAL_CONE &&
+            m_spellInfo->ImplicitTargetB[eff] != TARGET_NARROW_FRONTAL_CONE)
         {
             return false;
         }
@@ -195,21 +195,21 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
             return false;
         }
 
-        if (((Player*)target)->isGameMaster() && !IsPositiveSpell(m_spellInfo->Id))
+        if (((Player*)target)->isGameMaster() && !IsPositiveSpell(m_spellInfo->ID))
         {
             return false;
         }
     }
 
     // Check targets for LOS visibility (except spells without range limitations )
-    if (!DisableMgr::IsDisabledFor(DISABLE_TYPE_SPELL, m_spellInfo->Id, NULL, SPELL_DISABLE_LOS))
+    if (!DisableMgr::IsDisabledFor(DISABLE_TYPE_SPELL, m_spellInfo->ID, NULL, SPELL_DISABLE_LOS))
     {
         switch (m_spellInfo->Effect[eff])
         {
             case SPELL_EFFECT_SUMMON_PLAYER:                    // from anywhere
                 break;
             case SPELL_EFFECT_DUMMY:
-                if (m_spellInfo->Id != 20577)                   // Cannibalize
+                if (m_spellInfo->ID != 20577)                   // Cannibalize
                 {
                     break;
                 }
@@ -261,7 +261,7 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
     }
 
     if (target->GetTypeId() != TYPEID_PLAYER && m_spellInfo->HasAttribute(SPELL_ATTR_EX3_TARGET_ONLY_PLAYER) &&
-        m_spellInfo->EffectImplicitTargetA[eff] != TARGET_SCRIPT && m_spellInfo->EffectImplicitTargetA[eff] != TARGET_SELF)
+        m_spellInfo->ImplicitTargetA[eff] != TARGET_SCRIPT && m_spellInfo->ImplicitTargetA[eff] != TARGET_SELF)
     {
         return false;
     }

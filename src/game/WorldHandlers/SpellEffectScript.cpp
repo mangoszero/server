@@ -76,11 +76,11 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
 {
     // TODO: we must implement hunter pet summon at login there (spell 6962)
 
-    switch (m_spellInfo->SpellFamilyName)
+    switch (m_spellInfo->SpellClassSet)
     {
         case SPELLFAMILY_GENERIC:
         {
-            switch (m_spellInfo->Id)
+            switch (m_spellInfo->ID)
             {
                 case 1509:                                  // GM Mode OFF
                 {
@@ -176,7 +176,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     uint8 race = m_caster->getRace();
                     uint32 spellId = 0;
 
-                    switch (m_spellInfo->Id)
+                    switch (m_spellInfo->ID)
                     {
                         case 24194:
                             switch (race)
@@ -475,7 +475,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
         }
         case SPELLFAMILY_WARLOCK:
         {
-            switch (m_spellInfo->Id)
+            switch (m_spellInfo->ID)
             {
                 case  6201:                                 // Healthstone creating spells
                 case  6202:
@@ -514,7 +514,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                         { 9421, 19012, 19013}               // Major Healthstone
                     };
 
-                    switch (m_spellInfo->Id)
+                    switch (m_spellInfo->ID)
                     {
                         case  6201:
                             itemtype = itypes[0][rank]; break; // Minor Healthstone
@@ -545,7 +545,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     return;
                 }
                 int32 heal = damage;
-                int32 spellid = m_spellInfo->Id;            // send main spell id as basepoints for not used effect
+                int32 spellid = m_spellInfo->ID;            // send main spell id as basepoints for not used effect
                 m_caster->CastCustomSpell(unitTarget, 19968, &heal, &spellid, NULL, true, NULL, NULL, ObjectGuid(), m_spellInfo);
             }
             // Flash of Light
@@ -556,7 +556,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     return;
                 }
                 int32 heal = damage;
-                int32 spellid = m_spellInfo->Id;            // send main spell id as basepoints for not used effect
+                int32 spellid = m_spellInfo->ID;            // send main spell id as basepoints for not used effect
                 m_caster->CastCustomSpell(unitTarget, 19993, &heal, &spellid, NULL, true);
             }
             else if (m_spellInfo->SpellIconID == 205)
@@ -620,7 +620,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
     // So called only for not processed cases
     if (unitTarget->GetTypeId() == TYPEID_UNIT || unitTarget->GetTypeId() == TYPEID_PLAYER)
     {
-        if (sScriptMgr.OnEffectScriptEffect(m_caster, m_spellInfo->Id, eff_idx, unitTarget, m_originalCasterGUID))
+        if (sScriptMgr.OnEffectScriptEffect(m_caster, m_spellInfo->ID, eff_idx, unitTarget, m_originalCasterGUID))
         {
             return;
         }
@@ -632,6 +632,6 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
         return;
     }
 
-    DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell ScriptStart spellid %u in EffectScriptEffect", m_spellInfo->Id);
-    m_caster->GetMap()->ScriptsStart(DBS_ON_SPELL, m_spellInfo->Id, m_caster, unitTarget);
+    DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell ScriptStart spellid %u in EffectScriptEffect", m_spellInfo->ID);
+    m_caster->GetMap()->ScriptsStart(DBS_ON_SPELL, m_spellInfo->ID, m_caster, unitTarget);
 }

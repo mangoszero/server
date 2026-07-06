@@ -604,7 +604,7 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
         target->SetStunned(false);
 
         // Wyvern Sting
-        if (GetSpellProto()->SpellFamilyName == SPELLFAMILY_HUNTER && GetSpellProto()->SpellFamilyFlags & UI64LIT(0x00010000))
+        if (GetSpellProto()->SpellClassSet == SPELLFAMILY_HUNTER && GetSpellProto()->SpellClassMask & UI64LIT(0x00010000))
         {
             Unit* caster = GetCaster();
             if (!caster || caster->GetTypeId() != TYPEID_PLAYER)
@@ -1093,7 +1093,7 @@ void Aura::HandleAuraModIncreaseSpeed(bool /*apply*/, bool Real)
     {
         if (Player* modOwner = caster->GetSpellModOwner())
         {
-            modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_SPEED, m_modifier.m_amount);
+            modOwner->ApplySpellMod(GetSpellProto()->ID, SPELLMOD_SPEED, m_modifier.m_amount);
         }
     }
 
@@ -1152,7 +1152,7 @@ void Aura::HandleAuraModDecreaseSpeed(bool apply, bool Real)
     {
         if (Player* modOwner = caster->GetSpellModOwner())
         {
-            modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_SPEED, m_modifier.m_amount);
+            modOwner->ApplySpellMod(GetSpellProto()->ID, SPELLMOD_SPEED, m_modifier.m_amount);
         }
     }
 
@@ -1231,7 +1231,7 @@ void Aura::HandleAuraModEffectImmunity(bool apply, bool /*Real*/)
         }
         else if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(player->GetCachedZoneId()))
         {
-            outdoorPvP->HandleDropFlag(player, GetSpellProto()->Id);
+            outdoorPvP->HandleDropFlag(player, GetSpellProto()->ID);
         }
     }
 
@@ -1298,9 +1298,9 @@ void Aura::HandleAuraModSchoolImmunity(bool apply, bool Real)
             if ((GetSpellSchoolMask(spell) & school_mask) &&   // Check for school mask
                 !spell->HasAttribute(SPELL_ATTR_UNAFFECTED_BY_INVULNERABILITY) &&   // Spells unaffected by invulnerability
                 !iter->second->IsPositive() &&         // Don't remove positive spells
-                spell->Id != GetId())                  // Don't remove self
+                spell->ID != GetId())                  // Don't remove self
             {
-                target->RemoveAurasDueToSpell(spell->Id);
+                target->RemoveAurasDueToSpell(spell->ID);
                 if (Auras.empty())
                 {
                     break;

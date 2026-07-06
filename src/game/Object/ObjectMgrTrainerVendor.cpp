@@ -185,14 +185,14 @@ void ObjectMgr::LoadTrainers(char const* tableName, bool isTemplates)
 
         if (trainerSpell.reqLevel)
         {
-            if (trainerSpell.reqLevel == spellinfo->spellLevel)
+            if (trainerSpell.reqLevel == spellinfo->SpellLevel)
             {
                 ERROR_DB_STRICT_LOG("Table `%s` (Entry: %u) has redundant reqlevel %u (=spell level) for spell %u", tableName, entry, trainerSpell.reqLevel, spell);
             }
         }
         else
         {
-            trainerSpell.reqLevel = spellinfo->spellLevel;
+            trainerSpell.reqLevel = spellinfo->SpellLevel;
         }
 
         if (SpellMgr::IsProfessionSpell(spellinfo->EffectTriggerSpell[0]))

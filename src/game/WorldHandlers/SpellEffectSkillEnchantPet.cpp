@@ -113,7 +113,7 @@ void Spell::EffectDispel(SpellEffectIndex eff_idx)
     }
 
     // Shield Slam 50% chance dispel
-    if (m_spellInfo->SpellFamilyName == SPELLFAMILY_WARRIOR && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000100000000)) &&
+    if (m_spellInfo->SpellClassSet == SPELLFAMILY_WARRIOR && (m_spellInfo->SpellClassMask & UI64LIT(0x0000000100000000)) &&
         !roll_chance_i(50))
     {
         return;
@@ -129,9 +129,9 @@ void Spell::EffectDispel(SpellEffectIndex eff_idx)
     for (Unit::SpellAuraHolderMap::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
     {
         SpellAuraHolder* holder = itr->second;
-        if ((1 << holder->GetSpellProto()->Dispel) & dispelMask)
+        if ((1 << holder->GetSpellProto()->DispelType) & dispelMask)
         {
-            if (holder->GetSpellProto()->Dispel == DISPEL_MAGIC)
+            if (holder->GetSpellProto()->DispelType == DISPEL_MAGIC)
             {
                 bool positive = true;
                 if (!holder->IsPositive())
@@ -191,13 +191,13 @@ void Spell::EffectDispel(SpellEffectIndex eff_idx)
             {
                 if (Player* modOwner = caster->GetSpellModOwner())
                 {
-                    modOwner->ApplySpellMod(spellInfo->Id, SPELLMOD_RESIST_DISPEL_CHANCE, miss_chance, this);
+                    modOwner->ApplySpellMod(spellInfo->ID, SPELLMOD_RESIST_DISPEL_CHANCE, miss_chance, this);
                 }
             }
             // Try dispel
             if (roll_chance_i(miss_chance))
             {
-                fail_list.push_back(spellInfo->Id);
+                fail_list.push_back(spellInfo->ID);
             }
             else
             {
@@ -224,7 +224,7 @@ void Spell::EffectDispel(SpellEffectIndex eff_idx)
             WorldPacket data(SMSG_SPELLDISPELLOG, 8 + 8 + 4 + 1 + 4 + count * 5);
             data << unitTarget->GetPackGUID();              // Victim GUID
             data << m_caster->GetPackGUID();                // Caster GUID
-            data << uint32(m_spellInfo->Id);                // Dispel spell id
+            data << uint32(m_spellInfo->ID);                // Dispel spell id
             //data << uint8(0);                               // [-ZERO] not used
             data << uint32(count);                          // count
             for (std::list<std::pair<SpellAuraHolder* , uint32> >::iterator j = success_list.begin(); j != success_list.end(); ++j)
@@ -238,17 +238,17 @@ void Spell::EffectDispel(SpellEffectIndex eff_idx)
 
             // On success dispel
             // Devour Magic
-            if (m_spellInfo->SpellFamilyName == SPELLFAMILY_WARLOCK && m_spellInfo->Category == SPELLCATEGORY_DEVOUR_MAGIC)
+            if (m_spellInfo->SpellClassSet == SPELLFAMILY_WARLOCK && m_spellInfo->Category == SPELLCATEGORY_DEVOUR_MAGIC)
             {
                 uint32 heal_spell = 0;
-                switch (m_spellInfo->Id)
+                switch (m_spellInfo->ID)
                 {
                     case 19505: heal_spell = 19658; break;
                     case 19731: heal_spell = 19732; break;
                     case 19734: heal_spell = 19733; break;
                     case 19736: heal_spell = 19735; break;
                     default:
-                        DEBUG_LOG("Spell for Devour Magic %d not handled in Spell::EffectDispel", m_spellInfo->Id);
+                        DEBUG_LOG("Spell for Devour Magic %d not handled in Spell::EffectDispel", m_spellInfo->ID);
                         break;
                 }
                 if (heal_spell)
@@ -264,7 +264,7 @@ void Spell::EffectDispel(SpellEffectIndex eff_idx)
             WorldPacket data(SMSG_DISPEL_FAILED, 8 + 8 + 4 + 4 * fail_list.size());
             data << m_caster->GetObjectGuid();              // Caster GUID
             data << unitTarget->GetObjectGuid();            // Victim GUID
-            data << uint32(m_spellInfo->Id);                // Dispel spell id
+            data << uint32(m_spellInfo->ID);                // Dispel spell id
             for (std::list< uint32 >::iterator j = fail_list.begin(); j != fail_list.end(); ++j)
             {
                 data << uint32(*j);                          // Spell Id
@@ -360,7 +360,7 @@ void Spell::EffectPickPocket(SpellEffectIndex /*eff_idx*/)
         else
         {
             // Reveal action + get attack
-            m_caster->SendSpellMiss(unitTarget, m_spellInfo->Id, SPELL_MISS_RESIST); // Pickpocket resisted.
+            m_caster->SendSpellMiss(unitTarget, m_spellInfo->ID, SPELL_MISS_RESIST); // Pickpocket resisted.
             m_caster->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
             unitTarget->AttackedBy(m_caster);
         }
@@ -384,7 +384,7 @@ void Spell::EffectAddFarsight(SpellEffectIndex eff_idx)
 
     // set radius to 0: spell not expected to work as persistent aura
     if (!dynObj->Create(m_caster->GetMap()->GenerateLocalLowGuid(HIGHGUID_DYNAMICOBJECT), m_caster,
-        m_spellInfo->Id, eff_idx, m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, duration, 0, DYNAMIC_OBJECT_FARSIGHT_FOCUS))
+        m_spellInfo->ID, eff_idx, m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, duration, 0, DYNAMIC_OBJECT_FARSIGHT_FOCUS))
     {
         delete dynObj;
         return;
@@ -489,7 +489,7 @@ void Spell::EffectEnchantItemPerm(SpellEffectIndex eff_idx)
     Player* p_caster = (Player*)m_caster;
 
     // not grow at item use at item case
-    p_caster->UpdateCraftSkill(m_spellInfo->Id);
+    p_caster->UpdateCraftSkill(m_spellInfo->ID);
 
     uint32 enchant_id = m_spellInfo->EffectMiscValue[eff_idx];
     if (!enchant_id)
@@ -548,14 +548,14 @@ void Spell::EffectEnchantItemTmp(SpellEffectIndex eff_idx)
     uint32 enchant_id = m_spellInfo->EffectMiscValue[eff_idx];
     if (!enchant_id)
     {
-        sLog.outError("Spell %u Effect %u (SPELL_EFFECT_ENCHANT_ITEM_TEMPORARY) have 0 as enchanting id", m_spellInfo->Id, eff_idx);
+        sLog.outError("Spell %u Effect %u (SPELL_EFFECT_ENCHANT_ITEM_TEMPORARY) have 0 as enchanting id", m_spellInfo->ID, eff_idx);
         return;
     }
 
     SpellItemEnchantmentEntry const* pEnchant = sSpellItemEnchantmentStore.LookupEntry(enchant_id);
     if (!pEnchant)
     {
-        sLog.outError("Spell %u Effect %u (SPELL_EFFECT_ENCHANT_ITEM_TEMPORARY) have nonexistent enchanting id %u ", m_spellInfo->Id, eff_idx, enchant_id);
+        sLog.outError("Spell %u Effect %u (SPELL_EFFECT_ENCHANT_ITEM_TEMPORARY) have nonexistent enchanting id %u ", m_spellInfo->ID, eff_idx, enchant_id);
         return;
     }
 
@@ -568,12 +568,12 @@ void Spell::EffectEnchantItemTmp(SpellEffectIndex eff_idx)
         duration = 300;                                      // 5 mins
     }
     // imbue enchantments except Imbue Weapon - Beastslayer
-    else if (m_spellInfo->SpellIconID == 241 && m_spellInfo->Id != 7434)
+    else if (m_spellInfo->SpellIconID == 241 && m_spellInfo->ID != 7434)
     {
         duration = 3600;                                     // 1 hour
     }
     // Consecrated Weapon and Blessed Wizard Oil
-    else if (m_spellInfo->Id == 28891 || m_spellInfo->Id == 28898)
+    else if (m_spellInfo->ID == 28891 || m_spellInfo->ID == 28898)
     {
         duration = 3600;                                     // 1 hour
     }
@@ -640,7 +640,7 @@ void Spell::EffectTameCreature(SpellEffectIndex /*eff_idx*/)
     pet->SetOwnerGuid(plr->GetObjectGuid());
     pet->SetCreatorGuid(plr->GetObjectGuid());
     pet->setFaction(plr->getFaction());
-    pet->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->Id);
+    pet->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->ID);
 
     if (plr->IsPvP())
     {
@@ -732,7 +732,7 @@ void Spell::EffectSummonPet(SpellEffectIndex eff_idx)
     // == 0 in case call current pet, check only real summon case
     if (petentry && !cInfo)
     {
-        sLog.outErrorDb("EffectSummonPet: creature entry %u not found for spell %u.", petentry, m_spellInfo->Id);
+        sLog.outErrorDb("EffectSummonPet: creature entry %u not found for spell %u.", petentry, m_spellInfo->ID);
         return;
     }
 
@@ -781,7 +781,7 @@ void Spell::EffectSummonPet(SpellEffectIndex eff_idx)
 
     NewSummon->SetRespawnCoord(pos);
 
-    uint32 petlevel = std::max(m_caster->getLevel() + m_spellInfo->EffectMultipleValue[eff_idx], 1.0f);
+    uint32 petlevel = std::max(m_caster->getLevel() + m_spellInfo->EffectAmplitude[eff_idx], 1.0f);
     NewSummon->setPetType(SUMMON_PET);
 
     uint32 faction = m_caster->getFaction();
@@ -804,7 +804,7 @@ void Spell::EffectSummonPet(SpellEffectIndex eff_idx)
     NewSummon->SetUInt32Value(UNIT_FIELD_PET_NAME_TIMESTAMP, uint32(time(NULL)));
     NewSummon->SetUInt32Value(UNIT_FIELD_PETEXPERIENCE, 0);
     NewSummon->SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, 1000);
-    NewSummon->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->Id);
+    NewSummon->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->ID);
 
     NewSummon->GetCharmInfo()->SetPetNumber(pet_number, true);
     // this enables pet details window (Shift+P)
@@ -896,15 +896,15 @@ void Spell::EffectLearnPetSpell(SpellEffectIndex eff_idx)
         return;
     }
 
-    pet->SetTP(pet->m_TrainingPoints - pet->GetTPForSpell(learn_spellproto->Id));
-    pet->learnSpell(learn_spellproto->Id);
+    pet->SetTP(pet->m_TrainingPoints - pet->GetTPForSpell(learn_spellproto->ID));
+    pet->learnSpell(learn_spellproto->ID);
 
     pet->SavePetToDB(PET_SAVE_AS_CURRENT);
     _player->PetSpellInitialize();
 
     if (WorldObject const* caster = GetCastingObject())
     {
-        DEBUG_LOG("Spell: %s has learned spell %u from %s", pet->GetGuidStr().c_str(), learn_spellproto->Id, caster->GetGuidStr().c_str());
+        DEBUG_LOG("Spell: %s has learned spell %u from %s", pet->GetGuidStr().c_str(), learn_spellproto->ID, caster->GetGuidStr().c_str());
     }
 }
 
@@ -982,12 +982,12 @@ void Spell::EffectWeaponDmg(SpellEffectIndex eff_idx)
 
     int32 spell_bonus = 0;                                  // bonus specific for spell
 
-    switch (m_spellInfo->SpellFamilyName)
+    switch (m_spellInfo->SpellClassSet)
     {
         case SPELLFAMILY_ROGUE:
         {
             // Ambush
-            if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000200))
+            if (m_spellInfo->SpellClassMask & UI64LIT(0x00000200))
             {
                 customBonusDamagePercentMod = true;
                 bonusDamagePercentMod = 2.5f;               // 250%
@@ -1013,7 +1013,7 @@ void Spell::EffectWeaponDmg(SpellEffectIndex eff_idx)
                 weaponDamagePercentMod *= float(CalculateDamage(SpellEffectIndex(j), unitTarget)) / 100.0f;
 
                 //Prevent Seal of Command damage overflow
-                if (m_spellInfo->Id == 20424)
+                if (m_spellInfo->ID == 20424)
                 {
                     Unit::AuraList const& mModDamagePercentDone = m_caster->GetAurasByType(SPELL_AURA_MOD_DAMAGE_PERCENT_DONE);
                     for (Unit::AuraList::const_iterator i = mModDamagePercentDone.begin(); i != mModDamagePercentDone.end(); ++i)
@@ -1021,7 +1021,7 @@ void Spell::EffectWeaponDmg(SpellEffectIndex eff_idx)
                         if (((*i)->GetModifier()->m_miscvalue & SPELL_SCHOOL_MASK_HOLY) && ((*i)->GetModifier()->m_miscvalue & SPELL_SCHOOL_MASK_NORMAL) &&
                             (*i)->GetSpellProto()->EquippedItemClass == -1 &&
                             // -1 == any item class (not wand then)
-                            (*i)->GetSpellProto()->EquippedItemInventoryTypeMask == 0)
+                            (*i)->GetSpellProto()->EquippedItemInvTypes == 0)
                             // 0 == any inventory type (not wand then)
                         {
                             totalDamagePercentMod /= ((*i)->GetModifier()->m_amount + 100.0f) / 100.0f;

@@ -180,9 +180,9 @@ std::ostringstream& operator<< (std::ostringstream& ss, PlayerTaxi const& taxi)
  * @param eff The spell effect index.
  * @param _charges The initial charge count.
  */
-SpellModifier::SpellModifier(SpellModOp _op, SpellModType _type, int32 _value, SpellEntry const* spellEntry, SpellEffectIndex eff, int16 _charges /*= 0*/) : op(_op), type(_type), charges(_charges), value(_value), spellId(spellEntry->Id), lastAffected(NULL)
+SpellModifier::SpellModifier(SpellModOp _op, SpellModType _type, int32 _value, SpellEntry const* spellEntry, SpellEffectIndex eff, int16 _charges /*= 0*/) : op(_op), type(_type), charges(_charges), value(_value), spellId(spellEntry->ID), lastAffected(NULL)
 {
-    mask = sSpellMgr.GetSpellAffectMask(spellEntry->Id, eff);
+    mask = sSpellMgr.GetSpellAffectMask(spellEntry->ID, eff);
 }
 
 /**
@@ -209,7 +209,7 @@ bool SpellModifier::isAffectedOnSpell(SpellEntry const* spell) const
 {
     SpellEntry const* affect_spell = sSpellStore.LookupEntry(spellId);
     // False if affect_spell == NULL or spellFamily not equal
-    if (!affect_spell || affect_spell->SpellFamilyName != spell->SpellFamilyName)
+    if (!affect_spell || affect_spell->SpellClassSet != spell->SpellClassSet)
     {
         return false;
     }
@@ -4887,7 +4887,7 @@ bool Player::IsAffectedBySpellmod(SpellEntry const* spellInfo, SpellModifier* mo
                 return false;
             }
         }
-        else if (mod->lastAffected != FindCurrentSpellBySpellId(spellInfo->Id))
+        else if (mod->lastAffected != FindCurrentSpellBySpellId(spellInfo->ID))
         {
             return false;
         }
@@ -5436,7 +5436,7 @@ void Player::AddSpellAndCategoryCooldowns(SpellEntry const* spellInfo, uint32 it
         {
             for (int idx = 0; idx < MAX_ITEM_PROTO_SPELLS; ++idx)
             {
-                if (proto->Spells[idx].SpellId == spellInfo->Id)
+                if (proto->Spells[idx].SpellId == spellInfo->ID)
                 {
                     cat    = proto->Spells[idx].SpellCategory;
                     rec    = proto->Spells[idx].SpellCooldown;
@@ -5480,12 +5480,12 @@ void Player::AddSpellAndCategoryCooldowns(SpellEntry const* spellInfo, uint32 it
         // Now we have cooldown data (if found any), time to apply mods
         if (rec > 0)
         {
-            ApplySpellMod(spellInfo->Id, SPELLMOD_COOLDOWN, rec, spell);
+            ApplySpellMod(spellInfo->ID, SPELLMOD_COOLDOWN, rec, spell);
         }
 
         if (catrec > 0)
         {
-            ApplySpellMod(spellInfo->Id, SPELLMOD_COOLDOWN, catrec, spell);
+            ApplySpellMod(spellInfo->ID, SPELLMOD_COOLDOWN, catrec, spell);
         }
 
         // replace negative cooldowns by 0
@@ -5511,7 +5511,7 @@ void Player::AddSpellAndCategoryCooldowns(SpellEntry const* spellInfo, uint32 it
     // self spell cooldown
     if (recTime > 0)
     {
-        AddSpellCooldown(spellInfo->Id, itemId, recTime);
+        AddSpellCooldown(spellInfo->ID, itemId, recTime);
     }
 
     // category spells
@@ -5522,7 +5522,7 @@ void Player::AddSpellAndCategoryCooldowns(SpellEntry const* spellInfo, uint32 it
         {
             for (SpellCategorySet::const_iterator i_scset = i_scstore->second.begin(); i_scset != i_scstore->second.end(); ++i_scset)
             {
-                if (*i_scset == spellInfo->Id)              // skip main spell, already handled above
+                if (*i_scset == spellInfo->ID)              // skip main spell, already handled above
                 {
                     continue;
                 }
@@ -5562,7 +5562,7 @@ void Player::SendCooldownEvent(SpellEntry const* spellInfo, uint32 itemId, Spell
 
     // Send activate cooldown timer (possible 0) at client side
     WorldPacket data(SMSG_COOLDOWN_EVENT, (4 + 8));
-    data << uint32(spellInfo->Id);
+    data << uint32(spellInfo->ID);
     data << GetObjectGuid();
     SendDirectMessage(&data);
 }
@@ -6217,7 +6217,7 @@ uint32 Player::GetResurrectionSpellId()
     for (AuraList::const_iterator itr = dummyAuras.begin(); itr != dummyAuras.end(); ++itr)
     {
         // Soulstone Resurrection                           // prio: 3 (max, non death persistent)
-        if (prio < 2 && (*itr)->GetSpellProto()->SpellVisual == 99 && (*itr)->GetSpellProto()->SpellIconID == 92)
+        if (prio < 2 && (*itr)->GetSpellProto()->SpellVisualID == 99 && (*itr)->GetSpellProto()->SpellIconID == 92)
         {
             switch ((*itr)->GetId())
             {
@@ -7115,7 +7115,7 @@ bool Player::IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex
         default:
             break;
     }
-    switch (spellInfo->EffectApplyAuraName[index])
+    switch (spellInfo->EffectAura[index])
     {
         case SPELL_AURA_MOD_TAUNT:
             return true;

@@ -1695,7 +1695,7 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
 
         if (Spell* spell = GetCurrentSpell(CURRENT_GENERIC_SPELL))
         {
-            if (spell->m_spellInfo->Id != spellid)
+            if (spell->m_spellInfo->ID != spellid)
             {
                 InterruptSpell(CURRENT_GENERIC_SPELL, false);
             }
@@ -1705,7 +1705,7 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
 
         if (Spell* spell = GetCurrentSpell(CURRENT_CHANNELED_SPELL))
         {
-            if (spell->m_spellInfo->Id != spellid)
+            if (spell->m_spellInfo->ID != spellid)
             {
                 InterruptSpell(CURRENT_CHANNELED_SPELL, true);
             }

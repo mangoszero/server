@@ -89,7 +89,7 @@ void Spell::EffectDispelMechanic(SpellEffectIndex eff_idx)
         SpellEntry const* spell = iter->second->GetSpellProto();
         if (iter->second->HasMechanic(mechanic))
         {
-            unitTarget->RemoveAurasDueToSpell(spell->Id);
+            unitTarget->RemoveAurasDueToSpell(spell->ID);
             if (Auras.empty())
             {
                 break;
@@ -280,7 +280,7 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
 
     if (!goinfo)
     {
-        sLog.outErrorDb("Gameobject (Entry: %u) not exist and not created at spell (ID: %u) cast", name_id, m_spellInfo->Id);
+        sLog.outErrorDb("Gameobject (Entry: %u) not exist and not created at spell (ID: %u) cast", name_id, m_spellInfo->ID);
         return;
     }
 
@@ -291,15 +291,15 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
         m_targets.getDestination(fx, fy, fz);
     }
     // FIXME: this can be better check for most objects but still hack
-    else if (m_spellInfo->EffectRadiusIndex[eff_idx] && m_spellInfo->speed == 0)
+    else if (m_spellInfo->EffectRadiusIndex[eff_idx] && m_spellInfo->Speed == 0)
     {
         float dis = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[eff_idx]));
         m_caster->GetClosePoint(fx, fy, fz, DEFAULT_WORLD_OBJECT_SIZE, dis);
     }
     else
     {
-        float min_dis = GetSpellMinRange(sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex));
-        float max_dis = GetSpellMaxRange(sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex));
+        float min_dis = GetSpellMinRange(sSpellRangeStore.LookupEntry(m_spellInfo->RangeIndex));
+        float max_dis = GetSpellMaxRange(sSpellRangeStore.LookupEntry(m_spellInfo->RangeIndex));
         float dis = rand_norm_f() * (max_dis - min_dis) + min_dis;
 
         // special code for fishing bobber (TARGET_SELF_FISHING), should not try to avoid objects
@@ -399,7 +399,7 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
     pGameObj->SetOwnerGuid(m_caster->GetObjectGuid());
 
     pGameObj->SetUInt32Value(GAMEOBJECT_LEVEL, m_caster->getLevel());
-    pGameObj->SetSpellId(m_spellInfo->Id);
+    pGameObj->SetSpellId(m_spellInfo->ID);
 
     DEBUG_LOG("AddObject at SpellEfects.cpp EffectTransmitted");
     // m_caster->AddGameObject(pGameObj);
@@ -449,7 +449,7 @@ void Spell::EffectSpiritHeal(SpellEffectIndex /*eff_idx*/)
     {
         return;
     }
-    if (m_spellInfo->Id == 22012 && !unitTarget->HasAura(2584))
+    if (m_spellInfo->ID == 22012 && !unitTarget->HasAura(2584))
     {
         return;
     }

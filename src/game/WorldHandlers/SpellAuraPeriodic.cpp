@@ -256,12 +256,12 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
             return;
         }
 
-        switch (spellProto->SpellFamilyName)
+        switch (spellProto->SpellClassSet)
         {
             case SPELLFAMILY_DRUID:
             {
                 // Rip
-                if (spellProto->SpellFamilyFlags & UI64LIT(0x000000000000800000))
+                if (spellProto->SpellClassMask & UI64LIT(0x000000000000800000))
                 {
                     // $AP * min(0.06*$cp, 0.24)/6 [Yes, there is no difference, whether 4 or 5 CPs are being used]
                     if (caster->GetTypeId() == TYPEID_PLAYER)
@@ -280,7 +280,7 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
             case SPELLFAMILY_ROGUE:
             {
                 // Rupture
-                if (spellProto->SpellFamilyFlags & UI64LIT(0x000000000000100000))
+                if (spellProto->SpellClassMask & UI64LIT(0x000000000000100000))
                 {
                     if (caster->GetTypeId() != TYPEID_PLAYER)
                     {
@@ -303,7 +303,7 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
         if (m_modifier.m_auraname == SPELL_AURA_PERIODIC_DAMAGE)
         {
             // SpellDamageBonusDone for magic spells
-            if (spellProto->DmgClass == SPELL_DAMAGE_CLASS_NONE || spellProto->DmgClass == SPELL_DAMAGE_CLASS_MAGIC)
+            if (spellProto->DefenseType == SPELL_DAMAGE_CLASS_NONE || spellProto->DefenseType == SPELL_DAMAGE_CLASS_MAGIC)
             {
                 m_modifier.m_amount = caster->SpellDamageBonusDone(target, GetSpellProto(), m_modifier.m_amount, DOT, GetStackAmount());
             }
@@ -441,8 +441,8 @@ void Aura::HandleAuraModResistance(bool apply, bool /*Real*/)
 
     // Faerie Fire (druid versions)
     if (spellProto->SpellIconID == 109 &&
-        spellProto->SpellFamilyName == SPELLFAMILY_DRUID &&
-        spellProto->SpellFamilyFlags & UI64LIT(0x0000000000000400))
+        spellProto->SpellClassSet == SPELLFAMILY_DRUID &&
+        spellProto->SpellClassMask & UI64LIT(0x0000000000000400))
     {
         target->ApplySpellDispelImmunity(spellProto, DISPEL_STEALTH, apply);
         target->ApplySpellDispelImmunity(spellProto, DISPEL_INVISIBILITY, apply);
@@ -983,7 +983,7 @@ void Aura::HandleAuraModCritPercent(bool apply, bool Real)
     }
 
     // mods must be applied base at equipped weapon class and subclass comparison
-    // with spell->EquippedItemClass and  EquippedItemSubClassMask and EquippedItemInventoryTypeMask
+    // with spell->EquippedItemClass and  EquippedItemSubclass and EquippedItemInvTypes
     // m_modifier.m_miscvalue comparison with item generated damage types
 
     if (GetSpellProto()->EquippedItemClass == -1)
@@ -1008,7 +1008,7 @@ void Aura::HandleModHitChance(bool apply, bool /*Real*/)
 {
     Unit* target = GetTarget();
 
-    if (GetSpellProto()->EquippedItemSubClassMask & UI64LIT(0x0004000C))
+    if (GetSpellProto()->EquippedItemSubclass & UI64LIT(0x0004000C))
     {
         target->m_modRangedHitChance += apply ? m_modifier.m_amount : (-m_modifier.m_amount);
     }
@@ -1094,7 +1094,7 @@ void Aura::HandleModCastingSpeed(bool apply, bool /*Real*/)
         {
             if (Player* modOwner = caster->GetSpellModOwner())
             {
-                modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_HASTE, m_modifier.m_amount);
+                modOwner->ApplySpellMod(GetSpellProto()->ID, SPELLMOD_HASTE, m_modifier.m_amount);
             }
         }
     }
@@ -1116,7 +1116,7 @@ void Aura::HandleModAttackSpeed(bool apply, bool /*Real*/)
         {
             if (Player* modOwner = caster->GetSpellModOwner())
             {
-                modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_HASTE, m_modifier.m_amount);
+                modOwner->ApplySpellMod(GetSpellProto()->ID, SPELLMOD_HASTE, m_modifier.m_amount);
             }
         }
     }
@@ -1138,7 +1138,7 @@ void Aura::HandleModMeleeSpeedPct(bool apply, bool /*Real*/)
         {
             if (Player* modOwner = caster->GetSpellModOwner())
             {
-                modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_HASTE, m_modifier.m_amount);
+                modOwner->ApplySpellMod(GetSpellProto()->ID, SPELLMOD_HASTE, m_modifier.m_amount);
             }
         }
     }
@@ -1162,7 +1162,7 @@ void Aura::HandleAuraModRangedHaste(bool apply, bool /*Real*/)
         {
             if (Player* modOwner = caster->GetSpellModOwner())
             {
-                modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_HASTE, m_modifier.m_amount);
+                modOwner->ApplySpellMod(GetSpellProto()->ID, SPELLMOD_HASTE, m_modifier.m_amount);
             }
         }
     }
@@ -1196,7 +1196,7 @@ void Aura::HandleRangedAmmoHaste(bool apply, bool /*Real*/)
         {
             if (Player* modOwner = caster->GetSpellModOwner())
             {
-                modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_HASTE, m_modifier.m_amount);
+                modOwner->ApplySpellMod(GetSpellProto()->ID, SPELLMOD_HASTE, m_modifier.m_amount);
             }
         }
     }
@@ -1212,7 +1212,7 @@ void Aura::HandleAuraModAttackPower(bool apply, bool /*Real*/)
         {
             if (Player* modOwner = caster->GetSpellModOwner())
             {
-                modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_ATTACK_POWER, m_modifier.m_amount);
+                modOwner->ApplySpellMod(GetSpellProto()->ID, SPELLMOD_ATTACK_POWER, m_modifier.m_amount);
             }
         }
     }
@@ -1239,7 +1239,7 @@ void Aura::HandleAuraModRangedAttackPower(bool apply, bool /*Real*/)
         {
             if (Player* modOwner = caster->GetSpellModOwner())
             {
-                modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_ATTACK_POWER, m_modifier.m_amount);
+                modOwner->ApplySpellMod(GetSpellProto()->ID, SPELLMOD_ATTACK_POWER, m_modifier.m_amount);
             }
         }
     }
@@ -1261,7 +1261,7 @@ void Aura::HandleAuraModAttackPowerPercent(bool apply, bool /*Real*/)
         {
             if (Player* modOwner = caster->GetSpellModOwner())
             {
-                modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_ATTACK_POWER, m_modifier.m_amount);
+                modOwner->ApplySpellMod(GetSpellProto()->ID, SPELLMOD_ATTACK_POWER, m_modifier.m_amount);
             }
         }
     }
@@ -1289,7 +1289,7 @@ void Aura::HandleAuraModRangedAttackPowerPercent(bool apply, bool /*Real*/)
     {
         if (Player* modOwner = caster->GetSpellModOwner())
         {
-            modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_ATTACK_POWER, amount);
+            modOwner->ApplySpellMod(GetSpellProto()->ID, SPELLMOD_ATTACK_POWER, amount);
         }
     }
 
@@ -1322,7 +1322,7 @@ void Aura::HandleModDamageDone(bool apply, bool Real)
     // 127 - full bitmask any damages
     //
     // mods must be applied base at equipped weapon class and subclass comparison
-    // with spell->EquippedItemClass and  EquippedItemSubClassMask and EquippedItemInventoryTypeMask
+    // with spell->EquippedItemClass and  EquippedItemSubclass and EquippedItemInvTypes
     // m_modifier.m_miscvalue comparison with item generated damage types
 
     if ((m_modifier.m_miscvalue & SPELL_SCHOOL_MASK_NORMAL) != 0)
@@ -1358,7 +1358,7 @@ void Aura::HandleModDamageDone(bool apply, bool Real)
         return;
     }
 
-    if (GetSpellProto()->EquippedItemClass != -1 || GetSpellProto()->EquippedItemInventoryTypeMask != 0)
+    if (GetSpellProto()->EquippedItemClass != -1 || GetSpellProto()->EquippedItemInvTypes != 0)
     {
         // wand magic case (skip generic to all item spell bonuses)
         // done in Player::_ApplyWeaponDependentAuraMods
@@ -1428,7 +1428,7 @@ void Aura::HandleModDamagePercentDone(bool apply, bool Real)
     // 127 - full bitmask any damages
     //
     // mods must be applied base at equipped weapon class and subclass comparison
-    // with spell->EquippedItemClass and  EquippedItemSubClassMask and EquippedItemInventoryTypeMask
+    // with spell->EquippedItemClass and  EquippedItemSubclass and EquippedItemInvTypes
     // m_modifier.m_miscvalue comparison with item generated damage types
 
     if ((m_modifier.m_miscvalue & SPELL_SCHOOL_MASK_NORMAL) != 0)
@@ -1457,7 +1457,7 @@ void Aura::HandleModDamagePercentDone(bool apply, bool Real)
         return;
     }
 
-    if (GetSpellProto()->EquippedItemClass != -1 || GetSpellProto()->EquippedItemInventoryTypeMask != 0)
+    if (GetSpellProto()->EquippedItemClass != -1 || GetSpellProto()->EquippedItemInvTypes != 0)
     {
         // wand magic case (skip generic to all item spell bonuses)
         // done in Player::_ApplyWeaponDependentAuraMods

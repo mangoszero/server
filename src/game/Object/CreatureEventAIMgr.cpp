@@ -791,7 +791,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                         if (!sLog.HasLogFilter(LOG_FILTER_EVENT_AI_DEV) && spell)
                         {
                             // spell must be cast on self, but is not
-                            if ((IsOnlySelfTargeting(spell) || spell->rangeIndex == SPELL_RANGE_IDX_SELF_ONLY) && action.cast.target != TARGET_T_SELF && !(action.cast.castFlags & CAST_FORCE_TARGET_SELF))
+                            if ((IsOnlySelfTargeting(spell) || spell->RangeIndex == SPELL_RANGE_IDX_SELF_ONLY) && action.cast.target != TARGET_T_SELF && !(action.cast.castFlags & CAST_FORCE_TARGET_SELF))
                             {
                                 sLog.outErrorEventAI("Event %u Action %u uses SpellID %u that must be self cast (target is %u)", i, j + 1, action.cast.spellId, action.cast.target);
                             }

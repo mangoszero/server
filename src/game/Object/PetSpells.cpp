@@ -257,18 +257,18 @@ void Pet::_LoadAuras(uint32 timediff)
             }
 
             // prevent wrong values of remaincharges
-            if (spellproto->procCharges == 0)
+            if (spellproto->ProcCharges == 0)
             {
                 remaincharges = 0;
             }
 
-            if (!spellproto->StackAmount)
+            if (!spellproto->CumulativeAura)
             {
                 stackcount = 1;
             }
-            else if (spellproto->StackAmount < stackcount)
+            else if (spellproto->CumulativeAura < stackcount)
             {
-                stackcount = spellproto->StackAmount;
+                stackcount = spellproto->CumulativeAura;
             }
             else if (!stackcount)
             {
@@ -340,7 +340,7 @@ void Pet::_SaveAuras()
         for (int32 j = 0; j < MAX_EFFECT_INDEX; ++j)
         {
             SpellEntry const* spellInfo = holder->GetSpellProto();
-            if (spellInfo->EffectApplyAuraName[j] == SPELL_AURA_MOD_STEALTH ||
+            if (spellInfo->EffectAura[j] == SPELL_AURA_MOD_STEALTH ||
                 spellInfo->Effect[j] == SPELL_EFFECT_APPLY_AREA_AURA_PET)
             {
                 save = false;
@@ -695,21 +695,21 @@ void Pet::InitPetCreateSpells()
             if (learn_spellproto->Effect[0] == SPELL_EFFECT_LEARN_SPELL || learn_spellproto->Effect[0] == SPELL_EFFECT_LEARN_PET_SPELL)
             {
                 petspellid = learn_spellproto->EffectTriggerSpell[0];
-                if (p_owner && !p_owner->HasSpell(learn_spellproto->Id))
+                if (p_owner && !p_owner->HasSpell(learn_spellproto->ID))
                 {
                     if (IsPassiveSpell(petspellid))         // learn passive skills when tamed, not sure if thats right
                     {
-                        p_owner->learnSpell(learn_spellproto->Id, false);
+                        p_owner->learnSpell(learn_spellproto->ID, false);
                     }
                     else
                     {
-                        AddTeachSpell(learn_spellproto->EffectTriggerSpell[0], learn_spellproto->Id);
+                        AddTeachSpell(learn_spellproto->EffectTriggerSpell[0], learn_spellproto->ID);
                     }
                 }
             }
             else
             {
-                petspellid = learn_spellproto->Id;
+                petspellid = learn_spellproto->ID;
             }
 
             addSpell(petspellid);

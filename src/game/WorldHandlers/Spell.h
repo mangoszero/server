@@ -808,7 +808,7 @@ namespace MaNGOS
             for (typename GridRefManager<T>::iterator itr = m.begin(); itr != m.end(); ++itr)
             {
                 // GM OFF Spell must pass the checks.
-                bool gmSpell = (i_spell.m_spellInfo->Id == 1509);
+                bool gmSpell = (i_spell.m_spellInfo->ID == 1509);
                 // there are still more spells which can be casted on dead, but
                 // they are no AOE and don't have such a nice SPELL_ATTR flag
 

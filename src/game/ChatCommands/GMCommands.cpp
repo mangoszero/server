@@ -419,7 +419,7 @@ bool ChatHandler::HandleGMVisibleCommand(char* args)
         m_session->SendNotification(LANG_INVISIBLE_VISIBLE);
         if (invisibleAuraInfo)
         {
-            player->RemoveAurasDueToSpell(invisibleAuraInfo->Id);
+            player->RemoveAurasDueToSpell(invisibleAuraInfo->ID);
         }
     }
     else

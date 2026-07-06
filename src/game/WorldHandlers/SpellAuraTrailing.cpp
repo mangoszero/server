@@ -130,10 +130,10 @@ void Aura::HandleManaShield(bool apply, bool Real)
         if (Unit* caster = GetCaster())
         {
             float DoneActualBenefit = 0.0f;
-            switch (GetSpellProto()->SpellFamilyName)
+            switch (GetSpellProto()->SpellClassSet)
             {
                 case SPELLFAMILY_MAGE:
-                    if (GetSpellProto()->SpellFamilyFlags & UI64LIT(0x0000000000008000))
+                    if (GetSpellProto()->SpellClassMask & UI64LIT(0x0000000000008000))
                     {
                         // Mana Shield
                         // +50% from +spd bonus

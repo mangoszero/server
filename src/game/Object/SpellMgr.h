@@ -195,7 +195,7 @@ inline bool IsEffectHandledOnDelayedSpellLaunch(SpellEntry const* spellInfo, Spe
 
 inline bool IsPeriodicRegenerateEffect(SpellEntry const* spellInfo, SpellEffectIndex effecIdx)
 {
-    switch (AuraType(spellInfo->EffectApplyAuraName[effecIdx]))
+    switch (AuraType(spellInfo->EffectAura[effecIdx]))
     {
         case SPELL_AURA_PERIODIC_ENERGIZE:
         case SPELL_AURA_PERIODIC_HEAL:
@@ -212,7 +212,7 @@ inline bool IsSpellHaveAura(SpellEntry const* spellInfo, AuraType aura, uint32 e
     {
         if (effectMask & (1 << i))
         {
-            if (AuraType(spellInfo->EffectApplyAuraName[i]) == aura)
+            if (AuraType(spellInfo->EffectAura[i]) == aura)
             {
                 return true;
             }
@@ -225,7 +225,7 @@ inline bool IsSpellLastAuraEffect(SpellEntry const* spellInfo, SpellEffectIndex 
 {
     for (int i = effecIdx + 1; i < MAX_EFFECT_INDEX; ++i)
     {
-        if (spellInfo->EffectApplyAuraName[i])
+        if (spellInfo->EffectAura[i])
         {
             return false;
         }
@@ -247,7 +247,7 @@ inline bool IsSealSpell(SpellEntry const* spellInfo)
 inline bool IsElementalShield(SpellEntry const* spellInfo)
 {
     // family flags 10 (Lightning), 42 (Earth), 37 (Water), proc shield from T2 8 pieces bonus
-    return (spellInfo->SpellFamilyFlags & UI64LIT(0x00000000400)) || spellInfo->Id == 23552;
+    return (spellInfo->SpellClassMask & UI64LIT(0x00000000400)) || spellInfo->ID == 23552;
 }
 
 /**
@@ -290,7 +290,7 @@ inline bool IsPassiveSpellStackableWithRanks(SpellEntry const* spellProto)
 
 inline bool IsDeathOnlySpell(SpellEntry const* spellInfo)
 {
-    return spellInfo->HasAttribute(SPELL_ATTR_EX3_CAST_ON_DEAD) || spellInfo->Id == 2584;
+    return spellInfo->HasAttribute(SPELL_ATTR_EX3_CAST_ON_DEAD) || spellInfo->ID == 2584;
 }
 
 inline bool IsDeathPersistentSpell(SpellEntry const* spellInfo)
@@ -377,13 +377,13 @@ inline bool IsSpellWithCasterSourceTargetsOnly(SpellEntry const* spellInfo)
             continue;
         }
 
-        uint32 targetA = spellInfo->EffectImplicitTargetA[i];
+        uint32 targetA = spellInfo->ImplicitTargetA[i];
         if (targetA && !IsCasterSourceTarget(targetA))
         {
             return false;
         }
 
-        uint32 targetB = spellInfo->EffectImplicitTargetB[i];
+        uint32 targetB = spellInfo->ImplicitTargetB[i];
         if (targetB && !IsCasterSourceTarget(targetB))
         {
             return false;
@@ -465,7 +465,7 @@ inline bool IsSpellRemovedOnEvade(SpellEntry const* spellInfo)
     /*if (IsSpellHaveAura(spellInfo, SPELL_AURA_FLY))
     return false; */
 
-    switch (spellInfo->Id)
+    switch (spellInfo->ID)
     {
         case 588:           // Inner Fire (Rank 1)
         case 3235:          // Rancid Blood
@@ -557,15 +557,15 @@ inline bool IsSpellRemovedOnEvade(SpellEntry const* spellInfo)
 
 inline bool IsAreaOfEffectSpell(SpellEntry const* spellInfo)
 {
-    if (IsAreaEffectTarget(Targets(spellInfo->EffectImplicitTargetA[EFFECT_INDEX_0])) || IsAreaEffectTarget(Targets(spellInfo->EffectImplicitTargetB[EFFECT_INDEX_0])))
+    if (IsAreaEffectTarget(Targets(spellInfo->ImplicitTargetA[EFFECT_INDEX_0])) || IsAreaEffectTarget(Targets(spellInfo->ImplicitTargetB[EFFECT_INDEX_0])))
     {
         return true;
     }
-    if (IsAreaEffectTarget(Targets(spellInfo->EffectImplicitTargetA[EFFECT_INDEX_1])) || IsAreaEffectTarget(Targets(spellInfo->EffectImplicitTargetB[EFFECT_INDEX_1])))
+    if (IsAreaEffectTarget(Targets(spellInfo->ImplicitTargetA[EFFECT_INDEX_1])) || IsAreaEffectTarget(Targets(spellInfo->ImplicitTargetB[EFFECT_INDEX_1])))
     {
         return true;
     }
-    if (IsAreaEffectTarget(Targets(spellInfo->EffectImplicitTargetA[EFFECT_INDEX_2])) || IsAreaEffectTarget(Targets(spellInfo->EffectImplicitTargetB[EFFECT_INDEX_2])))
+    if (IsAreaEffectTarget(Targets(spellInfo->ImplicitTargetA[EFFECT_INDEX_2])) || IsAreaEffectTarget(Targets(spellInfo->ImplicitTargetB[EFFECT_INDEX_2])))
     {
         return true;
     }
@@ -618,14 +618,14 @@ inline bool IsOnlySelfTargeting(SpellEntry const* spellInfo)
             return true;
         }
 
-        switch (spellInfo->EffectImplicitTargetA[i])
+        switch (spellInfo->ImplicitTargetA[i])
         {
             case TARGET_SELF:
                 break;
             default:
                 return false;
         }
-        switch (spellInfo->EffectImplicitTargetB[i])
+        switch (spellInfo->ImplicitTargetB[i])
         {
             case TARGET_SELF:
             case TARGET_NONE:
@@ -641,7 +641,7 @@ inline bool IsDismountSpell(SpellEntry const* spellInfo)
 {
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
     {
-        if ((spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AURA) && (spellInfo->EffectApplyAuraName[i] == SPELL_AURA_MECHANIC_IMMUNITY) && (spellInfo->EffectMiscValue[i] == MECHANIC_MOUNT))
+        if ((spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AURA) && (spellInfo->EffectAura[i] == SPELL_AURA_MECHANIC_IMMUNITY) && (spellInfo->EffectMiscValue[i] == MECHANIC_MOUNT))
         {
             return true;
         }
@@ -666,7 +666,7 @@ inline bool IsAutoRepeatRangedSpell(SpellEntry const* spellInfo)
 
 inline bool IsSpellRequiresRangedAP(SpellEntry const* spellInfo)
 {
-    return (spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER && spellInfo->DmgClass != SPELL_DAMAGE_CLASS_MELEE);
+    return (spellInfo->SpellClassSet == SPELLFAMILY_HUNTER && spellInfo->DefenseType != SPELL_DAMAGE_CLASS_MELEE);
 }
 
 /**
@@ -688,7 +688,7 @@ inline bool IsNeedCastSpellAtFormApply(SpellEntry const* spellInfo, ShapeshiftFo
 
     // passive spells with SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT are already active without shapeshift, do no recast!
     // Feline Swiftness Passive 2a not have 0x1 mask in Stance field in spell data as expected
-    return ((spellInfo->Stances & (1 << (form - 1))  || (spellInfo->Id == 24864 && form == FORM_CAT)) &&
+    return ((spellInfo->ShapeshiftMask & (1 << (form - 1))  || (spellInfo->ID == 24864 && form == FORM_CAT)) &&
         !spellInfo->HasAttribute(SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT));
 }
 
@@ -709,8 +709,8 @@ inline bool IsTargetPowerTypeValid(SpellEntry const* spellInfo, Powers powerType
 
         if ((spellInfo->Effect[i] == SPELL_EFFECT_POWER_BURN ||
             spellInfo->Effect[i] == SPELL_EFFECT_POWER_DRAIN ||
-            spellInfo->EffectApplyAuraName[i] == SPELL_AURA_PERIODIC_MANA_LEECH ||
-            spellInfo->EffectApplyAuraName[i] == SPELL_AURA_POWER_BURN_MANA) &&
+            spellInfo->EffectAura[i] == SPELL_AURA_PERIODIC_MANA_LEECH ||
+            spellInfo->EffectAura[i] == SPELL_AURA_POWER_BURN_MANA) &&
             int32(powerType) != spellInfo->EffectMiscValue[i])
         {
             continue;
@@ -808,7 +808,7 @@ inline bool IsAuraAddedBySpell(uint32 auraType, uint32 spellId)
 
     for (int i = 0; i < 3; i++)
     {
-        if (spellproto->EffectApplyAuraName[i] == auraType)
+        if (spellproto->EffectAura[i] == auraType)
         {
             return true;
         }
@@ -1250,7 +1250,7 @@ class SpellMgr
                 return 1.0f;
             }
 
-            if (SpellThreatEntry const* entry = GetSpellThreatEntry(spellInfo->Id))
+            if (SpellThreatEntry const* entry = GetSpellThreatEntry(spellInfo->ID))
             {
                 return entry->multiplier;
             }
@@ -1402,7 +1402,7 @@ class SpellMgr
         bool canStackSpellRanksInSpellBook(SpellEntry const* spellInfo) const;
         bool IsRankedSpellNonStackableInSpellBook(SpellEntry const* spellInfo) const
         {
-            return !canStackSpellRanksInSpellBook(spellInfo) && GetSpellRank(spellInfo->Id) != 0;
+            return !canStackSpellRanksInSpellBook(spellInfo) && GetSpellRank(spellInfo->ID) != 0;
         }
 
         SpellEntry const* SelectAuraRankForLevel(SpellEntry const* spellInfo, uint32 Level) const;

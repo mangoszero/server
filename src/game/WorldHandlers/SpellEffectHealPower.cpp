@@ -79,7 +79,7 @@ void Spell::EffectApplyAura(SpellEffectIndex eff_idx)
         return;
     }
 
-    if (m_spellInfo->Id == 30918)                           // Improved Sprint
+    if (m_spellInfo->ID == 30918)                           // Improved Sprint
     {
         // Don't need to apply any actual aura here, just remove snare and root effects from the target!
         unitTarget->RemoveAurasAtMechanicImmunity(IMMUNE_TO_ROOT_AND_SNARE_MASK, 30918, true);
@@ -108,7 +108,7 @@ void Spell::EffectApplyAura(SpellEffectIndex eff_idx)
         }
     }
 
-    DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell: Aura is: %u", m_spellInfo->EffectApplyAuraName[eff_idx]);
+    DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell: Aura is: %u", m_spellInfo->EffectAura[eff_idx]);
 
     Aura* aur = CreateAura(m_spellInfo, eff_idx, &m_currentBasePoints[eff_idx], m_spellAuraHolder, unitTarget, caster, m_CastItem);
     m_spellAuraHolder->AddAura(aur, eff_idx);
@@ -166,7 +166,7 @@ void Spell::EffectPowerDrain(SpellEffectIndex eff_idx)
     // Don`t restore from self drain
     if (drain_power == POWER_MANA && m_caster != unitTarget)
     {
-        float manaMultiplier = m_spellInfo->EffectMultipleValue[eff_idx];
+        float manaMultiplier = m_spellInfo->EffectAmplitude[eff_idx];
         if (manaMultiplier == 0)
         {
             manaMultiplier = 1;
@@ -174,12 +174,12 @@ void Spell::EffectPowerDrain(SpellEffectIndex eff_idx)
 
         if (Player* modOwner = m_caster->GetSpellModOwner())
         {
-            modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_MULTIPLE_VALUE, manaMultiplier);
+            modOwner->ApplySpellMod(m_spellInfo->ID, SPELLMOD_MULTIPLE_VALUE, manaMultiplier);
         }
 
         int32 gain = int32(new_damage * manaMultiplier);
 
-        m_caster->EnergizeBySpell(m_caster, m_spellInfo->Id, gain, POWER_MANA);
+        m_caster->EnergizeBySpell(m_caster, m_spellInfo->ID, gain, POWER_MANA);
     }
 }
 
@@ -194,7 +194,7 @@ void Spell::EffectSendEvent(SpellEffectIndex effectIndex)
      *  we do not handle a flag dropping or clicking on flag in battleground by sendevent system
      *  TODO: Actually, why not...
      */
-    DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell ScriptStart %u for spellid %u in EffectSendEvent ", m_spellInfo->EffectMiscValue[effectIndex], m_spellInfo->Id);
+    DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell ScriptStart %u for spellid %u in EffectSendEvent ", m_spellInfo->EffectMiscValue[effectIndex], m_spellInfo->ID);
 
     StartEvents_Event(m_caster->GetMap(), m_spellInfo->EffectMiscValue[effectIndex], m_caster, focusObject, true, m_caster);
 }
@@ -235,11 +235,11 @@ void Spell::EffectPowerBurn(SpellEffectIndex eff_idx)
     int32 new_damage = (curPower < damage) ? curPower : damage;
 
     unitTarget->ModifyPower(powertype, -new_damage);
-    float multiplier = m_spellInfo->EffectMultipleValue[eff_idx];
+    float multiplier = m_spellInfo->EffectAmplitude[eff_idx];
 
     if (Player* modOwner = m_caster->GetSpellModOwner())
     {
-        modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_MULTIPLE_VALUE, multiplier);
+        modOwner->ApplySpellMod(m_spellInfo->ID, SPELLMOD_MULTIPLE_VALUE, multiplier);
     }
 
     new_damage = int32(new_damage * multiplier);
@@ -265,16 +265,16 @@ void Spell::EffectHeal(SpellEffectIndex /*eff_idx*/)
         int32 addhealth = damage;
 
         // Swiftmend - consumes Regrowth or Rejuvenation
-        if (m_spellInfo->Id == 18562)
+        if (m_spellInfo->ID == 18562)
         {
             Unit::AuraList const& RejorRegr = unitTarget->GetAurasByType(SPELL_AURA_PERIODIC_HEAL);
             // find most short by duration
             Aura* targetAura = NULL;
             for (Unit::AuraList::const_iterator i = RejorRegr.begin(); i != RejorRegr.end(); ++i)
             {
-                if ((*i)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_DRUID &&
+                if ((*i)->GetSpellProto()->SpellClassSet == SPELLFAMILY_DRUID &&
                     // Regrowth or Rejuvenation 0x40 | 0x10
-                    ((*i)->GetSpellProto()->SpellFamilyFlags & UI64LIT(0x0000000000000050)))
+                    ((*i)->GetSpellProto()->SpellClassMask & UI64LIT(0x0000000000000050)))
                 {
                     if (!targetAura || (*i)->GetAuraDuration() < targetAura->GetAuraDuration())
                     {
@@ -291,7 +291,7 @@ void Spell::EffectHeal(SpellEffectIndex /*eff_idx*/)
             int idx = 0;
             while (idx < 3)
             {
-                if (targetAura->GetSpellProto()->EffectApplyAuraName[idx] == SPELL_AURA_PERIODIC_HEAL)
+                if (targetAura->GetSpellProto()->EffectAura[idx] == SPELL_AURA_PERIODIC_HEAL)
                 {
                     break;
                 }
@@ -300,8 +300,8 @@ void Spell::EffectHeal(SpellEffectIndex /*eff_idx*/)
 
             // Swiftmend heals 4/4 ticks of Rejuvenation and 6/7 of Regrowth
             int32 tickheal = targetAura->GetModifier()->m_amount;
-            int32 tickcount = GetSpellDuration(targetAura->GetSpellProto()) / targetAura->GetSpellProto()->EffectAmplitude[idx];
-            if (targetAura->GetSpellProto()->SpellFamilyFlags & UI64LIT(0x0000000000000040))        // Regrowth tickcount -= 1
+            int32 tickcount = GetSpellDuration(targetAura->GetSpellProto()) / targetAura->GetSpellProto()->EffectAuraPeriod[idx];
+            if (targetAura->GetSpellProto()->SpellClassMask & UI64LIT(0x0000000000000040))        // Regrowth tickcount -= 1
             {
                 tickcount -= 1;
             }
@@ -366,17 +366,17 @@ void Spell::EffectHealthLeech(SpellEffectIndex eff_idx)
     DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "HealthLeech :%i", damage);
 
     uint32 curHealth = unitTarget->GetHealth();
-    damage = m_caster->SpellNonMeleeDamageLog(unitTarget, m_spellInfo->Id, damage);
+    damage = m_caster->SpellNonMeleeDamageLog(unitTarget, m_spellInfo->ID, damage);
     if ((int32)curHealth < damage)
     {
         damage = curHealth;
     }
 
-    float multiplier = m_spellInfo->EffectMultipleValue[eff_idx];
+    float multiplier = m_spellInfo->EffectAmplitude[eff_idx];
 
     if (Player* modOwner = m_caster->GetSpellModOwner())
     {
-        modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_MULTIPLE_VALUE, multiplier);
+        modOwner->ApplySpellMod(m_spellInfo->ID, SPELLMOD_MULTIPLE_VALUE, multiplier);
     }
 
     uint32 heal = uint32(damage * multiplier);
@@ -413,7 +413,7 @@ void Spell::DoCreateItem(SpellEffectIndex eff_idx, uint32 itemtype)
 
     // bg reward have some special in code work
     uint32 bgType = 0;
-    switch (m_spellInfo->Id)
+    switch (m_spellInfo->ID)
     {
         case SPELL_AV_MARK_WINNER:
         case SPELL_AV_MARK_LOSER:
@@ -491,7 +491,7 @@ void Spell::DoCreateItem(SpellEffectIndex eff_idx, uint32 itemtype)
         // we succeeded in creating at least one item, so a levelup is possible
         if (!bgType)
         {
-            player->UpdateCraftSkill(m_spellInfo->Id);
+            player->UpdateCraftSkill(m_spellInfo->ID);
         }
     }
 
@@ -512,7 +512,7 @@ void Spell::DoCreateItem(SpellEffectIndex eff_idx, uint32 itemtype)
  */
 void Spell::EffectCreateItem(SpellEffectIndex eff_idx)
 {
-    switch (m_spellInfo->Id)
+    switch (m_spellInfo->ID)
     {
         case SPELL_FILLING_EMPTY_JAR__CURSED_OOZE: // Spell 15698 (for Cursed Ooze)
         case SPELL_FILLING_EMPTY_JAR__TAINTED_OOZE: // Spell 15699 (for Tainted Ooze)
@@ -567,11 +567,11 @@ void Spell::EffectPersistentAA(SpellEffectIndex eff_idx)
 
     if (Player* modOwner = pCaster->GetSpellModOwner())
     {
-        modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_RADIUS, radius);
+        modOwner->ApplySpellMod(m_spellInfo->ID, SPELLMOD_RADIUS, radius);
     }
 
     DynamicObject* dynObj = new DynamicObject;
-    if (!dynObj->Create(pCaster->GetMap()->GenerateLocalLowGuid(HIGHGUID_DYNAMICOBJECT), pCaster, m_spellInfo->Id,
+    if (!dynObj->Create(pCaster->GetMap()->GenerateLocalLowGuid(HIGHGUID_DYNAMICOBJECT), pCaster, m_spellInfo->ID,
         eff_idx, m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, m_duration, radius, DYNAMIC_OBJECT_AREA_SPELL))
     {
         delete dynObj;
@@ -608,7 +608,7 @@ void Spell::EffectEnergize(SpellEffectIndex eff_idx)
     // Some level depends spells
     int level_multiplier = 0;
     int level_diff = 0;
-    switch (m_spellInfo->Id)
+    switch (m_spellInfo->ID)
     {
         case 9512:                                          // Restore Energy
             level_diff = m_caster->getLevel() - 60;
@@ -641,5 +641,5 @@ void Spell::EffectEnergize(SpellEffectIndex eff_idx)
         return;
     }
 
-    m_caster->EnergizeBySpell(unitTarget, m_spellInfo->Id, damage, power);
+    m_caster->EnergizeBySpell(unitTarget, m_spellInfo->ID, damage, power);
 }

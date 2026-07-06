@@ -170,7 +170,7 @@ bool Player::IsActionButtonDataValid(uint8 button, uint32 action, uint8 type, Pl
 
             if (player)
             {
-                if (!player->HasSpell(spellProto->Id))
+                if (!player->HasSpell(spellProto->ID))
                 {
                     sLog.outError("Spell action %u not added into button %u for player %s: player don't known this spell", action, button, player->GetName());
                     return false;

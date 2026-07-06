@@ -130,7 +130,7 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         procVictim   = PROC_FLAG_NONE;
     }
 
-    float speed = m_spellInfo->speed == 0.0f && m_triggeredBySpellInfo ? m_triggeredBySpellInfo->speed : m_spellInfo->speed;
+    float speed = m_spellInfo->Speed == 0.0f && m_triggeredBySpellInfo ? m_triggeredBySpellInfo->Speed : m_spellInfo->Speed;
     if (speed > 0.0f)
     {
         // mark effects that were already handled in Spell::HandleDelayedSpellLaunch on spell launch as processed
@@ -169,13 +169,13 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         {
             // Warrior's execute must be returned as 20647 spell result since the client only displays info when receiving this id.
             // Done here because must be based on MeleeSpellHitResult of spell id's 5308/20658/20660/20661/20662.
-            if (m_spellInfo->SpellFamilyName == SPELLFAMILY_WARRIOR && m_spellInfo->IsFitToFamilyMask(0x0000000020000000))
+            if (m_spellInfo->SpellClassSet == SPELLFAMILY_WARRIOR && m_spellInfo->IsFitToFamilyMask(0x0000000020000000))
             {
                 real_caster->SendSpellMiss(unit, 20647, missInfo);
             }
             else
             {
-                real_caster->SendSpellMiss(unit, m_spellInfo->Id, missInfo);
+                real_caster->SendSpellMiss(unit, m_spellInfo->ID, missInfo);
             }
         }
 
@@ -184,7 +184,7 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
             if (real_caster && real_caster != unit)
             {
                 // can cause back attack (if detected)
-                if (!m_spellInfo->HasAttribute(SPELL_ATTR_EX3_NO_INITIAL_AGGRO) && !IsPositiveSpell(m_spellInfo->Id) &&
+                if (!m_spellInfo->HasAttribute(SPELL_ATTR_EX3_NO_INITIAL_AGGRO) && !IsPositiveSpell(m_spellInfo->ID) &&
                     m_caster->IsVisibleForOrDetect(unit, unit, false))
                 {
                     if (!unit->IsInCombat() && unit->GetTypeId() != TYPEID_PLAYER && ((Creature*)unit)->AI())
@@ -221,7 +221,7 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         {
             // Some spell expected send main spell info to triggered system
             SpellEntry const* spellInfo = m_spellInfo;
-            switch (m_spellInfo->Id)
+            switch (m_spellInfo->ID)
             {
                 case 19968:                                 // Holy Light triggered heal
                 case 19993:                                 // Flash of Light triggered heal
@@ -246,7 +246,7 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
     else if (m_damage)
     {
         // Fill base damage struct (unitTarget - is real spell target)
-        SpellNonMeleeDamage damageInfo(caster, unitTarget, m_spellInfo->Id, GetFirstSchoolInMask(m_spellSchoolMask));
+        SpellNonMeleeDamage damageInfo(caster, unitTarget, m_spellInfo->ID, GetFirstSchoolInMask(m_spellSchoolMask));
 
         if (speed > 0.0f)
         {
@@ -285,19 +285,19 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         caster->DealSpellDamage(&damageInfo, true);
 
         // Bloodthirst
-        if (m_spellInfo->SpellFamilyName == SPELLFAMILY_WARRIOR &&
-            m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000002000000) &&
+        if (m_spellInfo->SpellClassSet == SPELLFAMILY_WARRIOR &&
+            m_spellInfo->SpellClassMask & UI64LIT(0x0000000002000000) &&
             m_spellInfo->SpellIconID == 38)
         {
             uint32 BTAura = 0;
-            switch (m_spellInfo->Id)
+            switch (m_spellInfo->ID)
             {
                 case 23881: BTAura = 23885; break;
                 case 23892: BTAura = 23886; break;
                 case 23893: BTAura = 23887; break;
                 case 23894: BTAura = 23888; break;
                 default:
-                    sLog.outError("Spell::EffectSchoolDMG: Spell %u not handled in BTAura", m_spellInfo->Id);
+                    sLog.outError("Spell::EffectSchoolDMG: Spell %u not handled in BTAura", m_spellInfo->ID);
                     break;
             }
             if (BTAura)
@@ -310,7 +310,7 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
     else if (procAttacker || procVictim)
     {
         // Fill base damage struct (unitTarget - is real spell target)
-        SpellNonMeleeDamage damageInfo(caster, unitTarget, m_spellInfo->Id, GetFirstSchoolInMask(m_spellSchoolMask));
+        SpellNonMeleeDamage damageInfo(caster, unitTarget, m_spellInfo->ID, GetFirstSchoolInMask(m_spellSchoolMask));
         procEx = createProcExtendMask(&damageInfo, missInfo);
         // Do triggers for unit (reflect triggers passed on hit phase for correct drop charge)
         if (m_canTrigger && missInfo != SPELL_MISS_REFLECT)
@@ -328,7 +328,7 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         {
             if (Player* p = real_caster->GetCharmerOrOwnerPlayerOrPlayerItself())
             {
-                p->RewardPlayerAndGroupAtCast(unit, m_spellInfo->Id);
+                p->RewardPlayerAndGroupAtCast(unit, m_spellInfo->ID);
             }
         }
 
@@ -366,14 +366,14 @@ void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool isReflected)
     Unit* realCaster = GetAffectiveCaster();
 
     // Recheck immune (only for delayed spells)
-    float speed = m_spellInfo->speed == 0.0f && m_triggeredBySpellInfo ? m_triggeredBySpellInfo->speed : m_spellInfo->speed;
+    float speed = m_spellInfo->Speed == 0.0f && m_triggeredBySpellInfo ? m_triggeredBySpellInfo->Speed : m_spellInfo->Speed;
     if (speed &&
         (unit->IsImmuneToDamage(GetSpellSchoolMask(m_spellInfo)) ||
         unit->IsImmuneToSpell(m_spellInfo, unit == realCaster)))
     {
         if (realCaster)
         {
-            realCaster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_IMMUNE);
+            realCaster->SendSpellMiss(unit, m_spellInfo->ID, SPELL_MISS_IMMUNE);
         }
 
         ResetEffectDamageAndHeal();
@@ -387,7 +387,7 @@ void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool isReflected)
             unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE) &&
             unit->GetCharmerOrOwnerGuid() != m_caster->GetObjectGuid())
         {
-            realCaster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_EVADE);
+            realCaster->SendSpellMiss(unit, m_spellInfo->ID, SPELL_MISS_EVADE);
             ResetEffectDamageAndHeal();
             return;
         }
@@ -398,19 +398,19 @@ void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool isReflected)
             if (speed > 0.0f && unit == m_targets.getUnitTarget() &&
                 !unit->IsVisibleForOrDetect(m_caster, m_caster, false))
             {
-                realCaster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_EVADE);
+                realCaster->SendSpellMiss(unit, m_spellInfo->ID, SPELL_MISS_EVADE);
                 ResetEffectDamageAndHeal();
                 return;
             }
 
             // not break stealth by cast targeting
-            if (!(m_spellInfo->AttributesEx & SPELL_ATTR_EX_NOT_BREAK_STEALTH) && m_spellInfo->Id != 51690 && m_spellInfo->Id != 53055)
+            if (!(m_spellInfo->AttributesEx & SPELL_ATTR_EX_NOT_BREAK_STEALTH) && m_spellInfo->ID != 51690 && m_spellInfo->ID != 53055)
             {
                 unit->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
             }
 
             // can cause back attack (if detected), stealth removed at Spell::cast if spell break it
-            if (!m_spellInfo->HasAttribute(SPELL_ATTR_EX3_NO_INITIAL_AGGRO) && !IsPositiveSpell(m_spellInfo->Id) &&
+            if (!m_spellInfo->HasAttribute(SPELL_ATTR_EX3_NO_INITIAL_AGGRO) && !IsPositiveSpell(m_spellInfo->ID) &&
                 m_caster->IsVisibleForOrDetect(unit, unit, false))
             {
                 // use speedup check to avoid re-remove after above lines
@@ -427,7 +427,7 @@ void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool isReflected)
                     unit->SetStandState(UNIT_STAND_STATE_STAND);
                 }
 
-                switch (m_spellInfo->Id)
+                switch (m_spellInfo->ID)
                 {
                     // Mind Soothe (all ranks)
                     case 453:
@@ -463,9 +463,9 @@ void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool isReflected)
         else
         {
             // for delayed spells ignore negative spells (after duel end) for friendly targets
-            if (speed > 0.0f && !IsPositiveSpell(m_spellInfo->Id))
+            if (speed > 0.0f && !IsPositiveSpell(m_spellInfo->ID))
             {
-                realCaster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_EVADE);
+                realCaster->SendSpellMiss(unit, m_spellInfo->ID, SPELL_MISS_EVADE);
                 ResetEffectDamageAndHeal();
                 return;
             }
@@ -515,13 +515,13 @@ void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool isReflected)
             if (m_applyMultiplierMask & (1 << effectNumber))
             {
                 // Get multiplier
-                float multiplier = m_spellInfo->DmgMultiplier[effectNumber];
+                float multiplier = m_spellInfo->EffectChainAmplitude[effectNumber];
                 // Apply multiplier mods
                 if (realCaster)
                 {
                     if (Player* modOwner = realCaster->GetSpellModOwner())
                     {
-                        modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_EFFECT_PAST_FIRST, multiplier, this);
+                        modOwner->ApplySpellMod(m_spellInfo->ID, SPELLMOD_EFFECT_PAST_FIRST, multiplier, this);
                     }
                 }
                 m_damageMultipliers[effectNumber] *= multiplier;
@@ -604,7 +604,7 @@ void Spell::DoAllEffectOnTarget(GOTargetInfo* target)
     {
         if (Player* p = m_caster->GetCharmerOrOwnerPlayerOrPlayerItself())
         {
-            p->RewardPlayerAndGroupAtCast(go, m_spellInfo->Id);
+            p->RewardPlayerAndGroupAtCast(go, m_spellInfo->ID);
         }
     }
 }
@@ -662,7 +662,7 @@ void Spell::HandleDelayedSpellLaunch(TargetInfo* target)
     m_healing = 0; // healing maybe not needed at this point
 
     // Fill base damage struct (unitTarget - is real spell target)
-    SpellNonMeleeDamage damageInfo(caster, unitTarget, m_spellInfo->Id, GetFirstSchoolInMask(m_spellSchoolMask));
+    SpellNonMeleeDamage damageInfo(caster, unitTarget, m_spellInfo->ID, GetFirstSchoolInMask(m_spellSchoolMask));
 
     // keep damage amount for reflected spells
     if (missInfo == SPELL_MISS_NONE || (missInfo == SPELL_MISS_REFLECT && target->reflectResult == SPELL_MISS_NONE))
@@ -675,13 +675,13 @@ void Spell::HandleDelayedSpellLaunch(TargetInfo* target)
                 if (m_applyMultiplierMask & (1 << effectNumber))
                 {
                     // Get multiplier
-                    float multiplier = m_spellInfo->DmgMultiplier[effectNumber];
+                    float multiplier = m_spellInfo->EffectChainAmplitude[effectNumber];
                     // Apply multiplier mods
                     if (real_caster)
                     {
                         if (Player* modOwner = real_caster->GetSpellModOwner())
                         {
-                            modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_EFFECT_PAST_FIRST, multiplier, this);
+                            modOwner->ApplySpellMod(m_spellInfo->ID, SPELLMOD_EFFECT_PAST_FIRST, multiplier, this);
                         }
                     }
                     m_damageMultipliers[effectNumber] *= multiplier;
@@ -711,16 +711,16 @@ void Spell::InitializeDamageMultipliers()
             continue;
         }
 
-        uint32 EffectChainTarget = m_spellInfo->EffectChainTarget[i];
+        uint32 EffectChainTarget = m_spellInfo->EffectChainTargets[i];
         if (Unit* realCaster = GetAffectiveCaster())
         {
             if (Player* modOwner = realCaster->GetSpellModOwner())
             {
-                modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_JUMP_TARGETS, EffectChainTarget, this);
+                modOwner->ApplySpellMod(m_spellInfo->ID, SPELLMOD_JUMP_TARGETS, EffectChainTarget, this);
             }
         }
         m_damageMultipliers[i] = 1.0f;
-        if ((m_spellInfo->EffectImplicitTargetA[i] == TARGET_CHAIN_DAMAGE || m_spellInfo->EffectImplicitTargetA[i] == TARGET_CHAIN_HEAL) &&
+        if ((m_spellInfo->ImplicitTargetA[i] == TARGET_CHAIN_DAMAGE || m_spellInfo->ImplicitTargetA[i] == TARGET_CHAIN_HEAL) &&
             (EffectChainTarget > 1))
         {
             m_applyMultiplierMask |= (1 << i);

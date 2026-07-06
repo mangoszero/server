@@ -22,7 +22,7 @@ bool CastSpellAction::isPossible()
         if (spellInfo && IsAutoRepeatRangedSpell(spellInfo))
         {
             Spell* currentAutoRepeat = bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL);
-            if (currentAutoRepeat && currentAutoRepeat->m_spellInfo->Id == spellId)
+            if (currentAutoRepeat && currentAutoRepeat->m_spellInfo->ID == spellId)
             {
                 return false; // Already casting this autorepeat spell
             }

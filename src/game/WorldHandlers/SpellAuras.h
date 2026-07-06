@@ -116,7 +116,7 @@ class SpellAuraHolder
         //TODO: Check that index isn't out of bounds
         Aura* GetAuraByEffectIndex(SpellEffectIndex index) const { return m_auras[index]; }
 
-        uint32 GetId() const { return m_spellProto->Id; }
+        uint32 GetId() const { return m_spellProto->ID; }
         SpellEntry const* GetSpellProto() const { return m_spellProto; }
 
         ObjectGuid const& GetCasterGuid() const { return m_casterGuid; }
@@ -418,7 +418,7 @@ class Aura
         int32 GetMiscValue() const { return m_spellAuraHolder->GetSpellProto()->EffectMiscValue[m_effIndex]; }
 
         SpellEntry const* GetSpellProto() const { return GetHolder()->GetSpellProto(); }
-        uint32 GetId() const { return GetHolder()->GetSpellProto()->Id; }
+        uint32 GetId() const { return GetHolder()->GetSpellProto()->ID; }
         ObjectGuid const& GetCastItemGuid() const { return GetHolder()->GetCastItemGuid(); }
         ObjectGuid const& GetCasterGuid() const { return GetHolder()->GetCasterGuid(); }
         Unit* GetCaster() const { return GetHolder()->GetCaster(); }

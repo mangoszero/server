@@ -312,7 +312,7 @@ namespace ai
             proto->Spells[0].SpellCategory != SPELLCATEGORY_FOOD)
             return false;
         SpellEntry const* sp = sSpellStore.LookupEntry(proto->Spells[0].SpellId);
-        return sp && ((sp->AttributesEx2 & SPELL_ATTR_EX2_FOOD_BUFF) || sp->Effect[1] != 0 || sp->Effect[2] != 0);
+        return sp && ((sp->AttributesExB & SPELL_ATTR_EX2_FOOD_BUFF) || sp->Effect[1] != 0 || sp->Effect[2] != 0);
     }
 
     class FindFoodVisitor : public FindUsableItemVisitor
@@ -354,7 +354,7 @@ namespace ai
                 continue;
             }
 
-            if (bot->HasAura(sp->Id))
+            if (bot->HasAura(sp->ID))
             {
                 return true;
             }

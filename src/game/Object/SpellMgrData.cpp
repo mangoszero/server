@@ -98,7 +98,7 @@ void SpellMgr::LoadSpellTargetPositions()
         bool found = false;
         for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
         {
-            if (spellInfo->EffectImplicitTargetA[i] == TARGET_TABLE_X_Y_Z_COORDINATES || spellInfo->EffectImplicitTargetB[i] == TARGET_TABLE_X_Y_Z_COORDINATES)
+            if (spellInfo->ImplicitTargetA[i] == TARGET_TABLE_X_Y_Z_COORDINATES || spellInfo->ImplicitTargetB[i] == TARGET_TABLE_X_Y_Z_COORDINATES)
             {
                 found = true;
                 break;
@@ -266,7 +266,7 @@ void SpellMgr::LoadSpellBonuses()
             }
 
             // DoTs/HoTs
-            switch (spell->EffectApplyAuraName[i])
+            switch (spell->EffectAura[i])
             {
                 case SPELL_AURA_PERIODIC_DAMAGE:
                 case SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
@@ -463,7 +463,7 @@ bool SpellMgr::IsSpellProcEventCanTriggeredBy(SpellProcEventEntry const* spellPr
             }
 
             // Check (if set) for spellFamilyName
-            if (spellProcEvent->spellFamilyName && (spellProcEvent->spellFamilyName != procSpell->SpellFamilyName))
+            if (spellProcEvent->spellFamilyName && (spellProcEvent->spellFamilyName != procSpell->SpellClassSet))
             {
                 return false;
             }
@@ -595,17 +595,17 @@ struct DoSpellThreat
     }
     void AddEntry(SpellThreatEntry const& ste, SpellEntry const* spell)
     {
-        threatMap[spell->Id] = ste;
+        threatMap[spell->ID] = ste;
 
         // flat threat bonus and attack power bonus currently only work properly when all
         // effects have same targets, otherwise, we'd need to seperate it by effect index
         if (ste.threat || ste.ap_bonus != 0.f)
         {
-            const uint32* targetA = spell->EffectImplicitTargetA;
+            const uint32* targetA = spell->ImplicitTargetA;
             if ((targetA[EFFECT_INDEX_1] && targetA[EFFECT_INDEX_1] != targetA[EFFECT_INDEX_0]) ||
                 (targetA[EFFECT_INDEX_2] && targetA[EFFECT_INDEX_2] != targetA[EFFECT_INDEX_0]))
             {
-                sLog.outErrorDb("Spell %u listed in `spell_threat` has effects with different targets, threat may be assigned incorrectly", spell->Id);
+                sLog.outErrorDb("Spell %u listed in `spell_threat` has effects with different targets, threat may be assigned incorrectly", spell->ID);
             }
         }
         ++count;
@@ -686,22 +686,22 @@ void SpellMgr::LoadSpellScriptTarget()
         bool targetfound = false;
         for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
         {
-            if (spellProto->EffectImplicitTargetA[i] == TARGET_SCRIPT ||
-                spellProto->EffectImplicitTargetB[i] == TARGET_SCRIPT ||
-                spellProto->EffectImplicitTargetA[i] == TARGET_SCRIPT_COORDINATES ||
-                spellProto->EffectImplicitTargetB[i] == TARGET_SCRIPT_COORDINATES ||
-                spellProto->EffectImplicitTargetA[i] == TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT ||
-                spellProto->EffectImplicitTargetB[i] == TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT ||
-                spellProto->EffectImplicitTargetA[i] == TARGET_AREAEFFECT_INSTANT ||
-                spellProto->EffectImplicitTargetB[i] == TARGET_AREAEFFECT_INSTANT ||
-                spellProto->EffectImplicitTargetA[i] == TARGET_AREAEFFECT_CUSTOM ||
-                spellProto->EffectImplicitTargetB[i] == TARGET_AREAEFFECT_CUSTOM ||
-                spellProto->EffectImplicitTargetA[i] == TARGET_AREAEFFECT_GO_AROUND_SOURCE ||
-                spellProto->EffectImplicitTargetB[i] == TARGET_AREAEFFECT_GO_AROUND_SOURCE ||
-                spellProto->EffectImplicitTargetA[i] == TARGET_AREAEFFECT_GO_AROUND_DEST ||
-                spellProto->EffectImplicitTargetB[i] == TARGET_AREAEFFECT_GO_AROUND_DEST ||
-                spellProto->EffectImplicitTargetA[i] == TARGET_NARROW_FRONTAL_CONE ||
-                spellProto->EffectImplicitTargetB[i] == TARGET_NARROW_FRONTAL_CONE)
+            if (spellProto->ImplicitTargetA[i] == TARGET_SCRIPT ||
+                spellProto->ImplicitTargetB[i] == TARGET_SCRIPT ||
+                spellProto->ImplicitTargetA[i] == TARGET_SCRIPT_COORDINATES ||
+                spellProto->ImplicitTargetB[i] == TARGET_SCRIPT_COORDINATES ||
+                spellProto->ImplicitTargetA[i] == TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT ||
+                spellProto->ImplicitTargetB[i] == TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT ||
+                spellProto->ImplicitTargetA[i] == TARGET_AREAEFFECT_INSTANT ||
+                spellProto->ImplicitTargetB[i] == TARGET_AREAEFFECT_INSTANT ||
+                spellProto->ImplicitTargetA[i] == TARGET_AREAEFFECT_CUSTOM ||
+                spellProto->ImplicitTargetB[i] == TARGET_AREAEFFECT_CUSTOM ||
+                spellProto->ImplicitTargetA[i] == TARGET_AREAEFFECT_GO_AROUND_SOURCE ||
+                spellProto->ImplicitTargetB[i] == TARGET_AREAEFFECT_GO_AROUND_SOURCE ||
+                spellProto->ImplicitTargetA[i] == TARGET_AREAEFFECT_GO_AROUND_DEST ||
+                spellProto->ImplicitTargetB[i] == TARGET_AREAEFFECT_GO_AROUND_DEST ||
+                spellProto->ImplicitTargetA[i] == TARGET_NARROW_FRONTAL_CONE ||
+                spellProto->ImplicitTargetB[i] == TARGET_NARROW_FRONTAL_CONE)
             {
                 targetfound = true;
                 break;
@@ -778,13 +778,13 @@ void SpellMgr::LoadSpellScriptTarget()
 
             for (int j = 0; j < MAX_EFFECT_INDEX; ++j)
             {
-                if (spellInfo->Effect[j] && (spellInfo->EffectImplicitTargetA[j] == TARGET_SCRIPT ||
-                    (spellInfo->EffectImplicitTargetA[j] != TARGET_SELF && spellInfo->EffectImplicitTargetB[j] == TARGET_SCRIPT)))
+                if (spellInfo->Effect[j] && (spellInfo->ImplicitTargetA[j] == TARGET_SCRIPT ||
+                    (spellInfo->ImplicitTargetA[j] != TARGET_SELF && spellInfo->ImplicitTargetB[j] == TARGET_SCRIPT)))
                 {
                     SQLMultiStorage::SQLMSIteratorBounds<SpellTargetEntry> bounds = sSpellScriptTargetStorage.getBounds<SpellTargetEntry>(i);
                     if (bounds.first == bounds.second)
                     {
-                        sLog.outErrorDb("Spell (ID: %u) has effect EffectImplicitTargetA/EffectImplicitTargetB = %u (TARGET_SCRIPT), but does not have record in `spell_script_target`", spellInfo->Id, TARGET_SCRIPT);
+                        sLog.outErrorDb("Spell (ID: %u) has effect EffectImplicitTargetA/EffectImplicitTargetB = %u (TARGET_SCRIPT), but does not have record in `spell_script_target`", spellInfo->ID, TARGET_SCRIPT);
                         break;                              // effects of spell
                     }
                 }

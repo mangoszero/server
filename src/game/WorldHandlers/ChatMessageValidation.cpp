@@ -483,7 +483,7 @@ bool ChatHandler::isValidChatMessage(const char* message)
                         if (linkedSpell->HasAttribute(SPELL_ATTR_TRADESPELL))
                         {
                             // lookup skillid
-                            SkillLineAbilityMapBounds bounds = sSpellMgr.GetSkillLineAbilityMapBounds(linkedSpell->Id);
+                            SkillLineAbilityMapBounds bounds = sSpellMgr.GetSkillLineAbilityMapBounds(linkedSpell->ID);
                             if (bounds.first == bounds.second)
                             {
                                 return false;
@@ -517,7 +517,7 @@ bool ChatHandler::isValidChatMessage(const char* message)
                         bool foundName = false;
                         for (uint8 i = 0; i < MAX_LOCALE; ++i)
                         {
-                            if (*linkedSpell->SpellName[i] && strcmp(linkedSpell->SpellName[i], buffer) == 0)
+                            if (*linkedSpell->Name_lang[i] && strcmp(linkedSpell->Name_lang[i], buffer) == 0)
                             {
                                 foundName = true;
                                 break;

@@ -952,7 +952,7 @@ uint32 ChatHandler::ExtractSpellIdFromLink(char** text)
         {
             continue;
         }
-        std::string sName = spell->SpellName[locale];
+        std::string sName = spell->Name_lang[locale];
 
         if (spell->Effect[EFFECT_INDEX_0] == SPELL_EFFECT_LEARN_SPELL ||
             spell->Effect[EFFECT_INDEX_1] == SPELL_EFFECT_LEARN_SPELL ||
@@ -976,7 +976,7 @@ uint32 ChatHandler::ExtractSpellIdFromLink(char** text)
             {
                 exactId = id;
             }
-            candidates.push_back({id, spell->SpellName[locale]});
+            candidates.push_back({id, spell->Name_lang[locale]});
         }
         else if (exactId == 0)
         {
@@ -990,7 +990,7 @@ uint32 ChatHandler::ExtractSpellIdFromLink(char** text)
                     {
                         continue;
                     }
-                    sName = spell->SpellName[loc];
+                    sName = spell->Name_lang[loc];
                     if (sName.empty())
                     {
                         continue;
@@ -1004,7 +1004,7 @@ uint32 ChatHandler::ExtractSpellIdFromLink(char** text)
 
             if (loc < MAX_LOCALE)
             {
-                fuzzyCandidates.push_back({id, spell->SpellName[locale]});
+                fuzzyCandidates.push_back({id, spell->Name_lang[locale]});
             }
         }
     }

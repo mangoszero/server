@@ -390,7 +390,7 @@ bool Unit::AddSpellAuraHolder(SpellAuraHolder* holder)
     // passive and persistent auras can stack with themselves any number of times
     if ((!holder->IsPassive() && !holder->IsPersistent()) || holder->IsAreaAura())
     {
-        SpellAuraHolderBounds spair = GetSpellAuraHolderBounds(aurSpellInfo->Id);
+        SpellAuraHolderBounds spair = GetSpellAuraHolderBounds(aurSpellInfo->ID);
 
         // take out same spell
         for (SpellAuraHolderMap::iterator iter = spair.first; iter != spair.second; ++iter)
@@ -399,7 +399,7 @@ bool Unit::AddSpellAuraHolder(SpellAuraHolder* holder)
             if (foundHolder->GetCasterGuid() == holder->GetCasterGuid())
             {
                 // Aura can stack on self -> Stack it;
-                if (aurSpellInfo->StackAmount)
+                if (aurSpellInfo->CumulativeAura)
                 {
                     // can be created with >1 stack by some spell mods
                     foundHolder->ModStackAmount(holder->GetStackAmount());
@@ -429,7 +429,7 @@ bool Unit::AddSpellAuraHolder(SpellAuraHolder* holder)
                 }
 
                 // m_auraname can be modified to SPELL_AURA_NONE for area auras, use original
-                AuraType aurNameReal = AuraType(aurSpellInfo->EffectApplyAuraName[i]);
+                AuraType aurNameReal = AuraType(aurSpellInfo->EffectAura[i]);
 
                 switch (aurNameReal)
                 {
@@ -497,7 +497,7 @@ bool Unit::AddSpellAuraHolder(SpellAuraHolder* holder)
                             // remove from target if target found
                             if (Unit* itr_target = GetMap()->GetUnit(itr_targetGuid))
                             {
-                                itr_target->RemoveAurasDueToSpell(itr_spellEntry->Id); // TODO AURA_REMOVE_BY_TRACKING (might require additional work elsewhere)
+                                itr_target->RemoveAurasDueToSpell(itr_spellEntry->ID); // TODO AURA_REMOVE_BY_TRACKING (might require additional work elsewhere)
                             }
                             else                            // Normally the tracking will be removed by the AuraRemoval
                             {
@@ -680,7 +680,7 @@ bool Unit::RemoveNoStackAurasDueToAuraHolder(SpellAuraHolder* holder)
             continue;
         }
 
-        uint32 i_spellId = i_spellProto->Id;
+        uint32 i_spellId = i_spellProto->ID;
 
         // early checks that spellId is passive non stackable spell
         if (IsPassiveSpell(i_spellProto))
@@ -826,7 +826,7 @@ bool Unit::RemoveNoStackAurasDueToAuraHolder(SpellAuraHolder* holder)
         }
 
         // Potions stack aura by aura (elixirs/flask already checked)
-        if (spellProto->SpellFamilyName == SPELLFAMILY_POTION && i_spellProto->SpellFamilyName == SPELLFAMILY_POTION)
+        if (spellProto->SpellClassSet == SPELLFAMILY_POTION && i_spellProto->SpellClassSet == SPELLFAMILY_POTION)
         {
             if (IsNoStackAuraDueToAura(spellId, i_spellId))
             {
@@ -979,10 +979,10 @@ void Unit::RemoveAurasWithDispelType(DispelType type, ObjectGuid casterGuid)
     for (SpellAuraHolderMap::iterator itr = auras.begin(); itr != auras.end();)
     {
         SpellEntry const* spell = itr->second->GetSpellProto();
-        if (((1 << spell->Dispel) & dispelMask) && (!casterGuid || casterGuid == itr->second->GetCasterGuid()))
+        if (((1 << spell->DispelType) & dispelMask) && (!casterGuid || casterGuid == itr->second->GetCasterGuid()))
         {
             // Dispel aura
-            RemoveAurasDueToSpell(spell->Id);
+            RemoveAurasDueToSpell(spell->ID);
             itr = auras.begin();
         }
         else
@@ -1148,7 +1148,7 @@ void Unit::RemoveNotOwnTrackedTargetAuras()
                 // remove from target if target found
                 if (Unit* itr_target = GetMap()->GetUnit(itr_targetGuid))
                 {
-                    itr_target->RemoveAurasByCasterSpell(itr_spellEntry->Id, GetObjectGuid());
+                    itr_target->RemoveAurasByCasterSpell(itr_spellEntry->ID, GetObjectGuid());
                 }
 
                 itr = scTargets.begin();                        // list can be changed at remove aura

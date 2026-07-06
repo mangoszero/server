@@ -119,7 +119,7 @@ void Spell::cancel()
                     Unit* unit = m_caster->GetObjectGuid() == (*ihit).targetGUID ? m_caster : sObjectAccessor.GetUnit(*m_caster, ihit->targetGUID);
                     if (unit && unit->IsAlive())
                     {
-                        unit->RemoveAurasByCasterSpell(m_spellInfo->Id, m_caster->GetObjectGuid());
+                        unit->RemoveAurasByCasterSpell(m_spellInfo->ID, m_caster->GetObjectGuid());
                     }
                 }
             }
@@ -140,8 +140,8 @@ void Spell::cancel()
     }
 
     finish(false);
-    m_caster->RemoveDynObject(m_spellInfo->Id);
-    m_caster->RemoveGameObject(m_spellInfo->Id, true);
+    m_caster->RemoveDynObject(m_spellInfo->ID);
+    m_caster->RemoveGameObject(m_spellInfo->ID, true);
 }
 
 /**
@@ -157,11 +157,11 @@ void Spell::cast(bool skipCheck)
     {
         if (m_triggeredByAuraSpell)
         {
-            sLog.outError("Spell %u triggered by aura spell %u too deep in cast chain for cast. Cast not allowed for prevent overflow stack crash.", m_spellInfo->Id, m_triggeredByAuraSpell->Id);
+            sLog.outError("Spell %u triggered by aura spell %u too deep in cast chain for cast. Cast not allowed for prevent overflow stack crash.", m_spellInfo->ID, m_triggeredByAuraSpell->ID);
         }
         else
         {
-            sLog.outError("Spell %u too deep in cast chain for cast. Cast not allowed for prevent overflow stack crash.", m_spellInfo->Id);
+            sLog.outError("Spell %u too deep in cast chain for cast. Cast not allowed for prevent overflow stack crash.", m_spellInfo->ID);
         }
 
         SendCastResult(SPELL_FAILED_ERROR);
@@ -214,7 +214,7 @@ void Spell::cast(bool skipCheck)
     }
 
     // different triggered (for caster) and pre-cast (casted before apply effect to each target) cases
-    switch (m_spellInfo->SpellFamilyName)
+    switch (m_spellInfo->SpellClassSet)
     {
         case SPELLFAMILY_GENERIC:
         {
@@ -233,7 +233,7 @@ void Spell::cast(bool skipCheck)
         case SPELLFAMILY_ROGUE:
         {
             // exit stealth on sap when improved sap is not skilled
-            if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000080) && m_caster->GetTypeId() == TYPEID_PLAYER && (!m_caster->GetAura(14076, SpellEffectIndex(0)) && !m_caster->GetAura(14094, SpellEffectIndex(0)) && !m_caster->GetAura(14095, SpellEffectIndex(0))))
+            if (m_spellInfo->SpellClassMask & UI64LIT(0x00000080) && m_caster->GetTypeId() == TYPEID_PLAYER && (!m_caster->GetAura(14076, SpellEffectIndex(0)) && !m_caster->GetAura(14094, SpellEffectIndex(0)) && !m_caster->GetAura(14095, SpellEffectIndex(0))))
             {
                 m_caster->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
             }
@@ -246,12 +246,12 @@ void Spell::cast(bool skipCheck)
         case SPELLFAMILY_PRIEST:
         {
             // Power Word: Shield
-            if (m_spellInfo->SpellFamilyName == SPELLFAMILY_PRIEST && m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000000000001))
+            if (m_spellInfo->SpellClassSet == SPELLFAMILY_PRIEST && m_spellInfo->SpellClassMask & UI64LIT(0x0000000000000001))
             {
                 AddPrecastSpell(6788);                      // Weakened Soul
             }
 
-            switch (m_spellInfo->Id)
+            switch (m_spellInfo->ID)
             {
                 case 15237: AddTriggeredSpell(23455); break;// Holy Nova, rank 1
                 case 15430: AddTriggeredSpell(23458); break;// Holy Nova, rank 2
@@ -267,7 +267,7 @@ void Spell::cast(bool skipCheck)
         case SPELLFAMILY_PALADIN:
         {
             // Blessing of Protection (Divine Shield, Divine Protection in generic switch case)
-            if (m_spellInfo->Mechanic == MECHANIC_INVULNERABILITY && m_spellInfo->Id != 25771)
+            if (m_spellInfo->Mechanic == MECHANIC_INVULNERABILITY && m_spellInfo->ID != 25771)
             {
                 AddPrecastSpell(25771);                      // Forbearance
             }
@@ -278,13 +278,13 @@ void Spell::cast(bool skipCheck)
     }
 
     // As of patch 1.10.0, Arcane Power will replace Power Infusion
-    if (m_spellInfo->Id == 12042)
+    if (m_spellInfo->ID == 12042)
     {
         m_targets.getUnitTarget()->RemoveAurasDueToSpell(10060);
     }
 
     // Linked spells (precast chain)
-    SpellLinkedSet linkedSet = sSpellMgr.GetSpellLinked(m_spellInfo->Id, SPELL_LINKED_TYPE_PRECAST);
+    SpellLinkedSet linkedSet = sSpellMgr.GetSpellLinked(m_spellInfo->ID, SPELL_LINKED_TYPE_PRECAST);
     if (linkedSet.size() > 0)
     {
         for (SpellLinkedSet::const_iterator itr = linkedSet.begin(); itr != linkedSet.end(); ++itr)
@@ -295,7 +295,7 @@ void Spell::cast(bool skipCheck)
 
     // Linked spells (triggered chain)
     linkedSet.clear();
-    linkedSet = sSpellMgr.GetSpellLinked(m_spellInfo->Id, SPELL_LINKED_TYPE_TRIGGERED);
+    linkedSet = sSpellMgr.GetSpellLinked(m_spellInfo->ID, SPELL_LINKED_TYPE_TRIGGERED);
     if (linkedSet.size() > 0)
     {
         for (SpellLinkedSet::const_iterator itr = linkedSet.begin(); itr != linkedSet.end(); ++itr)
@@ -340,7 +340,7 @@ void Spell::cast(bool skipCheck)
     InitializeDamageMultipliers();
 
     // Okay, everything is prepared. Now we need to distinguish between immediate and evented delayed spells
-    float speed = m_spellInfo->speed == 0.0f && m_triggeredBySpellInfo ? m_triggeredBySpellInfo->speed : m_spellInfo->speed;
+    float speed = m_spellInfo->Speed == 0.0f && m_triggeredBySpellInfo ? m_triggeredBySpellInfo->Speed : m_spellInfo->Speed;
     if (speed > 0.0f)
     {
         // Remove used for cast item if need (it can be already NULL after TakeReagents call
@@ -516,7 +516,7 @@ void Spell::_handle_immediate_phase()
         // persistent area auras target only the ground
         if (m_spellInfo->Effect[j] == SPELL_EFFECT_PERSISTENT_AREA_AURA ||
             //summon a gameobject at the spell's destination xyz
-            (m_spellInfo->Effect[j] == SPELL_EFFECT_TRANS_DOOR && m_spellInfo->EffectImplicitTargetA[j] == TARGET_AREAEFFECT_GO_AROUND_DEST))
+            (m_spellInfo->Effect[j] == SPELL_EFFECT_TRANS_DOOR && m_spellInfo->ImplicitTargetA[j] == TARGET_AREAEFFECT_GO_AROUND_DEST))
         {
             HandleEffects(NULL, NULL, NULL, SpellEffectIndex(j));
         }
@@ -536,7 +536,7 @@ void Spell::_handle_finish_phase()
 
     if (m_caster->m_extraAttacks && m_spellInfo->HasSpellEffect(SPELL_EFFECT_ADD_EXTRA_ATTACKS))
     {
-        switch (m_spellInfo->Id)
+        switch (m_spellInfo->ID)
         {
             // on next swing
             case 15494:
@@ -739,7 +739,7 @@ void Spell::update(uint32 difftime)
                                 continue;
                             }
 
-                            p->RewardPlayerAndGroupAtCast(unit, m_spellInfo->Id);
+                            p->RewardPlayerAndGroupAtCast(unit, m_spellInfo->ID);
                         }
 
                         for (GOTargetList::const_iterator ihit = m_UniqueGOTargetInfo.begin(); ihit != m_UniqueGOTargetInfo.end(); ++ihit)
@@ -752,7 +752,7 @@ void Spell::update(uint32 difftime)
                                 continue;
                             }
 
-                            p->RewardPlayerAndGroupAtCast(go, m_spellInfo->Id);
+                            p->RewardPlayerAndGroupAtCast(go, m_spellInfo->ID);
                         }
                     }
                 }
@@ -859,7 +859,7 @@ void Spell::finish(bool ok)
     {
         // Not drop combopoints if negative spell and if any miss on enemy exist
         bool needDrop = true;
-        if (!IsPositiveSpell(m_spellInfo->Id))
+        if (!IsPositiveSpell(m_spellInfo->ID))
         {
             for (TargetList::const_iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
             {

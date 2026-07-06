@@ -813,25 +813,25 @@ bool ChatHandler::HandleLearnAllMySpellsCommand(char* /*args*/)
         }
 
         // skip server-side/triggered spells
-        if (spellInfo->spellLevel == 0)
+        if (spellInfo->SpellLevel == 0)
         {
             continue;
         }
 
         // skip wrong class/race skills
-        if (!player->IsSpellFitByClassAndRace(spellInfo->Id))
+        if (!player->IsSpellFitByClassAndRace(spellInfo->ID))
         {
             continue;
         }
 
         // skip other spell families
-        if (spellInfo->SpellFamilyName != family)
+        if (spellInfo->SpellClassSet != family)
         {
             continue;
         }
 
         // skip spells with first rank learned as talent (and all talents then also)
-        uint32 first_rank = sSpellMgr.GetFirstSpellInChain(spellInfo->Id);
+        uint32 first_rank = sSpellMgr.GetFirstSpellInChain(spellInfo->ID);
         if (GetTalentSpellCost(first_rank) > 0)
         {
             continue;
@@ -843,7 +843,7 @@ bool ChatHandler::HandleLearnAllMySpellsCommand(char* /*args*/)
             continue;
         }
 
-        player->learnSpell(spellInfo->Id, false);
+        player->learnSpell(spellInfo->ID, false);
     }
 
     SendSysMessage(LANG_COMMAND_LEARN_CLASS_SPELLS);

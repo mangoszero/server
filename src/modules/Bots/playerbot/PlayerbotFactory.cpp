@@ -363,7 +363,7 @@ void PlayerbotFactory::InitPet()
                     continue;
                 }
 
-                if (spellInfo->spellLevel > pet->getLevel())
+                if (spellInfo->SpellLevel > pet->getLevel())
                 {
                     continue;
                 }
@@ -1161,18 +1161,18 @@ void PlayerbotFactory::EnchantItem(Item* item)
             continue;
         }
 
-        int32 requiredLevel = (int32)entry->baseLevel;
+        int32 requiredLevel = (int32)entry->BaseLevel;
         if (requiredLevel && (requiredLevel > itemLevel || requiredLevel < itemLevel - 35))
         {
             continue;
         }
 
-        if (entry->maxLevel && level > entry->maxLevel)
+        if (entry->MaxLevel && level > entry->MaxLevel)
         {
             continue;
         }
 
-        uint32 spellLevel = entry->spellLevel;
+        uint32 spellLevel = entry->SpellLevel;
         if (spellLevel && (spellLevel > level || spellLevel < level - 10))
         {
             continue;
@@ -1864,7 +1864,7 @@ void PlayerbotFactory::InitMounts()
     for (uint32 spellId = 0; spellId < sSpellStore.GetNumRows(); ++spellId)
     {
         SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
-        if (!spellInfo || spellInfo->EffectApplyAuraName[0] != SPELL_AURA_MOUNTED)
+        if (!spellInfo || spellInfo->EffectAura[0] != SPELL_AURA_MOUNTED)
         {
             continue;
         }
