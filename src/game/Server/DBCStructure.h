@@ -612,8 +612,8 @@ struct ItemSetEntry
 struct LiquidTypeEntry
 {
     uint32 ID;                                              // 0        ID
-    uint32 LiquidId;                                        // 1        23: Water; 29: Ocean; 35: Magma; 41: Slime; 47: Naxxramas - Slime.
-    uint32 Type;                                            // 2        0: Magma; 2: Slime; 3: Water.
+    char*  Name;                                            // 1        m_name - liquid name string (Water/Ocean/Magma/Slime/Naxxramas - Slime). Was mis-read as int 'LiquidId'.
+    uint32 Type;                                            // 2        0: Magma; 2: Slime; 3: Water. (.dbd name: Flags)
     uint32 SpellID;                                         // 3        SpellID - Reference to Spell.dbc
 };
 
