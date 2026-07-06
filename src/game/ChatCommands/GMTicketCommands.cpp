@@ -868,11 +868,19 @@ bool ChatHandler::HandleTicketPayloadListCommand(char* /*args*/)
         std::ostringstream rec;
         rec << t->GetId() << "\t" << TicketEscapeField(name) << "\t" << age << "\t"
             << (online ? "1" : "0") << "\t" << TicketEscapeField(snippet);
+        std::string recStr = rec.str();
+        // Bound the joined body by BYTES, not only record count: SendTicketPayload caps at
+        // 200*16=3200 bytes and would resize()-truncate the tail record into an unparseable
+        // (<5-field) fragment that the addon drops. Stop cleanly before that can happen.
+        if (!body.empty() && body.size() + 1 + recStr.size() > 3100)
+        {
+            break;
+        }
         if (!body.empty())
         {
             body += "\n";
         }
-        body += rec.str();
+        body += recStr;
     }
     SendTicketPayload('L', body);
     return true;
