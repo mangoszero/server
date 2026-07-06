@@ -931,19 +931,19 @@ struct ClassFamilyMask
  */
 struct SpellEntry
 {
-    uint32    Id;                                       // 0 normally counted from 0 field (but some tools start counting from 1, check this before tool use for data view!)
+    uint32    ID;                                       // 0 normally counted from 0 field (but some tools start counting from 1, check this before tool use for data view!)
     uint32    School;                                   // 1 not schoolMask from 2.x - just school type so everything linked with SpellEntry::SchoolMask must be rewrited
     uint32    Category;                                 // 2
-    // uint32 castUI;                                   // 3 not used
-    uint32    Dispel;                                   // 4
+    // uint32 CastUI;                                   // 3 not used
+    uint32    DispelType;                               // 4
     uint32    Mechanic;                                 // 5
     uint32    Attributes;                               // 6
     uint32    AttributesEx;                             // 7
-    uint32    AttributesEx2;                            // 8
-    uint32    AttributesEx3;                            // 9
-    uint32    AttributesEx4;                            // 10
-    uint32    Stances;                                  // 11
-    uint32    StancesNot;                               // 12
+    uint32    AttributesExB;                            // 8
+    uint32    AttributesExC;                            // 9
+    uint32    AttributesExD;                            // 10
+    uint32    ShapeshiftMask;                           // 11
+    uint32    ShapeshiftExclude;                        // 12
     uint32    Targets;                                  // 13
     uint32    TargetCreatureType;                       // 14
     uint32    RequiresSpellFocus;                       // 15
@@ -955,28 +955,28 @@ struct SpellEntry
     uint32    InterruptFlags;                           // 21
     uint32    AuraInterruptFlags;                       // 22
     uint32    ChannelInterruptFlags;                    // 23
-    uint32    procFlags;                                // 24
-    uint32    procChance;                               // 25
-    uint32    procCharges;                              // 26
-    uint32    maxLevel;                                 // 27
-    uint32    baseLevel;                                // 28
-    uint32    spellLevel;                               // 29
+    uint32    ProcFlags;                                // 24
+    uint32    ProcChance;                               // 25
+    uint32    ProcCharges;                              // 26
+    uint32    MaxLevel;                                 // 27
+    uint32    BaseLevel;                                // 28
+    uint32    SpellLevel;                               // 29
     uint32    DurationIndex;                            // 30
-    uint32    powerType;                                // 31
-    uint32    manaCost;                                 // 32
-    uint32    manaCostPerlevel;                         // 33
-    uint32    manaPerSecond;                            // 34
-    uint32    manaPerSecondPerLevel;                    // 35
-    uint32    rangeIndex;                               // 36
-    float     speed;                                    // 37
-    uint32    modalNextSpell;                           // 38 not used
-    uint32    StackAmount;                              // 39
+    uint32    PowerType;                                // 31
+    uint32    ManaCost;                                 // 32
+    uint32    ManaCostPerLevel;                         // 33
+    uint32    ManaPerSecond;                            // 34
+    uint32    ManaPerSecondPerLevel;                    // 35
+    uint32    RangeIndex;                               // 36
+    float     Speed;                                    // 37
+    uint32    ModalNextSpell;                           // 38 not used
+    uint32    CumulativeAura;                           // 39
     uint32    Totem[MAX_SPELL_TOTEMS];                  // 40-41
     int32     Reagent[MAX_SPELL_REAGENTS];              // 42-49
     uint32    ReagentCount[MAX_SPELL_REAGENTS];         // 50-57
     int32     EquippedItemClass;                        // 58 (value)
-    int32     EquippedItemSubClassMask;                 // 59 (mask)
-    int32     EquippedItemInventoryTypeMask;            // 60 (mask)
+    int32     EquippedItemSubclass;                     // 59 (mask)
+    int32     EquippedItemInvTypes;                     // 60 (mask)
     uint32    Effect[MAX_EFFECT_INDEX];                 ///< 61-63 TODO DOCUMENT
     int32     EffectDieSides[MAX_EFFECT_INDEX];         // 64-66
     uint32    EffectBaseDice[MAX_EFFECT_INDEX];         // 67-69
@@ -984,42 +984,42 @@ struct SpellEntry
     float     EffectRealPointsPerLevel[MAX_EFFECT_INDEX];   // 73-75
     int32     EffectBasePoints[MAX_EFFECT_INDEX];       // 76-78 (don't must be used in spell/auras explicitly, must be used cached Spell::m_currentBasePoints)
     uint32    EffectMechanic[MAX_EFFECT_INDEX];         // 79-81
-    uint32    EffectImplicitTargetA[MAX_EFFECT_INDEX];  // 82-84
-    uint32    EffectImplicitTargetB[MAX_EFFECT_INDEX];  // 85-87
+    uint32    ImplicitTargetA[MAX_EFFECT_INDEX];        // 82-84
+    uint32    ImplicitTargetB[MAX_EFFECT_INDEX];        // 85-87
     uint32    EffectRadiusIndex[MAX_EFFECT_INDEX];      // 88-90 - spellradius.dbc
-    uint32    EffectApplyAuraName[MAX_EFFECT_INDEX];    // 91-93
-    uint32    EffectAmplitude[MAX_EFFECT_INDEX];        // 94-96
-    float     EffectMultipleValue[MAX_EFFECT_INDEX];    // 97-99
-    uint32    EffectChainTarget[MAX_EFFECT_INDEX];      // 100-102
+    uint32    EffectAura[MAX_EFFECT_INDEX];             // 91-93
+    uint32    EffectAuraPeriod[MAX_EFFECT_INDEX];       // 94-96
+    float     EffectAmplitude[MAX_EFFECT_INDEX];        // 97-99
+    uint32    EffectChainTargets[MAX_EFFECT_INDEX];     // 100-102
     uint32    EffectItemType[MAX_EFFECT_INDEX];         // 103-105
     int32     EffectMiscValue[MAX_EFFECT_INDEX];        // 106-108
     uint32    EffectTriggerSpell[MAX_EFFECT_INDEX];     // 109-111
-    float     EffectPointsPerComboPoint[MAX_EFFECT_INDEX];  // 112-114
-    uint32    SpellVisual;                              // 115
-    // uint32    SpellVisual2                           // 116 not used
+    float     EffectPointsPerCombo[MAX_EFFECT_INDEX];   // 112-114
+    uint32    SpellVisualID;                            // 115
+    // uint32    SpellVisualID_1                        // 116 not used
     uint32    SpellIconID;                              // 117
-    uint32    activeIconID;                             // 118
-    // uint32    spellPriority;                         // 119
-    char*     SpellName[8];                             // 120-127
-    // uint32    SpellNameFlag;                         // 128
-    char*     Rank[8];                                  // 129-136
-    // uint32    RankFlags;                             // 137
-    // char*     Description[8];                        // 138-145 not used
-    // uint32    DescriptionFlags;                      // 146     not used
-    // char*     ToolTip[8];                            // 147-154 not used
-    // uint32    ToolTipFlags;                          // 155     not used
-    uint32    ManaCostPercentage;                       // 156
+    uint32    ActiveIconID;                             // 118
+    // uint32    SpellPriority;                         // 119
+    char*     Name_lang[8];                             // 120-127
+    // uint32    Name_lang_flags;                       // 128
+    char*     NameSubtext_lang[8];                      // 129-136
+    // uint32    NameSubtext_lang_flags;                // 137
+    // char*     Description_lang[8];                   // 138-145 not used
+    // uint32    Description_lang_flags;                // 146     not used
+    // char*     AuraDescription_lang[8];                // 147-154 not used
+    // uint32    AuraDescription_lang_flags;            // 155     not used
+    uint32    ManaCostPct;                              // 156
     uint32    StartRecoveryCategory;                    // 157
     uint32    StartRecoveryTime;                        // 158
     uint32    MaxTargetLevel;                           // 159
-    uint32    SpellFamilyName;                          // 160
-    ClassFamilyMask SpellFamilyFlags;                   // 161+162
-    uint32    MaxAffectedTargets;                       // 163
-    uint32    DmgClass;                                 // 164 defenseType
+    uint32    SpellClassSet;                            // 160
+    ClassFamilyMask SpellClassMask;                     // 161+162
+    uint32    MaxTargets;                               // 163
+    uint32    DefenseType;                              // 164 defenseType
     uint32    PreventionType;                           // 165
     // uint32    StanceBarOrder;                        // 166 not used
-    float     DmgMultiplier[MAX_EFFECT_INDEX];          // 167-169
-    // uint32    MinFactionId;                          // 170 not used, and 0 in 2.4.2
+    float     EffectChainAmplitude[MAX_EFFECT_INDEX];   // 167-169
+    // uint32    MinFactionID;                          // 170 not used, and 0 in 2.4.2
     // uint32    MinReputation;                         // 171 not used, and 0 in 2.4.2
     // uint32    RequiredAuraVision;                    // 172 not used
 
@@ -1037,7 +1037,7 @@ struct SpellEntry
      */
     bool IsFitToFamilyMask(uint64 familyFlags) const
     {
-        return SpellFamilyFlags.IsFitToFamilyMask(familyFlags);
+        return SpellClassMask.IsFitToFamilyMask(familyFlags);
     }
 
     /**
@@ -1048,7 +1048,7 @@ struct SpellEntry
      */
     bool IsFitToFamily(SpellFamily family, uint64 familyFlags) const
     {
-        return SpellFamily(SpellFamilyName) == family && IsFitToFamilyMask(familyFlags);
+        return SpellFamily(SpellClassSet) == family && IsFitToFamilyMask(familyFlags);
     }
 
     /**
@@ -1058,7 +1058,7 @@ struct SpellEntry
      */
     bool IsFitToFamilyMask(ClassFamilyMask const& mask) const
     {
-        return SpellFamilyFlags.IsFitToFamilyMask(mask);
+        return SpellClassMask.IsFitToFamilyMask(mask);
     }
 
     /**
@@ -1069,7 +1069,7 @@ struct SpellEntry
      */
     bool IsFitToFamily(SpellFamily family, ClassFamilyMask const& mask) const
     {
-        return SpellFamily(SpellFamilyName) == family && IsFitToFamilyMask(mask);
+        return SpellFamily(SpellClassSet) == family && IsFitToFamilyMask(mask);
     }
 
     /**
@@ -1091,21 +1091,21 @@ struct SpellEntry
      * Returns a bool value.
      * \param attribute SpellAttributesEx2 to compare to actual attributeEx2.
      */
-    inline bool HasAttribute(SpellAttributesEx2 attribute) const { return AttributesEx2 & attribute; }
+    inline bool HasAttribute(SpellAttributesEx2 attribute) const { return AttributesExB & attribute; }
 
     /**
      * function indicating whether a spell has an attribute doing bitwise comparison.
      * Returns a bool value.
      * \param attribute SpellAttributesEx3 to compare to actual attributeEx3.
      */
-    inline bool HasAttribute(SpellAttributesEx3 attribute) const { return AttributesEx3 & attribute; }
+    inline bool HasAttribute(SpellAttributesEx3 attribute) const { return AttributesExC & attribute; }
 
     /**
      * function indicating whether a spell has an attribute doing bitwise comparison.
      * Returns a bool value.
      * \param attribute SpellAttributesEx4 to compare to actual attributeEx4.
      */
-    inline bool HasAttribute(SpellAttributesEx4 attribute) const { return AttributesEx4 & attribute; }
+    inline bool HasAttribute(SpellAttributesEx4 attribute) const { return AttributesExD & attribute; }
 
     inline bool HasSpellEffect(SpellEffects effect) const
     {
