@@ -382,11 +382,12 @@ void CustodyService::EscrowItem(uint32 ownerGuid, uint32 itemGuid,
 
 void CustodyService::DeliverItem(CustodyDeferred& d, std::string const& key,
                                  MailDraft& itemMail, MailReceiver const& to,
-                                 MailSender const& from)
+                                 MailSender const& from, uint32 checked)
 {
     CustodyLedger::SetState(key, CST_TERMINAL_OK,
                             static_cast<uint64>(time(NULL)));
-    itemMail.SendMailToInTransaction(to, from, d);
+    itemMail.SendMailToInTransaction(to, from, d,
+                                     static_cast<MailCheckMask>(checked));
 }
 
 void CustodyService::DeferEffect(CustodyDeferred& d,

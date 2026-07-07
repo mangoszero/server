@@ -135,6 +135,39 @@ uint16 AhClassifyBidForward(uint32 auctionId, uint32 bidderGuidLow, uint32 price
     return uint16(IPC_PLAYER_BID);
 }
 
+bool AhBuildCancelPrepareForward(MutationPendingMap& pending, uint32 playerGuidLow,
+                                 uint32 auctionId, uint64 uuid, uint32 sentSec,
+                                 IpcMessage& out)
+{
+    if (!pending.CanRegister(playerGuidLow))
+    {
+        return false;
+    }
+
+    PendingMutation pm;
+    pm.uuid           = uuid;
+    pm.playerGuidLow  = playerGuidLow;
+    pm.op             = uint16(IPC_PLAYER_CANCEL);
+    pm.auctionId      = auctionId;
+    pm.state          = uint8(PMUT_AWAIT_RESULT);
+    pm.sentSec        = sentSec;
+    pm.reservedAmount = 0u;
+    pm.reserveKey.clear();
+    pm.itemKey.clear();
+    pm.depKey.clear();
+    pending.Register(pm);
+
+    PlayerCancelPrepare prep;
+    prep.uuid       = uuid;
+    prep.auctionId  = auctionId;
+    prep.sellerGuid = playerGuidLow;
+
+    out = IpcMessage();
+    out.op = IPC_PLAYER_CANCEL;
+    prep.Encode(out.body);
+    return true;
+}
+
 // void called when player click on auctioneer npc
 void WorldSession::HandleAuctionHelloOpcode(WorldPacket& recv_data)
 {
@@ -1201,6 +1234,44 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
         GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
     }
 
+    // ----- SP-2 write-authority cancel path: prepare -> worker -> phase 2 -----
+    // Placed BEFORE the local-map GetAuction: under WriteAuthority the worker
+    // owns the book, so mangosd's legacy AuctionsMap lookup is empty/stale.
+    // Ownership/existence checks move to the worker; mangosd owns only the
+    // pending slot, later cut reserve, and value finalize.
+    if (sWorld.IsAhWriteAuthority())
+    {
+        Player* pl = GetPlayer();
+
+        WorkerSupervisor* sv = sWorld.GetAhSupervisor();
+        if (!sv || !sv->ServiceActive())
+        {
+            AhSendUnavailableMessage(this);
+            SendAuctionCommandResultData(auctionId, AUCTION_REMOVED, AUCTION_ERR_DATABASE, EQUIP_ERR_OK, 0);
+            return;
+        }
+
+        uint64 const uuid = AhMintMutationUuid();
+        IpcMessage m;
+        if (!AhBuildCancelPrepareForward(sWorld.GetMutationPending(), pl->GetGUIDLow(),
+                                         auctionId, uuid, uint32(time(NULL)), m))
+        {
+            SendAuctionCommandResultData(auctionId, AUCTION_REMOVED, AUCTION_ERR_DATABASE, EQUIP_ERR_OK, 0);
+            return;
+        }
+
+        if (!sv->Channel().SendFrame(m))
+        {
+            // No unilateral rollback: the frame may have reached the worker.
+            // Reconcile-on-reconnect resolves by the shared worker journal.
+            sWorld.GetMutationPending().Tombstone(uuid);
+            SendAuctionCommandResultData(auctionId, AUCTION_REMOVED, AUCTION_ERR_DATABASE, EQUIP_ERR_OK, 0);
+            sLog.outError("SP-2 cancel: forward send failed for auction %u uuid " UI64FMTD
+                          "; cancellation in doubt", auctionId, uuid);
+        }
+        return;
+    }
+
     AuctionEntry* auction = auctionHouse->GetAuction(auctionId);
     Player* pl = GetPlayer();
 
@@ -1313,7 +1384,8 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
         MailDraft itemReturn(msgAuctionCanceledOwner.str(), "");
         itemReturn.AddItem(pItem);
         CustodyService::DeliverItem(def, "item:" + std::to_string(capId), itemReturn,
-                                    MailReceiver(pl), MailSender(auction));
+                                    MailReceiver(pl), MailSender(auction),
+                                    MAIL_CHECK_MASK_COPIED);
 
         // (c) Command-result to the SELLER, deferred LAST (legacy :857 fires it
         //     after the item mail). Scalar-only closure: re-resolve the seller by
@@ -2064,6 +2136,7 @@ static AuctionAction AhActionForOp(uint8 op)
         case uint8(IPC_PLAYER_SELL & 0xFFu):
             return AUCTION_STARTED;
         case uint8(IPC_PLAYER_CANCEL & 0xFFu):
+        case uint8(IPC_PLAYER_CANCEL_CONFIRM & 0xFFu):
             return AUCTION_REMOVED;
         default:
             return AUCTION_BID_PLACED;   // IPC_PLAYER_BID / IPC_PLAYER_BUYOUT
@@ -2476,7 +2549,8 @@ static void AhReturnItemToSellerFromFacts(MutationFacts const& f, uint32 mailRes
         itemReturn.AddItem(pItem);
         CustodyService::DeliverItem(def, itemKey, itemReturn,
                                     MailReceiver(owner, ownerGuid),
-                                    MailSender(MAIL_AUCTION, uint32(f.houseId), MAIL_STATIONERY_AUCTION));
+                                    MailSender(MAIL_AUCTION, uint32(f.houseId), MAIL_STATIONERY_AUCTION),
+                                    MAIL_CHECK_MASK_COPIED);
     }
     else
     {
@@ -2790,6 +2864,7 @@ static bool AhFinalizeOkDispatch(PlayerMutationResult const& res, PendingMutatio
         case uint8(IPC_PLAYER_BUYOUT & 0xFFu):
             return AhFinalizeBidOk(res, pm);
         case uint8(IPC_PLAYER_CANCEL & 0xFFu):
+        case uint8(IPC_PLAYER_CANCEL_CONFIRM & 0xFFu):
             return AhFinalizeCancelOk(res, pm);
         default:
             sLog.outError("[AHMut] PROTOCOL FAULT: MUT_OK with unknown op 0x%02X (uuid " UI64FMTD ")",

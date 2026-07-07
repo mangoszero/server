@@ -17,15 +17,36 @@
 #include "AuctionHouseBot/BrowsePending.h"
 #include "AuctionHouseBot/MutationPending.h"
 #include "IpcOpcodes.h"
+#include "Item.h"
 #include "BrowseMessages.h"
 #include "World.h"
 #include "PlayerMutations.h"
 #include <cstdio>
 #include <ctime>
 #include <memory>
+#include <string>
+
+bool AhBuildCancelPrepareForward(MutationPendingMap& pending, uint32 playerGuidLow,
+                                 uint32 auctionId, uint64 uuid, uint32 sentSec,
+                                 IpcMessage& out);
+bool AhRepairCommittedCancelAuction(uint32 auctionId, uint32& repairedRows);
 
 static void TestCliPrint(void* /*arg*/, char const* /*text*/)
 {
+}
+
+static std::string TestHexEncode(ByteBuffer const& bb)
+{
+    static char const hex[] = "0123456789ABCDEF";
+    std::string out;
+    out.reserve(bb.size() * 2u);
+    uint8 const* data = bb.contents();
+    for (size_t i = 0; i < bb.size(); ++i)
+    {
+        out.push_back(hex[(data[i] >> 4) & 0x0Fu]);
+        out.push_back(hex[data[i] & 0x0Fu]);
+    }
+    return out;
 }
 
 /// Self-test for Database::CommitTransactionChecked(): proves the runtime
@@ -1362,6 +1383,45 @@ static int RunAhForwardReserveTest()
         pass = false;
     }
 
+    // ---- (a2) cancel shape: no legacy AuctionsMap/AuctionEntry state needed ----
+    MutationPendingMap cancelPend;
+    uint64 const cancelUuid = UINT64_C(0xCA00000000000043);
+    IpcMessage cancelFrame;
+    if (!AhBuildCancelPrepareForward(cancelPend, 1u, sellId, cancelUuid, 1234u,
+                                     cancelFrame))
+    {
+        printf("ahforwardreserve FAIL: cancel forward helper refused empty map\n");
+        pass = false;
+    }
+    if (cancelFrame.op != IPC_PLAYER_CANCEL)
+    {
+        printf("ahforwardreserve FAIL: cancel forward opcode\n");
+        pass = false;
+    }
+    PlayerCancelPrepare cancelIntent;
+    if (!cancelIntent.Decode(cancelFrame.body) ||
+        cancelIntent.uuid != cancelUuid || cancelIntent.auctionId != sellId ||
+        cancelIntent.sellerGuid != 1u)
+    {
+        printf("ahforwardreserve FAIL: cancel forward body\n");
+        pass = false;
+    }
+    PendingMutation cancelPm;
+    if (!cancelPend.Take(cancelUuid, cancelPm) ||
+        cancelPm.playerGuidLow != 1u ||
+        cancelPm.op != uint16(IPC_PLAYER_CANCEL) ||
+        cancelPm.auctionId != sellId ||
+        cancelPm.state != uint8(PMUT_AWAIT_RESULT) ||
+        cancelPm.sentSec != 1234u ||
+        cancelPm.reservedAmount != 0u ||
+        !cancelPm.reserveKey.empty() ||
+        !cancelPm.itemKey.empty() ||
+        !cancelPm.depKey.empty())
+    {
+        printf("ahforwardreserve FAIL: cancel pending shape\n");
+        pass = false;
+    }
+
     // ---- (b) bid classifier: no live row -> BUYOUT, full reserve ----
     uint32 reserveAmount = 0u;
     if (AhClassifyBidForward(bidId, 1u, 500u, reserveAmount) != uint16(IPC_PLAYER_BUYOUT) ||
@@ -1567,7 +1627,7 @@ static int RunAhMutResultTest()
     // Clean slate from any prior run (auction-id scoped -- covers both the
     // test:mut* keys and the hardcoded dep:/item: keys the buyout finalize uses).
     CharacterDatabase.DirectExecute(
-        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (990001,990002,990003,990004)");
+        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (990001,990002,990003,990004,990005)");
     CharacterDatabase.DirectExecute(
         "DELETE FROM `mail` WHERE `receiver` IN (1,2) AND `subject` LIKE '19019:%'");
 
@@ -1837,6 +1897,58 @@ static int RunAhMutResultTest()
         { printf("ahmutresult FAIL: buyout-as-bid pending not consumed\n"); pass = false; }
     }
 
+    // ---- Part A5: MUT_OK cancel CONFIRM finalizes seller return + deposit ----
+    {
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('dep:990005',0,0,0,1,0,32,0,990005,0,0),"
+            "       ('item:990005',1,3,0,1,0,0,424245,990005,0,0)");
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahmutresult FAIL: seed commit (cancel-confirm)\n");
+            return 2;
+        }
+
+        PendingMutation pm;
+        pm.uuid = 0xAAull;
+        pm.playerGuidLow = 1u;
+        pm.op = uint16(IPC_PLAYER_CANCEL);
+        pm.auctionId = 990005u;
+        pm.state = uint8(PMUT_AWAIT_CONFIRM);
+        pm.sentSec = uint32(time(NULL));
+        pm.reservedAmount = 0u;
+        pm.reserveKey.clear();
+        pm.itemKey.clear();
+        pm.depKey.clear();
+        pend.Register(pm);
+
+        PlayerMutationResult res;
+        res.uuid = 0xAAull;
+        res.op = uint8(IPC_PLAYER_CANCEL_CONFIRM & 0xFFu);
+        res.status = uint8(MUT_OK);
+        res.reason = 0;
+        res.facts = MutationFacts();
+        res.facts.auctionId = 990005u;
+        res.facts.houseId = 7;
+        res.facts.itemGuid = 424245u;
+        res.facts.itemTemplate = 19019u;
+        res.facts.randomPropertyId = 0;
+        res.facts.sellerGuid = 1u;
+        res.facts.deposit = 32u;
+        AhHandlePlayerMutationResult(res);
+
+        if (rowState("dep:990005") != 1u)
+        { printf("ahmutresult FAIL: cancel-confirm deposit not TERMINAL_OK\n"); pass = false; }
+        if (rowState("item:990005") != 1u)
+        { printf("ahmutresult FAIL: cancel-confirm item not TERMINAL_OK\n"); pass = false; }
+        PendingMutation gone;
+        if (pend.Peek(0xAAull, gone))
+        { printf("ahmutresult FAIL: cancel-confirm pending not consumed\n"); pass = false; }
+    }
+
     // ---- Part B: MUT_REJECTED buyout -> ReleaseGoldToWallet (offline) ----
     {
         CharacterDatabase.BeginTransaction();
@@ -2008,7 +2120,7 @@ static int RunAhMutResultTest()
 
     // Clean up.
     CharacterDatabase.DirectExecute(
-        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (990001,990002,990003,990004)");
+        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (990001,990002,990003,990004,990005)");
     CharacterDatabase.DirectExecute(
         "DELETE FROM `mail` WHERE `receiver` IN (1,2) AND `subject` LIKE '19019:%'");
     CharacterDatabase.DirectExecute("DELETE FROM `characters` WHERE `guid`=1");
@@ -2301,6 +2413,203 @@ static int RunAhResolveTest()
     return 2;
 }
 
+/// Regression for a real SP-2 smoke failure: the worker committed a cancel and
+/// removed the auction, but mangosd missed the terminal result before restart.
+/// The pending map is then empty, so repair must replay from ah_worker_journal
+/// and mail the orphaned item_instance back to the seller, not merely
+/// terminalize the custody rows.
+static int RunAhRepairRecoveryTest()
+{
+    bool pass = true;
+    CharacterDatabase.AllowAsyncTransactions();
+
+    sObjectMgr.LoadItemPrototypes();
+
+    uint32 const ownerGuid = 1u;
+    uint32 const auctionId = 992001u;
+    uint64 const uuid = 0xABCD001ull;
+    uint64 const oldTime = static_cast<uint64>(time(NULL)) > 7200u
+        ? static_cast<uint64>(time(NULL)) - 7200u : 1u;
+
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `custody_ledger` WHERE `auction_id`=%u", auctionId);
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `ah_worker_journal` WHERE `auction_id`=%u OR `uuid`=%llu",
+        auctionId, static_cast<unsigned long long>(uuid));
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `auction` WHERE `id`=%u", auctionId);
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `mail` WHERE `receiver`=1 AND `subject` LIKE '2589:%'");
+    CharacterDatabase.DirectExecute("DELETE FROM `characters` WHERE `guid`=1");
+    CharacterDatabase.DirectExecute(
+        "INSERT INTO `characters` (`guid`,`account`,`name`,`money`) "
+        "VALUES (1, 1, 'AhRepairRcv', 100000)");
+
+    sObjectMgr.SetHighestGuids();
+
+    uint32 itemId = 2589u;      // Linen Cloth
+    if (!ObjectMgr::GetItemPrototype(itemId))
+    {
+        std::unique_ptr<QueryResult> r(WorldDatabase.PQuery(
+            "SELECT `entry` FROM `item_template` "
+            "WHERE `InventoryType`=0 AND `stackable`>1 ORDER BY `entry` LIMIT 1"));
+        if (r)
+        {
+            itemId = r->Fetch()[0].GetUInt32();
+        }
+    }
+    if (!ObjectMgr::GetItemPrototype(itemId))
+    {
+        printf("ahrepair FAIL: no usable item prototype\n");
+        return 2;
+    }
+
+    Item* item = Item::CreateItem(itemId, 1);
+    if (!item)
+    {
+        printf("ahrepair FAIL: CreateItem returned NULL\n");
+        return 2;
+    }
+    item->SetOwnerGuid(ObjectGuid(HIGHGUID_PLAYER, ownerGuid));
+    uint32 const itemGuid = item->GetGUIDLow();
+
+    CharacterDatabase.BeginTransaction();
+    item->SaveToDB();
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        delete item;
+        printf("ahrepair FAIL: item seed commit failed\n");
+        return 2;
+    }
+    delete item;
+
+    PlayerMutationResult journalRes;
+    journalRes.uuid = uuid;
+    journalRes.op = uint8(IPC_PLAYER_CANCEL & 0xFFu);
+    journalRes.status = uint8(MUT_PREPARED);
+    journalRes.reason = 0;
+    journalRes.facts = MutationFacts();
+    journalRes.facts.auctionId = auctionId;
+    journalRes.facts.houseId = 7;
+    journalRes.facts.itemGuid = itemGuid;
+    journalRes.facts.itemTemplate = itemId;
+    journalRes.facts.randomPropertyId = 0;
+    journalRes.facts.sellerGuid = ownerGuid;
+    journalRes.facts.deposit = 32u;
+
+    ByteBuffer bb;
+    journalRes.Encode(bb);
+    std::string const factsHex = TestHexEncode(bb);
+
+    CharacterDatabase.BeginTransaction();
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+        "VALUES ('dep:%u',0,0,0,%u,0,32,0,%u," UI64FMTD ",0),"
+        "       ('item:%u',1,3,0,%u,0,0,%u,%u," UI64FMTD ",0)",
+        auctionId, ownerGuid, auctionId, oldTime,
+        auctionId, ownerGuid, itemGuid, auctionId, oldTime);
+    CharacterDatabase.PExecute(
+        "INSERT INTO `ah_worker_journal` "
+        "(`uuid`,`auction_id`,`kind`,`state`,`facts`,`created_time`,`resolved_time`) "
+        "VALUES (%llu,%u,%u,1,'%s'," UI64FMTD "," UI64FMTD ")",
+        static_cast<unsigned long long>(uuid), auctionId,
+        uint32(IPC_PLAYER_CANCEL & 0xFFu), factsHex.c_str(), oldTime, oldTime);
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        printf("ahrepair FAIL: recovery seed commit failed\n");
+        pass = false;
+    }
+
+    uint32 repairedRows = 0u;
+    if (!AhRepairCommittedCancelAuction(auctionId, repairedRows))
+    {
+        printf("ahrepair FAIL: committed cancel repair returned false\n");
+        pass = false;
+    }
+    if (repairedRows != 2u)
+    {
+        printf("ahrepair FAIL: committed cancel repairedRows=%u\n", repairedRows);
+        pass = false;
+    }
+
+    auto rowState = [](char const* key) -> uint32
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT `state` FROM `custody_ledger` WHERE `idem_key`='%s'", key));
+        return res ? res->Fetch()[0].GetUInt32() : 255u;
+    };
+
+    std::string const depKey = "dep:" + std::to_string(auctionId);
+    std::string const itemKey = "item:" + std::to_string(auctionId);
+    if (rowState(depKey.c_str()) != CST_TERMINAL_OK)
+    {
+        printf("ahrepair FAIL: deposit not TERMINAL_OK\n");
+        pass = false;
+    }
+    if (rowState(itemKey.c_str()) != CST_TERMINAL_OK)
+    {
+        printf("ahrepair FAIL: item custody not TERMINAL_OK\n");
+        pass = false;
+    }
+
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT COUNT(*) FROM `mail_items` WHERE `receiver`=%u AND `item_guid`=%u",
+            ownerGuid, itemGuid));
+        if (!res || res->Fetch()[0].GetUInt64() != 1u)
+        {
+            printf("ahrepair FAIL: returned item mail missing\n");
+            pass = false;
+        }
+    }
+
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT `checked` FROM `mail` m "
+            "JOIN `mail_items` mi ON mi.`mail_id`=m.`id` "
+            "WHERE mi.`receiver`=%u AND mi.`item_guid`=%u",
+            ownerGuid, itemGuid));
+        if (!res || !(res->Fetch()[0].GetUInt32() & MAIL_CHECK_MASK_COPIED))
+        {
+            printf("ahrepair FAIL: returned item mail missing copied mask\n");
+            pass = false;
+        }
+    }
+
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT COUNT(*) FROM `character_inventory` WHERE `item`=%u", itemGuid));
+        if (res && res->Fetch()[0].GetUInt64() != 0u)
+        {
+            printf("ahrepair FAIL: item should not be placed directly in inventory\n");
+            pass = false;
+        }
+    }
+
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `mail_items` WHERE `item_guid`=%u", itemGuid);
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `item_instance` WHERE `guid`=%u", itemGuid);
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `mail` WHERE `receiver`=%u AND `subject` LIKE '%u:%%'",
+        ownerGuid, itemId);
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `custody_ledger` WHERE `auction_id`=%u", auctionId);
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `ah_worker_journal` WHERE `auction_id`=%u OR `uuid`=%llu",
+        auctionId, static_cast<unsigned long long>(uuid));
+    CharacterDatabase.DirectExecute("DELETE FROM `characters` WHERE `guid`=1");
+
+    if (pass)
+    {
+        printf("ahrepair OK\n");
+        return 0;
+    }
+    return 2;
+}
+
 /// SP-2 Task 13 self-test for the bot-sell materialization leg. Drives
 /// AuctionIntentExecutor::TestMaterializeSell directly -- the live path reaches
 /// it through Apply() -> ApplySell(), but that re-validation chain needs a fully
@@ -2585,6 +2894,11 @@ int RunMangosdTest(std::string const& name)
     if (name == "ahresolve")
     {
         return RunAhResolveTest();
+    }
+
+    if (name == "ahrepair")
+    {
+        return RunAhRepairRecoveryTest();
     }
 
     if (name == "ahmaterialize")

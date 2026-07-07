@@ -204,10 +204,11 @@ namespace CustodyService
      * @param itemMail Pre-populated MailDraft carrying the item.
      * @param to       Mail receiver descriptor.
      * @param from     Mail sender descriptor.
+     * @param checked  Mail checked mask to persist with the mail row.
      */
     void DeliverItem(CustodyDeferred& d, std::string const& key,
                      MailDraft& itemMail, MailReceiver const& to,
-                     MailSender const& from);
+                     MailSender const& from, uint32 checked = 0);
 
     /**
      * @brief Append a generic live-world effect at the current call position.

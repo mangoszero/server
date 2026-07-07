@@ -441,7 +441,8 @@ void AuctionHouseMgr::SendAuctionExpiredMailInTransaction(AuctionEntry* auction,
         MailDraft itemReturn(subject.str(), "");
         itemReturn.AddItem(pItem);
         CustodyService::DeliverItem(def, "item:" + std::to_string(auction->Id), itemReturn,
-                                    MailReceiver(owner, owner_guid), MailSender(auction));
+                                    MailReceiver(owner, owner_guid), MailSender(auction),
+                                    MAIL_CHECK_MASK_COPIED);
     }
     // owner not found (destroy)
     else

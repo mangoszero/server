@@ -41,9 +41,14 @@
 #include "AuctionHouseMgr.h"
 #include "AuctionHouseBot/CustodyLedger.h"
 #include "AuctionHouseBot/CustodyService.h"
+#include "Bag.h"
 #include "Chat.h"
 #include "Database/DatabaseEnv.h"
+#include "Item.h"
 #include "Log.h"
+#include "Mail.h"
+#include "ObjectMgr.h"
+#include "PlayerMutations.h"
 #include "World.h"
 #include "WorkerSupervisor.h"
 #include "IpcMessage.h"
@@ -51,6 +56,8 @@
 
 #include <cctype>
 #include <ctime>
+#include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -137,6 +144,229 @@ static bool TerminalizeCustodyRow(CustodyRow const& row, uint8 terminalState)
     return CharacterDatabase.CommitTransactionChecked();
 }
 
+static int RepairHexNibble(char c)
+{
+    if (c >= '0' && c <= '9')
+    {
+        return c - '0';
+    }
+    if (c >= 'a' && c <= 'f')
+    {
+        return c - 'a' + 10;
+    }
+    if (c >= 'A' && c <= 'F')
+    {
+        return c - 'A' + 10;
+    }
+    return -1;
+}
+
+static bool RepairHexDecode(std::string const& hex, std::string& out)
+{
+    if (hex.empty() || (hex.size() % 2u) != 0u)
+    {
+        return false;
+    }
+
+    out.clear();
+    out.reserve(hex.size() / 2u);
+    for (size_t i = 0; i + 1u < hex.size(); i += 2u)
+    {
+        int const hi = RepairHexNibble(hex[i]);
+        int const lo = RepairHexNibble(hex[i + 1u]);
+        if (hi < 0 || lo < 0)
+        {
+            out.clear();
+            return false;
+        }
+        out.push_back(static_cast<char>((hi << 4) | lo));
+    }
+    return true;
+}
+
+static std::string RepairAuctionMailSubject(uint32 itemTemplate,
+                                            int32 randomPropertyId,
+                                            MailAuctionAnswers mailType)
+{
+    std::ostringstream subject;
+    subject << itemTemplate << ":" << randomPropertyId << ":" << uint32(mailType);
+    return subject.str();
+}
+
+static bool ReadCommittedCancelJournal(uint32 auctionId, PlayerMutationResult& out)
+{
+    std::unique_ptr<QueryResult> q(CharacterDatabase.PQuery(
+        "SELECT `facts` FROM `ah_worker_journal` "
+        "WHERE `auction_id`=%u AND `kind`=%u AND `state` IN (1,3) "
+        "ORDER BY `resolved_time` DESC, `created_time` DESC LIMIT 1",
+        auctionId, uint32(IPC_PLAYER_CANCEL & 0xFFu)));
+    if (!q)
+    {
+        return false;
+    }
+
+    std::string bin;
+    if (!RepairHexDecode(q->Fetch()[0].GetCppString(), bin))
+    {
+        sLog.outError("ah repair: committed cancel journal facts decode failed for auction %u",
+                      auctionId);
+        return false;
+    }
+
+    ByteBuffer bb;
+    bb.append(reinterpret_cast<uint8 const*>(bin.data()), bin.size());
+    PlayerMutationResult res;
+    if (!res.Decode(bb) || res.facts.auctionId != auctionId)
+    {
+        sLog.outError("ah repair: committed cancel journal facts invalid for auction %u",
+                      auctionId);
+        return false;
+    }
+
+    out = res;
+    return true;
+}
+
+static bool HasCommittedCancelJournal(uint32 auctionId)
+{
+    std::unique_ptr<QueryResult> q(CharacterDatabase.PQuery(
+        "SELECT 1 FROM `ah_worker_journal` "
+        "WHERE `auction_id`=%u AND `kind`=%u AND `state` IN (1,3) LIMIT 1",
+        auctionId, uint32(IPC_PLAYER_CANCEL & 0xFFu)));
+    return q.get() != NULL;
+}
+
+static Item* LoadRepairItemFromDb(uint32 itemGuid, uint32 itemTemplate,
+                                  uint32 ownerGuid)
+{
+    ItemPrototype const* proto = ObjectMgr::GetItemPrototype(itemTemplate);
+    if (!proto)
+    {
+        sLog.outError("ah repair: item template %u missing while repairing item %u",
+                      itemTemplate, itemGuid);
+        return NULL;
+    }
+
+    std::unique_ptr<QueryResult> q(CharacterDatabase.PQuery(
+        "SELECT `data`,`text`,`owner_guid` FROM `item_instance` WHERE `guid`=%u",
+        itemGuid));
+    if (!q)
+    {
+        sLog.outError("ah repair: item_instance %u missing during committed cancel repair",
+                      itemGuid);
+        return NULL;
+    }
+
+    Item* item = NewItemOrBag(proto);
+    if (!item->LoadFromDB(itemGuid, q->Fetch(), ObjectGuid(HIGHGUID_PLAYER, ownerGuid)))
+    {
+        delete item;
+        sLog.outError("ah repair: item_instance %u failed LoadFromDB during committed cancel repair",
+                      itemGuid);
+        return NULL;
+    }
+
+    return item;
+}
+
+bool AhRepairCommittedCancelAuction(uint32 auctionId, uint32& repairedRows)
+{
+    repairedRows = 0u;
+
+    if (HasLiveAuction(auctionId))
+    {
+        return false;
+    }
+
+    PlayerMutationResult stored;
+    if (!ReadCommittedCancelJournal(auctionId, stored))
+    {
+        return false;
+    }
+
+    MutationFacts const& f = stored.facts;
+    if (f.curBid != 0u || f.curBidderGuid != 0u)
+    {
+        sLog.outError("ah repair: committed cancel repair for auction %u has a live bid; "
+                      "bidder refund replay is not supported by this repair path yet",
+                      auctionId);
+        return false;
+    }
+
+    std::string const depKey = "dep:" + std::to_string(auctionId);
+    std::string const itemKey = "item:" + std::to_string(auctionId);
+
+    CustodyRow depRow;
+    bool const hasDep = CustodyLedger::Get(depKey, depRow) &&
+        depRow.state == CST_RESERVED && depRow.kind == CUSTODY_GOLD &&
+        depRow.role == ROLE_DEPOSIT && depRow.auctionId == auctionId;
+
+    CustodyRow itemRow;
+    bool const hasItem = CustodyLedger::Get(itemKey, itemRow) &&
+        itemRow.state == CST_RESERVED && itemRow.kind == CUSTODY_ITEM &&
+        itemRow.role == ROLE_ITEM && itemRow.auctionId == auctionId;
+
+    if (!hasDep && !hasItem)
+    {
+        return false;
+    }
+
+    Item* item = NULL;
+    if (hasItem)
+    {
+        if (itemRow.ownerGuid != f.sellerGuid || itemRow.itemGuid != f.itemGuid)
+        {
+            sLog.outError("ah repair: committed cancel custody mismatch for auction %u",
+                          auctionId);
+            return false;
+        }
+        item = LoadRepairItemFromDb(f.itemGuid, f.itemTemplate, f.sellerGuid);
+        if (!item)
+        {
+            return false;
+        }
+    }
+
+    CustodyDeferred def;
+    CharacterDatabase.BeginTransaction();
+
+    if (hasDep)
+    {
+        CustodyService::CommitGoldLedgerOnly(depKey);
+        ++repairedRows;
+    }
+
+    if (hasItem)
+    {
+        ObjectGuid ownerGuid(HIGHGUID_PLAYER, f.sellerGuid);
+        Player* owner = sObjectMgr.GetPlayer(ownerGuid);
+        MailDraft itemReturn(
+            RepairAuctionMailSubject(f.itemTemplate, f.randomPropertyId,
+                                     AUCTION_CANCELED),
+            "");
+        itemReturn.AddItem(item);
+        CustodyService::DeliverItem(def, itemKey, itemReturn,
+                                    MailReceiver(owner, ownerGuid),
+                                    MailSender(MAIL_AUCTION, uint32(f.houseId),
+                                               MAIL_STATIONERY_AUCTION),
+                                    MAIL_CHECK_MASK_COPIED);
+        ++repairedRows;
+    }
+
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        sLog.outError("ah repair: committed cancel repair commit failed for auction %u",
+                      auctionId);
+        repairedRows = 0u;
+        return false;
+    }
+
+    def.run();
+    sLog.outString("ah repair: replayed committed cancel for auction %u from journal",
+                   auctionId);
+    return true;
+}
+
 static bool ExtractForceForfeitKey(std::string const& mode, std::string& key)
 {
     char const forcePrefix[] = "force-forfeit ";
@@ -157,13 +387,26 @@ static bool ExtractForceForfeitKey(std::string const& mode, std::string& key)
 }
 
 static void PrintRepairRow(ChatHandler& handler, char const* prefix,
-                           CustodyRow const& row)
+                            CustodyRow const& row)
 {
     handler.PSendSysMessage(
         "%s key=%s auction=%u kind=%s role=%s state=%u owner=%u amount=%u item=%u",
         prefix, row.idemKey.c_str(), row.auctionId,
         CustodyKindName(row.kind), CustodyRoleName(row.role),
         uint32(row.state), row.ownerGuid, row.amount, row.itemGuid);
+}
+
+static bool AuctionAlreadyHandled(std::vector<uint32> const& handled,
+                                  uint32 auctionId)
+{
+    for (size_t i = 0; i < handled.size(); ++i)
+    {
+        if (handled[i] == auctionId)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 static bool RepairGoldRow(ChatHandler& handler, CustodyRow const& row)
@@ -377,7 +620,7 @@ bool ChatHandler::HandleAhRepairCommand(char* args)
 
     PSendSysMessage("ah repair: %u custody-ledger drift row(s) found.",
                     uint32(drift.size()));
-    SendSysMessage("ah repair: scope is custody-ledger drift only; legacy tears are not repaired.");
+    SendSysMessage("ah repair: committed cancel journal rows are replayed; other legacy tears are not repaired.");
 
     if (drift.empty())
     {
@@ -421,8 +664,33 @@ bool ChatHandler::HandleAhRepairCommand(char* args)
 
     uint32 repaired = 0;
     uint32 skipped = 0;
+    std::vector<uint32> handledAuctions;
     for (size_t i = 0; i < drift.size(); ++i)
     {
+        if (AuctionAlreadyHandled(handledAuctions, drift[i].auctionId))
+        {
+            continue;
+        }
+
+        uint32 replayedRows = 0u;
+        if (AhRepairCommittedCancelAuction(drift[i].auctionId, replayedRows))
+        {
+            handledAuctions.push_back(drift[i].auctionId);
+            repaired += replayedRows;
+            PSendSysMessage("ah repair: replayed committed cancel for auction %u, repaired=%u.",
+                            drift[i].auctionId, replayedRows);
+            continue;
+        }
+
+        if (HasCommittedCancelJournal(drift[i].auctionId))
+        {
+            handledAuctions.push_back(drift[i].auctionId);
+            ++skipped;
+            PSendSysMessage("ah repair: committed cancel replay failed for auction %u; skipped.",
+                            drift[i].auctionId);
+            continue;
+        }
+
         if (RepairCustodyRow(*this, drift[i]))
         {
             ++repaired;
