@@ -173,6 +173,22 @@ static int RunMailTest()
     // with existing rows (world data is NOT loaded under -t).
     sObjectMgr.SetHighestGuids();
 
+    // The offline mail path requires the recipient to resolve to an account.
+    // Normal test clones may not have a character with guid 1, so seed one only
+    // when absent and clean up only our own fixture row afterwards.
+    bool seededReceiver = false;
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT 1 FROM `characters` WHERE `guid`=1"));
+        if (!res)
+        {
+            CharacterDatabase.DirectExecute(
+                "INSERT INTO `characters` (`guid`,`account`,`name`,`money`) "
+                "VALUES (1, 1, 'AhMailTest1', 0)");
+            seededReceiver = true;
+        }
+    }
+
     // Clean slate from any prior run.
     CharacterDatabase.DirectExecute(
         "DELETE FROM `mail` WHERE `receiver`=1 AND `money`=123 "
@@ -213,6 +229,11 @@ static int RunMailTest()
     CharacterDatabase.DirectExecute(
         "DELETE FROM `mail` WHERE `receiver`=1 AND `money`=123 "
         "AND `subject`='custodytest'");
+    if (seededReceiver)
+    {
+        CharacterDatabase.DirectExecute(
+            "DELETE FROM `characters` WHERE `guid`=1 AND `name`='AhMailTest1'");
+    }
 
     if (pass)
     {
