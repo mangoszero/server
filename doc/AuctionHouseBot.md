@@ -154,15 +154,10 @@ gone. ``ah repair force-forfeit <idem_key>`` is the explicit escape hatch after
 manual verification; it terminalizes the named drift row without disbursement
 or item mail.
 
-Promotion checklist before considering a default flip:
-
-* Run the full gate-off/gate-on differential with the database repo's
-  ``Tools/custody_diff.sql`` and get zero player-visible diffs.
-* Run ``src/modules/AhWorker/tools/custody_crash_test.md`` for every matrix row and
-  both crash phases.
-* Pass the concurrent-observer checks for auction list/search/console views.
-* Complete a live soak with custody still default-off, showing zero divergence
-  and no unresolved custody drift.
+Before enabling custody on a real realm, validate it first on a database clone
+and confirm ``ah repair`` reports zero drift after normal list, bid, buyout,
+cancel, and expire flows. Keep the setting default-off until the realm's live
+auction behavior has been observed cleanly.
 
 ah-service.conf keys
 ~~~~~~~~~~~~~~~~~~~~~
@@ -245,7 +240,7 @@ auction custody ledger. It reports custody drift by default, mutates only with
 ``ah repair apply`` or ``ah repair force-forfeit <idem_key>``, and never mints
 gold or sends replacement item mail from an orphan row.
 
-### SP-1: externalized AH browse (read path)
+### Worker AH browse path
 
 When the ah-service worker is connected and healthy, mangosd forwards AH browse
 / owner-list / bidder-list requests to it over IPC (IPC_BROWSE_QUERY) and
@@ -277,7 +272,7 @@ than ~1000 matches cannot be veto-checked exactly out-of-process, so the worker
 **declines** it and mangosd returns "AH temporarily unavailable" rather than a
 short or mis-counted page. This is rare (needs both >1000 surviving matches and a
 bound Lua hook) and follows the coordinator's "correct-or-unavailable" contract —
-**expected, not a regression** — so do not flag it during smoke testing.
+**expected, not a regression** — so do not treat it as a service failure.
 
 **Known limitation — Eluna `Player:SendAuctionMenu`.** The window-open gate lives
 in `WorldSession::SendAuctionHello`. A Lua script that calls
@@ -287,7 +282,7 @@ unavailable reply (an empty window). This affects only realms whose scripts call
 that API, and the fix would mean patching the third-party Eluna module, so it is
 left as a documented limitation.
 
-### SP-2: worker write-authority (write path)
+### Worker write-authority path
 
 `AH.Service.WriteAuthority` (in `mangosd.conf`, default `0`) hands the
 out-of-process worker authority over the auction book. When set, the worker is
@@ -346,131 +341,8 @@ transient `AuctionEntry`, so existing Lua AH scripts keep working.
 > "release", which can double-credit a mutation that actually committed. Verify
 > the migration is present first.
 
-> **OPERATOR WARNING 3 -- run a live smoke of the nonzero-cut CANCEL path before
-> enabling on a real realm.** The cancel path that reserves and sinks a non-zero
-> auction cut is exercised end-to-end only against a live custody ledger; the
-> `-t` unit harness has no cut reservation to validate it. Mandatory pre-enable
-> live smoke.
-
-> **OPERATOR NOTE 4 -- current high bidder's Buyout is a mandatory smoke leg.**
-> The live SP-2 smoke found and fixed the old no-op path where a current high
-> bidder clicking Buyout was forwarded as `IPC_PLAYER_BID` and rejected by the
-> worker as a bid at/over buyout. The classifier now routes same-bidder top-ups
-> as `IPC_PLAYER_BUYOUT` while keeping the delta reserve: below-buyout 0x42 is a
-> normal bid, and at/over-buyout 0x42 is the immediate win. The mandatory
-> pre-enable live smoke MUST exercise "current high bidder clicks Buyout" and
-> confirm the auction is removed with seller/winner/prior-bid custody settled.
-
-#### SP-2 crash-injection seams (TEST ONLY)
-
-The custody `AH.Service.CustodyCrashAt` pattern (which fires `_exit(3)` at a named
-seam transition) extends to the write path. These are the deterministic substitute
-for a multi-realm soak on a solo realm: kill the process at each SP-2 transition
-and prove reconcile-on-reconnect recovers with **no lost or duplicated gold or
-items** and `ah repair` reporting **zero drift**. Every seam is inert by default
-(empty config / unset env var) so it is dead on a live realm. Run only on
-disposable DB clones with `AH.Service.WriteAuthority = 1` and
-`AH.Service.Custody = 1`.
-
-There are four SP-2 seams. Three are mangosd-side and fire on
-`AH.Service.CustodyCrashAt`; one is worker-side and fires on the worker's
-`AH_WORKER_CRASH_AT` environment variable (the worker has no game config). A fifth
-hook, `AH.Service.CustodyFailCommitAt = finalize-fail`, is not a crash: it forces
-one finalize checked-commit to roll back so the redrive path can be exercised
-without killing the process.
-
-* `post-reserve-pre-forward`
-  * Config: `AH.Service.CustodyCrashAt`
-  * Site: `AuctionHouseHandler.cpp` sell + bid forward branches
-  * Fires after the escrow/deposit or bid reserve durably commits, before the
-    intent is forwarded.
-  * Recovery: reconcile releases the reserved-but-un-forwarded row, returning
-    gold or item.
-* `worker-committed-pre-reply`
-  * Config: `AH_WORKER_CRASH_AT` (worker env)
-  * Site: `MutationHandler::FinishCommit` (worker)
-  * Fires after the worker commits the book + journal `COMMITTED` row, before
-    `IPC_PLAYER_RESULT` is sent.
-  * Recovery: reconcile finalize-forwards from the journal `COMMITTED` row, so
-    value is applied once.
-* `resolving-pre-apply`
-  * Config: `AH.Service.CustodyCrashAt`
-  * Site: `AhHandleResolveApply`
-  * Fires after `WriteResolutionApplied` is queued, before its checked commit.
-  * Recovery: worker re-sends `RESOLVE_APPLY`; the `ResolutionApplied` guard
-    answers `DUPLICATE == APPLIED`, so there is no double apply.
-* `finalize-fail`
-  * Config: `AH.Service.CustodyFailCommitAt`
-  * Site: `AhFinalizeBidOk` value commit
-  * Forces one finalize commit to roll back. This is one-shot and the process
-    stays up.
-  * Recovery: the redrive queue re-drives forward-only; the worker book is
-    never rolled back.
-
-**Per-seam operator procedure.** For each seam, on a clone with `WriteAuthority = 1`
-and `Custody = 1`:
-
-1. **Baseline.** Record the actors' gold and inventory and
-   `SELECT COUNT(*) FROM custody_ledger WHERE state = 0` (non-terminal rows).
-2. **Arm the seam:**
-   - mangosd seams: set `AH.Service.CustodyCrashAt = "<phase>"` in `mangosd.conf`.
-   - worker seam: start the worker with `AH_WORKER_CRASH_AT=worker-committed-pre-reply`
-     in its environment (leave `CustodyCrashAt` empty).
-   - `finalize-fail`: set `AH.Service.CustodyFailCommitAt = "finalize-fail"` (no
-     process death -- expect a single redrive instead).
-3. **Drive the matching flow** exactly once:
-   - `post-reserve-pre-forward`: have a player list an item OR place a bid.
-   - `worker-committed-pre-reply`: have a player list/bid/buyout/cancel (any
-     book-committing mutation).
-   - `resolving-pre-apply`: let a listing reach the expiry/win tick, or cancel one,
-     so the worker sends `RESOLVE_APPLY`.
-   - `finalize-fail`: have a player place a bid or buyout (the value finalize).
-4. **Confirm the injection.**
-   - crash seams: the process exits with code `3` and the log/stderr shows
-     `crash-injection: _exit(3) at phase '<phase>'`.
-   - `finalize-fail`: the log shows
-     `custody forced commit-fail: rollback ... (one-shot)` followed a few seconds
-     later by the redrive re-applying (no `redrive STUCK`).
-5. **Disarm and restart.** Clear the config / env var, keep `Custody = 1` and
-   `WriteAuthority = 1`, and restart mangosd (and the worker). Reconcile-on-reconnect
-   runs on the reliable lane.
-6. **Assert recovery.** Re-read the actors' gold/inventory: no copper or item is
-   lost or duplicated versus the baseline plus the intended mutation. Then run
-   `ah repair` (audit) and confirm **zero drift** -- no orphan non-terminal rows
-   and no live custody auction missing a required row.
-
-### Whole-branch acceptance checklist (SP-2)
-
-Do not enable `AH.Service.WriteAuthority` on a real realm until every item is green:
-
-- [ ] Both targets build clean: `--target ah-service` and `--target mangosd`
-      (`RelWithDebInfo`).
-- [ ] `ah-service --selftest` all green in order: `wire`, `intent codec`,
-      `journal` (or SKIPPED with no character DB), `book`, `mutation`, `cancel`,
-      `resolve outbox`, `bot fold-in`, `reliable lane`, `ipc`.
-- [ ] Every `mangosd -t` green (exit 0): `custody`, `ahrelease`, `ahmutpending`,
-      `ahforwardreserve`, `ahmutresult`, `ahresolve`, `ahmaterialize`, plus the
-      regression set `commit` / `mail` / `ahowner` / `ahbrowsepending`.
-      (`mail` needs character guid 1 present in the character DB clone -- it is a
-      DB-fixture dependency, not a code gate.)
-- [ ] A/B differential (`src/modules/AhWorker/tools/sp2_differential.md`): the
-      serialized list/bid/buyout/cancel/expire workload diffs to zero on `auction`
-      / `item_instance` / `custody_ledger` end-state and on per-session packet
-      order; every remaining difference is one of the six documented divergences.
-- [ ] All four crash seams recover clean (procedure above): no lost/duplicated
-      gold or items, `ah repair` reports zero drift; `finalize-fail` redrives
-      without rolling the worker book back.
-- [ ] Manual live smoke on a copy DB with `WriteAuthority = 1` + `Custody = 1`:
-      list / bid / buyout / cancel one auction between two characters, then advance
-      time + restart to fire expiry/win, then `ah repair` -> zero drift.
-- [ ] **MANDATORY:** the live smoke exercises the **nonzero-cut CANCEL path**
-      (OPERATOR WARNING 3) -- this leg has no `-t` coverage and must be observed
-      end-to-end against a live custody ledger.
-- [ ] **MANDATORY:** the live smoke exercises **current high bidder clicks Buyout**
-      (OPERATOR NOTE 4) -- confirm the fixed 0x42 route removes the auction and
-      settles seller/winner/prior-bid custody.
-- [ ] Both `ah_worker_journal` and custody migrations applied (OPERATOR WARNING 2).
-
-The `.ai_tools/ah_custody_harness` SP-2 mode (inject -> resolve under
-WriteAuthority; assert via journal + ledger + mails) is out of this repo and is
-extended separately.
+Before enabling write-authority on a real realm, validate it first on a database
+clone with `AH.Service.WriteAuthority = 1` and `AH.Service.Custody = 1`. Exercise
+listing, bidding, outbidding, same-bidder buyout, seller cancel with an auction
+cut, expiry/win, worker reconnect, and mangosd restart. Then run `ah repair` and
+confirm it reports zero custody drift.
