@@ -141,17 +141,15 @@ run that exercises it must account for it by hand:
    legacy-style rejection at reply latency rather than instantly, and a
    reject-then-ABORT cancel sequence can emit two command results where legacy
    emitted one. Accepted.
-6. **[SP-3 deferred] Current high bidder's Buyout no-ops.** A player who is the
-   CURRENT HIGH BIDDER clicking Buyout (price >= buyout) is silently dropped under
-   WriteAuthority: `AhClassifyBidForward` routes a same-bidder raise as
-   `IPC_PLAYER_BID` and the worker's `ValidateBid` silent-rejects a bid at/over
-   buyout. Gold is conserved (no dupe/loss) but the buyout no-ops -- the player
-   stays high bidder and wins at expiry at their standing bid instead of buying
-   out immediately at the buyout price. Unlike 1-5 this DOES change end-state
-   (surviving `auction` row + who-pays-what + timing), so the base workload
-   avoids it. A proper fix is coupled to the finalize path (T11 F1) and is
-   deferred to SP-3. The mandatory pre-enable live smoke MUST exercise "current
-   high bidder clicks Buyout" and record the divergence explicitly.
+6. **[fixed during live smoke] Current high bidder's Buyout routes through
+   `IPC_PLAYER_BUYOUT`.** The live SP-2 smoke found that a current high bidder
+   clicking Buyout was being forwarded as `IPC_PLAYER_BID`, which the worker
+   correctly rejected as a bid at/over buyout. The fixed classifier now routes
+   same-bidder top-ups as `IPC_PLAYER_BUYOUT` while keeping the delta reserve:
+   below-buyout 0x42 remains a normal bid, and at/over-buyout 0x42 becomes the
+   immediate win. The mandatory pre-enable live smoke still exercises "current
+   high bidder clicks Buyout" to prove the fixed path removes the auction and
+   settles seller/winner/prior-bid custody.
 
 Server-side-only effects that are NOT player-visible (e.g. GM-log lines that the
 worker emits process-side rather than in mangosd, and Eluna `OnAdd`/`OnRemove`

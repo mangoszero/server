@@ -352,18 +352,14 @@ transient `AuctionEntry`, so existing Lua AH scripts keep working.
 > `-t` unit harness has no cut reservation to validate it. Mandatory pre-enable
 > live smoke.
 
-> **OPERATOR WARNING 4 -- known SP-3-deferred functional divergence: current high
-> bidder's Buyout no-ops.** Under `WriteAuthority`, a player who is ALREADY the
-> current high bidder and then clicks Buyout (price >= buyout) is silently
-> dropped: mangosd routes it as a same-bidder bid raise and the worker rejects a
-> bid at/over buyout. Gold is conserved (no duplication or loss) but the buyout
-> no-ops -- the player stays high bidder and wins at expiry at their standing bid
-> rather than buying out immediately at the buyout price. This is a functional
-> divergence (it changes the surviving auction, who-pays-what, and timing), listed
-> as divergence 6 in `src/modules/AhWorker/tools/sp2_differential.md`. A proper fix
-> is coupled to the finalize path (T11 F1) and is deferred to SP-3. The mandatory
+> **OPERATOR NOTE 4 -- current high bidder's Buyout is a mandatory smoke leg.**
+> The live SP-2 smoke found and fixed the old no-op path where a current high
+> bidder clicking Buyout was forwarded as `IPC_PLAYER_BID` and rejected by the
+> worker as a bid at/over buyout. The classifier now routes same-bidder top-ups
+> as `IPC_PLAYER_BUYOUT` while keeping the delta reserve: below-buyout 0x42 is a
+> normal bid, and at/over-buyout 0x42 is the immediate win. The mandatory
 > pre-enable live smoke MUST exercise "current high bidder clicks Buyout" and
-> record this divergence.
+> confirm the auction is removed with seller/winner/prior-bid custody settled.
 
 #### SP-2 crash-injection seams (TEST ONLY)
 
@@ -450,8 +446,8 @@ Do not enable `AH.Service.WriteAuthority` on a real realm until every item is gr
       (OPERATOR WARNING 3) -- this leg has no `-t` coverage and must be observed
       end-to-end against a live custody ledger.
 - [ ] **MANDATORY:** the live smoke exercises **current high bidder clicks Buyout**
-      (OPERATOR WARNING 4 / divergence 6) -- confirm the known SP-3-deferred no-op
-      behavior (gold conserved, buyout silently dropped) and record it explicitly.
+      (OPERATOR NOTE 4) -- confirm the fixed 0x42 route removes the auction and
+      settles seller/winner/prior-bid custody.
 - [ ] Both `ah_worker_journal` and custody migrations applied (OPERATOR WARNING 2).
 
 The `.ai_tools/ah_custody_harness` SP-2 mode (inject -> resolve under

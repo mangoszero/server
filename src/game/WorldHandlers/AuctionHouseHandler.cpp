@@ -116,23 +116,14 @@ uint16 AhClassifyBidForward(uint32 auctionId, uint32 bidderGuidLow, uint32 price
         return 0u;
     }
 
-    // Same-bidder raise (spec I9): only the delta is reserved; the finalize
-    // applies the top-up. The intent still carries the full new price.
-    //
-    // KNOWN DIVERGENCE (SP-3 deferred): if this same-bidder "raise" is actually
-    // the CURRENT HIGH BIDDER clicking Buyout (price >= the auction's buyout),
-    // it is routed here as IPC_PLAYER_BID, and the worker's ValidateBid
-    // silent-rejects any bid at/over buyout -> the buyout no-ops. Gold is
-    // conserved (no dupe/loss): the player stays high bidder and wins at expiry
-    // at their standing bid, but the immediate buyout is silently dropped. A
-    // proper fix is coupled to the finalize path (T11 F1) -- mangosd does not
-    // hold the buyout price here (the book, incl. buyout, is worker-owned) so it
-    // cannot classify this as a buyout without a book read -- and is deferred to
-    // SP-3. Documented in doc/AuctionHouseBot.md and sp2_differential.md; the
-    // mandatory pre-enable live smoke MUST exercise "current high bidder clicks
-    // Buyout".
+    // Same-bidder top-up (spec I9): only the delta is reserved; the finalize
+    // applies the top-up. Route it as IPC_PLAYER_BUYOUT instead of BID because
+    // mangosd does not own the book's buyout price under WriteAuthority. The
+    // worker treats a below-buyout 0x42 as a normal bid at maxPrice and an
+    // at/over-buyout 0x42 as the win, so the same delta reserve covers both
+    // raise and current-high-bidder-buyout without an out-of-band book read.
     reserveAmount = price - liveRow.amount;
-    return uint16(IPC_PLAYER_BID);
+    return uint16(IPC_PLAYER_BUYOUT);
 }
 
 bool AhBuildCancelPrepareForward(MutationPendingMap& pending, uint32 playerGuidLow,
@@ -967,10 +958,11 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
             return;
         }
 
-        // Classify against mangosd's OWN ledger: raise -> IPC_PLAYER_BID with
-        // delta reserve; everything else -> IPC_PLAYER_BUYOUT with the full
-        // price reserved as maxPrice (worker: effectiveBid = min(maxPrice,
-        // buyout), spec 4.1); 0 -> inline legacy ERR_HIGHER_BID.
+        // Classify against mangosd's OWN ledger: same-bidder top-up ->
+        // IPC_PLAYER_BUYOUT with a delta reserve; everything else ->
+        // IPC_PLAYER_BUYOUT with the full price reserved as maxPrice (worker:
+        // effectiveBid = min(maxPrice, buyout), spec 4.1); 0 -> inline legacy
+        // ERR_HIGHER_BID.
         uint32 reserveAmount = 0u;
         uint16 const fwdOp = AhClassifyBidForward(auctionId, pl->GetGUIDLow(), price, reserveAmount);
         if (fwdOp == 0u)

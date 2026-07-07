@@ -1312,7 +1312,7 @@ static int RunAhMutPendingTest()
 /// ledger-only path. Covers (a) the sell reserve pair item:<id> + dep:<id> in
 /// ONE checked txn plus its pending registration, and (b) the bid classifier
 /// AhClassifyBidForward against real ledger rows: no row -> IPC_PLAYER_BUYOUT
-/// full reserve; own live row -> IPC_PLAYER_BID delta; price <= own live bid
+/// full reserve; own live row -> IPC_PLAYER_BUYOUT delta; price <= own live bid
 /// -> 0 (inline ERR_HIGHER_BID); another owner's row -> BUYOUT full;
 /// ambiguous (two live rows) -> BUYOUT full. Returns 0 on pass.
 static int RunAhForwardReserveTest()
@@ -1451,8 +1451,11 @@ static int RunAhForwardReserveTest()
         pass = false;
     }
 
-    // Holder raise 500 -> 600: IPC_PLAYER_BID, delta 100 (spec I9).
-    if (AhClassifyBidForward(bidId, 1u, 600u, reserveAmount) != uint16(IPC_PLAYER_BID) ||
+    // Holder raise/top-up 500 -> 600: route on IPC_PLAYER_BUYOUT with the
+    // delta reserve. The worker treats a below-buyout 0x42 as a normal bid,
+    // while an at/over-buyout 0x42 becomes the buyout win; both preserve the
+    // same ledger delta semantics and avoid at-buyout 0x41 protocol faults.
+    if (AhClassifyBidForward(bidId, 1u, 600u, reserveAmount) != uint16(IPC_PLAYER_BUYOUT) ||
         reserveAmount != 100u)
     {
         printf("ahforwardreserve FAIL: classify(raise delta)\n");

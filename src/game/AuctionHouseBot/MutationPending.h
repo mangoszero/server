@@ -148,15 +148,14 @@ uint64 AhMintMutationUuid();
 /// AuctionHouseHandler.cpp.
 ///
 /// Returns the IPC opcode to forward on and sets @p reserveAmount:
-///  - IPC_PLAYER_BID    same-bidder raise proven by exactly one live ROLE_BID
+///  - IPC_PLAYER_BUYOUT same-bidder top-up proven by exactly one live ROLE_BID
 ///                      row owned by @p bidderGuidLow; reserveAmount = the
 ///                      delta (spec I9), the intent carries the full price.
-///  - IPC_PLAYER_BUYOUT everything else (fresh bid, displacing bid, ambiguous
-///                      rows); reserveAmount = @p price reserved in full as
-///                      maxPrice -- the worker computes effectiveBid =
-///                      min(maxPrice, buyout) (spec 4.1 value math), so this
-///                      covers both a normal bid and a buyout win; the
-///                      finalize releases maxPrice - effectiveBid.
+///                      Fresh bids, displacing bids, and ambiguous rows also use
+///                      BUYOUT but reserve @p price in full as maxPrice. The
+///                      worker treats below-buyout 0x42 as a normal bid and
+///                      at/over-buyout 0x42 as the win; the finalize releases
+///                      maxPrice - effectiveBid for full-reserve paths.
 ///  - 0                 inline reject: the player's own live bid is already
 ///                      >= price (legacy `price <= auction->bid` =>
 ///                      AUCTION_ERR_HIGHER_BID). Non-holder stale bids are NOT
