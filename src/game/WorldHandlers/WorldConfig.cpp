@@ -593,7 +593,9 @@ void World::LoadConfigSettings(bool reload)
             QueryResult* jrnCheck = CharacterDatabase.Query("SHOW TABLES LIKE 'ah_worker_journal'");
             if (!jrnCheck)
             {
-                sLog.outError("AH.Service.WriteAuthority = 1 but the `ah_worker_journal` table is missing; apply the SP-2 migration first. Forcing WriteAuthority OFF.");
+                sLog.outError("AH.Service.WriteAuthority = 1 but the "
+                    "`ah_worker_journal` table is missing; apply the SP-2 "
+                    "migration first. Forcing WriteAuthority OFF.");
                 setConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY, false);
             }
             else
@@ -606,7 +608,9 @@ void World::LoadConfigSettings(bool reload)
         // report unavailable (spec 5.5: no in-process fallback).
         if (getConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY) && !sConfig.GetBoolDefault("AH.Service.Enabled", false))
         {
-            sLog.outError("AH.Service.WriteAuthority = 1 but AH.Service.Enabled = 0: no worker will start; all AH mutations will be unavailable.");
+            sLog.outError("AH.Service.WriteAuthority = 1 but "
+                "AH.Service.Enabled = 0: no worker will start; all AH "
+                "mutations will be unavailable.");
         }
     }
 

@@ -852,8 +852,10 @@ void AuctionHouseMgr::LoadAuctions()
             if (!sWorld.IsAhWriteAuthority())
             {
                 // No SQL injection (no strings)
-                CharacterDatabase.PExecute("UPDATE `auction` SET `item_template` = %u, `item_count` = %u, `item_randompropertyid` = %i WHERE `itemguid` = %u",
-                    auction->itemTemplate, auction->itemCount, auction->itemRandomPropertyId, auction->itemGuidLow);
+                CharacterDatabase.PExecute("UPDATE `auction` SET `item_template` = %u, "
+                    "`item_count` = %u, `item_randompropertyid` = %i WHERE "
+                    "`itemguid` = %u", auction->itemTemplate, auction->itemCount,
+                    auction->itemRandomPropertyId, auction->itemGuidLow);
             }
         }
 
@@ -873,7 +875,8 @@ void AuctionHouseMgr::LoadAuctions()
             {
                 // Attempt send item back to owner
                 std::ostringstream msgAuctionCanceledOwner;
-                msgAuctionCanceledOwner << auction->itemTemplate << ":" << auction->itemRandomPropertyId << ":" << AUCTION_CANCELED;
+                msgAuctionCanceledOwner << auction->itemTemplate << ":"
+                    << auction->itemRandomPropertyId << ":" << AUCTION_CANCELED;
 
                 if (auction->itemGuidLow)
                 {
@@ -883,7 +886,8 @@ void AuctionHouseMgr::LoadAuctions()
                     // item will deleted or added to received mail list
                     MailDraft(msgAuctionCanceledOwner.str(), "")// TODO: fix body
                         .AddItem(pItem)
-                        .SendMailTo(MailReceiver(ObjectGuid(HIGHGUID_PLAYER, auction->owner)), auction, MAIL_CHECK_MASK_COPIED);
+                        .SendMailTo(MailReceiver(ObjectGuid(HIGHGUID_PLAYER, auction->owner)),
+                            auction, MAIL_CHECK_MASK_COPIED);
                 }
 
                 auction->DeleteFromDB();

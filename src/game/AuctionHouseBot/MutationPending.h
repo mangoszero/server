@@ -128,7 +128,10 @@ class MutationPendingMap
         /// each entry itself via Take once it has decided its disposition.
         void SnapshotInflight(std::vector<PendingMutation>& out) const;
 
-        size_t Size() const { return m_map.size(); }
+        size_t Size() const
+        {
+            return m_map.size();
+        }
 
     private:
         std::unordered_map<uint64, PendingMutation> m_map;

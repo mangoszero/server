@@ -1116,37 +1116,61 @@ static int RunAhBrowsePendingTest()
     b.seq = pend.NextSeqFor(5002u, uint8(BROWSE_OWNER));
     uint64 id2 = pend.Register(b, 100u);
     if (id1 == id2 || pend.Size() != 2u)
-    { printf("ahbrowsepending FAIL: register\n"); return 1; }
+    {
+        printf("ahbrowsepending FAIL: register\n");
+        return 1;
+    }
 
     PendingBrowse got;
     if (!pend.Take(id1, got) || got.accountId!=1001u || got.playerGuidLow!=5001u ||
         got.kind != uint8(BROWSE_LIST))
-    { printf("ahbrowsepending FAIL: Take(id1)\n"); return 1; }
+    {
+        printf("ahbrowsepending FAIL: Take(id1)\n");
+        return 1;
+    }
     if (pend.Take(id1, got))
-    { printf("ahbrowsepending FAIL: Take twice\n"); return 1; }
+    {
+        printf("ahbrowsepending FAIL: Take twice\n");
+        return 1;
+    }
 
     // Per-(char,kind) sequencing: a newer search bumps the seq; the older seq
     // is no longer current (a stale timeout for it must be ignored).
     uint32 newSeq = pend.NextSeqFor(5002u, uint8(BROWSE_OWNER));   // newer than b.seq
     if (pend.IsCurrent(5002u, uint8(BROWSE_OWNER), b.seq))
-    { printf("ahbrowsepending FAIL: stale seq still current\n"); return 1; }
+    {
+        printf("ahbrowsepending FAIL: stale seq still current\n");
+        return 1;
+    }
     if (!pend.IsCurrent(5002u, uint8(BROWSE_OWNER), newSeq))
-    { printf("ahbrowsepending FAIL: newest seq not current\n"); return 1; }
+    {
+        printf("ahbrowsepending FAIL: newest seq not current\n");
+        return 1;
+    }
 
     // TTL sweep collects the timed-out entry (id2) for in-process fallback.
     std::vector<PendingBrowse> timedOut;
     pend.Sweep(100u + 10u + 1u, 10u, timedOut);
     if (pend.Size() != 0u || timedOut.size() != 1u || timedOut[0].accountId != 1002u)
-    { printf("ahbrowsepending FAIL: sweep\n"); return 1; }
+    {
+        printf("ahbrowsepending FAIL: sweep\n");
+        return 1;
+    }
 
     // Stale-seq guard on the sweep path: after a newer search is issued, the
     // swept entry's seq (b.seq) is NOT current -- the fallback must be ignored.
     // Bump the seq (simulates a newer search that arrived before the sweep ran).
     uint32 postSweepSeq = pend.NextSeqFor(5002u, uint8(BROWSE_OWNER));
     if (pend.IsCurrent(5002u, uint8(BROWSE_OWNER), b.seq))
-    { printf("ahbrowsepending FAIL: swept stale seq still current\n"); return 1; }
+    {
+        printf("ahbrowsepending FAIL: swept stale seq still current\n");
+        return 1;
+    }
     if (!pend.IsCurrent(5002u, uint8(BROWSE_OWNER), postSweepSeq))
-    { printf("ahbrowsepending FAIL: postSweepSeq not current\n"); return 1; }
+    {
+        printf("ahbrowsepending FAIL: postSweepSeq not current\n");
+        return 1;
+    }
 
     // SMSG assembly: count, first entry id, totalcount appear in order.
     {
@@ -1203,7 +1227,10 @@ static int RunAhMutPendingTest()
     uint64 u1 = AhMintMutationUuid();
     uint64 u2 = AhMintMutationUuid();
     if (u1 == u2 || (u1 >> 32) == 0u)
-    { printf("ahmutpending FAIL: uuid mint\n"); return 1; }
+    {
+        printf("ahmutpending FAIL: uuid mint\n");
+        return 1;
+    }
 
     // (a) cap-before-reserve: MAX_PER_PLAYER entries fill player 100's slot;
     // the next CanRegister is refused BEFORE any reserve would happen, while
@@ -1212,7 +1239,10 @@ static int RunAhMutPendingTest()
     for (size_t i = 0; i < MutationPendingMap::MAX_PER_PLAYER; ++i)
     {
         if (!pend.CanRegister(100u))
-        { printf("ahmutpending FAIL: CanRegister refused below cap\n"); return 1; }
+        {
+            printf("ahmutpending FAIL: CanRegister refused below cap\n");
+            return 1;
+        }
 
         PendingMutation pm;
         pm.uuid           = AhMintMutationUuid();
@@ -1229,9 +1259,15 @@ static int RunAhMutPendingTest()
         uuids.push_back(pm.uuid);
     }
     if (pend.CanRegister(100u))
-    { printf("ahmutpending FAIL: per-player cap not enforced\n"); return 1; }
+    {
+        printf("ahmutpending FAIL: per-player cap not enforced\n");
+        return 1;
+    }
     if (!pend.CanRegister(101u))
-    { printf("ahmutpending FAIL: cap leaked to another player\n"); return 1; }
+    {
+        printf("ahmutpending FAIL: cap leaked to another player\n");
+        return 1;
+    }
 
     // (b) consume-once: Take returns the entry once, then never again; the
     // per-player slot is released.
@@ -1239,25 +1275,43 @@ static int RunAhMutPendingTest()
     if (!pend.Take(uuids[0], got) || got.playerGuidLow != 100u ||
         got.op != uint16(IPC_PLAYER_BID) || got.reservedAmount != 55u ||
         got.reserveKey != "bid:9000:1")
-    { printf("ahmutpending FAIL: Take(first)\n"); return 1; }
+    {
+        printf("ahmutpending FAIL: Take(first)\n");
+        return 1;
+    }
     if (pend.Take(uuids[0], got))
-    { printf("ahmutpending FAIL: Take twice\n"); return 1; }
+    {
+        printf("ahmutpending FAIL: Take twice\n");
+        return 1;
+    }
     if (!pend.CanRegister(100u))
-    { printf("ahmutpending FAIL: slot not released after Take\n"); return 1; }
+    {
+        printf("ahmutpending FAIL: slot not released after Take\n");
+        return 1;
+    }
 
     // (c) rearm (cancel phase 2, spec 4.2): AWAIT_RESULT (== AWAIT_PREPARE for
     // cancels) -> AWAIT_CONFIRM in the SAME cap slot, with a fresh TTL anchor.
     pend.RearmConfirm(uuids[1], 2000u);
     if (!pend.Peek(uuids[1], got) || got.state != uint8(PMUT_AWAIT_CONFIRM) ||
         got.sentSec != 2000u)
-    { printf("ahmutpending FAIL: RearmConfirm\n"); return 1; }
+    {
+        printf("ahmutpending FAIL: RearmConfirm\n");
+        return 1;
+    }
 
     // (d) explicit tombstone: the entry STAYS (in-doubt, reservation
     // non-terminal); Tombstone on a missing uuid reports false.
     if (!pend.Tombstone(uuids[2]))
-    { printf("ahmutpending FAIL: Tombstone(existing)\n"); return 1; }
+    {
+        printf("ahmutpending FAIL: Tombstone(existing)\n");
+        return 1;
+    }
     if (pend.Tombstone(0xDEADBEEFull))
-    { printf("ahmutpending FAIL: Tombstone(missing) returned true\n"); return 1; }
+    {
+        printf("ahmutpending FAIL: Tombstone(missing) returned true\n");
+        return 1;
+    }
 
     // (e) sweep-to-tombstone: at now=2005 with ttl=10, entries stamped 1000 are
     // overdue EXCEPT the rearmed one (sentSec 2000). Already-tombstoned entries
@@ -1267,20 +1321,32 @@ static int RunAhMutPendingTest()
     std::vector<uint64> inDoubt;
     pend.SweepToTombstones(2005u, 10u, inDoubt);
     if (inDoubt.size() != 5u)
-    { printf("ahmutpending FAIL: sweep emitted %u (want 5)\n", unsigned(inDoubt.size())); return 1; }
+    {
+        printf("ahmutpending FAIL: sweep emitted %u (want 5)\n", unsigned(inDoubt.size()));
+        return 1;
+    }
     for (size_t i = 0; i < inDoubt.size(); ++i)
     {
         if (inDoubt[i] == uuids[1] || inDoubt[i] == uuids[2])
-        { printf("ahmutpending FAIL: sweep emitted a fresh/tombstoned uuid\n"); return 1; }
+        {
+            printf("ahmutpending FAIL: sweep emitted a fresh/tombstoned uuid\n");
+            return 1;
+        }
     }
     // A second sweep emits nothing new (everything overdue is tombstoned).
     inDoubt.clear();
     pend.SweepToTombstones(2005u, 10u, inDoubt);
     if (!inDoubt.empty())
-    { printf("ahmutpending FAIL: second sweep re-emitted\n"); return 1; }
+    {
+        printf("ahmutpending FAIL: second sweep re-emitted\n");
+        return 1;
+    }
     // Late reply against a tombstone still applies (apply-all): Take consumes it.
     if (!pend.Take(uuids[2], got) || got.state != uint8(PMUT_TOMBSTONE))
-    { printf("ahmutpending FAIL: Take(tombstone)\n"); return 1; }
+    {
+        printf("ahmutpending FAIL: Take(tombstone)\n");
+        return 1;
+    }
 
     // (f) MAX_TOTAL: fill a fresh map to the global cap across many players
     // (4 per player, under the per-player cap); a fresh player is then refused.
@@ -1301,7 +1367,10 @@ static int RunAhMutPendingTest()
         full.Register(pm);
     }
     if (full.CanRegister(999999u))
-    { printf("ahmutpending FAIL: MAX_TOTAL not enforced\n"); return 1; }
+    {
+        printf("ahmutpending FAIL: MAX_TOTAL not enforced\n");
+        return 1;
+    }
 
     printf("ahmutpending OK\n");
     return 0;
@@ -1717,14 +1786,26 @@ static int RunAhMutResultTest()
         AhHandlePlayerMutationResult(res);
 
         if (rowState("test:mut:prior") != 2u)
-        { printf("ahmutresult FAIL: prior bid row not TERMINAL_BACK\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: prior bid row not TERMINAL_BACK\n");
+            pass = false;
+        }
         if (rowState("test:mut:own") != 0u)
-        { printf("ahmutresult FAIL: new live bid row must stay RESERVED\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: new live bid row must stay RESERVED\n");
+            pass = false;
+        }
         if (mailCount(777u, "19019:0:0") != 1u)
-        { printf("ahmutresult FAIL: outbid refund mail missing\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: outbid refund mail missing\n");
+            pass = false;
+        }
         PendingMutation gone;
         if (pend.Peek(0xA1ull, gone))
-        { printf("ahmutresult FAIL: OK pending not consumed\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: OK pending not consumed\n");
+            pass = false;
+        }
     }
 
     // ---- Part A2: MUT_OK sell -> no value motion, rows stay RESERVED ----
@@ -1770,10 +1851,16 @@ static int RunAhMutResultTest()
         AhHandlePlayerMutationResult(res);
 
         if (rowState("test:mut:dep") != 0u || rowState("test:mut:item") != 0u)
-        { printf("ahmutresult FAIL: sell OK must leave dep+item RESERVED\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: sell OK must leave dep+item RESERVED\n");
+            pass = false;
+        }
         PendingMutation gone;
         if (pend.Peek(0xA5ull, gone))
-        { printf("ahmutresult FAIL: sell pending not consumed\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: sell pending not consumed\n");
+            pass = false;
+        }
     }
 
     // ---- Part A3: MUT_OK op=0x42 buyout WIN (effectiveBid == buyout) ----
@@ -1827,16 +1914,31 @@ static int RunAhMutResultTest()
         AhHandlePlayerMutationResult(res);
 
         if (rowState("test:mut:bowin") != 1u)
-        { printf("ahmutresult FAIL: buyout-win reserve not TERMINAL_OK (proceeds)\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: buyout-win reserve not TERMINAL_OK (proceeds)\n");
+            pass = false;
+        }
         if (rowState("dep:990003") != 2u)
-        { printf("ahmutresult FAIL: buyout-win deposit not TERMINAL_BACK\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: buyout-win deposit not TERMINAL_BACK\n");
+            pass = false;
+        }
         if (rowState("item:990003") != 1u)
-        { printf("ahmutresult FAIL: buyout-win item not TERMINAL_OK\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: buyout-win item not TERMINAL_OK\n");
+            pass = false;
+        }
         if (mailCount(850u, "19019:0:2") != 1u)  // profit=800+50-cut(0 under -t)
-        { printf("ahmutresult FAIL: buyout-win seller payout mail missing\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: buyout-win seller payout mail missing\n");
+            pass = false;
+        }
         PendingMutation gone;
         if (pend.Peek(0xA8ull, gone))
-        { printf("ahmutresult FAIL: buyout-win pending not consumed\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: buyout-win pending not consumed\n");
+            pass = false;
+        }
     }
 
     // ---- Part A4: MUT_OK op=0x42 committed by worker as a NORMAL BID ----
@@ -1890,14 +1992,26 @@ static int RunAhMutResultTest()
         AhHandlePlayerMutationResult(res);
 
         if (rowState("test:mut:bobid") != 0u)
-        { printf("ahmutresult FAIL: buyout-as-bid reserve must stay RESERVED\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: buyout-as-bid reserve must stay RESERVED\n");
+            pass = false;
+        }
         if (rowState("test:mut:bobidprior") != 2u)
-        { printf("ahmutresult FAIL: buyout-as-bid prior bidder not refunded\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: buyout-as-bid prior bidder not refunded\n");
+            pass = false;
+        }
         if (mailCount(400u, "19019:0:0") != 1u)
-        { printf("ahmutresult FAIL: buyout-as-bid outbid refund mail missing\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: buyout-as-bid outbid refund mail missing\n");
+            pass = false;
+        }
         PendingMutation gone;
         if (pend.Peek(0xA9ull, gone))
-        { printf("ahmutresult FAIL: buyout-as-bid pending not consumed\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: buyout-as-bid pending not consumed\n");
+            pass = false;
+        }
     }
 
     // ---- Part A5: MUT_OK cancel CONFIRM finalizes seller return + deposit ----
@@ -1944,12 +2058,21 @@ static int RunAhMutResultTest()
         AhHandlePlayerMutationResult(res);
 
         if (rowState("dep:990005") != 1u)
-        { printf("ahmutresult FAIL: cancel-confirm deposit not TERMINAL_OK\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: cancel-confirm deposit not TERMINAL_OK\n");
+            pass = false;
+        }
         if (rowState("item:990005") != 1u)
-        { printf("ahmutresult FAIL: cancel-confirm item not TERMINAL_OK\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: cancel-confirm item not TERMINAL_OK\n");
+            pass = false;
+        }
         PendingMutation gone;
         if (pend.Peek(0xAAull, gone))
-        { printf("ahmutresult FAIL: cancel-confirm pending not consumed\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: cancel-confirm pending not consumed\n");
+            pass = false;
+        }
     }
 
     // ---- Part B: MUT_REJECTED buyout -> ReleaseGoldToWallet (offline) ----
@@ -1991,12 +2114,21 @@ static int RunAhMutResultTest()
         AhHandlePlayerMutationResult(res);
 
         if (rowState("test:mut:rej") != 2u)
-        { printf("ahmutresult FAIL: rejected row not TERMINAL_BACK\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: rejected row not TERMINAL_BACK\n");
+            pass = false;
+        }
         if (readMoney() != before + 555u)
-        { printf("ahmutresult FAIL: rejected release not credited\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: rejected release not credited\n");
+            pass = false;
+        }
         PendingMutation gone;
         if (pend.Peek(0xA2ull, gone))
-        { printf("ahmutresult FAIL: rejected pending not consumed\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: rejected pending not consumed\n");
+            pass = false;
+        }
     }
 
     // ---- Part C: MUT_REJECTED_STALE cancel -> release cut + resolve ----
@@ -2027,7 +2159,10 @@ static int RunAhMutResultTest()
         pend.Register(pm);
         pend.RearmConfirm(0xA3ull, uint32(time(NULL)));
         if (!pend.SetReserve(0xA3ull, 55u, "test:mut:cut"))
-        { printf("ahmutresult FAIL: SetReserve\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: SetReserve\n");
+            pass = false;
+        }
 
         uint64 const before = readMoney();
 
@@ -2041,12 +2176,21 @@ static int RunAhMutResultTest()
         AhHandlePlayerMutationResult(res);
 
         if (rowState("test:mut:cut") != 2u)
-        { printf("ahmutresult FAIL: stale cut row not TERMINAL_BACK\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: stale cut row not TERMINAL_BACK\n");
+            pass = false;
+        }
         if (readMoney() != before + 55u)
-        { printf("ahmutresult FAIL: stale cut not credited\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: stale cut not credited\n");
+            pass = false;
+        }
         PendingMutation gone;
         if (pend.Peek(0xA3ull, gone))
-        { printf("ahmutresult FAIL: stale pending not consumed\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: stale pending not consumed\n");
+            pass = false;
+        }
     }
 
     // ---- Part D: unknown uuid -> loud protocol fault, no crash ----
@@ -2089,7 +2233,10 @@ static int RunAhMutResultTest()
 
         PendingMutation gone;
         if (pend.Peek(0xA6ull, gone))
-        { printf("ahmutresult FAIL: PREPARED abort did not consume pending\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: PREPARED abort did not consume pending\n");
+            pass = false;
+        }
     }
 
     // ---- Part F: sweep tombstones a stale entry ----
@@ -2115,7 +2262,10 @@ static int RunAhMutResultTest()
         }
         PendingMutation t;
         if (!swept || !pend.Peek(0xA7ull, t) || t.state != uint8(PMUT_TOMBSTONE))
-        { printf("ahmutresult FAIL: sweep did not tombstone\n"); pass = false; }
+        {
+            printf("ahmutresult FAIL: sweep did not tombstone\n");
+            pass = false;
+        }
         AhNotifyMutationInDoubt(t);          // offline -> no packet; must not crash
         PendingMutation consumed;
         pend.Take(0xA7ull, consumed);        // clean the slot for re-runs
@@ -2214,23 +2364,47 @@ static int RunAhResolveTest()
         ra.facts.buyout = 800u;
 
         if (AhHandleResolveApply(ra) != uint8(RES_APPLIED))
-        { printf("ahresolve FAIL: WON not RES_APPLIED\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: WON not RES_APPLIED\n");
+            pass = false;
+        }
         if (!CustodyService::ResolutionApplied(0xB1ull))
-        { printf("ahresolve FAIL: WON applied-record missing\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: WON applied-record missing\n");
+            pass = false;
+        }
         if (rowState("bid:991001:1") != 1u)
-        { printf("ahresolve FAIL: WON bid row not TERMINAL_OK\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: WON bid row not TERMINAL_OK\n");
+            pass = false;
+        }
         if (rowState("dep:991001") != 1u)
-        { printf("ahresolve FAIL: WON dep row not TERMINAL_OK\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: WON dep row not TERMINAL_OK\n");
+            pass = false;
+        }
         if (rowState("item:991001") != 1u)
-        { printf("ahresolve FAIL: WON item row not TERMINAL_OK\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: WON item row not TERMINAL_OK\n");
+            pass = false;
+        }
         if (mailCount(850u, "19019:0:2") != 1u)   // profit = 800+50-cut(0 under -t)
-        { printf("ahresolve FAIL: WON seller payout mail missing\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: WON seller payout mail missing\n");
+            pass = false;
+        }
 
         // Duplicate: RES_DUPLICATE, no second payout mail, rows unchanged.
         if (AhHandleResolveApply(ra) != uint8(RES_DUPLICATE))
-        { printf("ahresolve FAIL: WON second apply not RES_DUPLICATE\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: WON second apply not RES_DUPLICATE\n");
+            pass = false;
+        }
         if (mailCount(850u, "19019:0:2") != 1u)
-        { printf("ahresolve FAIL: WON duplicate double-applied payout mail\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: WON duplicate double-applied payout mail\n");
+            pass = false;
+        }
     }
 
     // ---- RESOLVE_WON fail-closed [F2]: a REAL winner (curBidderGuid != 0) with
@@ -2271,15 +2445,30 @@ static int RunAhResolveTest()
         ra.facts.buyout = 700u;
 
         if (AhHandleResolveApply(ra) != uint8(RES_FAILED))
-        { printf("ahresolve FAIL: WON-fail-closed not RES_FAILED\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: WON-fail-closed not RES_FAILED\n");
+            pass = false;
+        }
         if (CustodyService::ResolutionApplied(0xB5ull))
-        { printf("ahresolve FAIL: WON-fail-closed wrote applied-record\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: WON-fail-closed wrote applied-record\n");
+            pass = false;
+        }
         if (mailCount(730u, "19019:0:2") != 0u)    // seller must NOT be paid (700+30-cut0)
-        { printf("ahresolve FAIL: WON-fail-closed paid the seller\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: WON-fail-closed paid the seller\n");
+            pass = false;
+        }
         if (rowState("dep:991005") != 0u)          // rolled back -> still RESERVED
-        { printf("ahresolve FAIL: WON-fail-closed dep row not rolled back\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: WON-fail-closed dep row not rolled back\n");
+            pass = false;
+        }
         if (rowState("item:991005") != 0u)         // rolled back -> still RESERVED
-        { printf("ahresolve FAIL: WON-fail-closed item row not rolled back\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: WON-fail-closed item row not rolled back\n");
+            pass = false;
+        }
     }
 
     // ---- RESOLVE_EXPIRED_NOBID: deposit forfeit + item returned ----
@@ -2309,15 +2498,30 @@ static int RunAhResolveTest()
         ra.facts.deposit = 40u;
 
         if (AhHandleResolveApply(ra) != uint8(RES_APPLIED))
-        { printf("ahresolve FAIL: EXPIRED not RES_APPLIED\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: EXPIRED not RES_APPLIED\n");
+            pass = false;
+        }
         if (rowState("dep:991002") != 1u)          // forfeit -> TERMINAL_OK
-        { printf("ahresolve FAIL: EXPIRED deposit not forfeit (TERMINAL_OK)\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: EXPIRED deposit not forfeit (TERMINAL_OK)\n");
+            pass = false;
+        }
         if (rowState("item:991002") != 1u)         // returned -> TERMINAL_OK
-        { printf("ahresolve FAIL: EXPIRED item not TERMINAL_OK\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: EXPIRED item not TERMINAL_OK\n");
+            pass = false;
+        }
         if (!CustodyService::ResolutionApplied(0xB2ull))
-        { printf("ahresolve FAIL: EXPIRED applied-record missing\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: EXPIRED applied-record missing\n");
+            pass = false;
+        }
         if (AhHandleResolveApply(ra) != uint8(RES_DUPLICATE))
-        { printf("ahresolve FAIL: EXPIRED second apply not RES_DUPLICATE\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: EXPIRED second apply not RES_DUPLICATE\n");
+            pass = false;
+        }
     }
 
     // ---- RESOLVE_CANCELLED_UNLOCK: cut released to seller, no item/bid move ----
@@ -2345,19 +2549,37 @@ static int RunAhResolveTest()
 
         uint64 const before = readMoney();
         if (AhHandleResolveApply(ra) != uint8(RES_APPLIED))
-        { printf("ahresolve FAIL: CANCELLED not RES_APPLIED\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: CANCELLED not RES_APPLIED\n");
+            pass = false;
+        }
         if (rowState("cut:991003:12345") != 2u)    // released -> TERMINAL_BACK
-        { printf("ahresolve FAIL: CANCELLED cut not TERMINAL_BACK\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: CANCELLED cut not TERMINAL_BACK\n");
+            pass = false;
+        }
         if (readMoney() != before + 55u)
-        { printf("ahresolve FAIL: CANCELLED cut not credited to seller\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: CANCELLED cut not credited to seller\n");
+            pass = false;
+        }
         if (!CustodyService::ResolutionApplied(0xB3ull))
-        { printf("ahresolve FAIL: CANCELLED applied-record missing\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: CANCELLED applied-record missing\n");
+            pass = false;
+        }
 
         uint64 const afterFirst = readMoney();
         if (AhHandleResolveApply(ra) != uint8(RES_DUPLICATE))
-        { printf("ahresolve FAIL: CANCELLED second apply not RES_DUPLICATE\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: CANCELLED second apply not RES_DUPLICATE\n");
+            pass = false;
+        }
         if (readMoney() != afterFirst)
-        { printf("ahresolve FAIL: CANCELLED duplicate double-credited\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: CANCELLED duplicate double-credited\n");
+            pass = false;
+        }
     }
 
     // ---- RESOLVE_REPAIR_RETURN (bot displaced a player): prior-bidder refund ----
@@ -2388,17 +2610,35 @@ static int RunAhResolveTest()
         ra.facts.priorBidAmount = 400u;
 
         if (AhHandleResolveApply(ra) != uint8(RES_APPLIED))
-        { printf("ahresolve FAIL: REPAIR not RES_APPLIED\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: REPAIR not RES_APPLIED\n");
+            pass = false;
+        }
         if (rowState("bid:991004:1") != 2u)        // prior bid -> TERMINAL_BACK
-        { printf("ahresolve FAIL: REPAIR prior bid not TERMINAL_BACK\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: REPAIR prior bid not TERMINAL_BACK\n");
+            pass = false;
+        }
         if (mailCount(400u, "19019:0:0") != 1u)    // outbid refund to guid 1
-        { printf("ahresolve FAIL: REPAIR prior-bidder refund mail missing\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: REPAIR prior-bidder refund mail missing\n");
+            pass = false;
+        }
         if (!CustodyService::ResolutionApplied(0xB4ull))
-        { printf("ahresolve FAIL: REPAIR applied-record missing\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: REPAIR applied-record missing\n");
+            pass = false;
+        }
         if (AhHandleResolveApply(ra) != uint8(RES_DUPLICATE))
-        { printf("ahresolve FAIL: REPAIR second apply not RES_DUPLICATE\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: REPAIR second apply not RES_DUPLICATE\n");
+            pass = false;
+        }
         if (mailCount(400u, "19019:0:0") != 1u)
-        { printf("ahresolve FAIL: REPAIR duplicate double-refunded\n"); pass = false; }
+        {
+            printf("ahresolve FAIL: REPAIR duplicate double-refunded\n");
+            pass = false;
+        }
     }
 
     // Clean up.
@@ -2702,11 +2942,20 @@ static int RunAhMaterializeTest()
         return 2;
     }
     if (res.status != INTENT_OK)
-    { printf("ahmaterialize FAIL: status %u != INTENT_OK\n", res.status); pass = false; }
+    {
+        printf("ahmaterialize FAIL: status %u != INTENT_OK\n", res.status);
+        pass = false;
+    }
     if (res.itemGuid == 0u)
-    { printf("ahmaterialize FAIL: itemGuid is zero\n"); pass = false; }
+    {
+        printf("ahmaterialize FAIL: itemGuid is zero\n");
+        pass = false;
+    }
     if (res.auctionId == 0u)
-    { printf("ahmaterialize FAIL: auctionId is zero\n"); pass = false; }
+    {
+        printf("ahmaterialize FAIL: auctionId is zero\n");
+        pass = false;
+    }
 
     uint32 const itemGuid  = res.itemGuid;
     uint32 const auctionId = res.auctionId;
@@ -2716,28 +2965,52 @@ static int RunAhMaterializeTest()
         std::unique_ptr<QueryResult> q(CharacterDatabase.PQuery(
             "SELECT `owner_guid` FROM `item_instance` WHERE `guid`=%u", itemGuid));
         if (!q)
-        { printf("ahmaterialize FAIL: item_instance row missing\n"); pass = false; }
+        {
+            printf("ahmaterialize FAIL: item_instance row missing\n");
+            pass = false;
+        }
         else if (q->Fetch()[0].GetUInt32() != botGuid)
-        { printf("ahmaterialize FAIL: item owner_guid != bot\n"); pass = false; }
+        {
+            printf("ahmaterialize FAIL: item owner_guid != bot\n");
+            pass = false;
+        }
     }
 
     // Durable botlist row records both ids in the expected shape.
     {
         CustodyRow row;
         if (!CustodyLedger::Get(key, row))
-        { printf("ahmaterialize FAIL: botlist row missing\n"); pass = false; }
+        {
+            printf("ahmaterialize FAIL: botlist row missing\n");
+            pass = false;
+        }
         else
         {
             if (row.itemGuid != itemGuid)
-            { printf("ahmaterialize FAIL: botlist item_guid mismatch\n"); pass = false; }
+            {
+                printf("ahmaterialize FAIL: botlist item_guid mismatch\n");
+                pass = false;
+            }
             if (row.auctionId != auctionId)
-            { printf("ahmaterialize FAIL: botlist auction_id mismatch\n"); pass = false; }
+            {
+                printf("ahmaterialize FAIL: botlist auction_id mismatch\n");
+                pass = false;
+            }
             if (row.kind != CUSTODY_ITEM)
-            { printf("ahmaterialize FAIL: botlist kind != CUSTODY_ITEM\n"); pass = false; }
+            {
+                printf("ahmaterialize FAIL: botlist kind != CUSTODY_ITEM\n");
+                pass = false;
+            }
             if (row.role != ROLE_RESOLUTION)
-            { printf("ahmaterialize FAIL: botlist role != ROLE_RESOLUTION\n"); pass = false; }
+            {
+                printf("ahmaterialize FAIL: botlist role != ROLE_RESOLUTION\n");
+                pass = false;
+            }
             if (row.state != CST_RESERVED)
-            { printf("ahmaterialize FAIL: botlist state != CST_RESERVED\n"); pass = false; }
+            {
+                printf("ahmaterialize FAIL: botlist state != CST_RESERVED\n");
+                pass = false;
+            }
         }
     }
 
@@ -2746,7 +3019,10 @@ static int RunAhMaterializeTest()
         std::unique_ptr<QueryResult> q(CharacterDatabase.PQuery(
             "SELECT 1 FROM `auction` WHERE `id`=%u", auctionId));
         if (q)
-        { printf("ahmaterialize FAIL: unexpected auction row inserted\n"); pass = false; }
+        {
+            printf("ahmaterialize FAIL: unexpected auction row inserted\n");
+            pass = false;
+        }
     }
 
     // ---- Part 2: redelivered uuid replays the SAME ids, no second mint ----
@@ -2755,20 +3031,35 @@ static int RunAhMaterializeTest()
         sAuctionIntentExecutor.TestMaterializeSell(si, out2, uint32(time(NULL)));
         IntentResult res2;
         if (out2.op != IPC_INTENT_RESULT || !res2.Decode(out2.body))
-        { printf("ahmaterialize FAIL: replay produced no reply\n"); pass = false; }
+        {
+            printf("ahmaterialize FAIL: replay produced no reply\n");
+            pass = false;
+        }
         else
         {
             if (res2.status != INTENT_OK)
-            { printf("ahmaterialize FAIL: replay status != INTENT_OK\n"); pass = false; }
+            {
+                printf("ahmaterialize FAIL: replay status != INTENT_OK\n");
+                pass = false;
+            }
             if (res2.itemGuid != itemGuid)
-            { printf("ahmaterialize FAIL: replay itemGuid changed\n"); pass = false; }
+            {
+                printf("ahmaterialize FAIL: replay itemGuid changed\n");
+                pass = false;
+            }
             if (res2.auctionId != auctionId)
-            { printf("ahmaterialize FAIL: replay auctionId changed\n"); pass = false; }
+            {
+                printf("ahmaterialize FAIL: replay auctionId changed\n");
+                pass = false;
+            }
         }
         std::unique_ptr<QueryResult> q(CharacterDatabase.PQuery(
             "SELECT COUNT(*) FROM `item_instance` WHERE `owner_guid`=%u", botGuid));
         if (q && q->Fetch()[0].GetUInt64() != 1u)
-        { printf("ahmaterialize FAIL: replay minted a second item\n"); pass = false; }
+        {
+            printf("ahmaterialize FAIL: replay minted a second item\n");
+            pass = false;
+        }
     }
 
     // ---- Part 3: orphan sweep reaps strays but spares delivered items ----
@@ -2791,25 +3082,40 @@ static int RunAhMaterializeTest()
             "       ('botlist:test:sold',1,4,0,%u,0,0,%u,%u,100,0)",
             botGuid, orphanItem, orphanAuc, botGuid, soldItem, soldAuc);
         if (!CharacterDatabase.CommitTransactionChecked())
-        { printf("ahmaterialize FAIL: sweep seed commit\n"); return 2; }
+        {
+            printf("ahmaterialize FAIL: sweep seed commit\n");
+            return 2;
+        }
 
         sAuctionIntentExecutor.SweepOrphanMaterializations(uint32(time(NULL)));
 
         std::unique_ptr<QueryResult> qo(CharacterDatabase.PQuery(
             "SELECT 1 FROM `item_instance` WHERE `guid`=%u", orphanItem));
         if (qo)
-        { printf("ahmaterialize FAIL: orphan item not swept\n"); pass = false; }
+        {
+            printf("ahmaterialize FAIL: orphan item not swept\n");
+            pass = false;
+        }
 
         std::unique_ptr<QueryResult> qs(CharacterDatabase.PQuery(
             "SELECT 1 FROM `item_instance` WHERE `guid`=%u", soldItem));
         if (!qs)
-        { printf("ahmaterialize FAIL: delivered item wrongly destroyed\n"); pass = false; }
+        {
+            printf("ahmaterialize FAIL: delivered item wrongly destroyed\n");
+            pass = false;
+        }
 
         CustodyRow tmp;
         if (CustodyLedger::Get("botlist:test:orphan", tmp))
-        { printf("ahmaterialize FAIL: orphan botlist row not deleted\n"); pass = false; }
+        {
+            printf("ahmaterialize FAIL: orphan botlist row not deleted\n");
+            pass = false;
+        }
         if (CustodyLedger::Get("botlist:test:sold", tmp))
-        { printf("ahmaterialize FAIL: sold botlist row not deleted\n"); pass = false; }
+        {
+            printf("ahmaterialize FAIL: sold botlist row not deleted\n");
+            pass = false;
+        }
     }
 
     // Clean up (Part-1 minted item survives the sweep; drop it + fixtures).

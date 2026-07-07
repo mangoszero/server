@@ -209,7 +209,10 @@ class BotBrain
 
         /// @brief Current low-32 uuid counter (introspection / test hook). The
         /// next NextUuid() mints @c CurrentSeq()+1.
-        uint32 CurrentSeq() const { return m_seq; }
+        uint32 CurrentSeq() const
+        {
+            return m_seq;
+        }
 
     private:
         // --- Orchestration ------------------------------------------------

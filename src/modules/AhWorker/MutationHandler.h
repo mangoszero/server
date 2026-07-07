@@ -71,7 +71,9 @@ class MutationHandler
     public:
         MutationHandler(AuctionBook& book, ServiceDatabase* db, uint32 runId);
 
-        virtual ~MutationHandler() {}
+        virtual ~MutationHandler()
+        {
+        }
 
         // --- SP-2 Task 7: expiry/win tick + resolve outbox ------------------
         // (spec 4.3 / 4.3b / 7 / decision 10)

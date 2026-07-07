@@ -696,8 +696,10 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
         it->DeleteFromInventoryDB();
         it->SaveToDB();
         pl->SaveInventoryAndGoldToDB();
-        CustodyService::EscrowItem(pl->GetGUIDLow(), itemGuidLow, "item:" + aucIdStr, auctionId);
-        CustodyService::ReserveGoldAlreadyDebited(pl->GetGUIDLow(), deposit, "dep:" + aucIdStr, auctionId, ROLE_DEPOSIT);
+        CustodyService::EscrowItem(pl->GetGUIDLow(), itemGuidLow,
+            "item:" + aucIdStr, auctionId);
+        CustodyService::ReserveGoldAlreadyDebited(pl->GetGUIDLow(), deposit,
+            "dep:" + aucIdStr, auctionId, ROLE_DEPOSIT);
         if (!CharacterDatabase.CommitTransactionChecked())
         {
             // Durable rollback -> restore live state (mirrors the custody S1
@@ -2241,7 +2243,8 @@ static void AhCreditWalletInTxn(uint32 guidLow, uint32 amount)
     }
     else
     {
-        CharacterDatabase.PExecute("UPDATE `characters` SET `money` = `money` + '%u' WHERE `guid` = '%u'", amount, guidLow);
+        CharacterDatabase.PExecute("UPDATE `characters` SET `money` = `money` + '%u' "
+            "WHERE `guid` = '%u'", amount, guidLow);
     }
 }
 
@@ -2310,7 +2313,8 @@ static void AhSellerPayoutFromFacts(MutationFacts const& f, CustodyDeferred& def
             Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, ownerGuidLow));
             if (p)
             {
-                p->GetSession()->SendAuctionOwnerNotificationData(houseId, aucId, bidValue, outbid, bidder, itemTpl, itemRand, true);
+            p->GetSession()->SendAuctionOwnerNotificationData(houseId, aucId,
+                bidValue, outbid, bidder, itemTpl, itemRand, true);
             }
         });
     }
@@ -2371,7 +2375,9 @@ static void AhItemToWinnerFromFacts(MutationFacts const& f, CustodyDeferred& def
                 Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, bidderGuidLow));
                 if (p)
                 {
-                    p->GetSession()->SendAuctionBidderNotificationData(houseId, aucId, bidderGuidLow, bidValue, outbid, itemTpl, itemRand, true);
+                    p->GetSession()->SendAuctionBidderNotificationData(houseId,
+                        aucId, bidderGuidLow, bidValue, outbid, itemTpl,
+                        itemRand, true);
                 }
             });
         }
@@ -2432,7 +2438,9 @@ static void AhRefundPriorBidderFromFacts(MutationFacts const& f, std::string con
             Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, priorGuidLow));
             if (p)
             {
-                p->GetSession()->SendAuctionBidderNotificationData(houseId, aucId, priorGuidLow, bidValue, outbid, itemTpl, itemRand, false);
+                p->GetSession()->SendAuctionBidderNotificationData(houseId,
+                    aucId, priorGuidLow, bidValue, outbid, itemTpl, itemRand,
+                    false);
             }
         });
     }
@@ -2527,7 +2535,8 @@ static void AhReturnItemToSellerFromFacts(MutationFacts const& f, uint32 mailRes
                 Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, ownerGuidLow));
                 if (p)
                 {
-                    p->GetSession()->SendAuctionOwnerNotificationData(houseId, aucId, 0, 0, 0, itemTpl, itemRand, false);
+                    p->GetSession()->SendAuctionOwnerNotificationData(houseId,
+                        aucId, 0, 0, 0, itemTpl, itemRand, false);
                 }
             });
         }

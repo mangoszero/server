@@ -47,7 +47,8 @@ namespace
         const char* armed = getenv("AH_WORKER_CRASH_AT");
         if (armed != NULL && phase != NULL && strcmp(armed, phase) == 0)
         {
-            fprintf(stderr, "ah-service: worker crash-injection: _exit(3) at phase '%s' (TEST ONLY)\n", phase);
+            fprintf(stderr, "ah-service: worker crash-injection: _exit(3) "
+                "at phase '%s' (TEST ONLY)\n", phase);
             fflush(NULL);   // flush ALL stdio streams -- _exit skips cleanup
             _exit(3);
         }

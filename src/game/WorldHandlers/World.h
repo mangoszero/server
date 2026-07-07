@@ -622,7 +622,10 @@ class World
         /// Is the AH worker the auction write-authority? BOOT-LATCHED (SP-2,
         /// spec decision 7): LoadConfigSettings reads the key only when
         /// !reload, so `.reload config` can never change it mid-run.
-        bool IsAhWriteAuthority() const { return getConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY); }
+        bool IsAhWriteAuthority() const
+        {
+            return getConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY);
+        }
 
         void KickAll();
         void KickAllLess(AccountTypes sec);
@@ -723,10 +726,13 @@ class World
         // Takes, and the once-per-second sweep collects timed-out entries.
         BrowsePendingMap& GetBrowsePending() { return m_browsePending; }
 
-        // SP-2: outstanding player mutations awaiting a worker reply
-        // (apply-all consume-once; world-thread owned). The forward branches
-        // Register (Task 10); the finalize pump Takes/Sweeps (Task 11).
-        MutationPendingMap& GetMutationPending() { return m_mutationPending; }
+        /// SP-2: outstanding player mutations awaiting a worker reply
+        /// (apply-all consume-once; world-thread owned). The forward branches
+        /// Register (Task 10); the finalize pump Takes/Sweeps (Task 11).
+        MutationPendingMap& GetMutationPending()
+        {
+            return m_mutationPending;
+        }
 
     protected:
         void _UpdateGameTime();
@@ -857,7 +863,7 @@ class World
         // SP-1: pending-map for async browse proxying (world-thread owned).
         BrowsePendingMap m_browsePending;
 
-        // SP-2: pending-map for async player mutations (world-thread owned).
+        /// SP-2: pending-map for async player mutations (world-thread owned).
         MutationPendingMap m_mutationPending;
 
         /**

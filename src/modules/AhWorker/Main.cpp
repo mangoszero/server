@@ -1082,7 +1082,8 @@ static int RunMutationSelfTest()
         }
         BookRow prepared = live;
         prepared.state = BOOK_CANCEL_PREPARED;
-        if (MutationHandler::ValidateBid(&prepared, 200u, 2000u, 0u, 0u, reason) != VALIDATE_REJECT ||
+        if (MutationHandler::ValidateBid(&prepared, 200u, 2000u, 0u, 0u,
+                                          reason) != VALIDATE_REJECT ||
             reason != BOOK_ERR_BID_OWN)
         {
             fprintf(stderr, "mutation selftest FAILED: bid vs prepared\n");
@@ -1113,12 +1114,14 @@ static int RunMutationSelfTest()
             return 1;
         }
         BookRow fresh = MakeRawRow(2u, 1u, 100u).row;  // bid 0, startbid 100
-        if (MutationHandler::ValidateBid(&fresh, 200u, 50u, 1u, 2u, reason) != VALIDATE_REJECT_SILENT)
+        if (MutationHandler::ValidateBid(&fresh, 200u, 50u, 1u, 2u,
+                                          reason) != VALIDATE_REJECT_SILENT)
         {
             fprintf(stderr, "mutation selftest FAILED: below-startbid must be silent\n");
             return 1;
         }
-        if (MutationHandler::ValidateBid(&live, 200u, 50000u, 1u, 2u, reason) != VALIDATE_REJECT_SILENT)
+        if (MutationHandler::ValidateBid(&live, 200u, 50000u, 1u, 2u,
+                                          reason) != VALIDATE_REJECT_SILENT)
         {
             fprintf(stderr, "mutation selftest FAILED: bid at buyout must be silent misuse\n");
             return 1;
@@ -1136,13 +1139,15 @@ static int RunMutationSelfTest()
         live.bid    = 1000u;
         live.bidder = 300u;
         uint8 reason = 99u;
-        if (MutationHandler::ValidateBuyout(NULL, 200u, 50000u, 0u, 0u, reason) != VALIDATE_REJECT ||
+        if (MutationHandler::ValidateBuyout(NULL, 200u, 50000u, 0u, 0u,
+                                            reason) != VALIDATE_REJECT ||
             reason != BOOK_ERR_BID_OWN)
         {
             fprintf(stderr, "mutation selftest FAILED: buyout vs absent\n");
             return 1;
         }
-        if (MutationHandler::ValidateBuyout(&live, 100u, 50000u, 0u, 0u, reason) != VALIDATE_REJECT ||
+        if (MutationHandler::ValidateBuyout(&live, 100u, 50000u, 0u, 0u,
+                                            reason) != VALIDATE_REJECT ||
             reason != BOOK_ERR_BID_OWN)
         {
             fprintf(stderr, "mutation selftest FAILED: self-buy\n");
@@ -1158,7 +1163,8 @@ static int RunMutationSelfTest()
         }
         // Below the min-increment on the bid leg -> BID_INCREMENT (bid 1000,
         // outbid 50, threshold 1050).
-        if (MutationHandler::ValidateBuyout(&live, 200u, 1049u, 1u, 2u, reason) != VALIDATE_REJECT ||
+        if (MutationHandler::ValidateBuyout(&live, 200u, 1049u, 1u, 2u,
+                                            reason) != VALIDATE_REJECT ||
             reason != BOOK_ERR_BID_INCREMENT)
         {
             fprintf(stderr, "mutation selftest FAILED: below-buyout buyout increment\n");
@@ -1166,14 +1172,16 @@ static int RunMutationSelfTest()
         }
         if (MutationHandler::ValidateBuyout(&live, 200u, 1050u, 1u, 2u, reason) != VALIDATE_ADMIT)
         {
-            fprintf(stderr, "mutation selftest FAILED: below-buyout buyout at-increment must admit\n");
+            fprintf(stderr, "mutation selftest FAILED: below-buyout buyout "
+                "at-increment must admit\n");
             return 1;
         }
         // Buyout-less row: maxPrice is always a bid (never a win); 60000 clears
         // the increment/startbid -> admit as bid.
         BookRow noBuyout = live;
         noBuyout.buyout = 0u;
-        if (MutationHandler::ValidateBuyout(&noBuyout, 200u, 60000u, 1u, 2u, reason) != VALIDATE_ADMIT)
+        if (MutationHandler::ValidateBuyout(&noBuyout, 200u, 60000u, 1u, 2u,
+                                            reason) != VALIDATE_ADMIT)
         {
             fprintf(stderr, "mutation selftest FAILED: buyout-less must admit as bid\n");
             return 1;
@@ -1181,9 +1189,11 @@ static int RunMutationSelfTest()
         // Below-startbid on the bid leg is a legacy silent reject (fresh row:
         // bid 0, startbid 100, buyout 50000).
         BookRow freshBuyout = MakeRawRow(4u, 1u, 100u).row;
-        if (MutationHandler::ValidateBuyout(&freshBuyout, 200u, 50u, 1u, 2u, reason) != VALIDATE_REJECT_SILENT)
+        if (MutationHandler::ValidateBuyout(&freshBuyout, 200u, 50u, 1u, 2u,
+                                            reason) != VALIDATE_REJECT_SILENT)
         {
-            fprintf(stderr, "mutation selftest FAILED: below-buyout below-startbid must be silent\n");
+            fprintf(stderr, "mutation selftest FAILED: below-buyout "
+                "below-startbid must be silent\n");
             return 1;
         }
         // At/over buyout is the removing WIN -> admit.
@@ -1342,7 +1352,8 @@ static int RunMutationSelfTest()
         if (r.status != MUT_REJECTED || r.reason != BOOK_ERR_BID_INCREMENT ||
             book.Find(41u) == NULL || book.Find(41u)->bid != 5000u)
         {
-            fprintf(stderr, "mutation selftest FAILED: OnBuyout below-buyout min-increment reject\n");
+            fprintf(stderr, "mutation selftest FAILED: OnBuyout below-buyout "
+                "min-increment reject\n");
             return 1;
         }
 
@@ -1358,7 +1369,8 @@ static int RunMutationSelfTest()
             r.facts.curBidderGuid != 207u || r.facts.buyout != 50000u ||
             r.facts.priorBidderGuid != 205u || r.facts.priorBidAmount != 5000u)
         {
-            fprintf(stderr, "mutation selftest FAILED: OnBuyout below-buyout outbid commits as bid\n");
+            fprintf(stderr, "mutation selftest FAILED: OnBuyout below-buyout "
+                "outbid commits as bid\n");
             return 1;
         }
 

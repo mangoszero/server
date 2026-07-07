@@ -379,12 +379,33 @@ hook, `AH.Service.CustodyFailCommitAt = finalize-fail`, is not a crash: it force
 one finalize checked-commit to roll back so the redrive path can be exercised
 without killing the process.
 
-| Seam | Config / env | Site | Fires when | Recovery proven |
-| --- | --- | --- | --- | --- |
-| `post-reserve-pre-forward` | `AH.Service.CustodyCrashAt` | `AuctionHouseHandler.cpp` sell + bid forward branches | after the escrow/deposit or bid reserve durably commits, before the intent is forwarded | reconcile releases the reserved-but-un-forwarded row -> gold/item returned |
-| `worker-committed-pre-reply` | `AH_WORKER_CRASH_AT` (worker env) | `MutationHandler::FinishCommit` (worker) | after the worker commits the book + journal `COMMITTED` row, before `IPC_PLAYER_RESULT` is sent | reconcile finalize-forwards from the journal `COMMITTED` row -> value applied once |
-| `resolving-pre-apply` | `AH.Service.CustodyCrashAt` | `AhHandleResolveApply` | after `WriteResolutionApplied` is queued, before its checked commit | worker re-sends `RESOLVE_APPLY`; the `ResolutionApplied` guard answers `DUPLICATE == APPLIED` -> no double apply |
-| `finalize-fail` | `AH.Service.CustodyFailCommitAt` | `AhFinalizeBidOk` value commit | forces ONE finalize commit to roll back (one-shot; process stays up) | the redrive queue re-drives forward-only; the worker book is never rolled back |
+* `post-reserve-pre-forward`
+  * Config: `AH.Service.CustodyCrashAt`
+  * Site: `AuctionHouseHandler.cpp` sell + bid forward branches
+  * Fires after the escrow/deposit or bid reserve durably commits, before the
+    intent is forwarded.
+  * Recovery: reconcile releases the reserved-but-un-forwarded row, returning
+    gold or item.
+* `worker-committed-pre-reply`
+  * Config: `AH_WORKER_CRASH_AT` (worker env)
+  * Site: `MutationHandler::FinishCommit` (worker)
+  * Fires after the worker commits the book + journal `COMMITTED` row, before
+    `IPC_PLAYER_RESULT` is sent.
+  * Recovery: reconcile finalize-forwards from the journal `COMMITTED` row, so
+    value is applied once.
+* `resolving-pre-apply`
+  * Config: `AH.Service.CustodyCrashAt`
+  * Site: `AhHandleResolveApply`
+  * Fires after `WriteResolutionApplied` is queued, before its checked commit.
+  * Recovery: worker re-sends `RESOLVE_APPLY`; the `ResolutionApplied` guard
+    answers `DUPLICATE == APPLIED`, so there is no double apply.
+* `finalize-fail`
+  * Config: `AH.Service.CustodyFailCommitAt`
+  * Site: `AhFinalizeBidOk` value commit
+  * Forces one finalize commit to roll back. This is one-shot and the process
+    stays up.
+  * Recovery: the redrive queue re-drives forward-only; the worker book is
+    never rolled back.
 
 **Per-seam operator procedure.** For each seam, on a clone with `WriteAuthority = 1`
 and `Custody = 1`:
