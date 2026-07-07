@@ -50,13 +50,13 @@
 
     #define CHAR_DB_VERSION_NR          "22"
     #define CHAR_DB_STRUCTURE_NR        "5"
-    #define CHAR_DB_CONTENT_NR          "1"
-    #define CHAR_DB_UPDATE_DESCRIPT     "Add_Custody_Ledger_Table"
+    #define CHAR_DB_CONTENT_NR          "2"
+    #define CHAR_DB_UPDATE_DESCRIPT     "Add_Ah_Worker_Journal"
 
     #define WORLD_DB_VERSION_NR         "22"
     #define WORLD_DB_STRUCTURE_NR       "5"
-    #define WORLD_DB_CONTENT_NR         "1"
-    #define WORLD_DB_UPDATE_DESCRIPT    "Grid_LwStats_Command"
+    #define WORLD_DB_CONTENT_NR         "6"
+    #define WORLD_DB_UPDATE_DESCRIPT    "AH_Command_Metadata_Cleanup"
 
     #define VER_COMPANY_NAME_STR        "MaNGOS Developers"
     #define VER_LEGALCOPYRIGHT_STR      "(c)2005-@rev_year@ MaNGOS"
