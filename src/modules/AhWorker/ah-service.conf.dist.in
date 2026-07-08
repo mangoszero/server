@@ -38,18 +38,19 @@ WorldDatabaseConnections = 1
 #    CharacterDatabaseInfo
 #        Character database connection string. Same host;port;user;pass;db
 #        format as mangosd.conf. The ah-service child opens its OWN character-DB
-#        connection used by MarketSnapshot to read the live auction tables, and
-#        only ever issues SELECTs against it.
+#        connection. It reads the live auction tables in both modes. With
+#        WriteAuthority enabled it also writes the auction book and worker
+#        journal directly.
 #
-#        SECURITY: as with WorldDatabaseInfo, do NOT copy mangosd's full
-#        read/write credentials here. Use a DEDICATED least-privilege MySQL
-#        account with SELECT-only grants so a compromised child cannot write the
-#        DB directly and bypass the mangosd executor authority. See the
-#        "Security" section of doc/AuctionHouseBot.md.
+#        SECURITY: use a DEDICATED least-privilege MySQL account, not mangosd's
+#        full read/write credentials. Read-only service mode needs SELECT only.
+#        WriteAuthority additionally requires INSERT, UPDATE, and DELETE on
+#        exactly `auction` and `ah_worker_journal`. See "Worker DB grant delta"
+#        in doc/AuctionHouseBot.md.
 #    Default: "" (disabled)
 #
-#    Example (point at a SELECT-only account, not mangosd's user):
-#    CharacterDatabaseInfo = "127.0.0.1;3306;ahbot_ro;change-me;character0"
+#    Example (point at the mode-appropriate dedicated account):
+#    CharacterDatabaseInfo = "127.0.0.1;3306;ahworker;change-me;character0"
 
 CharacterDatabaseInfo = ""
 
@@ -102,5 +103,26 @@ AhBot.UpdateIntervalMs = 20000
 #    Default: 1000
 
 AH.Service.TickMs = 1000
+
+#
+#    AH.Service.JournalPruneIntervalSec
+#        [SP-3] Worker-journal maintenance cadence in seconds. When
+#        WriteAuthority is active, the worker deletes terminal JRN_APPLIED rows
+#        older than AH.Service.JournalAppliedRetentionSec on this interval.
+#        Set to 0 to disable pruning.
+#    Default: 3600
+
+AH.Service.JournalPruneIntervalSec = 3600
+
+#
+#    AH.Service.JournalAppliedRetentionSec
+#        [SP-3] Retention window for terminal ah_worker_journal rows. Only
+#        JRN_APPLIED rows with resolved_time older than this many seconds are
+#        pruned; active COMMITTED, RESOLVING, CANCEL_PREPARED, and
+#        INTENT_PENDING rows are never deleted by this maintenance pass. Set to
+#        0 to disable pruning.
+#    Default: 2592000 (30 days)
+
+AH.Service.JournalAppliedRetentionSec = 2592000
 
 ###############################################################################

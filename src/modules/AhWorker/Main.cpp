@@ -78,10 +78,100 @@
 #include "AuctionBook.h"
 #include "MutationHandler.h"
 
+#include <ace/OS_NS_stdio.h>
+#include <ace/OS_NS_stdlib.h>
+#include <ace/OS_NS_unistd.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
+#include <string>
 #include <vector>
+
+static const uint32 AH_JOURNAL_APPLIED_RETENTION_SEC_DEFAULT =
+    30u * 24u * 60u * 60u;
+static const uint32 AH_JOURNAL_PRUNE_INTERVAL_SEC_DEFAULT = 60u * 60u;
+
+static bool AhParseNonNegativeSeconds(std::string const& text, uint32& result)
+{
+    if (text.empty())
+    {
+        return false;
+    }
+
+    uint64 value = 0u;
+    uint64 const maxValue = std::numeric_limits<uint32>::max();
+    for (std::string::const_iterator itr = text.begin(); itr != text.end(); ++itr)
+    {
+        if (*itr < '0' || *itr > '9')
+        {
+            return false;
+        }
+
+        uint32 const digit = static_cast<uint32>(*itr - '0');
+        if (value > (maxValue - digit) / 10u)
+        {
+            return false;
+        }
+        value = value * 10u + digit;
+    }
+
+    result = static_cast<uint32>(value);
+    return true;
+}
+
+static uint32 AhConfigNonNegativeSeconds(char const* name, uint32 defValue)
+{
+    char defText[16];
+    snprintf(defText, sizeof(defText), "%u", defValue);
+    std::string const text = sConfig.GetStringDefault(name, defText);
+
+    uint32 value = 0u;
+    if (AhParseNonNegativeSeconds(text, value))
+    {
+        return value;
+    }
+
+    fprintf(stderr, "ah-service: invalid %s value '%s' - using default %u\n",
+            name, text.c_str(), defValue);
+    return defValue;
+}
+
+static bool AhJournalPruneDue(uint64 now, uint64& nextPrune,
+                              uint32 intervalSec, uint32 retentionSec,
+                              uint64& cutoff)
+{
+    if (now == std::numeric_limits<uint64>::max())
+    {
+        return false;
+    }
+
+    if (intervalSec == 0u || retentionSec == 0u)
+    {
+        nextPrune = 0u;
+        return false;
+    }
+
+    if (nextPrune == 0u)
+    {
+        nextPrune = now + intervalSec;
+        return false;
+    }
+
+    if (now < nextPrune)
+    {
+        return false;
+    }
+
+    nextPrune = now + intervalSec;
+    if (now <= retentionSec)
+    {
+        return false;
+    }
+
+    cutoff = now - retentionSec;
+    return true;
+}
 
 // ---------------------------------------------------------------------------
 // Self-test: intent codec round-trip
@@ -1866,6 +1956,128 @@ static int RunJournalSelfTest()
     return 0;
 }
 
+static int RunJournalPruneSchedulerSelfTest()
+{
+    char configPath[] = "ah-service-prune-selftest-XXXXXX";
+    ACE_HANDLE const configHandle = ACE_OS::mkstemp(configPath);
+    if (configHandle == ACE_INVALID_HANDLE)
+    {
+        fprintf(stderr, "journal prune scheduler selftest FAILED:"
+                        " could not create config fixture\n");
+        return 1;
+    }
+
+    FILE* configFile = ACE_OS::fdopen(configHandle, "w");
+    if (configFile == nullptr)
+    {
+        ACE_OS::close(configHandle);
+        remove(configPath);
+        fprintf(stderr, "journal prune scheduler selftest FAILED:"
+                        " could not open config fixture\n");
+        return 1;
+    }
+
+    fprintf(configFile,
+            "[AhServiceConf]\n"
+            "AhTest.Valid = 3600\n"
+            "AhTest.Zero = 0\n"
+            "AhTest.Negative = -1\n"
+            "AhTest.Malformed = 3600oops\n"
+            "AhTest.Overflow = 4294967296\n");
+    fclose(configFile);
+
+    if (!sConfig.SetSource(configPath))
+    {
+        remove(configPath);
+        fprintf(stderr, "journal prune scheduler selftest FAILED:"
+                        " could not load config fixture\n");
+        return 1;
+    }
+    remove(configPath);
+
+    uint32 const fallback = 77u;
+    if (AhConfigNonNegativeSeconds("AhTest.Valid", fallback) != 3600u ||
+        AhConfigNonNegativeSeconds("AhTest.Zero", fallback) != 0u ||
+        AhConfigNonNegativeSeconds("AhTest.Missing", fallback) != fallback ||
+        AhConfigNonNegativeSeconds("AhTest.Negative", fallback) != fallback ||
+        AhConfigNonNegativeSeconds("AhTest.Malformed", fallback) != fallback ||
+        AhConfigNonNegativeSeconds("AhTest.Overflow", fallback) != fallback)
+    {
+        fprintf(stderr, "journal prune scheduler selftest FAILED:"
+                        " unsafe config value did not use default\n");
+        return 1;
+    }
+
+    uint64 nextPrune = 0u;
+    uint64 cutoff = 0u;
+
+    if (AhJournalPruneDue(1000u, nextPrune, 3600u, 100u, cutoff) ||
+        nextPrune != 4600u)
+    {
+        fprintf(stderr, "journal prune scheduler selftest FAILED:"
+                        " first call should only schedule\n");
+        return 1;
+    }
+
+    if (AhJournalPruneDue(4599u, nextPrune, 3600u, 100u, cutoff))
+    {
+        fprintf(stderr, "journal prune scheduler selftest FAILED:"
+                        " early call pruned\n");
+        return 1;
+    }
+
+    if (!AhJournalPruneDue(4600u, nextPrune, 3600u, 100u, cutoff) ||
+        cutoff != 4500u || nextPrune != 8200u)
+    {
+        fprintf(stderr, "journal prune scheduler selftest FAILED:"
+                        " due call did not prune with expected cutoff\n");
+        return 1;
+    }
+
+    nextPrune = 0u;
+    cutoff = 1234u;
+    if (AhJournalPruneDue(500u, nextPrune, 3600u, 1000u, cutoff) ||
+        cutoff != 1234u || nextPrune != 4100u)
+    {
+        fprintf(stderr, "journal prune scheduler selftest FAILED:"
+                        " retention underflow should not prune\n");
+        return 1;
+    }
+
+    nextPrune = 777u;
+    cutoff = 1234u;
+    if (AhJournalPruneDue(5000u, nextPrune, 0u, 100u, cutoff) ||
+        nextPrune != 0u || cutoff != 1234u)
+    {
+        fprintf(stderr, "journal prune scheduler selftest FAILED:"
+                        " zero interval should disable and reset\n");
+        return 1;
+    }
+
+    nextPrune = 777u;
+    if (AhJournalPruneDue(5000u, nextPrune, 3600u, 0u, cutoff) ||
+        nextPrune != 0u)
+    {
+        fprintf(stderr, "journal prune scheduler selftest FAILED:"
+                        " zero retention should disable and reset\n");
+        return 1;
+    }
+
+    nextPrune = 777u;
+    cutoff = 1234u;
+    if (AhJournalPruneDue(std::numeric_limits<uint64>::max(), nextPrune,
+                          3600u, 100u, cutoff) ||
+        nextPrune != 777u || cutoff != 1234u)
+    {
+        fprintf(stderr, "journal prune scheduler selftest FAILED:"
+                        " failed wall clock should not prune\n");
+        return 1;
+    }
+
+    printf("journal prune scheduler selftest OK\n");
+    return 0;
+}
+
 // ---------------------------------------------------------------------------
 // Self-test: SP-2 resolve outbox (worker expiry/win tick, Task 7)
 // ---------------------------------------------------------------------------
@@ -3299,6 +3511,11 @@ int main(int argc, char** argv)
         {
             return rc;
         }
+        rc = RunJournalPruneSchedulerSelfTest();
+        if (rc != 0)
+        {
+            return rc;
+        }
         rc = RunIntentCodecSelfTest();
         if (rc != 0)
         {
@@ -3619,6 +3836,13 @@ int main(int argc, char** argv)
     uint32 sinceMutTickMs = 0;
     const uint32 mutTickMs = static_cast<uint32>(
         sConfig.GetIntDefault("AH.Service.TickMs", 1000));
+    uint64 nextJournalPrune = 0u;
+    const uint32 journalPruneIntervalSec = AhConfigNonNegativeSeconds(
+        "AH.Service.JournalPruneIntervalSec",
+        AH_JOURNAL_PRUNE_INTERVAL_SEC_DEFAULT);
+    const uint32 journalAppliedRetentionSec = AhConfigNonNegativeSeconds(
+        "AH.Service.JournalAppliedRetentionSec",
+        AH_JOURNAL_APPLIED_RETENTION_SEC_DEFAULT);
 
     while (!stop)
     {
@@ -3926,9 +4150,18 @@ int main(int argc, char** argv)
         // the dispatch above -- no tick-vs-handler race by construction).
         if (ahHandler != nullptr)
         {
-            ahHandler->CheckPrepareTimeouts(static_cast<uint64>(time(NULL)));
+            uint64 const wallNow = static_cast<uint64>(time(NULL));
+            ahHandler->CheckPrepareTimeouts(wallNow);
             // SP-2 Task 8: re-send / abandon in-flight bot-sell materializations.
-            ahHandler->ResendStalePendingSells(static_cast<uint64>(time(NULL)));
+            ahHandler->ResendStalePendingSells(wallNow);
+
+            uint64 journalCutoff = 0u;
+            if (AhJournalPruneDue(wallNow, nextJournalPrune,
+                                  journalPruneIntervalSec,
+                                  journalAppliedRetentionSec, journalCutoff))
+            {
+                AhJournal::DeleteAppliedOlderThan(botDb, journalCutoff);
+            }
         }
 
         // --- Bot cadence tick ---
