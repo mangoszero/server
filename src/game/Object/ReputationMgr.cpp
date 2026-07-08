@@ -397,16 +397,26 @@ bool ReputationMgr::SetOneFactionReputation(FactionEntry const* factionEntry, in
             standing = Reputation_Bottom;
         }
 
+        ReputationRank oldRank = ReputationToRank(faction.Standing + BaseRep);
+
         faction.Standing = standing - BaseRep;
         faction.needSend = true;
         faction.needSave = true;
 
         SetVisible(&faction);
 
-        // check and, if needed, modify AtWar flag every rep rank crossing
-        if (ReputationToRank(standing) != ReputationToRank(BaseRep))
+        ReputationRank newRank = ReputationToRank(standing);
+
+        if (newRank != oldRank)
         {
-            SetAtWar(&itr->second, ReputationToRank(standing) <= REP_HOSTILE);
+            if (newRank <= REP_HOSTILE)
+            {
+                SetAtWar(&itr->second, true);
+            }
+            else if (newRank >= REP_FRIENDLY)
+            {
+                SetAtWar(&itr->second, false);
+            }
         }
 
         m_player->ReputationChanged(factionEntry);
