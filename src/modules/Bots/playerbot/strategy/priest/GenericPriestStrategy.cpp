@@ -40,6 +40,10 @@ void GenericPriestStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         NextAction::array(0, new NextAction("power word: shield on party", 50.0f), new NextAction("greater heal on party", 50.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
+            "enemy too close for spell no aggro",
+        NextAction::array(0, new NextAction("flee", 15.0f), NULL)));
+
+    triggers.push_back(new TriggerNode(
             "dispel magic",
         NextAction::array(0, new NextAction("dispel magic", 41.0f), NULL)));
 
