@@ -19,40 +19,16 @@ bool ReachAreaTriggerAction::Execute(Event event)
     }
 
     AreaTrigger const* at = sObjectMgr.GetAreaTrigger(triggerId);
-    if (!at)
-    {
-        WorldPacket p1(CMSG_AREATRIGGER);
-        p1 << triggerId;
-        p1.rpos(0);
-        bot->GetSession()->HandleAreaTriggerOpcode(p1);
-
-        return true;
-    }
-
-    if (at->condition && !sObjectMgr.IsPlayerMeetToCondition(at->condition, bot, bot->GetMap(), NULL, CONDITION_AREA_TRIGGER))
+    if (at && at->condition && !sObjectMgr.IsPlayerMeetToCondition(at->condition, bot, bot->GetMap(), NULL, CONDITION_AREA_TRIGGER))
     {
         ai->TellMaster("I won't follow: I don't meet the conditions");
         return false;
     }
 
-    if (bot->GetMapId() != atEntry->mapid || bot->GetDistance(atEntry->x, atEntry->y, atEntry->z) > sPlayerbotAIConfig.sightDistance)
-    {
-        ai->TellMaster("I won't follow: too far away");
-        return true;
-    }
-
-    bool wasFollowing = ai->HasStrategy("follow master", BOT_STATE_NON_COMBAT);
-    ai->ChangeStrategy("-follow master,+stay", BOT_STATE_NON_COMBAT);
-
-    MotionMaster &mm = *bot->GetMotionMaster();
-    mm.Clear();
-    mm.MovePoint(atEntry->mapid, atEntry->x, atEntry->y, atEntry->z);
-    float distance = bot->GetDistance(atEntry->x, atEntry->y, atEntry->z);
-    float delay = 1000.0f * distance / bot->GetSpeed(MOVE_RUN) + sPlayerbotAIConfig.reactDelay;
-    ai->TellMaster("Wait for me");
-    ai->SetNextCheckDelay(delay);
-    context->GetValue<LastMovement&>("last movement")->Get().lastAreaTrigger = triggerId;
-    context->GetValue<LastMovement&>("last movement")->Get().lastFollowState = wasFollowing;
+    WorldPacket p1(CMSG_AREATRIGGER);
+    p1 << triggerId;
+    p1.rpos(0);
+    bot->GetSession()->HandleAreaTriggerOpcode(p1);
     return true;
 }
 
