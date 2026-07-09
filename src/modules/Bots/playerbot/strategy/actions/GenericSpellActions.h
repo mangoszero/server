@@ -116,6 +116,7 @@ namespace ai
     {
         public:
             CastDebuffSpellAction(PlayerbotAI* ai, string spell) : CastAuraSpellAction(ai, spell) {}
+            virtual bool isUseful();
     };
 
     class CastDebuffSpellOnAttackerAction : public CastAuraSpellAction

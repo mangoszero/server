@@ -41,6 +41,58 @@ bool CastAuraSpellAction::isUseful()
     return CastSpellAction::isUseful() && !ai->HasAura(spell, GetTarget());
 }
 
+bool CastDebuffSpellAction::isUseful()
+{
+    if (!CastAuraSpellAction::isUseful())
+    {
+        return false;
+    }
+
+    Unit* target = GetTarget();
+    if (!target)
+    {
+        return true;
+    }
+
+    Player* bot = ai->GetBot();
+    Group* group = bot->GetGroup();
+    if (!group || group->GetTargetIcon(4) != target->GetObjectGuid())
+    {
+        return true;
+    }
+
+    Player* tank = ai->GetGroupTank(bot);
+    if (!tank)
+    {
+        return true;
+    }
+
+    Unit* tankVictim = tank->getVictim();
+    if (tankVictim && tankVictim->GetObjectGuid() == target->GetObjectGuid())
+    {
+        return true;
+    }
+
+    uint32 spellId = AI_VALUE2(uint32, "spell id", spell);
+    if (spellId)
+    {
+        const SpellEntry* spellInfo = sSpellStore.LookupEntry(spellId);
+        if (spellInfo)
+        {
+            for (int j = 0; j < MAX_EFFECT_INDEX; ++j)
+            {
+                if (spellInfo->EffectAura[j] == SPELL_AURA_PERIODIC_DAMAGE ||
+                    spellInfo->EffectAura[j] == SPELL_AURA_PERIODIC_DAMAGE_PERCENT)
+                {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
 bool CastEnchantItemAction::isUseful()
 {
     if (!CastSpellAction::isUseful())
