@@ -74,11 +74,13 @@ namespace ai
                 creators["max dps"] = &ChatTriggerContext::max_dps;
                 creators["attackers"] = &ChatTriggerContext::attackers;
                 creators["jump"] = &ChatTriggerContext::jump;
+                creators["cc"] = &ChatTriggerContext::cc_cmd;
             }
 
         private:
             static Trigger* attackers(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "attackers"); }
             static Trigger* jump(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "jump"); }
+            static Trigger* cc_cmd(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "cc"); }
             static Trigger* max_dps(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "max dps"); }
             static Trigger* save_mana(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "save mana"); }
             static Trigger* who(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "who"); }

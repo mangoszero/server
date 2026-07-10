@@ -48,6 +48,7 @@
 #include "UseMeetingStoneAction.h"
 #include "WhoAction.h"
 #include "SaveManaAction.h"
+#include "CcActions.h"
 
 namespace ai
 {
@@ -113,10 +114,12 @@ namespace ai
                 creators["save mana"] = &ChatActionContext::save_mana;
                 creators["max dps chat shortcut"] = &ChatActionContext::max_dps_chat_shortcut;
                 creators["tell attackers"] = &ChatActionContext::tell_attackers;
+                creators["cc on my target"] = &ChatActionContext::cc_on_my_target;
             }
 
         private:
             static Action* tell_attackers(PlayerbotAI* ai) { return new TellAttackersAction(ai); }
+            static Action* cc_on_my_target(PlayerbotAI* ai) { return new CastCcOnMyTargetAction(ai); }
             static Action* max_dps_chat_shortcut(PlayerbotAI* ai) { return new MaxDpsChatShortcutAction(ai); }
             static Action* save_mana(PlayerbotAI* ai) { return new SaveManaAction(ai); }
             static Action* who(PlayerbotAI* ai) { return new WhoAction(ai); }

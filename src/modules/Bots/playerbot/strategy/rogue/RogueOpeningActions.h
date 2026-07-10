@@ -33,6 +33,11 @@ namespace ai
                 }
                 return result;
             }
+
+            virtual NextAction** getPrerequisites()
+            {
+                return Action::getPrerequisites();
+            }
     };
 
     class CastGarroteAction : public CastStealthedOpeningAction

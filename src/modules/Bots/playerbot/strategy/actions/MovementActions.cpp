@@ -554,6 +554,46 @@ bool MovementAction::IsAggroPosition(float x, float y)
     return CalculateAggroFreeDistance(bx, by, angle, dist) < dist;
 }
 
+bool MovementAction::FindNearbyLosPoint(Unit* target, float& nx, float& ny,
+                                        float& nz, float maxRadius)
+{
+    if (!target)
+    {
+        return false;
+    }
+
+    float bx = bot->GetPositionX();
+    float by = bot->GetPositionY();
+    float bz = bot->GetPositionZ();
+    float tx = target->GetPositionX();
+    float ty = target->GetPositionY();
+    float tz = target->GetPositionZ();
+
+    Map* map = bot->GetMap();
+
+    for (float r = 2.0f; r <= maxRadius; r += 2.0f)
+    {
+        int steps = std::max(8, (int)(2.0f * M_PI * r / 2.0f));
+        for (int i = 0; i < steps; i++)
+        {
+            float angle = 2.0f * M_PI * i / steps;
+            float x = bx + r * cos(angle);
+            float y = by + r * sin(angle);
+            float z = map->GetHeight(x, y, bz);
+
+            if (map->IsInLineOfSight(x, y, z + 2.0f, tx, ty, tz + 2.0f) &&
+                IsMovingAllowed(map->GetId(), x, y, z))
+            {
+                nx = x;
+                ny = y;
+                nz = z;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool FleeAction::Execute(Event event)
 {
     return Flee(AI_VALUE(Unit*, "current target"));

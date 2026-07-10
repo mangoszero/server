@@ -19,7 +19,7 @@ namespace ai
             {
                 return NextAction::array(0,
                     new NextAction("stealth", ACTION_HIGH + 3),
-                    new NextAction("reach melee", ACTION_HIGH + 2),
+                    new NextAction("reach sap", ACTION_HIGH + 2),
                     new NextAction("sap", ACTION_HIGH + 1),
                     new NextAction("end sap", ACTION_NORMAL + 1),
                     new NextAction("follow master", ACTION_NORMAL),

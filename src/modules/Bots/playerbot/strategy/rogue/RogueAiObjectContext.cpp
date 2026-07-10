@@ -104,6 +104,7 @@ namespace ai
                     creators["sap"] = &AiObjectContextInternal::sap;
                     creators["begin sap"] = &AiObjectContextInternal::begin_sap;
                     creators["end sap"] = &AiObjectContextInternal::end_sap;
+                    creators["reach sap"] = &AiObjectContextInternal::reach_sap;
                     creators["garrote"] = &AiObjectContextInternal::garrote;
                     creators["cheap shot"] = &AiObjectContextInternal::cheap_shot;
                     creators["stealth"] = &AiObjectContextInternal::stealth;
@@ -129,6 +130,7 @@ namespace ai
                 static Action* sap(PlayerbotAI* ai) { return new CastSapAction(ai); }
                 static Action* begin_sap(PlayerbotAI* ai) { return new BeginSapAction(ai); }
                 static Action* end_sap(PlayerbotAI* ai) { return new EndSapAction(ai); }
+                static Action* reach_sap(PlayerbotAI* ai) { return new ReachSapAction(ai); }
                 static Action* garrote(PlayerbotAI* ai) { return new CastGarroteAction(ai); }
                 static Action* cheap_shot(PlayerbotAI* ai) { return new CastCheapShotAction(ai); }
                 static Action* stealth(PlayerbotAI* ai) { return new CastStealthAction(ai); }

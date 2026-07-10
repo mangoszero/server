@@ -30,6 +30,8 @@ namespace ai
             bool Flee(Unit *target);
             float CalculateAggroFreeDistance(float bx, float by, float angle, float maxDist);
             bool IsAggroPosition(float x, float y);
+            bool FindNearbyLosPoint(Unit* target, float& nx, float& ny,
+                                    float& nz, float maxRadius = 20.0f);
 
         protected:
             Player* bot;

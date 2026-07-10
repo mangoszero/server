@@ -16,6 +16,7 @@
 #include "PullActions.h"
 #include "FishWithMasterAction.h"
 #include "RestoreWeaponsAction.h"
+#include "CcActions.h"
 
 namespace ai
 {
@@ -87,6 +88,7 @@ namespace ai
                 creators["fish with master"] = &ActionContext::fish_with_master;
                 creators["restore weapons"] = &ActionContext::restore_weapons;
                 creators["swim to surface"] = &ActionContext::swim_to_surface;
+                creators["cc reach spell"] = &ActionContext::cc_reach_spell;
             }
 
         private:
@@ -152,6 +154,7 @@ namespace ai
             static Action* fish_with_master(PlayerbotAI* ai) { return new FishWithMasterAction(ai); }
             static Action* restore_weapons(PlayerbotAI* ai) { return new RestoreWeaponsAction(ai); }
             static Action* swim_to_surface(PlayerbotAI* ai) { return new SwimToSurfaceAction(ai); }
+            static Action* cc_reach_spell(PlayerbotAI* ai) { return new CcReachSpellAction(ai); }
 
     };
 };

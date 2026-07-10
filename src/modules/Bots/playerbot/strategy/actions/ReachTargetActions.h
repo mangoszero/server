@@ -60,6 +60,79 @@ namespace ai
             }
     };
 
+    class ReachSapAction : public MovementAction
+    {
+        public:
+            ReachSapAction(PlayerbotAI* ai) : MovementAction(ai, "reach sap") {}
+
+            virtual bool Execute(Event event)
+            {
+                Unit* target = AI_VALUE(Unit*, "current target");
+                if (!target)
+                {
+                    return false;
+                }
+
+                float tx = target->GetPositionX();
+                float ty = target->GetPositionY();
+                float tz = target->GetPositionZ();
+                float ori = target->GetOrientation();
+
+                float behindX = tx - cos(ori) * 4.0f;
+                float behindY = ty - sin(ori) * 4.0f;
+
+                float distBehind = bot->GetDistance(behindX, behindY, tz);
+                if (distBehind <= sPlayerbotAIConfig.contactDistance)
+                {
+                    return false;
+                }
+
+                float bx = bot->GetPositionX();
+                float by = bot->GetPositionY();
+                float dx = bx - tx;
+                float dy = by - ty;
+                float dot = dx * cos(ori) + dy * sin(ori);
+
+                if (dot > 0.0f)
+                {
+                    float cross = dx * sin(ori) - dy * cos(ori);
+                    float flankAngle = ori + (cross > 0.0f ? M_PI / 2.0f : -M_PI / 2.0f);
+                    float flankX = tx + cos(flankAngle) * 4.0f;
+                    float flankY = ty + sin(flankAngle) * 4.0f;
+
+                    float distFlank = bot->GetDistance(flankX, flankY, tz);
+                    if (distFlank < sPlayerbotAIConfig.contactDistance * 3.0f)
+                    {
+                        return MoveTo(target->GetMapId(), behindX, behindY, tz, true);
+                    }
+                    return MoveTo(target->GetMapId(), flankX, flankY, tz, true);
+                }
+                else
+                {
+                    return MoveTo(target->GetMapId(), behindX, behindY, tz, true);
+                }
+            }
+
+            virtual bool isUseful()
+            {
+                Unit* target = AI_VALUE(Unit*, "current target");
+                if (!target || !target->IsAlive() || !ai->HasAura("stealth", bot))
+                {
+                    return false;
+                }
+
+                float tx = target->GetPositionX();
+                float ty = target->GetPositionY();
+                float tz = target->GetPositionZ();
+                float ori = target->GetOrientation();
+
+                float behindX = tx - cos(ori) * 4.0f;
+                float behindY = ty - sin(ori) * 4.0f;
+
+                return bot->GetDistance(behindX, behindY, tz) > sPlayerbotAIConfig.contactDistance;
+            }
+    };
+
     class BackOffAction : public ReachTargetAction
     {
         public:

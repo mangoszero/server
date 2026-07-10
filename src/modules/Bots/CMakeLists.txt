@@ -72,6 +72,8 @@ set(BOT_SRCS
     playerbot/strategy/actions/BuyAction.h
     playerbot/strategy/actions/CastCustomSpellAction.cpp
     playerbot/strategy/actions/CastCustomSpellAction.h
+    playerbot/strategy/actions/CcActions.h
+    playerbot/strategy/actions/CcActions.cpp
     playerbot/strategy/actions/ChangeChatAction.cpp
     playerbot/strategy/actions/ChangeChatAction.h
     playerbot/strategy/actions/ChangeStrategyAction.cpp
@@ -486,6 +488,8 @@ set(BOT_SRCS
     playerbot/strategy/values/AttackerWithoutAuraTargetValue.cpp
     playerbot/strategy/values/AttackerWithoutAuraTargetValue.h
     playerbot/strategy/values/AvailableLootValue.h
+    playerbot/strategy/values/CcReachTargetValue.cpp
+    playerbot/strategy/values/CcReachTargetValue.h
     playerbot/strategy/values/CcTargetValue.cpp
     playerbot/strategy/values/CcTargetValue.h
     playerbot/strategy/values/ChatValue.h

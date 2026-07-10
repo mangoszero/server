@@ -60,6 +60,7 @@
 #include "SpellRangeValue.h"
 #include "LastTargetPositionValue.h"
 #include "MasterBobberValue.h"
+#include "CcReachTargetValue.h"
 
 namespace ai
 {
@@ -155,6 +156,7 @@ namespace ai
                 creators["puller target"] = &ValueContext::puller_target;
                 creators["spell range"] = &ValueContext::spell_range;
                 creators["last target position"] = &ValueContext::last_target_position;
+                creators["cc reach target"] = &ValueContext::cc_reach_target;
             }
 
         private:
@@ -244,5 +246,6 @@ namespace ai
             static UntypedValue* puller_target(PlayerbotAI* ai) { return new PullerTargetValue(ai); }
             static UntypedValue* spell_range(PlayerbotAI* ai) { return new SpellRangeValue(ai); }
             static UntypedValue* last_target_position(PlayerbotAI* ai) { return new LastTargetPositionValue(ai); }
+            static UntypedValue* cc_reach_target(PlayerbotAI* ai) { return new CcReachTargetValue(ai); }
     };
 };

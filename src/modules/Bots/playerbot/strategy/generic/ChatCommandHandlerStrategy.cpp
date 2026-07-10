@@ -11,6 +11,7 @@ class ChatCommandActionNodeFactoryInternal : public NamedObjectFactory<ActionNod
         {
             creators["tank attack chat shortcut"] = &tank_attack_chat_shortcut;
             creators["goto"] = &goto_action;
+            creators["cc on my target"] = &cc_on_my_target;
         }
 
     private:
@@ -24,6 +25,13 @@ class ChatCommandActionNodeFactoryInternal : public NamedObjectFactory<ActionNod
         static ActionNode* goto_action(PlayerbotAI* ai)
         {
             return (new ActionNode ("goto",
+                /*P*/ NULL,
+                /*A*/ NULL,
+                /*C*/ NULL))->persist(3600000);
+        }
+        static ActionNode* cc_on_my_target(PlayerbotAI* ai)
+        {
+            return (new ActionNode ("cc on my target",
                 /*P*/ NULL,
                 /*A*/ NULL,
                 /*C*/ NULL))->persist(3600000);
@@ -147,6 +155,10 @@ void ChatCommandHandlerStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     triggers.push_back(new TriggerNode(
             "attackers",
         NextAction::array(0, new NextAction("tell attackers", relevance), NULL)));
+
+    triggers.push_back(new TriggerNode(
+            "cc",
+        NextAction::array(0, new NextAction("cc on my target", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
             "jump",
