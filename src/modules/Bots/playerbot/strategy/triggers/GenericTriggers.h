@@ -169,12 +169,6 @@ namespace ai
             float distance;
     };
 
-    class HasAttackersTrigger : public AttackerCountTrigger
-    {
-        public:
-            HasAttackersTrigger(PlayerbotAI* ai) : AttackerCountTrigger(ai, 1) {}
-    };
-
     class MyAttackerCountTrigger : public AttackerCountTrigger
     {
         public:
@@ -184,6 +178,16 @@ namespace ai
             virtual string getName()
             {
                 return "my attacker count";
+            }
+    };
+
+    class HasAttackersTrigger : public MyAttackerCountTrigger
+    {
+        public:
+            HasAttackersTrigger(PlayerbotAI* ai) : MyAttackerCountTrigger(ai, 1) {}
+            virtual string getName()
+            {
+                return "has attackers";
             }
     };
 
