@@ -47,7 +47,7 @@ void ConfusedMovementGenerator<T>::Initialize(T& unit)
         return;
     }
 
-    unit.StopMoving();
+    unit.InterruptMoving();
     unit.addUnitState(UNIT_STAT_CONFUSED_MOVE);
 }
 
