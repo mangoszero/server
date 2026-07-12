@@ -13,6 +13,15 @@ SpellIdValue::SpellIdValue(PlayerbotAI* ai)
 uint32 SpellIdValue::Calculate()
 {
     string namepart = qualifier;
+
+    // Strip surrounding quotes passed through from whisper text
+    if (namepart.size() >= 2 &&
+        (namepart.front() == '"' || namepart.front() == '\'') &&
+        namepart.back() == namepart.front())
+    {
+        namepart = namepart.substr(1, namepart.size() - 2);
+    }
+
     wstring wnamepart;
 
     if (!Utf8toWStr(namepart, wnamepart))
@@ -21,7 +30,7 @@ uint32 SpellIdValue::Calculate()
     }
 
     wstrToLower(wnamepart);
-    char firstSymbol = tolower(qualifier[0]);
+    char firstSymbol = tolower(namepart[0]);
     int spellLength = wnamepart.length();
 
     int loc = bot->GetSession()->GetSessionDbcLocale();
