@@ -215,7 +215,9 @@ bool TargetedMovementGeneratorMedium<T, D>::Update(T& owner, const uint32& time_
     if (i_recheckDistance.Passed())
     {
         i_recheckDistance.Reset(this->GetMovementGeneratorType() == FOLLOW_MOTION_TYPE ? 50 : 100);
-        G3D::Vector3 dest = owner.movespline->FinalDestination();
+        G3D::Vector3 dest = owner.movespline->Finalized()
+            ? G3D::Vector3(owner.GetPositionX(), owner.GetPositionY(), owner.GetPositionZ())
+            : owner.movespline->FinalDestination();
         targetMoved = RequiresNewPosition(owner, dest.x, dest.y, dest.z);
         if (!targetMoved)
         {

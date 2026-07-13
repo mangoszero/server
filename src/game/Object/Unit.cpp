@@ -5318,7 +5318,6 @@ void Unit::InterruptMoving(bool forceSendStop /*=false*/)
     if (!movespline->Finalized())
     {
         Movement::Location loc = movespline->ComputePosition();
-        movespline->_Interrupt();
         if (GetTypeId() == TYPEID_PLAYER)
         {
             ((Player*)this)->SetPosition(loc.x, loc.y, loc.z, loc.orientation);
