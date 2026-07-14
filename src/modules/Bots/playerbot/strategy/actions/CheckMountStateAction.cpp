@@ -35,9 +35,54 @@ bool CheckMountStateAction::Execute(Event event)
     return false;
 }
 
+class FindMountItemVisitor : public IterateItemsVisitor
+{
+    public:
+        explicit FindMountItemVisitor(int32 minSpeed) : IterateItemsVisitor(), minSpeed(minSpeed), best(nullptr), bestSpeed(-1) {}
+
+        virtual bool Visit(Item* item)
+        {
+            for (int s = 0; s < MAX_ITEM_PROTO_SPELLS; ++s)
+            {
+                uint32 spellId = item->GetProto()->Spells[s].SpellId;
+                if (!spellId)
+                {
+                    continue;
+                }
+
+                SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellId);
+                if (!spellInfo || spellInfo->EffectAura[0] != SPELL_AURA_MOUNTED)
+                {
+                    continue;
+                }
+
+                int32 speed = max(spellInfo->EffectBasePoints[1], spellInfo->EffectBasePoints[2]);
+                if (speed >= minSpeed && speed > bestSpeed)
+                {
+                    bestSpeed = speed;
+                    best = item;
+                }
+            }
+            return true;
+        }
+
+        Item* GetResult() { return best; }
+
+    private:
+        int32 minSpeed;
+        Item* best;
+        int32 bestSpeed;
+};
+
 bool CheckMountStateAction::Mount()
 {
     Player* master = GetMaster();
+
+    if (bot->IsNonMeleeSpellCasted(true))
+    {
+        return false;
+    }
+
     ai->RemoveShapeshift();
     Unit::AuraList const& auras = master->GetAurasByType(SPELL_AURA_MOUNTED);
     if (auras.empty())
@@ -82,8 +127,22 @@ bool CheckMountStateAction::Mount()
         }
 
         ai->CastSpell(ids[index], bot);
+        ai->SetNextCheckDelay(4000);
         return true;
     }
 
-    return false;
+    FindMountItemVisitor visitor(masterSpeed);
+    IterateItems(&visitor);
+    Item* mountItem = visitor.GetResult();
+    if (!mountItem)
+    {
+        return false;
+    }
+
+    SpellCastTargets targets;
+    targets.m_targetMask = TARGET_FLAG_SELF;
+    targets.setUnitTarget(bot);
+    bot->CastItemUseSpell(mountItem, targets);
+    ai->SetNextCheckDelay(4000);
+    return true;
 }

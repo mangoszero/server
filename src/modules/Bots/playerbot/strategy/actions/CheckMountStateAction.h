@@ -1,14 +1,14 @@
 #pragma once
 
-#include "../Action.h"
+#include "InventoryAction.h"
 #include "MovementActions.h"
 #include "../values/LastMovementValue.h"
 
 namespace ai
 {
-    class CheckMountStateAction : public Action {
+    class CheckMountStateAction : public InventoryAction {
         public:
-            CheckMountStateAction(PlayerbotAI* ai) : Action(ai, "check mount state") {}
+            CheckMountStateAction(PlayerbotAI* ai) : InventoryAction(ai, "check mount state") {}
 
             virtual bool Execute(Event event);
 
