@@ -69,6 +69,9 @@ namespace AhJournal
     /// Append a state/resolved_time UPDATE for @p uuid to the open txn.
     void SetState(ServiceDatabase& db, uint64 uuid, uint8 state, uint64 resolvedTime);
 
+    /// Append an APPLIED transition stamped from the worker wall clock.
+    void SetAppliedNow(ServiceDatabase& db, uint64 uuid);
+
     /// Synchronous fetch by uuid. @return true if found.
     bool Get(ServiceDatabase& db, uint64 uuid, JournalRow& out);
 
@@ -92,8 +95,24 @@ namespace AhJournal
     bool MaxSeqForRunId(ServiceDatabase& db, uint32 runId, bool highHalf,
                         uint32& outMaxSeq);
 
-    /// Prune JRN_APPLIED rows with resolved_time < @p cutoff (standalone).
-    void DeleteAppliedOlderThan(ServiceDatabase& db, uint64 cutoff);
+    /**
+     * @brief Delete one bounded batch from each terminal journal state.
+     *
+     * JRN_COMMITTED age is measured by created_time. JRN_APPLIED age is
+     * measured by resolved_time, and rows with a matching resolve:<uuid>
+     * custody marker are retained. At most @p batchRows rows from each state
+     * are deleted in one checked transaction.
+     *
+     * @param db          Worker database facade.
+     * @param cutoff      Delete terminal rows older than this Unix timestamp.
+     * @param batchRows   Maximum rows deleted per terminal state.
+     * @param hasMore     Set when either state filled its batch.
+     * @param deletedRows Set to the number selected for deletion.
+     * @return true on success, false on query or transaction failure.
+     */
+    bool DeleteTerminalBatchOlderThan(ServiceDatabase& db, uint64 cutoff,
+                                      uint32 batchRows, bool& hasMore,
+                                      uint32& deletedRows);
 }
 
 #endif // AH_WORKER_JOURNAL_H

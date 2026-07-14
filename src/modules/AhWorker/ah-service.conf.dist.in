@@ -45,8 +45,9 @@ WorldDatabaseConnections = 1
 #        SECURITY: use a DEDICATED least-privilege MySQL account, not mangosd's
 #        full read/write credentials. Read-only service mode needs SELECT only.
 #        WriteAuthority additionally requires INSERT, UPDATE, and DELETE on
-#        exactly `auction` and `ah_worker_journal`. See "Worker DB grant delta"
-#        in doc/AuctionHouseBot.md.
+#        exactly `auction` and `ah_worker_journal`, plus SELECT on
+#        `custody_ledger` for safe journal retention. See "Worker DB grant
+#        delta" in doc/AuctionHouseBot.md.
 #    Default: "" (disabled)
 #
 #    Example (point at the mode-appropriate dedicated account):
@@ -107,22 +108,25 @@ AH.Service.TickMs = 1000
 #
 #    AH.Service.JournalPruneIntervalSec
 #        [SP-3] Worker-journal maintenance cadence in seconds. When
-#        WriteAuthority is active, the worker deletes terminal JRN_APPLIED rows
-#        older than AH.Service.JournalAppliedRetentionSec on this interval.
-#        Set to 0 to disable pruning.
+#        WriteAuthority is active, the worker starts a terminal-row retention
+#        pass on startup and then on this interval. Large backlogs drain in
+#        fixed batches between IPC dispatch passes. Set to 0 to disable pruning.
 #    Default: 3600
 
 AH.Service.JournalPruneIntervalSec = 3600
 
 #
-#    AH.Service.JournalAppliedRetentionSec
-#        [SP-3] Retention window for terminal ah_worker_journal rows. Only
-#        JRN_APPLIED rows with resolved_time older than this many seconds are
-#        pruned; active COMMITTED, RESOLVING, CANCEL_PREPARED, and
-#        INTENT_PENDING rows are never deleted by this maintenance pass. Set to
-#        0 to disable pruning.
+#    AH.Service.JournalTerminalRetentionSec
+#        [SP-3] Retention window for terminal ah_worker_journal rows.
+#        JRN_COMMITTED uses created_time; JRN_APPLIED uses resolved_time.
+#        APPLIED resolution rows remain protected while custody_ledger contains
+#        their resolve:<uuid> idempotency marker. RESOLVING, CANCEL_PREPARED,
+#        and INTENT_PENDING rows are never deleted by this pass. Set to 0 to
+#        disable pruning. Configurations staged from an earlier version of this
+#        feature retain AH.Service.JournalAppliedRetentionSec as a fallback;
+#        this terminal setting takes precedence when both are present.
 #    Default: 2592000 (30 days)
 
-AH.Service.JournalAppliedRetentionSec = 2592000
+AH.Service.JournalTerminalRetentionSec = 2592000
 
 ###############################################################################

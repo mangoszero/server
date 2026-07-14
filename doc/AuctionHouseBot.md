@@ -302,11 +302,13 @@ Enabling `WriteAuthority` with `Custody = 0` is unsupported.
 
 **Worker DB grant delta.** On top of the SELECT-only reader grants in *Security*
 above, a write-authority worker's DB account needs INSERT/UPDATE/DELETE on
-exactly two Character-DB tables -- and nothing else:
+exactly two Character-DB tables. Journal retention also reads resolution
+idempotency markers from `custody_ledger`; it needs no custody write access:
 
 ```sql
 GRANT INSERT, UPDATE, DELETE ON `character0`.`auction`           TO 'ahworker'@'localhost';
 GRANT INSERT, UPDATE, DELETE ON `character0`.`ah_worker_journal` TO 'ahworker'@'localhost';
+GRANT SELECT                 ON `character0`.`custody_ledger`    TO 'ahworker'@'localhost';
 ```
 
 **Residual mangosd-side writers that stand down (spec section 5.7).** With

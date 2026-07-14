@@ -88,9 +88,10 @@
 #include <string>
 #include <vector>
 
-static const uint32 AH_JOURNAL_APPLIED_RETENTION_SEC_DEFAULT =
+static const uint32 AH_JOURNAL_TERMINAL_RETENTION_SEC_DEFAULT =
     30u * 24u * 60u * 60u;
 static const uint32 AH_JOURNAL_PRUNE_INTERVAL_SEC_DEFAULT = 60u * 60u;
+static const uint32 AH_JOURNAL_PRUNE_BATCH_ROWS = 100u;
 
 static bool AhParseNonNegativeSeconds(std::string const& text, uint32& result)
 {
@@ -120,11 +121,12 @@ static bool AhParseNonNegativeSeconds(std::string const& text, uint32& result)
     return true;
 }
 
-static uint32 AhConfigNonNegativeSeconds(char const* name, uint32 defValue)
+static uint32 AhConfigNonNegativeSeconds(Config& config, char const* name,
+                                         uint32 defValue)
 {
     char defText[16];
     snprintf(defText, sizeof(defText), "%u", defValue);
-    std::string const text = sConfig.GetStringDefault(name, defText);
+    std::string const text = config.GetStringDefault(name, defText);
 
     uint32 value = 0u;
     if (AhParseNonNegativeSeconds(text, value))
@@ -134,6 +136,30 @@ static uint32 AhConfigNonNegativeSeconds(char const* name, uint32 defValue)
 
     fprintf(stderr, "ah-service: invalid %s value '%s' - using default %u\n",
             name, text.c_str(), defValue);
+    return defValue;
+}
+
+static uint32 AhConfigTerminalRetentionSeconds(Config& config,
+                                               uint32 defValue)
+{
+    char const* terminalName = "AH.Service.JournalTerminalRetentionSec";
+    char const* legacyName = "AH.Service.JournalAppliedRetentionSec";
+    char const* missing = "__MANGOS_AH_SETTING_NOT_FOUND__";
+    std::string const terminalValue =
+        config.GetStringDefault(terminalName, missing);
+    if (terminalValue == missing)
+    {
+        return AhConfigNonNegativeSeconds(config, legacyName, defValue);
+    }
+
+    uint32 value = 0u;
+    if (AhParseNonNegativeSeconds(terminalValue, value))
+    {
+        return value;
+    }
+
+    fprintf(stderr, "ah-service: invalid %s value '%s' - using default %u\n",
+            terminalName, terminalValue.c_str(), defValue);
     return defValue;
 }
 
@@ -155,15 +181,15 @@ static bool AhJournalPruneDue(uint64 now, uint64& nextPrune,
     if (nextPrune == 0u)
     {
         nextPrune = now + intervalSec;
-        return false;
     }
-
-    if (now < nextPrune)
+    else if (now < nextPrune)
     {
         return false;
     }
-
-    nextPrune = now + intervalSec;
+    else
+    {
+        nextPrune = now + intervalSec;
+    }
     if (now <= retentionSec)
     {
         return false;
@@ -1867,7 +1893,7 @@ static int RunWireSelfTest()
 /**
  * @brief Round-trip the AhJournal DAO against the configured character DB:
  *        Insert (with a binary facts blob) -> Get -> SetState -> LoadActive
- *        membership -> DeleteAppliedOlderThan prune. Skips (returns 0) when
+ *        membership -> bounded terminal prune. Skips (returns 0) when
  *        no character DB is configured, mirroring the DB-less selftest rule.
  * @return 0 on success or skip, 1 on any assertion failure.
  */
@@ -1886,16 +1912,27 @@ static int RunJournalSelfTest()
     facts.push_back('\x00'); facts.push_back('\x01'); facts.push_back('\xFF');
     facts.push_back('\x00'); facts.push_back('\x7A');
 
-    uint64 const uuid = UINT64_C(0x00000009DEADBEEF);
+    uint64 const firstUuid = UINT64_C(0xFFFFFFFE00000010);
+    uint64 const lastUuid  = UINT64_C(0xFFFFFFFE0000001F);
+    uint64 const uuid      = firstUuid;
+    char resolveKey[64];
+    snprintf(resolveKey, sizeof(resolveKey), "resolve:%llu",
+             static_cast<unsigned long long>(uuid));
+
+    // Clean any prior run before constructing the fixtures.
+    db.Character().DirectPExecute(
+        "DELETE FROM `ah_worker_journal` WHERE `uuid` BETWEEN %llu AND %llu",
+        static_cast<unsigned long long>(firstUuid),
+        static_cast<unsigned long long>(lastUuid));
+    bool const canWriteCustodyFixture = db.Character().DirectPExecute(
+        "DELETE FROM `custody_ledger` WHERE `idem_key` = '%s'", resolveKey);
+
     AhJournal::JournalRow row;
     row.uuid = uuid; row.auctionId = 12345u; row.kind = 0x41u;
     row.state = AhJournal::JRN_RESOLVING; row.facts = facts;
-    row.createdTime = 1000u; row.resolvedTime = 0u;
+    row.createdTime = 1u; row.resolvedTime = 0u;
 
-    // Clean any prior run, then Insert inside a checked txn.
-    db.Character().DirectPExecute(
-        "DELETE FROM `ah_worker_journal` WHERE `uuid` = %llu",
-        static_cast<unsigned long long>(uuid));
+    // Insert inside a checked txn.
     db.Character().BeginTransaction();
     AhJournal::Insert(db, row);
     if (!db.Character().CommitTransactionChecked())
@@ -1907,23 +1944,51 @@ static int RunJournalSelfTest()
     AhJournal::JournalRow got;
     if (!AhJournal::Get(db, uuid, got) || got.auctionId != 12345u ||
         got.kind != 0x41u || got.state != AhJournal::JRN_RESOLVING ||
-        got.facts != facts || got.createdTime != 1000u)
+        got.facts != facts || got.createdTime != 1u)
     {
         fprintf(stderr, "journal selftest FAILED: get/round-trip (facts %u bytes)\n",
                 static_cast<unsigned>(got.facts.size()));
         return 1;
     }
 
+    // APPLIED retention timestamps use the same wall-clock domain as the
+    // prune cutoff, even before the first IPC_GAMETIME frame arrives.
+    AhJournal::JournalRow wallStamped = row;
+    wallStamped.uuid = firstUuid + 9u;
+    db.Character().BeginTransaction();
+    AhJournal::Insert(db, wallStamped);
+    if (!db.Character().CommitTransactionChecked())
+    {
+        fprintf(stderr, "journal selftest FAILED: wall-time fixture insert\n");
+        return 1;
+    }
+    uint64 const wallBefore = static_cast<uint64>(time(NULL));
+    db.Character().BeginTransaction();
+    AhJournal::SetAppliedNow(db, wallStamped.uuid);
+    if (!db.Character().CommitTransactionChecked())
+    {
+        fprintf(stderr, "journal selftest FAILED: wall-time APPLIED commit\n");
+        return 1;
+    }
+    uint64 const wallAfter = static_cast<uint64>(time(NULL));
+    if (!AhJournal::Get(db, wallStamped.uuid, got) ||
+        got.state != AhJournal::JRN_APPLIED ||
+        got.resolvedTime < wallBefore || got.resolvedTime > wallAfter)
+    {
+        fprintf(stderr, "journal selftest FAILED: APPLIED timestamp clock\n");
+        return 1;
+    }
+
     // SetState -> APPLIED with a resolved_time.
     db.Character().BeginTransaction();
-    AhJournal::SetState(db, uuid, AhJournal::JRN_APPLIED, 2000u);
+    AhJournal::SetState(db, uuid, AhJournal::JRN_APPLIED, 2u);
     if (!db.Character().CommitTransactionChecked())
     {
         fprintf(stderr, "journal selftest FAILED: setstate commit\n");
         return 1;
     }
     if (!AhJournal::Get(db, uuid, got) || got.state != AhJournal::JRN_APPLIED ||
-        got.resolvedTime != 2000u)
+        got.resolvedTime != 2u)
     {
         fprintf(stderr, "journal selftest FAILED: setstate read-back\n");
         return 1;
@@ -1943,13 +2008,157 @@ static int RunJournalSelfTest()
         }
     }
 
-    // DeleteAppliedOlderThan prunes it (resolved_time 2000 < cutoff 3000).
-    AhJournal::DeleteAppliedOlderThan(db, 3000u);
-    if (AhJournal::Get(db, uuid, got))
+    // A live resolve:<uuid> marker protects an old APPLIED row. This fixture
+    // requires more than the production worker's SELECT-only custody grant, so
+    // skip only this subcase when the configured selftest account cannot write
+    // custody_ledger.
+    if (canWriteCustodyFixture)
     {
-        fprintf(stderr, "journal selftest FAILED: prune left the row\n");
+        if (!db.Character().DirectPExecute(
+                "INSERT INTO `custody_ledger` "
+                "(`idem_key`,`kind`,`role`,`state`,`auction_id`,"
+                "`created_time`,`resolved_time`) "
+                "VALUES ('%s', 0, 4, 1, 12345, 1, 2)", resolveKey))
+        {
+            fprintf(stderr, "journal selftest FAILED: custody marker insert\n");
+            return 1;
+        }
+
+        bool hasMore = false;
+        uint32 deletedRows = 0u;
+        if (!AhJournal::DeleteTerminalBatchOlderThan(
+                db, 10u, 2u, hasMore, deletedRows) || hasMore ||
+            deletedRows != 0u || !AhJournal::Get(db, uuid, got))
+        {
+            fprintf(stderr, "journal selftest FAILED: custody marker did not protect APPLIED row\n");
+            return 1;
+        }
+
+        if (!db.Character().DirectPExecute(
+                "DELETE FROM `custody_ledger` WHERE `idem_key` = '%s'",
+                resolveKey) ||
+            !AhJournal::DeleteTerminalBatchOlderThan(
+                db, 10u, 2u, hasMore, deletedRows) || hasMore ||
+            deletedRows != 1u || AhJournal::Get(db, uuid, got))
+        {
+            fprintf(stderr, "journal selftest FAILED: unprotected APPLIED row not pruned\n");
+            return 1;
+        }
+    }
+    else
+    {
+        printf("journal custody-marker subtest SKIPPED (no custody write grant)\n");
+        db.Character().DirectPExecute(
+            "DELETE FROM `ah_worker_journal` WHERE `uuid` = %llu",
+            static_cast<unsigned long long>(uuid));
+    }
+
+    // COMMITTED rows are terminal, but their resolved_time is historically 0;
+    // created_time is therefore their retention anchor.
+    std::vector<AhJournal::JournalRow> rows;
+    AhJournal::JournalRow committed = row;
+    committed.state = AhJournal::JRN_COMMITTED;
+    committed.facts.clear();
+    committed.resolvedTime = 0u;
+
+    committed.uuid = firstUuid + 1u;
+    committed.createdTime = 1u;
+    rows.push_back(committed);
+    committed.uuid = firstUuid + 2u;
+    committed.createdTime = 20u;
+    rows.push_back(committed);
+
+    db.Character().BeginTransaction();
+    for (size_t i = 0; i < rows.size(); ++i)
+    {
+        AhJournal::Insert(db, rows[i]);
+    }
+    if (!db.Character().CommitTransactionChecked())
+    {
+        fprintf(stderr, "journal selftest FAILED: committed fixture insert\n");
         return 1;
     }
+
+    bool hasMore = false;
+    uint32 deletedRows = 0u;
+    if (!AhJournal::DeleteTerminalBatchOlderThan(
+            db, 10u, 10u, hasMore, deletedRows) || hasMore ||
+        deletedRows != 1u ||
+        AhJournal::Get(db, firstUuid + 1u, got) ||
+        !AhJournal::Get(db, firstUuid + 2u, got))
+    {
+        fprintf(stderr, "journal selftest FAILED: COMMITTED age pruning\n");
+        return 1;
+    }
+
+    // A three-row backlog drains two rows, yields to the service loop, then
+    // finishes with one row on the next call.
+    rows.clear();
+    for (uint32 i = 0u; i < 3u; ++i)
+    {
+        committed.uuid = firstUuid + 3u + i;
+        committed.createdTime = 1u + i;
+        rows.push_back(committed);
+    }
+    db.Character().BeginTransaction();
+    for (size_t i = 0; i < rows.size(); ++i)
+    {
+        AhJournal::Insert(db, rows[i]);
+    }
+    if (!db.Character().CommitTransactionChecked() ||
+        !AhJournal::DeleteTerminalBatchOlderThan(
+            db, 10u, 2u, hasMore, deletedRows) || !hasMore ||
+        deletedRows != 2u ||
+        !AhJournal::DeleteTerminalBatchOlderThan(
+            db, 10u, 2u, hasMore, deletedRows) || hasMore ||
+        deletedRows != 1u)
+    {
+        fprintf(stderr, "journal selftest FAILED: bounded backlog drain\n");
+        return 1;
+    }
+
+    // Non-terminal states remain untouched even with ancient timestamps.
+    rows.clear();
+    uint8 const activeStates[] = {
+        AhJournal::JRN_RESOLVING,
+        AhJournal::JRN_CANCEL_PREPARED,
+        AhJournal::JRN_INTENT_PENDING
+    };
+    for (uint32 i = 0u; i < 3u; ++i)
+    {
+        AhJournal::JournalRow active = committed;
+        active.uuid = firstUuid + 6u + i;
+        active.state = activeStates[i];
+        active.createdTime = 1u;
+        active.resolvedTime = 2u;
+        rows.push_back(active);
+    }
+    db.Character().BeginTransaction();
+    for (size_t i = 0; i < rows.size(); ++i)
+    {
+        AhJournal::Insert(db, rows[i]);
+    }
+    if (!db.Character().CommitTransactionChecked() ||
+        !AhJournal::DeleteTerminalBatchOlderThan(
+            db, 10u, 10u, hasMore, deletedRows) || hasMore ||
+        deletedRows != 0u)
+    {
+        fprintf(stderr, "journal selftest FAILED: active-state prune guard\n");
+        return 1;
+    }
+    for (uint32 i = 0u; i < 3u; ++i)
+    {
+        if (!AhJournal::Get(db, firstUuid + 6u + i, got))
+        {
+            fprintf(stderr, "journal selftest FAILED: active row was pruned\n");
+            return 1;
+        }
+    }
+
+    db.Character().DirectPExecute(
+        "DELETE FROM `ah_worker_journal` WHERE `uuid` BETWEEN %llu AND %llu",
+        static_cast<unsigned long long>(firstUuid),
+        static_cast<unsigned long long>(lastUuid));
 
     printf("journal selftest OK\n");
     fflush(stdout);
@@ -1958,6 +2167,8 @@ static int RunJournalSelfTest()
 
 static int RunJournalPruneSchedulerSelfTest()
 {
+    std::string const sourceBefore = sConfig.GetFilename();
+    Config testConfig;
     char configPath[] = "ah-service-prune-selftest-XXXXXX";
     ACE_HANDLE const configHandle = ACE_OS::mkstemp(configPath);
     if (configHandle == ACE_INVALID_HANDLE)
@@ -1983,25 +2194,33 @@ static int RunJournalPruneSchedulerSelfTest()
             "AhTest.Zero = 0\n"
             "AhTest.Negative = -1\n"
             "AhTest.Malformed = 3600oops\n"
-            "AhTest.Overflow = 4294967296\n");
+            "AhTest.Overflow = 4294967296\n"
+            "AH.Service.JournalAppliedRetentionSec = 0\n");
     fclose(configFile);
 
-    if (!sConfig.SetSource(configPath))
+    if (!testConfig.SetSource(configPath))
     {
         remove(configPath);
         fprintf(stderr, "journal prune scheduler selftest FAILED:"
                         " could not load config fixture\n");
         return 1;
     }
-    remove(configPath);
 
     uint32 const fallback = 77u;
-    if (AhConfigNonNegativeSeconds("AhTest.Valid", fallback) != 3600u ||
-        AhConfigNonNegativeSeconds("AhTest.Zero", fallback) != 0u ||
-        AhConfigNonNegativeSeconds("AhTest.Missing", fallback) != fallback ||
-        AhConfigNonNegativeSeconds("AhTest.Negative", fallback) != fallback ||
-        AhConfigNonNegativeSeconds("AhTest.Malformed", fallback) != fallback ||
-        AhConfigNonNegativeSeconds("AhTest.Overflow", fallback) != fallback)
+    if (AhConfigTerminalRetentionSeconds(testConfig, fallback) != 0u)
+    {
+        fprintf(stderr, "journal prune scheduler selftest FAILED:"
+                        " legacy disable setting was not preserved\n");
+        return 1;
+    }
+    remove(configPath);
+
+    if (AhConfigNonNegativeSeconds(testConfig, "AhTest.Valid", fallback) != 3600u ||
+        AhConfigNonNegativeSeconds(testConfig, "AhTest.Zero", fallback) != 0u ||
+        AhConfigNonNegativeSeconds(testConfig, "AhTest.Missing", fallback) != fallback ||
+        AhConfigNonNegativeSeconds(testConfig, "AhTest.Negative", fallback) != fallback ||
+        AhConfigNonNegativeSeconds(testConfig, "AhTest.Malformed", fallback) != fallback ||
+        AhConfigNonNegativeSeconds(testConfig, "AhTest.Overflow", fallback) != fallback)
     {
         fprintf(stderr, "journal prune scheduler selftest FAILED:"
                         " unsafe config value did not use default\n");
@@ -2011,11 +2230,11 @@ static int RunJournalPruneSchedulerSelfTest()
     uint64 nextPrune = 0u;
     uint64 cutoff = 0u;
 
-    if (AhJournalPruneDue(1000u, nextPrune, 3600u, 100u, cutoff) ||
-        nextPrune != 4600u)
+    if (!AhJournalPruneDue(1000u, nextPrune, 3600u, 100u, cutoff) ||
+        cutoff != 900u || nextPrune != 4600u)
     {
         fprintf(stderr, "journal prune scheduler selftest FAILED:"
-                        " first call should only schedule\n");
+                        " first call should schedule and prune\n");
         return 1;
     }
 
@@ -2071,6 +2290,13 @@ static int RunJournalPruneSchedulerSelfTest()
     {
         fprintf(stderr, "journal prune scheduler selftest FAILED:"
                         " failed wall clock should not prune\n");
+        return 1;
+    }
+
+    if (sConfig.GetFilename() != sourceBefore)
+    {
+        fprintf(stderr, "journal prune scheduler selftest FAILED:"
+                        " global config source changed\n");
         return 1;
     }
 
@@ -3501,6 +3727,12 @@ int main(int argc, char** argv)
 
     if (selfTest)
     {
+        if (cfgPath != NULL && !sConfig.SetSource(cfgPath))
+        {
+            printf("ah-service selftest: config '%s' unavailable; DB-backed"
+                   " tests may skip\n", cfgPath);
+        }
+
         int rc = RunWireSelfTest();
         if (rc != 0)
         {
@@ -3837,12 +4069,14 @@ int main(int argc, char** argv)
     const uint32 mutTickMs = static_cast<uint32>(
         sConfig.GetIntDefault("AH.Service.TickMs", 1000));
     uint64 nextJournalPrune = 0u;
+    uint64 journalPruneCutoff = 0u;
+    bool journalPruneActive = false;
     const uint32 journalPruneIntervalSec = AhConfigNonNegativeSeconds(
-        "AH.Service.JournalPruneIntervalSec",
+        sConfig, "AH.Service.JournalPruneIntervalSec",
         AH_JOURNAL_PRUNE_INTERVAL_SEC_DEFAULT);
-    const uint32 journalAppliedRetentionSec = AhConfigNonNegativeSeconds(
-        "AH.Service.JournalAppliedRetentionSec",
-        AH_JOURNAL_APPLIED_RETENTION_SEC_DEFAULT);
+    const uint32 journalTerminalRetentionSec = AhConfigTerminalRetentionSeconds(
+        sConfig,
+        AH_JOURNAL_TERMINAL_RETENTION_SEC_DEFAULT);
 
     while (!stop)
     {
@@ -4155,12 +4389,31 @@ int main(int argc, char** argv)
             // SP-2 Task 8: re-send / abandon in-flight bot-sell materializations.
             ahHandler->ResendStalePendingSells(wallNow);
 
-            uint64 journalCutoff = 0u;
-            if (AhJournalPruneDue(wallNow, nextJournalPrune,
+            if (!journalPruneActive &&
+                AhJournalPruneDue(wallNow, nextJournalPrune,
                                   journalPruneIntervalSec,
-                                  journalAppliedRetentionSec, journalCutoff))
+                                  journalTerminalRetentionSec,
+                                  journalPruneCutoff))
             {
-                AhJournal::DeleteAppliedOlderThan(botDb, journalCutoff);
+                journalPruneActive = true;
+            }
+
+            if (journalPruneActive)
+            {
+                bool hasMore = false;
+                uint32 deletedRows = 0u;
+                if (!AhJournal::DeleteTerminalBatchOlderThan(
+                        botDb, journalPruneCutoff,
+                        AH_JOURNAL_PRUNE_BATCH_ROWS, hasMore, deletedRows))
+                {
+                    fprintf(stderr, "ah-service: terminal journal prune batch"
+                                    " failed - retrying next interval\n");
+                    journalPruneActive = false;
+                }
+                else
+                {
+                    journalPruneActive = hasMore;
+                }
             }
         }
 

@@ -674,8 +674,7 @@ PlayerMutationResult MutationHandler::OnCancelDecide(uint64 uuid, uint32 auction
         {
             return MakeResult(uuid, op, MUT_REJECTED, BOOK_ERR_DATABASE);
         }
-        AhJournal::SetState(*m_db, uuid, AhJournal::JRN_APPLIED,
-                            static_cast<uint64>(time(NULL)));
+        AhJournal::SetAppliedNow(*m_db, uuid);
         if (!m_db->Character().CommitTransactionChecked())
         {
             // Journal still says CANCEL_PREPARED: keep the memory lock so
@@ -903,9 +902,7 @@ bool MutationHandler::CommitTerminalApply(uint64 uuid, uint32 auctionId)
         return false;
     }
     db.PExecute("DELETE FROM `auction` WHERE `id` = '%u'", auctionId);
-    AhJournal::SetState(*m_db, uuid,
-                        static_cast<uint8>(AhJournal::JRN_APPLIED),
-                        m_gameTimeNow);
+    AhJournal::SetAppliedNow(*m_db, uuid);
     return db.CommitTransactionChecked();
 }
 
@@ -920,9 +917,7 @@ bool MutationHandler::JournalMarkApplied(uint64 uuid)
     {
         return false;
     }
-    AhJournal::SetState(*m_db, uuid,
-                        static_cast<uint8>(AhJournal::JRN_APPLIED),
-                        m_gameTimeNow);
+    AhJournal::SetAppliedNow(*m_db, uuid);
     return m_db->Character().CommitTransactionChecked();
 }
 
@@ -1674,9 +1669,7 @@ bool MutationHandler::PersistBotListing(BookRow const& row, uint64 uuid)
     }
     m_book.Insert(row);   // appends the auction INSERT to this open txn + memory
     // Retire the PENDING intent row to JRN_APPLIED in the same txn.
-    AhJournal::SetState(*m_db, uuid,
-                        static_cast<uint8>(AhJournal::JRN_APPLIED),
-                        static_cast<uint64>(time(NULL)));
+    AhJournal::SetAppliedNow(*m_db, uuid);
     if (!db.CommitTransactionChecked())
     {
         m_book.RollbackInsert(row.id);
@@ -1696,8 +1689,6 @@ bool MutationHandler::RetireIntentPending(uint64 uuid)
     {
         return false;
     }
-    AhJournal::SetState(*m_db, uuid,
-                        static_cast<uint8>(AhJournal::JRN_APPLIED),
-                        static_cast<uint64>(time(NULL)));
+    AhJournal::SetAppliedNow(*m_db, uuid);
     return m_db->Character().CommitTransactionChecked();
 }
