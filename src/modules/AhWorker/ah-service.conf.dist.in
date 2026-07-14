@@ -119,12 +119,14 @@ AH.Service.JournalPruneIntervalSec = 3600
 #    AH.Service.JournalTerminalRetentionSec
 #        [SP-3] Retention window for terminal ah_worker_journal rows.
 #        JRN_COMMITTED uses created_time; JRN_APPLIED uses resolved_time.
-#        APPLIED resolution rows remain protected while custody_ledger contains
-#        their resolve:<uuid> idempotency marker. RESOLVING, CANCEL_PREPARED,
-#        and INTENT_PENDING rows are never deleted by this pass. Set to 0 to
-#        disable pruning. Configurations staged from an earlier version of this
-#        feature retain AH.Service.JournalAppliedRetentionSec as a fallback;
-#        this terminal setting takes precedence when both are present.
+#        COMMITTED rows remain protected while their auction has RESERVED
+#        custody needed for lost-reply reconciliation. APPLIED rows remain
+#        protected while custody_ledger contains their resolve:<uuid> or
+#        botlist:<uuid> idempotency marker. RESOLVING, CANCEL_PREPARED, and
+#        INTENT_PENDING rows are never deleted by this pass. Set to 0 to disable
+#        pruning. Configurations staged from an earlier version of this feature
+#        retain AH.Service.JournalAppliedRetentionSec as a fallback; this
+#        terminal setting takes precedence when both are present.
 #    Default: 2592000 (30 days)
 
 AH.Service.JournalTerminalRetentionSec = 2592000

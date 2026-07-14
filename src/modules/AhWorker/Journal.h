@@ -98,10 +98,11 @@ namespace AhJournal
     /**
      * @brief Delete one bounded batch from each terminal journal state.
      *
-     * JRN_COMMITTED age is measured by created_time. JRN_APPLIED age is
-     * measured by resolved_time, and rows with a matching resolve:<uuid>
-     * custody marker are retained. At most @p batchRows rows from each state
-     * are deleted in one checked transaction.
+     * JRN_COMMITTED age is measured by created_time and rows for an auction
+     * with reserved custody are retained for lost-reply reconciliation.
+     * JRN_APPLIED age is measured by resolved_time; rows with a matching
+     * resolve:<uuid> or botlist:<uuid> custody marker are retained. At most
+     * @p batchRows rows from each state are deleted in one checked transaction.
      *
      * @param db          Worker database facade.
      * @param cutoff      Delete terminal rows older than this Unix timestamp.

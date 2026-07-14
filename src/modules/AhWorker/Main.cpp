@@ -1918,6 +1918,12 @@ static int RunJournalSelfTest()
     char resolveKey[64];
     snprintf(resolveKey, sizeof(resolveKey), "resolve:%llu",
              static_cast<unsigned long long>(uuid));
+    char botlistKey[64];
+    snprintf(botlistKey, sizeof(botlistKey), "botlist:%llu",
+             static_cast<unsigned long long>(firstUuid + 10u));
+    char committedKey[64];
+    snprintf(committedKey, sizeof(committedKey), "test:jrn-reserve:%llu",
+             static_cast<unsigned long long>(firstUuid + 11u));
 
     // Clean any prior run before constructing the fixtures.
     db.Character().DirectPExecute(
@@ -1925,7 +1931,8 @@ static int RunJournalSelfTest()
         static_cast<unsigned long long>(firstUuid),
         static_cast<unsigned long long>(lastUuid));
     bool const canWriteCustodyFixture = db.Character().DirectPExecute(
-        "DELETE FROM `custody_ledger` WHERE `idem_key` = '%s'", resolveKey);
+        "DELETE FROM `custody_ledger` WHERE `idem_key` IN ('%s', '%s', '%s')",
+        resolveKey, botlistKey, committedKey);
 
     AhJournal::JournalRow row;
     row.uuid = uuid; row.auctionId = 12345u; row.kind = 0x41u;
@@ -2044,6 +2051,86 @@ static int RunJournalSelfTest()
             fprintf(stderr, "journal selftest FAILED: unprotected APPLIED row not pruned\n");
             return 1;
         }
+
+        AhJournal::JournalRow botlistApplied = row;
+        botlistApplied.uuid = firstUuid + 10u;
+        botlistApplied.auctionId = 12346u;
+        botlistApplied.state = AhJournal::JRN_APPLIED;
+        botlistApplied.facts.clear();
+        botlistApplied.resolvedTime = 2u;
+        db.Character().BeginTransaction();
+        AhJournal::Insert(db, botlistApplied);
+        if (!db.Character().CommitTransactionChecked() ||
+            !db.Character().DirectPExecute(
+                "INSERT INTO `custody_ledger` "
+                "(`idem_key`,`kind`,`role`,`state`,`auction_id`,"
+                "`created_time`,`resolved_time`) "
+                "VALUES ('%s', 1, 4, 0, 12346, 1, 0)", botlistKey))
+        {
+            fprintf(stderr, "journal selftest FAILED: botlist fixture insert\n");
+            return 1;
+        }
+
+        if (!AhJournal::DeleteTerminalBatchOlderThan(
+                db, 10u, 2u, hasMore, deletedRows) || hasMore ||
+            deletedRows != 0u ||
+            !AhJournal::Get(db, botlistApplied.uuid, got))
+        {
+            fprintf(stderr, "journal selftest FAILED: botlist marker did not protect APPLIED row\n");
+            return 1;
+        }
+
+        if (!db.Character().DirectPExecute(
+                "DELETE FROM `custody_ledger` WHERE `idem_key` = '%s'",
+                botlistKey) ||
+            !AhJournal::DeleteTerminalBatchOlderThan(
+                db, 10u, 2u, hasMore, deletedRows) || hasMore ||
+            deletedRows != 1u ||
+            AhJournal::Get(db, botlistApplied.uuid, got))
+        {
+            fprintf(stderr, "journal selftest FAILED: unprotected botlist APPLIED row not pruned\n");
+            return 1;
+        }
+
+        AhJournal::JournalRow reconcileCommitted = row;
+        reconcileCommitted.uuid = firstUuid + 11u;
+        reconcileCommitted.auctionId = 12347u;
+        reconcileCommitted.state = AhJournal::JRN_COMMITTED;
+        reconcileCommitted.facts.clear();
+        reconcileCommitted.resolvedTime = 0u;
+        db.Character().BeginTransaction();
+        AhJournal::Insert(db, reconcileCommitted);
+        if (!db.Character().CommitTransactionChecked() ||
+            !db.Character().DirectPExecute(
+                "INSERT INTO `custody_ledger` "
+                "(`idem_key`,`kind`,`role`,`state`,`auction_id`,"
+                "`created_time`,`resolved_time`) "
+                "VALUES ('%s', 0, 1, 0, 12347, 1, 0)", committedKey))
+        {
+            fprintf(stderr, "journal selftest FAILED: reconcile fixture insert\n");
+            return 1;
+        }
+
+        if (!AhJournal::DeleteTerminalBatchOlderThan(
+                db, 10u, 2u, hasMore, deletedRows) || hasMore ||
+            deletedRows != 0u ||
+            !AhJournal::Get(db, reconcileCommitted.uuid, got))
+        {
+            fprintf(stderr, "journal selftest FAILED: reserved custody did not protect COMMITTED row\n");
+            return 1;
+        }
+
+        if (!db.Character().DirectPExecute(
+                "UPDATE `custody_ledger` SET `state` = 1, `resolved_time` = 2 "
+                "WHERE `idem_key` = '%s'", committedKey) ||
+            !AhJournal::DeleteTerminalBatchOlderThan(
+                db, 10u, 2u, hasMore, deletedRows) || hasMore ||
+            deletedRows != 1u ||
+            AhJournal::Get(db, reconcileCommitted.uuid, got))
+        {
+            fprintf(stderr, "journal selftest FAILED: reconciled COMMITTED row not pruned\n");
+            return 1;
+        }
     }
     else
     {
@@ -2159,6 +2246,12 @@ static int RunJournalSelfTest()
         "DELETE FROM `ah_worker_journal` WHERE `uuid` BETWEEN %llu AND %llu",
         static_cast<unsigned long long>(firstUuid),
         static_cast<unsigned long long>(lastUuid));
+    if (canWriteCustodyFixture)
+    {
+        db.Character().DirectPExecute(
+            "DELETE FROM `custody_ledger` WHERE `idem_key` IN ('%s', '%s', '%s')",
+            resolveKey, botlistKey, committedKey);
+    }
 
     printf("journal selftest OK\n");
     fflush(stdout);

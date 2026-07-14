@@ -28,6 +28,12 @@
 
 namespace
 {
+    enum PruneProtection
+    {
+        PRUNE_PROTECT_COMMITTED_RECONCILE,
+        PRUNE_PROTECT_APPLIED_IDEMPOTENCY
+    };
+
     /// Encode binary @p in as lowercase ASCII hex (NUL-safe for SQL literals).
     std::string HexEncode(std::string const& in)
     {
@@ -75,12 +81,24 @@ namespace
 
     bool CountPruneCandidates(ServiceDatabase& db, char const* ageColumn,
                               uint8 state, uint64 cutoff, uint32 limit,
-                              bool protectResolveMarkers, uint32& count)
+                              PruneProtection protection, uint32& count)
     {
-        char const* markerClause = protectResolveMarkers
-            ? " AND NOT EXISTS (SELECT 1 FROM `custody_ledger` AS `c` "
-              "WHERE `c`.`idem_key` = CONCAT('resolve:', `j`.`uuid`))"
-            : "";
+        char const* protectionClause = "";
+        if (protection == PRUNE_PROTECT_COMMITTED_RECONCILE)
+        {
+            protectionClause =
+                " AND NOT EXISTS (SELECT 1 FROM `custody_ledger` AS `c` "
+                "WHERE `c`.`auction_id` = `j`.`auction_id` "
+                "AND `c`.`state` = 0)";
+        }
+        else if (protection == PRUNE_PROTECT_APPLIED_IDEMPOTENCY)
+        {
+            protectionClause =
+                " AND NOT EXISTS (SELECT 1 FROM `custody_ledger` AS `c` "
+                "WHERE `c`.`idem_key` = CONCAT('resolve:', `j`.`uuid`)) "
+                "AND NOT EXISTS (SELECT 1 FROM `custody_ledger` AS `c` "
+                "WHERE `c`.`idem_key` = CONCAT('botlist:', `j`.`uuid`))";
+        }
         QueryResult* result = db.Character().PQuery(
             "SELECT COUNT(*) FROM ("
             "SELECT `j`.`uuid` FROM `ah_worker_journal` AS `j` "
@@ -88,7 +106,7 @@ namespace
             "ORDER BY `j`.`%s`, `j`.`uuid` LIMIT %u"
             ") AS `prune_candidates`",
             static_cast<uint32>(state), ageColumn,
-            static_cast<unsigned long long>(cutoff), markerClause,
+            static_cast<unsigned long long>(cutoff), protectionClause,
             ageColumn, limit);
         if (result == NULL)
         {
@@ -235,9 +253,11 @@ bool AhJournal::DeleteTerminalBatchOlderThan(ServiceDatabase& db, uint64 cutoff,
     uint32 committedCount = 0u;
     uint32 appliedCount = 0u;
     if (!CountPruneCandidates(db, "created_time", JRN_COMMITTED, cutoff,
-                              batchRows, false, committedCount) ||
+                              batchRows, PRUNE_PROTECT_COMMITTED_RECONCILE,
+                              committedCount) ||
         !CountPruneCandidates(db, "resolved_time", JRN_APPLIED, cutoff,
-                              batchRows, true, appliedCount))
+                              batchRows, PRUNE_PROTECT_APPLIED_IDEMPOTENCY,
+                              appliedCount))
     {
         return false;
     }
@@ -258,6 +278,9 @@ bool AhJournal::DeleteTerminalBatchOlderThan(ServiceDatabase& db, uint64 cutoff,
         queued = db.Character().PExecute(
             "DELETE FROM `ah_worker_journal` "
             "WHERE `state` = %u AND `created_time` < %llu "
+            "AND NOT EXISTS (SELECT 1 FROM `custody_ledger` AS `c` "
+            "WHERE `c`.`auction_id` = `ah_worker_journal`.`auction_id` "
+            "AND `c`.`state` = 0) "
             "ORDER BY `created_time`, `uuid` LIMIT %u",
             static_cast<uint32>(JRN_COMMITTED),
             static_cast<unsigned long long>(cutoff), committedCount);
@@ -269,6 +292,9 @@ bool AhJournal::DeleteTerminalBatchOlderThan(ServiceDatabase& db, uint64 cutoff,
             "WHERE `state` = %u AND `resolved_time` < %llu "
             "AND NOT EXISTS (SELECT 1 FROM `custody_ledger` AS `c` "
             "WHERE `c`.`idem_key` = CONCAT('resolve:', "
+            "`ah_worker_journal`.`uuid`)) "
+            "AND NOT EXISTS (SELECT 1 FROM `custody_ledger` AS `c` "
+            "WHERE `c`.`idem_key` = CONCAT('botlist:', "
             "`ah_worker_journal`.`uuid`)) "
             "ORDER BY `resolved_time`, `uuid` LIMIT %u",
             static_cast<uint32>(JRN_APPLIED),
