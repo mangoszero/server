@@ -2146,6 +2146,39 @@ static std::string AhMailSubject(uint32 itemTemplate, int32 itemRand, uint32 res
     return s.str();
 }
 
+// Worker-authority terminal paths still use the live escrow cache until SP-6B's
+// durable item-take lands. Missing or mismatched cache state must therefore
+// hold custody for retry; it can never authorize a ledger-only item transition.
+// The output row is a value snapshot and the output item remains cache-owned.
+static bool AhGetCachedReservedItem(std::string const& key, uint32 auctionId,
+                                    uint32 ownerGuid, uint32 expectedItemGuid,
+                                    CustodyRow& row, Item*& item)
+{
+    item = NULL;
+    if (key.empty() || !CustodyLedger::Get(key, row) ||
+        row.kind != CUSTODY_ITEM || row.role != ROLE_ITEM ||
+        row.state != CST_RESERVED || row.ownerGuid != ownerGuid ||
+        row.beneficiaryGuid != 0u || row.amount != 0u ||
+        row.auctionId != auctionId ||
+        (expectedItemGuid != 0u && row.itemGuid != expectedItemGuid))
+    {
+        sLog.outError("[AHMut] item custody mismatch for key %s (auction %u); "
+                      "holding for retry",
+                      key.c_str(), auctionId);
+        return false;
+    }
+
+    item = sAuctionMgr.GetAItem(row.itemGuid);
+    if (!item)
+    {
+        sLog.outError("[AHMut] auction %u escrow item %u missing from cache; "
+                      "holding custody for retry",
+                      auctionId, row.itemGuid);
+        return false;
+    }
+    return true;
+}
+
 // [SP-2] every live (CST_RESERVED CUSTODY_GOLD ROLE_BID) row for an auction.
 // LoadNonTerminal + filter: no new CustodyLedger read API; the non-terminal
 // set is TTL-bounded.
@@ -2296,8 +2329,8 @@ static void AhSellerPayoutFromFacts(MutationFacts const& f, CustodyDeferred& def
 // [SP-2] replay of SendAuctionWonMailInTransaction from wire facts, minus the
 // GM-log block (server-side-only trace). A bot winner (curBidderGuid==0)
 // resolves to "no receiver" and follows the legacy destroy branch (spec
-// section 3). Escrow-cache miss -> loud log, no item mail (the caller still
-// terminalizes "item:<id>").
+// section 3). Callers preflight the live escrow item before opening their
+// transaction; the defensive miss below performs no value transition.
 static void AhItemToWinnerFromFacts(MutationFacts const& f, CustodyDeferred& def)
 {
     Item* pItem = sAuctionMgr.GetAItem(f.itemGuid);
@@ -2465,16 +2498,16 @@ static void AhRefundCancelledBidderFromFacts(MutationFacts const& f, std::string
 // SendAuctionExpiredMailInTransaction / the S5 return: expired owner-notify
 // (EXPIRED response only), RemoveAItem deferred FIRST, DeliverItem flips
 // "item:<id>" -> TERMINAL_OK and co-commits the mail; destroy branch when the
-// account is gone; ledger-only flip when the escrow cache lost the Item*.
+// account is gone. Callers preflight the cache before opening the transaction.
 static void AhReturnItemToSellerFromFacts(MutationFacts const& f, uint32 mailResponse, CustodyDeferred& def)
 {
     std::string const itemKey = "item:" + std::to_string(f.auctionId);
     Item* pItem = sAuctionMgr.GetAItem(f.itemGuid);
     if (!pItem)
     {
-        sLog.outError("[AHMut] auction %u return-item %u missing from escrow cache; ledger-only flip",
+        sLog.outError("[AHMut] auction %u return-item %u missing from escrow "
+                      "cache; holding custody",
                       f.auctionId, f.itemGuid);
-        CustodyService::CommitGoldLedgerOnly(itemKey);
         return;
     }
 
@@ -2660,6 +2693,28 @@ static bool AhFinalizeBidOk(PlayerMutationResult const& res, PendingMutation con
     }
     uint32 const remainder = pm.reservedAmount - needed;
 
+    if (isBuyoutWin)
+    {
+        std::string const depKey = "dep:" + std::to_string(f.auctionId);
+        CustodyRow depRow;
+        CustodyRow itemRow;
+        Item* item = NULL;
+        if (!CustodyLedger::Get(depKey, depRow) ||
+            depRow.kind != CUSTODY_GOLD ||
+            depRow.role != ROLE_DEPOSIT || depRow.state != CST_RESERVED ||
+            depRow.ownerGuid != f.sellerGuid || depRow.amount != f.deposit ||
+            depRow.auctionId != f.auctionId ||
+            !AhGetCachedReservedItem("item:" + std::to_string(f.auctionId),
+                                     f.auctionId, f.sellerGuid, f.itemGuid,
+                                     itemRow, item))
+        {
+            sLog.outError("[AHMut] buyout terminal custody unavailable for "
+                          "auction %u; queued for retry",
+                          f.auctionId);
+            return false;
+        }
+    }
+
     CustodyRow liveRow;
     std::string priorKey;
     if (f.priorBidderGuid != 0)
@@ -2761,6 +2816,24 @@ static bool AhFinalizeCancelOk(PlayerMutationResult const& res, PendingMutation 
 {
     MutationFacts const& f = res.facts;
 
+    std::string const depKey = "dep:" + std::to_string(f.auctionId);
+    CustodyRow depRow;
+    CustodyRow itemRow;
+    Item* item = NULL;
+    if (!CustodyLedger::Get(depKey, depRow) || depRow.kind != CUSTODY_GOLD ||
+        depRow.role != ROLE_DEPOSIT || depRow.state != CST_RESERVED ||
+        depRow.ownerGuid != f.sellerGuid || depRow.amount != f.deposit ||
+        depRow.auctionId != f.auctionId ||
+        !AhGetCachedReservedItem("item:" + std::to_string(f.auctionId),
+                                 f.auctionId, f.sellerGuid, f.itemGuid,
+                                 itemRow, item))
+    {
+        sLog.outError("[AHMut] cancel terminal custody unavailable for auction "
+                      "%u; queued for retry",
+                      f.auctionId);
+        return false;
+    }
+
     uint32 const cut = f.curBid ? AhCutFor(f.houseId, f.curBid) : 0;
     if (cut)
     {
@@ -2850,46 +2923,62 @@ static bool AhFinalizeRejected(PlayerMutationResult const& res, PendingMutation 
     Player* online = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, pm.playerGuidLow));
     uint32 onlineCredit = 0;
 
+    CustodyRow sellDepRow;
+    CustodyRow sellItemRow;
+    Item* sellItem = NULL;
+    if (res.op == uint8(IPC_PLAYER_SELL & 0xFFu))
+    {
+        if (pm.depKey.empty() || !CustodyLedger::Get(pm.depKey, sellDepRow) ||
+            sellDepRow.kind != CUSTODY_GOLD ||
+            sellDepRow.role != ROLE_DEPOSIT ||
+            sellDepRow.state != CST_RESERVED ||
+            sellDepRow.ownerGuid != pm.playerGuidLow ||
+            sellDepRow.auctionId != pm.auctionId ||
+            !AhGetCachedReservedItem(pm.itemKey, pm.auctionId, pm.playerGuidLow,
+                                     0u, sellItemRow, sellItem))
+        {
+            sLog.outError("[AHMut] rejected sell %u custody unavailable; "
+                          "holding for retry",
+                          pm.auctionId);
+            return false;
+        }
+    }
+
     CustodyDeferred def;
     CharacterDatabase.BeginTransaction();
 
     if (res.op == uint8(IPC_PLAYER_SELL & 0xFFu))
     {
-        CustodyService::ReleaseGoldToWallet(def, pm.playerGuidLow, online, pm.reservedAmount, pm.depKey);
+        CustodyService::ReleaseGoldToWallet(def, pm.playerGuidLow, online,
+                                            sellDepRow.amount, pm.depKey);
         if (online)
         {
-            onlineCredit += pm.reservedAmount;
+            onlineCredit += sellDepRow.amount;
         }
 
-        CustodyRow itemRow;
-        if (!pm.itemKey.empty() && CustodyLedger::Get(pm.itemKey, itemRow) && itemRow.state == CST_RESERVED)
+        CustodyLedger::SetState(pm.itemKey, CST_TERMINAL_BACK,
+                                static_cast<uint64>(time(NULL)));
+        uint32 const savedItemGuidLow = sellItemRow.itemGuid;
+        def.effects.push_back([savedItemGuidLow]()
         {
-            Item* pItem = sAuctionMgr.GetAItem(itemRow.itemGuid);
-            CustodyLedger::SetState(pm.itemKey, CST_TERMINAL_BACK, static_cast<uint64>(time(NULL)));
-            if (pItem)
-            {
-                uint32 const savedItemGuidLow = itemRow.itemGuid;
-                def.effects.push_back([savedItemGuidLow]()
-                {
-                    sAuctionMgr.RemoveAItem(savedItemGuidLow);
-                });
-                MailDraft ret(AhMailSubject(pItem->GetEntry(), pItem->GetItemRandomPropertyId(), AUCTION_CANCELED), "");
-                ret.AddItem(pItem);
-                ret.SendMailToInTransaction(MailReceiver(online, ObjectGuid(HIGHGUID_PLAYER, pm.playerGuidLow)),
-                                            MailSender(MAIL_AUCTION, uint32(f.houseId), MAIL_STATIONERY_AUCTION),
-                                            def, MAIL_CHECK_MASK_COPIED);
-            }
-            else
-            {
-                sLog.outError("[AHMut] rejected sell %u: escrow item %u missing; ledger-only return",
-                              pm.auctionId, itemRow.itemGuid);
-            }
-        }
+            sAuctionMgr.RemoveAItem(savedItemGuidLow);
+        });
+        MailDraft ret(AhMailSubject(sellItem->GetEntry(),
+                                    sellItem->GetItemRandomPropertyId(),
+                                    AUCTION_CANCELED), "");
+        ret.AddItem(sellItem);
+        ret.SendMailToInTransaction(
+            MailReceiver(online,
+                         ObjectGuid(HIGHGUID_PLAYER, pm.playerGuidLow)),
+            MailSender(MAIL_AUCTION, uint32(f.houseId),
+                       MAIL_STATIONERY_AUCTION),
+            def, MAIL_CHECK_MASK_COPIED);
     }
     else if (!pm.reserveKey.empty() && pm.reservedAmount > 0)
     {
         // bid / buyout (and, defensively, a post-CONFIRM cancel reject).
-        CustodyService::ReleaseGoldToWallet(def, pm.playerGuidLow, online, pm.reservedAmount, pm.reserveKey);
+        CustodyService::ReleaseGoldToWallet(
+            def, pm.playerGuidLow, online, pm.reservedAmount, pm.reserveKey);
         if (online)
         {
             onlineCredit += pm.reservedAmount;
@@ -3009,7 +3098,9 @@ void AhHandlePlayerMutationResult(PlayerMutationResult const& res)
         e.attempts = 1;
         e.nextRetrySec = uint32(time(NULL)) + 5;
         s_ahRedrive.push_back(e);
-        sLog.outError("[AHMut] finalize checked-commit FAILED for uuid " UI64FMTD "; queued for redrive", res.uuid);
+        sLog.outError("[AHMut] finalize deferred for uuid " UI64FMTD
+                      "; queued for redrive",
+                      res.uuid);
     }
 }
 
@@ -3232,6 +3323,28 @@ uint8 AhHandleResolveApply(ResolveApply const& ra)
     }
 
     MutationFacts const& f = ra.facts;
+    bool const repairRefundOnly =
+        (ra.kind == uint8(RESOLVE_REPAIR_RETURN) &&
+         f.curBidderGuid == 0u && f.priorBidderGuid != 0u);
+    bool const needsItem =
+        (ra.kind == uint8(RESOLVE_WON) ||
+         ra.kind == uint8(RESOLVE_EXPIRED_NOBID) ||
+         (ra.kind == uint8(RESOLVE_REPAIR_RETURN) && !repairRefundOnly));
+    if (needsItem)
+    {
+        CustodyRow itemRow;
+        Item* item = NULL;
+        if (!AhGetCachedReservedItem("item:" + std::to_string(f.auctionId),
+                                     f.auctionId, f.sellerGuid, f.itemGuid,
+                                     itemRow, item))
+        {
+            sLog.outError("[AHMut] resolve kind %u auction %u missing terminal "
+                          "item; RES_FAILED",
+                          uint32(ra.kind), f.auctionId);
+            return uint8(RES_FAILED);
+        }
+    }
+
     CustodyDeferred def;
     // [F1] A RESOLVE_CANCELLED_UNLOCK release credits an ONLINE owner's wallet
     // immediately (in-memory ModifyMoney, non-transactional); only the ledger
@@ -3254,22 +3367,41 @@ uint8 AhHandleResolveApply(ResolveApply const& ra)
             std::string const depKey  = "dep:" + std::to_string(f.auctionId);
             std::string const itemKey = "item:" + std::to_string(f.auctionId);
             CustodyRow bidRow;
-            bool const haveBidRow = CustodyLedger::GetSingleLiveBidRow(f.auctionId, bidRow);
-            // [F2] A REAL winner (curBidderGuid != 0) MUST have exactly one live
-            // bid reservation. If it is missing/ambiguous, fail-closed (mirror
-            // AhFinalizeBidOk): pay/deliver NOTHING and roll back, so the winner's
-            // RESERVED bid never leaks and the resolution re-drives. A BOT win has
-            // curBidderGuid == 0 and correctly holds NO bid row -> it proceeds.
-            if (f.curBidderGuid != 0u && !haveBidRow)
+            bool const realWinner = (f.curBidderGuid != 0u);
+            bool const displacedPlayer =
+                (!realWinner && f.priorBidderGuid != 0u);
+            bool bidRowOk = false;
+            if (realWinner)
+            {
+                bidRowOk = AhFindPriorBidRow(f.auctionId, f.curBidderGuid,
+                                             f.curBid, "", bidRow);
+            }
+            else if (displacedPlayer)
+            {
+                bidRowOk = AhFindPriorBidRow(f.auctionId, f.priorBidderGuid,
+                                             f.priorBidAmount, "", bidRow);
+            }
+            else
+            {
+                std::vector<CustodyRow> liveRows;
+                AhLoadLiveBidRows(f.auctionId, liveRows);
+                bidRowOk = liveRows.empty();
+            }
+            if (!bidRowOk)
             {
                 CharacterDatabase.RollbackTransaction();
-                sLog.outError("[AHMut] PROTOCOL FAULT: RESOLVE_WON winner bid row"
-                              " missing/ambiguous for auction %u - RES_FAILED", f.auctionId);
+                sLog.outError("[AHMut] PROTOCOL FAULT: RESOLVE_WON bid custody"
+                              " mismatch for auction %u - RES_FAILED",
+                              f.auctionId);
                 return uint8(RES_FAILED);
             }
-            if (haveBidRow)
+            if (realWinner)
             {
                 CustodyService::CommitGoldLedgerOnly(bidRow.idemKey);
+            }
+            else if (displacedPlayer)
+            {
+                AhRefundPriorBidderFromFacts(f, bidRow.idemKey, def);
             }
             CustodyService::CommitGoldLedgerOnly(depKey);
             AhSellerPayoutFromFacts(f, def);
@@ -3411,13 +3543,14 @@ static int AhHexNibble(char c)
     return -1;
 }
 
-// One peeked ah_worker_journal row (state + kind + decoded facts).
+// One peeked ah_worker_journal row and its decoded worker result envelope.
 struct AhJournalPeek
 {
-    uint8         state;
-    uint8         kind;
-    MutationFacts facts;
-    bool          factsOk;
+    uint32 auctionId;
+    uint8 state;
+    uint8 kind;
+    PlayerMutationResult result;
+    bool payloadOk;
 };
 
 // [FIX C.2] Tri-state result of a journal peek. mangos `PQuery` returns NULL for
@@ -3431,41 +3564,35 @@ enum AhJournalRead
     AHJRN_QUERY_FAILED = 2   ///< table missing / DB error -> in-doubt, do NOT release
 };
 
-// Read one journal row by uuid directly from the shared Character DB. On a NULL
-// row query, a `SHOW TABLES` probe distinguishes a genuine absent row (table
-// present -> AHJRN_ABSENT, the "worker never committed" release signal, spec 8)
-// from a query that could not run (table missing or transient DB error, both
-// NULL -> AHJRN_QUERY_FAILED, which the caller leaves in-doubt rather than
-// releasing a possibly-committed reservation). The facts BLOB is stored as ASCII
-// hex (NUL-safe); decode it in place (mirrors AhJournal::HexDecode +
-// MutationFacts::Decode).
+// Read one journal row by uuid directly from the shared Character DB. The
+// aggregate always returns one row after a successful query, so COUNT cleanly
+// distinguishes ABSENT from a NULL query result (DB error/table missing). The
+// worker stores a complete PlayerMutationResult as NUL-safe ASCII hex.
 static AhJournalRead AhReadWorkerJournal(uint64 uuid, AhJournalPeek& out)
 {
     QueryResult* q = CharacterDatabase.PQuery(
-        "SELECT `state`, `kind`, `facts` FROM `ah_worker_journal` WHERE `uuid` = %llu",
+        "SELECT COUNT(*), COALESCE(MAX(`auction_id`),0), "
+        "COALESCE(MAX(`state`),0), COALESCE(MAX(`kind`),0), "
+        "COALESCE(MAX(`facts`),'') FROM `ah_worker_journal` "
+        "WHERE `uuid`=%llu",
         static_cast<unsigned long long>(uuid));
     if (q == NULL)
     {
-        // Row query returned NULL: probe whether the table exists at all. If the
-        // probe finds the table, the row is genuinely absent (release). If the
-        // probe ALSO returns NULL -- table missing OR the DB is unreachable (a
-        // transient error hits both queries) -- the peek could not be executed;
-        // report QUERY_FAILED so the caller keeps the pending in-doubt.
-        QueryResult* probe = CharacterDatabase.Query("SHOW TABLES LIKE 'ah_worker_journal'");
-        if (probe == NULL)
-        {
-            return AHJRN_QUERY_FAILED;
-        }
-        delete probe;
-        return AHJRN_ABSENT;
+        return AHJRN_QUERY_FAILED;
     }
     Field* fld = q->Fetch();
-    out.state = static_cast<uint8>(fld[0].GetUInt32());
-    out.kind  = static_cast<uint8>(fld[1].GetUInt32());
-    std::string const hex = fld[2].GetCppString();
+    if (fld[0].GetUInt32() == 0u)
+    {
+        delete q;
+        return AHJRN_ABSENT;
+    }
+    out.auctionId = fld[1].GetUInt32();
+    out.state = static_cast<uint8>(fld[2].GetUInt32());
+    out.kind = static_cast<uint8>(fld[3].GetUInt32());
+    std::string const hex = fld[4].GetCppString();
     delete q;
 
-    out.factsOk = false;
+    out.payloadOk = false;
     if ((hex.size() % 2u) == 0u && !hex.empty())
     {
         std::string bin;
@@ -3482,11 +3609,18 @@ static AhJournalRead AhReadWorkerJournal(uint64 uuid, AhJournalPeek& out)
             }
             bin.push_back(static_cast<char>((hi << 4) | lo));
         }
-        if (ok && !bin.empty())
+        if (ok && bin.size() == PlayerMutationResult::WIRE_SIZE)
         {
             ByteBuffer bb;
             bb.append(reinterpret_cast<uint8 const*>(bin.data()), bin.size());
-            out.factsOk = out.facts.Decode(bb);
+            PlayerMutationResult stored;
+            if (stored.Decode(bb) && bb.rpos() == bb.size() &&
+                stored.uuid == uuid && stored.op == out.kind &&
+                stored.facts.auctionId == out.auctionId)
+            {
+                out.result = stored;
+                out.payloadOk = true;
+            }
         }
     }
     return AHJRN_FOUND;
@@ -3497,7 +3631,7 @@ static AhJournalRead AhReadWorkerJournal(uint64 uuid, AhJournalPeek& out)
 // AhFinalizeRejected's release core, but keyed off the pending (no worker
 // facts). Accumulates the online in-memory credit into @p onlineCredit so the
 // caller can undo it if its checked commit fails (X6).
-static void AhReleasePendingReservations(PendingMutation const& pm,
+static bool AhReleasePendingReservations(PendingMutation const& pm,
                                          CustodyDeferred& def, uint32& onlineCredit)
 {
     Player* online = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, pm.playerGuidLow));
@@ -3532,57 +3666,89 @@ static void AhReleasePendingReservations(PendingMutation const& pm,
         if (CustodyLedger::Get(pm.itemKey, itemRow) && itemRow.state == CST_RESERVED)
         {
             Item* pItem = sAuctionMgr.GetAItem(itemRow.itemGuid);
-            CustodyLedger::SetState(pm.itemKey, CST_TERMINAL_BACK, static_cast<uint64>(time(NULL)));
-            if (pItem)
+            if (!pItem)
             {
-                uint32 const savedItemGuidLow = itemRow.itemGuid;
-                def.effects.push_back([savedItemGuidLow]()
-                {
-                    sAuctionMgr.RemoveAItem(savedItemGuidLow);
-                });
-                MailDraft ret(AhMailSubject(pItem->GetEntry(), pItem->GetItemRandomPropertyId(), AUCTION_CANCELED), "");
-                ret.AddItem(pItem);
-                ret.SendMailToInTransaction(MailReceiver(online, ObjectGuid(HIGHGUID_PLAYER, pm.playerGuidLow)),
-                                            MailSender(MAIL_AUCTION, 0u, MAIL_STATIONERY_AUCTION),
-                                            def, MAIL_CHECK_MASK_COPIED);
+                sLog.outError(
+                    "[AHMut] reconcile release: escrow item %u missing "
+                    "for uuid " UI64FMTD "; holding reservation",
+                    itemRow.itemGuid, pm.uuid);
+                return false;
             }
-            else
+
+            CustodyLedger::SetState(pm.itemKey, CST_TERMINAL_BACK,
+                                    static_cast<uint64>(time(NULL)));
+            uint32 const savedItemGuidLow = itemRow.itemGuid;
+            def.effects.push_back([savedItemGuidLow]()
             {
-                sLog.outError("[AHMut] reconcile release: escrow item %u missing for uuid " UI64FMTD
-                              "; ledger-only return", itemRow.itemGuid, pm.uuid);
-            }
+                sAuctionMgr.RemoveAItem(savedItemGuidLow);
+            });
+            MailDraft ret(AhMailSubject(pItem->GetEntry(),
+                                        pItem->GetItemRandomPropertyId(),
+                                        AUCTION_CANCELED), "");
+            ret.AddItem(pItem);
+            ret.SendMailToInTransaction(
+                MailReceiver(online,
+                             ObjectGuid(HIGHGUID_PLAYER, pm.playerGuidLow)),
+                MailSender(MAIL_AUCTION, 0u, MAIL_STATIONERY_AUCTION),
+                def, MAIL_CHECK_MASK_COPIED);
         }
     }
+    return true;
 }
 
 // [SP-2] Absent-journal (or anomalous-state) disposition: release the pending's
 // reservations, write the applied-record, and consume the slot. One checked txn.
-static void AhReconcileReleaseAndConsume(PendingMutation const& pm)
+static bool AhReconcileReleaseAndConsume(PendingMutation const& pm)
 {
     CustodyDeferred def;
     uint32 onlineCredit = 0u;
     CharacterDatabase.BeginTransaction();
-    AhReleasePendingReservations(pm, def, onlineCredit);
-    CustodyService::WriteResolutionApplied(pm.auctionId, pm.uuid);
-    if (CharacterDatabase.CommitTransactionChecked())
+    if (!AhReleasePendingReservations(pm, def, onlineCredit))
     {
-        def.run();
-    }
-    else
-    {
+        CharacterDatabase.RollbackTransaction();
         if (onlineCredit > 0u)
         {
             Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, pm.playerGuidLow));
             if (p)
             {
-                p->ModifyMoney(-int32(onlineCredit));   // X6: undo the in-memory credit
+                p->ModifyMoney(-int32(onlineCredit));
             }
         }
-        sLog.outError("[AHMut] reconcile release commit FAILED for uuid " UI64FMTD, pm.uuid);
+        return false;
     }
-    PendingMutation consumed;
-    sWorld.GetMutationPending().Take(pm.uuid, consumed);
+    CustodyService::WriteResolutionApplied(pm.auctionId, pm.uuid);
+    if (CustodyService::CommitCheckedOrForcedFail("reconcile-release"))
+    {
+        def.run();
+        PendingMutation consumed;
+        sWorld.GetMutationPending().Take(pm.uuid, consumed);
+        return true;
+    }
+
+    if (onlineCredit > 0u)
+    {
+        Player* p = sObjectMgr.GetPlayer(
+            ObjectGuid(HIGHGUID_PLAYER, pm.playerGuidLow));
+        if (p)
+        {
+            // X6: undo the in-memory credit.
+            p->ModifyMoney(-int32(onlineCredit));
+        }
+    }
+    sLog.outError("[AHMut] reconcile release commit FAILED for uuid " UI64FMTD,
+                  pm.uuid);
+    return false;
 }
+
+enum AhReconnectDisposition
+{
+    AH_RECONNECT_COMPLETE,
+    AH_RECONNECT_RETRY,
+    AH_RECONNECT_HELD
+};
+
+static uint32 const AH_RECONNECT_RETRY_SEC = 5u;
+static std::map<uint64, uint32> s_ahReconnectRetries;
 
 // [SP-2] COMMITTED/APPLIED journal disposition: the worker committed the book
 // but the IPC_PLAYER_RESULT frame was lost. Re-drive the value finalize from
@@ -3590,29 +3756,29 @@ static void AhReconcileReleaseAndConsume(PendingMutation const& pm)
 // custody ledger (a reserve row already flipped terminal by an earlier finalize
 // makes the cross-check refuse), so a partially/fully-applied finalize re-driven
 // here can never double-move value or double-mail; it also consumes the pending.
-static void AhResolveForwardFromJournal(PendingMutation const& pm, AhJournalPeek const& jp)
+static AhReconnectDisposition AhResolveForwardFromJournal(
+    PendingMutation const& pm, AhJournalPeek const& jp)
 {
-    if (!jp.factsOk)
+    if (!jp.payloadOk || jp.auctionId != pm.auctionId ||
+        jp.result.op != uint8(pm.op & 0xFFu) ||
+        jp.result.status != uint8(MUT_OK))
     {
-        sLog.outError("[AHMut] reconcile uuid " UI64FMTD ": journal committed but facts"
-                      " undecodable; releasing reservation instead", pm.uuid);
-        AhReconcileReleaseAndConsume(pm);
-        return;
+        sLog.outError("[AHMut] reconcile uuid " UI64FMTD ": committed journal "
+                      "payload invalid; holding reservation in-doubt",
+                      pm.uuid);
+        sWorld.GetMutationPending().Tombstone(pm.uuid);
+        return AH_RECONNECT_HELD;
     }
-    PlayerMutationResult res;
-    res.uuid   = pm.uuid;
-    res.op     = jp.kind;               // journal kind == originating opcode low byte
-    res.status = uint8(MUT_OK);
-    res.reason = 0;
-    res.facts  = jp.facts;
-    AhHandlePlayerMutationResult(res);  // Takes the pending + fail-closed finalize
+    // Takes the pending and applies the fail-closed finalize.
+    AhHandlePlayerMutationResult(jp.result);
+    return AH_RECONNECT_COMPLETE;
 }
 
 // [SP-2] CANCEL_PREPARED journal disposition (spec 8): a cancel PREPARE lock we
 // hold with no CONFIRM -> release any cut reservation + tell the worker to ABORT
 // (unlock the book row), then consume the slot. Mirrors AhFinalizeStale + the
 // AhHandleCancelPrepared abort frame.
-static void AhAbortAndRelease(PendingMutation const& pm)
+static bool AhAbortAndRelease(PendingMutation const& pm)
 {
     if (!pm.reserveKey.empty())
     {
@@ -3623,7 +3789,8 @@ static void AhAbortAndRelease(PendingMutation const& pm)
             CustodyDeferred def;
             CharacterDatabase.BeginTransaction();
             CustodyService::ReleaseGoldToWallet(def, pm.playerGuidLow, online, cutRow.amount, pm.reserveKey);
-            if (CharacterDatabase.CommitTransactionChecked())
+            if (CustodyService::CommitCheckedOrForcedFail(
+                    "reconcile-abort-release"))
             {
                 def.run();
             }
@@ -3634,6 +3801,7 @@ static void AhAbortAndRelease(PendingMutation const& pm)
                     online->ModifyMoney(-int32(cutRow.amount));   // X6: undo in-memory credit
                 }
                 sLog.outError("[AHMut] reconcile cut release commit FAILED for uuid " UI64FMTD, pm.uuid);
+                return false;
             }
         }
     }
@@ -3652,12 +3820,68 @@ static void AhAbortAndRelease(PendingMutation const& pm)
 
     PendingMutation consumed;
     sWorld.GetMutationPending().Take(pm.uuid, consumed);
+    return true;
+}
+
+static AhReconnectDisposition AhReconcilePending(
+    PendingMutation const& pm)
+{
+    MutationPendingMap& pend = sWorld.GetMutationPending();
+    AhJournalPeek jp;
+    AhJournalRead const rd = AhReadWorkerJournal(pm.uuid, jp);
+
+    if (rd == AHJRN_QUERY_FAILED)
+    {
+        sLog.outError("[AHMut] reconcile uuid " UI64FMTD ": journal peek "
+                      "FAILED (table missing / DB error); holding reservation "
+                      "in-doubt",
+                      pm.uuid);
+        pend.Tombstone(pm.uuid);
+        return AH_RECONNECT_RETRY;
+    }
+
+    if (rd == AHJRN_FOUND)
+    {
+        // COMMITTED(1) / APPLIED(3): the worker committed the book.
+        if (jp.state == 1u || jp.state == 3u)
+        {
+            return AhResolveForwardFromJournal(pm, jp);
+        }
+
+        // CANCEL_PREPARED(4): abort the lock after releasing any cut.
+        if (jp.state == 4u)
+        {
+            if (!jp.payloadOk || jp.auctionId != pm.auctionId ||
+                jp.result.op != uint8(pm.op & 0xFFu) ||
+                jp.result.status != uint8(MUT_PREPARED))
+            {
+                sLog.outError(
+                    "[AHMut] reconcile uuid " UI64FMTD ": cancel-prepared "
+                    "journal payload invalid; holding in-doubt",
+                    pm.uuid);
+                pend.Tombstone(pm.uuid);
+                return AH_RECONNECT_HELD;
+            }
+            return AhAbortAndRelease(pm) ? AH_RECONNECT_COMPLETE
+                                         : AH_RECONNECT_RETRY;
+        }
+
+        // Any other present state for a mangosd pending is anomalous. The
+        // mangosd and worker UUID spaces are disjoint, so release safely.
+        sLog.outError("[AHMut] reconcile uuid " UI64FMTD ": unexpected journal "
+                      "state %u; releasing reservation",
+                      pm.uuid, uint32(jp.state));
+    }
+
+    // A genuinely absent row means the worker never committed this mutation.
+    return AhReconcileReleaseAndConsume(pm) ? AH_RECONNECT_COMPLETE
+                                             : AH_RECONNECT_RETRY;
 }
 
 // [SP-2] Walk every in-flight pending against the shared worker journal on the
-// service-just-became-active edge (spec 8). Per uuid: COMMITTED/APPLIED =>
-// finalize-forward; CANCEL_PREPARED => abort + release; absent (or an anomalous
-// present state) => release the reservation. Each disposition consumes its slot.
+// service-just-became-active edge (spec 8). Failed local/query dispositions are
+// queued for the steady-state retry tick; malformed durable payloads remain
+// held for operator repair.
 void AhReconcileOnReconnect()
 {
     MutationPendingMap& pend = sWorld.GetMutationPending();
@@ -3673,44 +3897,48 @@ void AhReconcileOnReconnect()
     for (size_t i = 0; i < inflight.size(); ++i)
     {
         PendingMutation const& pm = inflight[i];
-        AhJournalPeek jp;
-        AhJournalRead const rd = AhReadWorkerJournal(pm.uuid, jp);
-
-        // [FIX C.2] The journal peek could not be executed (table missing or a
-        // transient DB error): do NOT release -- the worker may have committed
-        // this mutation. Leave the pending in-doubt (tombstone, reservation held)
-        // so a later reconcile or an operator resolves it. Consumes no slot.
-        if (rd == AHJRN_QUERY_FAILED)
+        AhReconnectDisposition const disposition = AhReconcilePending(pm);
+        if (disposition == AH_RECONNECT_RETRY)
         {
-            sLog.outError("[AHMut] reconcile uuid " UI64FMTD ": journal peek FAILED"
-                          " (table missing / DB error); holding reservation in-doubt",
-                          pm.uuid);
-            sWorld.GetMutationPending().Tombstone(pm.uuid);
+            s_ahReconnectRetries[pm.uuid] =
+                uint32(time(NULL)) + AH_RECONNECT_RETRY_SEC;
+        }
+        else
+        {
+            s_ahReconnectRetries.erase(pm.uuid);
+        }
+    }
+}
+
+void AhProcessReconnectRetryQueue(uint32 nowSec)
+{
+    MutationPendingMap& pend = sWorld.GetMutationPending();
+    std::map<uint64, uint32>::iterator itr = s_ahReconnectRetries.begin();
+    while (itr != s_ahReconnectRetries.end())
+    {
+        if (itr->second > nowSec)
+        {
+            ++itr;
             continue;
         }
 
-        if (rd == AHJRN_FOUND)
+        std::map<uint64, uint32>::iterator current = itr++;
+        PendingMutation pm;
+        if (!pend.Peek(current->first, pm))
         {
-            // COMMITTED(1) / APPLIED(3): the worker committed the book -> value forward.
-            if (jp.state == 1u || jp.state == 3u)
-            {
-                AhResolveForwardFromJournal(pm, jp);
-                continue;
-            }
-            // CANCEL_PREPARED(4): a stuck cancel lock -> abort + release the cut.
-            if (jp.state == 4u)
-            {
-                AhAbortAndRelease(pm);
-                continue;
-            }
-            // Any other present state for a mangosd pending is anomalous (the
-            // mangosd/worker uuid spaces are disjoint) -> release, never leak gold.
-            sLog.outError("[AHMut] reconcile uuid " UI64FMTD ": unexpected journal state %u;"
-                          " releasing reservation", pm.uuid, uint32(jp.state));
+            s_ahReconnectRetries.erase(current);
+            continue;
         }
-        // Row genuinely absent (AHJRN_ABSENT), or an anomalous present state: the
-        // worker never committed -> release the reservation (forward-only, spec 8).
-        AhReconcileReleaseAndConsume(pm);
+
+        AhReconnectDisposition const disposition = AhReconcilePending(pm);
+        if (disposition == AH_RECONNECT_RETRY)
+        {
+            current->second = nowSec + AH_RECONNECT_RETRY_SEC;
+        }
+        else
+        {
+            s_ahReconnectRetries.erase(current);
+        }
     }
 }
 

@@ -1414,7 +1414,9 @@ void World::Update(uint32 diff)
             // SP-2: retry failed value-finalizes and age un-answered player
             // mutations into in-doubt tombstones (forward-only; never rolls
             // back). Cheap no-op when both queues are empty.
-            AhProcessRedriveQueue(uint32(time(NULL)));
+            uint32 const mutationNowSec = uint32(time(NULL));
+            AhProcessRedriveQueue(mutationNowSec);
+            AhProcessReconnectRetryQueue(mutationNowSec);
         }
 
         // Expire processed-uuid dedup entries. UNCONDITIONAL: the dedup cache

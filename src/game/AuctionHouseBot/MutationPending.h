@@ -192,6 +192,10 @@ uint8 AhHandleResolveApply(ResolveApply const& ra);
 /// Reconcile-on-reconnect walk (spec 8). Implemented by Task 12.
 void AhReconcileOnReconnect();
 
+/// Retry reconnect dispositions retained after a transient local DB/read
+/// failure. Called once per second while the AH service remains active.
+void AhProcessReconnectRetryQueue(uint32 nowSec);
+
 /// Forward-only re-attempt of finalizes whose checked commit failed (spec 4.1
 /// step 4, "failed finalize") + the in-doubt tombstone sweep. Called once per
 /// second from World::Update while the AH service is active.

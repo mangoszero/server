@@ -244,19 +244,20 @@ void CustodyService::MaybeCrash(std::string const& phase)
     }
 }
 
-bool CustodyService::CommitCheckedOrForcedFail(std::string const& phase)
+bool CustodyService::CommitCheckedOrForcedFail(
+    std::string const& phase)
 {
-    // One-shot per process: the FIRST finalize whose phase is armed rolls back
-    // and reports failure (-> the caller runs its X6 in-memory undo and queues
-    // the redrive); the redrive's re-attempt takes the real checked commit and
-    // succeeds. This proves the worker book is never rolled back on a failed
-    // mangosd-side finalize. Inert (a plain checked commit) on a live realm.
+    // One-shot per process: the first armed custody transaction rolls back.
+    // Its caller must retain the disposition and undo any in-memory effects so
+    // the next reconciliation attempt can take the real checked commit.
     static bool s_forcedFailFired = false;
     if (!s_forcedFailFired && !phase.empty() &&
         sConfig.GetStringDefault("AH.Service.CustodyFailCommitAt", "") == phase)
     {
         s_forcedFailFired = true;
-        sLog.outError("custody forced commit-fail: rollback at phase '%s' (TEST ONLY, one-shot)", phase.c_str());
+        sLog.outError(
+            "custody forced commit-fail: rollback at phase '%s' "
+            "(TEST ONLY, one-shot)", phase.c_str());
         CharacterDatabase.RollbackTransaction();
         return false;
     }

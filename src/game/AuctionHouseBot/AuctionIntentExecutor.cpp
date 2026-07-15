@@ -31,6 +31,7 @@
 #include "AuctionHouseMgr.h"
 #include "AuctionHouseBot.h"
 #include "CustodyLedger.h"
+#include "CustodyService.h"
 #include "ObjectMgr.h"
 #include "ItemPrototype.h"
 #include "Item.h"
@@ -832,7 +833,7 @@ AuctionIntentExecutor::SweepOrphanMaterializations(uint32 nowSec,
         return report;
     }
 
-    if (!CharacterDatabase.CommitTransactionChecked())
+    if (!CustodyService::CommitCheckedOrForcedFail("orphan-sweep"))
     {
         report.committed = false;
         sLog.outError("[AHExecutor] orphan materialization sweep transaction"
@@ -845,7 +846,9 @@ AuctionIntentExecutor::SweepOrphanMaterializations(uint32 nowSec,
     for (std::vector<Candidate>::const_iterator it = candidates.begin();
          it != candidates.end(); ++it)
     {
+        Item* const orphan = sAuctionMgr.GetAItem(it->itemGuid);
         sAuctionMgr.RemoveAItem(it->itemGuid);
+        delete orphan;
     }
     report.swept = report.selected;
     sLog.outString("[AHExecutor] orphan materialization sweep:"

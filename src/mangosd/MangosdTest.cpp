@@ -1,6 +1,7 @@
 #include "Utilities/Errors.h"
 #include <vector>
 #include "MangosdTest.h"
+#include "Config/Config.h"
 #include "Log.h"
 #include "Database/DatabaseEnv.h"
 #include "Chat.h"
@@ -26,9 +27,16 @@
 #include "WorldSession.h"
 #include "PlayerMutations.h"
 #include <cstdio>
+#include <cstdlib>
 #include <ctime>
 #include <memory>
 #include <string>
+
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 
 bool AhBuildCancelPrepareForward(MutationPendingMap& pending, uint32 playerGuidLow,
                                  uint32 auctionId, uint64 uuid, uint32 sentSec,
@@ -626,6 +634,81 @@ static bool RunPureCustodyReconcilerTests()
     }
 
     return pass;
+}
+
+static Item* TestCreateCachedAuctionItem(uint32 itemId, uint32 ownerGuid)
+{
+    Item* item = Item::CreateItem(itemId, 1);
+    if (!item)
+    {
+        return NULL;
+    }
+
+    item->SetOwnerGuid(ObjectGuid(HIGHGUID_PLAYER, ownerGuid));
+    CharacterDatabase.BeginTransaction();
+    item->SaveToDB();
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        delete item;
+        return NULL;
+    }
+
+    sAuctionMgr.AddAItem(item);
+    return item;
+}
+
+static bool TestArmCustodyCommitFailure(char const* phase,
+                                        std::string& originalConfig,
+                                        std::string& testConfig)
+{
+    originalConfig = sConfig.GetFilename();
+    char configPath[] = "mangosd-custody-selftest-XXXXXX";
+#ifdef _WIN32
+    if (_mktemp_s(configPath, sizeof(configPath)) != 0)
+    {
+        return false;
+    }
+
+    FILE* config = NULL;
+    if (fopen_s(&config, configPath, "w") != 0)
+    {
+        return false;
+    }
+#else
+    int const configHandle = mkstemp(configPath);
+    if (configHandle == -1)
+    {
+        return false;
+    }
+
+    FILE* config = fdopen(configHandle, "w");
+    if (!config)
+    {
+        close(configHandle);
+        remove(configPath);
+        return false;
+    }
+#endif
+    fprintf(config,
+            "[MangosdConf]\n"
+            "AH.Service.CustodyFailCommitAt = \"%s\"\n",
+            phase);
+    fclose(config);
+    testConfig = configPath;
+    if (!sConfig.SetSource(testConfig.c_str()))
+    {
+        remove(testConfig.c_str());
+        return false;
+    }
+    return true;
+}
+
+static bool TestRestoreConfig(std::string const& originalConfig,
+                              std::string const& testConfig)
+{
+    bool const restored = sConfig.SetSource(originalConfig.c_str());
+    remove(testConfig.c_str());
+    return restored;
 }
 
 /// Self-test for Database::CommitTransactionChecked(): proves the runtime
@@ -2655,14 +2738,30 @@ static int RunAhMutResultTest()
 {
     bool pass = true;
     CharacterDatabase.AllowAsyncTransactions();
-    sObjectMgr.SetHighestGuids();       // mail ids collide otherwise (RunMailTest)
 
     // Clean slate from any prior run (auction-id scoped -- covers both the
     // test:mut* keys and the hardcoded dep:/item: keys the buyout finalize uses).
     CharacterDatabase.DirectExecute(
-        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (990001,990002,990003,990004,990005)");
+        "DELETE FROM `custody_ledger` WHERE `auction_id` IN "
+        "(990001,990002,990003,990004,990005,990006,990007)");
+    CharacterDatabase.DirectExecute(
+        "DELETE ii FROM `item_instance` ii "
+        "JOIN `mail_items` mi ON mi.`item_guid`=ii.`guid` "
+        "JOIN `mail` m ON m.`id`=mi.`mail_id` "
+        "WHERE m.`receiver` IN (1,2) AND m.`subject` LIKE '19019:%'");
+    CharacterDatabase.DirectExecute(
+        "DELETE mi FROM `mail_items` mi JOIN `mail` m ON m.`id`=mi.`mail_id` "
+        "WHERE m.`receiver` IN (1,2) AND m.`subject` LIKE '19019:%'");
     CharacterDatabase.DirectExecute(
         "DELETE FROM `mail` WHERE `receiver` IN (1,2) AND `subject` LIKE '19019:%'");
+
+    sObjectMgr.SetHighestGuids();       // mail and item ids collide otherwise
+    sObjectMgr.LoadItemPrototypes();
+    if (!ObjectMgr::GetItemPrototype(19019u))
+    {
+        printf("ahmutresult FAIL: item prototype 19019 missing\n");
+        return 2;
+    }
 
     // Seed the offline recipient (guid 1) with an account + durable money so the
     // account-guarded AH mail path delivers and the offline gold re-credit UPDATE
@@ -2828,6 +2927,14 @@ static int RunAhMutResultTest()
     // The worker removed the row at buyout: seller paid, item to winner,
     // buyer reserve committed as proceeds, deposit returned, remainder released.
     {
+        Item* winItem = TestCreateCachedAuctionItem(19019u, 1u);
+        if (!winItem)
+        {
+            printf("ahmutresult FAIL: create buyout-win escrow item\n");
+            return 2;
+        }
+        uint32 const winItemGuid = winItem->GetGUIDLow();
+
         CharacterDatabase.BeginTransaction();
         CharacterDatabase.PExecute(
             "INSERT INTO `custody_ledger` "
@@ -2835,7 +2942,7 @@ static int RunAhMutResultTest()
             "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
             "VALUES ('test:mut:bowin',0,1,0,99999,0,1000,0,990003,0,0),"
             "       ('dep:990003',0,0,0,1,0,50,0,990003,0,0),"
-            "       ('item:990003',1,3,0,1,0,0,424243,990003,0,0)");
+            "       ('item:990003',1,3,0,1,0,0,%u,990003,0,0)", winItemGuid);
         if (!CharacterDatabase.CommitTransactionChecked())
         {
             printf("ahmutresult FAIL: seed commit (buyout-win)\n");
@@ -2863,7 +2970,7 @@ static int RunAhMutResultTest()
         res.facts = MutationFacts();
         res.facts.auctionId = 990003u;
         res.facts.houseId = 7;
-        res.facts.itemGuid = 424243u;
+        res.facts.itemGuid = winItemGuid;
         res.facts.itemTemplate = 19019u;
         res.facts.randomPropertyId = 0;
         res.facts.sellerGuid = 1u;          // seller has an account -> gets payout mail
@@ -2977,13 +3084,21 @@ static int RunAhMutResultTest()
 
     // ---- Part A5: MUT_OK cancel CONFIRM finalizes seller return + deposit ----
     {
+        Item* cancelItem = TestCreateCachedAuctionItem(19019u, 1u);
+        if (!cancelItem)
+        {
+            printf("ahmutresult FAIL: create cancel escrow item\n");
+            return 2;
+        }
+        uint32 const cancelItemGuid = cancelItem->GetGUIDLow();
+
         CharacterDatabase.BeginTransaction();
         CharacterDatabase.PExecute(
             "INSERT INTO `custody_ledger` "
             "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
             "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
             "VALUES ('dep:990005',0,0,0,1,0,32,0,990005,0,0),"
-            "       ('item:990005',1,3,0,1,0,0,424245,990005,0,0)");
+            "       ('item:990005',1,3,0,1,0,0,%u,990005,0,0)", cancelItemGuid);
         if (!CharacterDatabase.CommitTransactionChecked())
         {
             printf("ahmutresult FAIL: seed commit (cancel-confirm)\n");
@@ -3011,7 +3126,7 @@ static int RunAhMutResultTest()
         res.facts = MutationFacts();
         res.facts.auctionId = 990005u;
         res.facts.houseId = 7;
-        res.facts.itemGuid = 424245u;
+        res.facts.itemGuid = cancelItemGuid;
         res.facts.itemTemplate = 19019u;
         res.facts.randomPropertyId = 0;
         res.facts.sellerGuid = 1u;
@@ -3036,7 +3151,155 @@ static int RunAhMutResultTest()
         }
     }
 
-    // ---- Part B: MUT_REJECTED buyout -> ReleaseGoldToWallet (offline) ----
+    // ---- Part B1: rejected sell returns the item and the durable deposit ----
+    {
+        Item* rejectedItem = TestCreateCachedAuctionItem(19019u, 1u);
+        if (!rejectedItem)
+        {
+            printf("ahmutresult FAIL: create rejected-sell escrow item\n");
+            return 2;
+        }
+        uint32 const rejectedItemGuid = rejectedItem->GetGUIDLow();
+
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('dep:990006',0,0,0,1,0,73,0,990006,0,0),"
+            "       ('item:990006',1,3,0,1,0,0,%u,990006,0,0)",
+            rejectedItemGuid);
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahmutresult FAIL: seed commit (rejected sell)\n");
+            return 2;
+        }
+
+        PendingMutation pm;
+        pm.uuid = 0xABull;
+        pm.playerGuidLow = 1u;
+        pm.op = uint16(IPC_PLAYER_SELL);
+        pm.auctionId = 990006u;
+        pm.state = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec = uint32(time(NULL));
+        // Production sell pending stores its deposit in depKey.
+        pm.reservedAmount = 0u;
+        pm.reserveKey.clear();
+        pm.itemKey = "item:990006";
+        pm.depKey = "dep:990006";
+        pend.Register(pm);
+
+        uint64 const before = readMoney();
+        PlayerMutationResult res;
+        res.uuid = pm.uuid;
+        res.op = uint8(IPC_PLAYER_SELL & 0xFFu);
+        res.status = uint8(MUT_REJECTED);
+        res.reason = uint8(AUCTION_ERR_DATABASE);
+        res.facts = MutationFacts();
+        res.facts.auctionId = pm.auctionId;
+        res.facts.houseId = 7u;
+        AhHandlePlayerMutationResult(res);
+
+        if (readMoney() != before + 73u)
+        {
+            printf("ahmutresult FAIL: rejected sell did not refund durable "
+                   "deposit amount\n");
+            pass = false;
+        }
+        if (rowState("dep:990006") != CST_TERMINAL_BACK ||
+            rowState("item:990006") != CST_TERMINAL_BACK)
+        {
+            printf("ahmutresult FAIL: rejected sell custody not "
+                   "TERMINAL_BACK\n");
+            pass = false;
+        }
+        std::unique_ptr<QueryResult> returned(CharacterDatabase.PQuery(
+            "SELECT 1 FROM `mail_items` WHERE `receiver`=1 AND `item_guid`=%u",
+            rejectedItemGuid));
+        if (!returned)
+        {
+            printf("ahmutresult FAIL: rejected sell item-return mail "
+                   "missing\n");
+            pass = false;
+        }
+    }
+
+    // ---- Part B2: missing sell escrow item holds both rows for retry ----
+    {
+        Item* missingItem = TestCreateCachedAuctionItem(19019u, 1u);
+        if (!missingItem)
+        {
+            printf("ahmutresult FAIL: create missing-item retry fixture\n");
+            return 2;
+        }
+        uint32 const missingItemGuid = missingItem->GetGUIDLow();
+        sAuctionMgr.RemoveAItem(missingItemGuid);
+
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('dep:990007',0,0,0,1,0,74,0,990007,0,0),"
+            "       ('item:990007',1,3,0,1,0,0,%u,990007,0,0)",
+            missingItemGuid);
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahmutresult FAIL: seed commit "
+                   "(missing rejected-sell item)\n");
+            return 2;
+        }
+
+        PendingMutation pm;
+        pm.uuid = 0xACull;
+        pm.playerGuidLow = 1u;
+        pm.op = uint16(IPC_PLAYER_SELL);
+        pm.auctionId = 990007u;
+        pm.state = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec = uint32(time(NULL));
+        pm.reservedAmount = 0u;
+        pm.reserveKey.clear();
+        pm.itemKey = "item:990007";
+        pm.depKey = "dep:990007";
+        pend.Register(pm);
+
+        uint64 const before = readMoney();
+        PlayerMutationResult res;
+        res.uuid = pm.uuid;
+        res.op = uint8(IPC_PLAYER_SELL & 0xFFu);
+        res.status = uint8(MUT_REJECTED);
+        res.reason = uint8(AUCTION_ERR_DATABASE);
+        res.facts = MutationFacts();
+        res.facts.auctionId = pm.auctionId;
+        res.facts.houseId = 7u;
+        AhHandlePlayerMutationResult(res);
+
+        if (readMoney() != before || rowState("dep:990007") != CST_RESERVED ||
+            rowState("item:990007") != CST_RESERVED)
+        {
+            printf("ahmutresult FAIL: missing rejected-sell item moved "
+                   "conserved value\n");
+            pass = false;
+        }
+
+        sAuctionMgr.AddAItem(missingItem);
+        AhProcessRedriveQueue(uint32(time(NULL)) + 6u);
+        std::unique_ptr<QueryResult> returned(CharacterDatabase.PQuery(
+            "SELECT 1 FROM `mail_items` WHERE `receiver`=1 "
+            "AND `item_guid`=%u",
+            missingItemGuid));
+        if (readMoney() != before + 74u ||
+            rowState("dep:990007") != CST_TERMINAL_BACK ||
+            rowState("item:990007") != CST_TERMINAL_BACK || !returned ||
+            sAuctionMgr.GetAItem(missingItemGuid))
+        {
+            printf("ahmutresult FAIL: missing-item redrive did not conserve "
+                   "and return value\n");
+            pass = false;
+        }
+    }
+
+    // ---- Part B3: MUT_REJECTED buyout -> ReleaseGoldToWallet (offline) ----
     {
         CharacterDatabase.BeginTransaction();
         CharacterDatabase.PExecute(
@@ -3234,7 +3497,16 @@ static int RunAhMutResultTest()
 
     // Clean up.
     CharacterDatabase.DirectExecute(
-        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (990001,990002,990003,990004,990005)");
+        "DELETE FROM `custody_ledger` WHERE `auction_id` IN "
+        "(990001,990002,990003,990004,990005,990006,990007)");
+    CharacterDatabase.DirectExecute(
+        "DELETE ii FROM `item_instance` ii "
+        "JOIN `mail_items` mi ON mi.`item_guid`=ii.`guid` "
+        "JOIN `mail` m ON m.`id`=mi.`mail_id` "
+        "WHERE m.`receiver` IN (1,2) AND m.`subject` LIKE '19019:%'");
+    CharacterDatabase.DirectExecute(
+        "DELETE mi FROM `mail_items` mi JOIN `mail` m ON m.`id`=mi.`mail_id` "
+        "WHERE m.`receiver` IN (1,2) AND m.`subject` LIKE '19019:%'");
     CharacterDatabase.DirectExecute(
         "DELETE FROM `mail` WHERE `receiver` IN (1,2) AND `subject` LIKE '19019:%'");
     CharacterDatabase.DirectExecute("DELETE FROM `characters` WHERE `guid`=1");
@@ -3252,25 +3524,44 @@ static int RunAhMutResultTest()
 /// REPAIR_RETURN) against SEEDED custody rows -- no live worker, no world data.
 /// Asserts each kind's ledger flips + value mails, the resolve:<uuid>
 /// applied-record, and that a SECOND apply returns RES_DUPLICATE without
-/// double-applying. Recipients use guid 1 (seeded offline with an account so the
-/// account-guarded AH mail path delivers -- see RunAhMutResultTest). World data
-/// is NOT loaded under -t, so GetAItem() is always NULL: the item legs take the
-/// escrow-cache-miss (ledger-only) branch and no physical item mail is asserted.
+/// double-applying. Recipients use guid 1 or 2, seeded offline with accounts so
+/// the account-guarded AH mail paths deliver. Item prototypes are loaded only
+/// for terminal-path fixtures that intentionally provide a cached escrow
+/// object.
 /// Returns 0 on pass.
 static int RunAhResolveTest()
 {
     bool pass = true;
     CharacterDatabase.AllowAsyncTransactions();
-    sObjectMgr.SetHighestGuids();       // mail ids collide otherwise (RunMailTest)
 
     CharacterDatabase.DirectExecute(
-        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (991001,991002,991003,991004,991005)");
+        "DELETE FROM `custody_ledger` WHERE `auction_id` IN "
+        "(991001,991002,991003,991004,991005,991006)");
     CharacterDatabase.DirectExecute(
-        "DELETE FROM `mail` WHERE `receiver`=1 AND `subject` LIKE '19019:%'");
-    CharacterDatabase.DirectExecute("DELETE FROM `characters` WHERE `guid`=1");
+        "DELETE ii FROM `item_instance` ii "
+        "JOIN `mail_items` mi ON mi.`item_guid`=ii.`guid` "
+        "JOIN `mail` m ON m.`id`=mi.`mail_id` "
+        "WHERE m.`receiver` IN (1,2) AND m.`subject` LIKE '19019:%'");
+    CharacterDatabase.DirectExecute(
+        "DELETE mi FROM `mail_items` mi JOIN `mail` m ON m.`id`=mi.`mail_id` "
+        "WHERE m.`receiver` IN (1,2) AND m.`subject` LIKE '19019:%'");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `mail` WHERE `receiver` IN (1,2) "
+        "AND `subject` LIKE '19019:%'");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `characters` WHERE `guid` IN (1,2)");
     CharacterDatabase.DirectExecute(
         "INSERT INTO `characters` (`guid`,`account`,`name`,`money`) "
-        "VALUES (1, 1, 'AhResTestRcv', 100000)");
+        "VALUES (1, 1, 'AhResTestRcv', 100000),"
+        "       (2, 2, 'AhResSeller', 100000)");
+
+    sObjectMgr.SetHighestGuids();       // mail and item ids collide otherwise
+    sObjectMgr.LoadItemPrototypes();
+    if (!ObjectMgr::GetItemPrototype(19019u))
+    {
+        printf("ahresolve FAIL: item prototype 19019 missing\n");
+        return 2;
+    }
 
     auto readMoney = []() -> uint64
     {
@@ -3292,7 +3583,7 @@ static int RunAhResolveTest()
         return res ? res->Fetch()[0].GetUInt64() : 0;
     };
 
-    // ---- RESOLVE_WON: bid + dep + item terminal; seller payout mail ----
+    // ---- RESOLVE_WON: missing item cache must hold every value leg ----
     {
         CharacterDatabase.BeginTransaction();
         CharacterDatabase.PExecute(
@@ -3324,46 +3615,47 @@ static int RunAhResolveTest()
         ra.facts.curBidderGuid = 99999u;    // offline-nobody winner
         ra.facts.buyout = 800u;
 
-        if (AhHandleResolveApply(ra) != uint8(RES_APPLIED))
+        if (AhHandleResolveApply(ra) != uint8(RES_FAILED))
         {
-            printf("ahresolve FAIL: WON not RES_APPLIED\n");
+            printf("ahresolve FAIL: missing-item WON not RES_FAILED\n");
             pass = false;
         }
-        if (!CustodyService::ResolutionApplied(0xB1ull))
+        if (CustodyService::ResolutionApplied(0xB1ull))
         {
-            printf("ahresolve FAIL: WON applied-record missing\n");
+            printf("ahresolve FAIL: missing-item WON wrote applied-record\n");
             pass = false;
         }
-        if (rowState("bid:991001:1") != 1u)
+        if (rowState("bid:991001:1") != CST_RESERVED)
         {
-            printf("ahresolve FAIL: WON bid row not TERMINAL_OK\n");
+            printf("ahresolve FAIL: missing-item WON consumed bid\n");
             pass = false;
         }
-        if (rowState("dep:991001") != 1u)
+        if (rowState("dep:991001") != CST_RESERVED)
         {
-            printf("ahresolve FAIL: WON dep row not TERMINAL_OK\n");
+            printf("ahresolve FAIL: missing-item WON consumed deposit\n");
             pass = false;
         }
-        if (rowState("item:991001") != 1u)
+        if (rowState("item:991001") != CST_RESERVED)
         {
-            printf("ahresolve FAIL: WON item row not TERMINAL_OK\n");
+            printf("ahresolve FAIL: missing-item WON terminalized item "
+                   "custody\n");
             pass = false;
         }
-        if (mailCount(850u, "19019:0:2") != 1u)   // profit = 800+50-cut(0 under -t)
+        if (mailCount(850u, "19019:0:2") != 0u)
         {
-            printf("ahresolve FAIL: WON seller payout mail missing\n");
+            printf("ahresolve FAIL: missing-item WON paid seller\n");
             pass = false;
         }
 
-        // Duplicate: RES_DUPLICATE, no second payout mail, rows unchanged.
-        if (AhHandleResolveApply(ra) != uint8(RES_DUPLICATE))
+        if (AhHandleResolveApply(ra) != uint8(RES_FAILED))
         {
-            printf("ahresolve FAIL: WON second apply not RES_DUPLICATE\n");
+            printf("ahresolve FAIL: missing-item WON retry was not "
+                   "RES_FAILED\n");
             pass = false;
         }
-        if (mailCount(850u, "19019:0:2") != 1u)
+        if (mailCount(850u, "19019:0:2") != 0u)
         {
-            printf("ahresolve FAIL: WON duplicate double-applied payout mail\n");
+            printf("ahresolve FAIL: missing-item WON retry paid seller\n");
             pass = false;
         }
     }
@@ -3376,13 +3668,22 @@ static int RunAhResolveTest()
     // applied-record. (A legit BOT win has curBidderGuid == 0 and no bid row --
     // that proceed case is exercised by the REPAIR/bot-win paths.)
     {
+        Item* missingBidItem = TestCreateCachedAuctionItem(19019u, 1u);
+        if (!missingBidItem)
+        {
+            printf("ahresolve FAIL: create missing-bid escrow item\n");
+            return 2;
+        }
+        uint32 const missingBidItemGuid = missingBidItem->GetGUIDLow();
+
         CharacterDatabase.BeginTransaction();
         CharacterDatabase.PExecute(
             "INSERT INTO `custody_ledger` "
             "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
             "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
             "VALUES ('dep:991005',0,0,0,1,0,30,0,991005,0,0),"
-            "       ('item:991005',1,3,0,1,0,0,424245,991005,0,0)");
+            "       ('item:991005',1,3,0,1,0,0,%u,991005,0,0)",
+            missingBidItemGuid);
         if (!CharacterDatabase.CommitTransactionChecked())
         {
             printf("ahresolve FAIL: seed commit (won fail-closed)\n");
@@ -3395,7 +3696,7 @@ static int RunAhResolveTest()
         ra.facts = MutationFacts();
         ra.facts.auctionId = 991005u;
         ra.facts.houseId = 7;
-        ra.facts.itemGuid = 424245u;
+        ra.facts.itemGuid = missingBidItemGuid;
         ra.facts.itemTemplate = 19019u;
         ra.facts.randomPropertyId = 0;
         ra.facts.sellerGuid = 1u;           // would get a payout mail if wrongly paid
@@ -3430,17 +3731,34 @@ static int RunAhResolveTest()
             printf("ahresolve FAIL: WON-fail-closed item row not rolled back\n");
             pass = false;
         }
+
+        if (Item* leftover = sAuctionMgr.GetAItem(missingBidItemGuid))
+        {
+            sAuctionMgr.RemoveAItem(missingBidItemGuid);
+            delete leftover;
+        }
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `item_instance` WHERE `guid`=%u", missingBidItemGuid);
     }
 
     // ---- RESOLVE_EXPIRED_NOBID: deposit forfeit + item returned ----
     {
+        Item* expiredItem = TestCreateCachedAuctionItem(19019u, 1u);
+        if (!expiredItem)
+        {
+            printf("ahresolve FAIL: create expired escrow item\n");
+            return 2;
+        }
+        uint32 const expiredItemGuid = expiredItem->GetGUIDLow();
+
         CharacterDatabase.BeginTransaction();
         CharacterDatabase.PExecute(
             "INSERT INTO `custody_ledger` "
             "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
             "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
             "VALUES ('dep:991002',0,0,0,1,0,40,0,991002,0,0),"
-            "       ('item:991002',1,3,0,1,0,0,424244,991002,0,0)");
+            "       ('item:991002',1,3,0,1,0,0,%u,991002,0,0)",
+            expiredItemGuid);
         if (!CharacterDatabase.CommitTransactionChecked())
         {
             printf("ahresolve FAIL: seed commit (expired)\n");
@@ -3453,7 +3771,7 @@ static int RunAhResolveTest()
         ra.facts = MutationFacts();
         ra.facts.auctionId = 991002u;
         ra.facts.houseId = 7;
-        ra.facts.itemGuid = 424244u;
+        ra.facts.itemGuid = expiredItemGuid;
         ra.facts.itemTemplate = 19019u;
         ra.facts.sellerGuid = 1u;
         ra.facts.deposit = 40u;
@@ -3483,6 +3801,96 @@ static int RunAhResolveTest()
             printf("ahresolve FAIL: EXPIRED second apply not RES_DUPLICATE\n");
             pass = false;
         }
+    }
+
+    // ---- RESOLVE_WON bot buyout: refund the displaced real bidder ----
+    {
+        Item* botWinItem = TestCreateCachedAuctionItem(19019u, 2u);
+        if (!botWinItem)
+        {
+            printf("ahresolve FAIL: create bot-win escrow item\n");
+            return 2;
+        }
+        uint32 const botWinItemGuid = botWinItem->GetGUIDLow();
+
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('bid:991006:1',0,1,0,1,0,401,0,991006,0,0),"
+            "       ('dep:991006',0,0,0,2,0,50,0,991006,0,0),"
+            "       ('item:991006',1,3,0,2,0,0,%u,991006,0,0)", botWinItemGuid);
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahresolve FAIL: seed commit (bot buyout)\n");
+            return 2;
+        }
+
+        ResolveApply ra;
+        ra.uuid = 0xB6ull;
+        ra.kind = uint8(RESOLVE_WON);
+        ra.facts = MutationFacts();
+        ra.facts.auctionId = 991006u;
+        ra.facts.houseId = 7u;
+        ra.facts.itemGuid = botWinItemGuid;
+        ra.facts.itemTemplate = 19019u;
+        ra.facts.randomPropertyId = 0;
+        ra.facts.sellerGuid = 2u;
+        ra.facts.deposit = 50u;
+        ra.facts.effectiveBid = 800u;
+        ra.facts.curBid = 800u;
+        ra.facts.curBidderGuid = 0u;
+        ra.facts.priorBidderGuid = 1u;
+        ra.facts.priorBidAmount = 401u;
+        ra.facts.buyout = 800u;
+
+        if (AhHandleResolveApply(ra) != uint8(RES_APPLIED))
+        {
+            printf("ahresolve FAIL: bot buyout not RES_APPLIED\n");
+            pass = false;
+        }
+        if (rowState("bid:991006:1") != CST_TERMINAL_BACK)
+        {
+            printf("ahresolve FAIL: bot buyout consumed displaced player "
+                   "bid\n");
+            pass = false;
+        }
+        if (mailCount(401u, "19019:0:0") != 1u)
+        {
+            printf("ahresolve FAIL: bot buyout prior-bidder refund missing\n");
+            pass = false;
+        }
+        if (!CustodyService::ResolutionApplied(ra.uuid))
+        {
+            printf("ahresolve FAIL: bot buyout applied-record missing\n");
+            pass = false;
+        }
+        std::unique_ptr<QueryResult> durableItem(CharacterDatabase.PQuery(
+            "SELECT 1 FROM `item_instance` WHERE `guid`=%u", botWinItemGuid));
+        if (rowState("item:991006") != CST_TERMINAL_OK ||
+            sAuctionMgr.GetAItem(botWinItemGuid) || durableItem)
+        {
+            printf("ahresolve FAIL: bot buyout did not consume terminal "
+                   "item\n");
+            pass = false;
+        }
+        if (AhHandleResolveApply(ra) != uint8(RES_DUPLICATE) ||
+            mailCount(401u, "19019:0:0") != 1u)
+        {
+            printf("ahresolve FAIL: bot buyout duplicate double-refunded\n");
+            pass = false;
+        }
+
+        if (Item* leftover = sAuctionMgr.GetAItem(botWinItemGuid))
+        {
+            sAuctionMgr.RemoveAItem(botWinItemGuid);
+            delete leftover;
+        }
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `mail_items` WHERE `item_guid`=%u", botWinItemGuid);
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `item_instance` WHERE `guid`=%u", botWinItemGuid);
     }
 
     // ---- RESOLVE_CANCELLED_UNLOCK: cut released to seller, no item/bid move ----
@@ -3604,10 +4012,21 @@ static int RunAhResolveTest()
 
     // Clean up.
     CharacterDatabase.DirectExecute(
-        "DELETE FROM `custody_ledger` WHERE `auction_id` IN (991001,991002,991003,991004,991005)");
+        "DELETE FROM `custody_ledger` WHERE `auction_id` IN "
+        "(991001,991002,991003,991004,991005,991006)");
     CharacterDatabase.DirectExecute(
-        "DELETE FROM `mail` WHERE `receiver`=1 AND `subject` LIKE '19019:%'");
-    CharacterDatabase.DirectExecute("DELETE FROM `characters` WHERE `guid`=1");
+        "DELETE ii FROM `item_instance` ii "
+        "JOIN `mail_items` mi ON mi.`item_guid`=ii.`guid` "
+        "JOIN `mail` m ON m.`id`=mi.`mail_id` "
+        "WHERE m.`receiver` IN (1,2) AND m.`subject` LIKE '19019:%'");
+    CharacterDatabase.DirectExecute(
+        "DELETE mi FROM `mail_items` mi JOIN `mail` m ON m.`id`=mi.`mail_id` "
+        "WHERE m.`receiver` IN (1,2) AND m.`subject` LIKE '19019:%'");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `mail` WHERE `receiver` IN (1,2) "
+        "AND `subject` LIKE '19019:%'");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `characters` WHERE `guid` IN (1,2)");
 
     if (pass)
     {
@@ -4578,6 +4997,441 @@ static int RunAhRepairRecoveryTest()
     return 2;
 }
 
+/// Reconcile-on-reconnect conservation regressions. A failed local release
+/// commit must retain the pending mutation, and committed worker facts that
+/// cannot be decoded must hold the reservation in-doubt rather than release it.
+static int RunAhReconcileTest()
+{
+    bool pass = true;
+    CharacterDatabase.AllowAsyncTransactions();
+
+    uint32 const commitAuction = 993101u;
+    uint32 const malformedAuction = 993102u;
+    uint32 const validAuction = 993104u;
+    uint64 const commitUuid = 0xC101ull;
+    uint64 const malformedUuid = 0xC102ull;
+    uint64 const validUuid = 0xC104ull;
+
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `custody_ledger` "
+        "WHERE `auction_id` IN (993101,993102,993104) "
+        "OR `idem_key` IN ('resolve:%llu','resolve:%llu','resolve:%llu')",
+        static_cast<unsigned long long>(commitUuid),
+        static_cast<unsigned long long>(malformedUuid),
+        static_cast<unsigned long long>(validUuid));
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `ah_worker_journal` "
+        "WHERE `auction_id` IN (993101,993102,993104) "
+        "OR `uuid` IN (%llu,%llu,%llu)",
+        static_cast<unsigned long long>(commitUuid),
+        static_cast<unsigned long long>(malformedUuid),
+        static_cast<unsigned long long>(validUuid));
+    CharacterDatabase.DirectExecute("DELETE FROM `characters` WHERE `guid`=1");
+    CharacterDatabase.DirectExecute(
+        "INSERT INTO `characters` (`guid`,`account`,`name`,`money`) "
+        "VALUES (1,1,'AhReconTest',100000)");
+
+    auto readMoney = []() -> uint64
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT `money` FROM `characters` WHERE `guid`=1"));
+        return res ? res->Fetch()[0].GetUInt64() : 0u;
+    };
+    auto rowState = [](char const* key) -> uint32
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT `state` FROM `custody_ledger` WHERE `idem_key`='%s'", key));
+        return res ? res->Fetch()[0].GetUInt32() : 255u;
+    };
+    auto rowAmount = [](char const* key) -> uint32
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT `amount` FROM `custody_ledger` WHERE `idem_key`='%s'",
+            key));
+        return res ? res->Fetch()[0].GetUInt32() : 0u;
+    };
+
+    MutationPendingMap& pend = sWorld.GetMutationPending();
+
+    // ---- Part 1: checked release failure retains pending + reservation ----
+    {
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('test:reconcile:commit',0,1,0,1,0,333,0,%u,0,0)",
+            commitAuction);
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahreconcile FAIL: commit-failure seed\n");
+            return 2;
+        }
+
+        PendingMutation pm;
+        pm.uuid = commitUuid;
+        pm.playerGuidLow = 1u;
+        pm.op = uint16(IPC_PLAYER_BID);
+        pm.auctionId = commitAuction;
+        pm.state = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec = uint32(time(NULL));
+        pm.reservedAmount = 333u;
+        pm.reserveKey = "test:reconcile:commit";
+        pm.itemKey.clear();
+        pm.depKey.clear();
+        pend.Register(pm);
+
+        uint64 const before = readMoney();
+        std::string originalConfig;
+        std::string testConfig;
+        if (!TestArmCustodyCommitFailure(
+                "reconcile-release", originalConfig, testConfig))
+        {
+            TestRestoreConfig(originalConfig, testConfig);
+            printf("ahreconcile FAIL: could not arm checked-commit failure\n");
+            return 2;
+        }
+        AhReconcileOnReconnect();
+        if (!TestRestoreConfig(originalConfig, testConfig))
+        {
+            printf("ahreconcile FAIL: could not restore configuration\n");
+            return 2;
+        }
+
+        PendingMutation held;
+        if (!pend.Peek(commitUuid, held) || pend.Size() != 1u)
+        {
+            printf("ahreconcile FAIL: failed release consumed pending "
+                   "mutation\n");
+            pass = false;
+        }
+        if (rowState("test:reconcile:commit") != CST_RESERVED ||
+            readMoney() != before ||
+            CustodyService::ResolutionApplied(commitUuid))
+        {
+            printf("ahreconcile FAIL: failed release moved conserved gold\n");
+            pass = false;
+        }
+
+        AhProcessReconnectRetryQueue(uint32(time(NULL)) + 6u);
+        if (pend.Peek(commitUuid, held) ||
+            rowState("test:reconcile:commit") != CST_TERMINAL_BACK ||
+            readMoney() != before + 333u ||
+            !CustodyService::ResolutionApplied(commitUuid))
+        {
+            printf("ahreconcile FAIL: retained release did not apply once "
+                   "on retry\n");
+            pass = false;
+        }
+    }
+
+    // ---- Part 2: exact worker journal envelope replays forward ----
+    {
+        PlayerMutationResult journalRes;
+        journalRes.uuid = validUuid;
+        journalRes.op = uint8(IPC_PLAYER_BID & 0xFFu);
+        journalRes.status = uint8(MUT_OK);
+        journalRes.reason = 0u;
+        journalRes.facts = MutationFacts();
+        journalRes.facts.auctionId = validAuction;
+        journalRes.facts.houseId = 7u;
+        journalRes.facts.itemCount = 1u;
+        journalRes.facts.sellerGuid = 2u;
+        journalRes.facts.effectiveBid = 500u;
+        journalRes.facts.priorBidderGuid = 1u;
+        journalRes.facts.priorBidAmount = 300u;
+        journalRes.facts.curBidderGuid = 1u;
+        journalRes.facts.curBid = 500u;
+
+        ByteBuffer bb;
+        journalRes.Encode(bb);
+        std::string const factsHex = TestHexEncode(bb);
+
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,"
+            "`beneficiary_guid`,`amount`,`item_guid`,`auction_id`,"
+            "`created_time`,`resolved_time`) VALUES "
+            "('test:reconcile:valid-prior',0,1,0,1,0,300,0,%u,0,0),"
+            "('test:reconcile:valid-delta',0,1,0,1,0,200,0,%u,0,0)",
+            validAuction, validAuction);
+        CharacterDatabase.PExecute(
+            "INSERT INTO `ah_worker_journal` "
+            "(`uuid`,`auction_id`,`kind`,`state`,`facts`,"
+            "`created_time`,`resolved_time`) "
+            "VALUES (%llu,%u,%u,1,'%s',0,0)",
+            static_cast<unsigned long long>(validUuid), validAuction,
+            uint32(IPC_PLAYER_BID & 0xFFu), factsHex.c_str());
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahreconcile FAIL: valid worker-envelope seed\n");
+            return 2;
+        }
+
+        PendingMutation pm;
+        pm.uuid = validUuid;
+        pm.playerGuidLow = 1u;
+        pm.op = uint16(IPC_PLAYER_BID);
+        pm.auctionId = validAuction;
+        pm.state = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec = uint32(time(NULL));
+        pm.reservedAmount = 200u;
+        pm.reserveKey = "test:reconcile:valid-delta";
+        pm.itemKey.clear();
+        pm.depKey.clear();
+        pend.Register(pm);
+
+        AhReconcileOnReconnect();
+
+        PendingMutation held;
+        if (pend.Peek(validUuid, held) ||
+            rowState("test:reconcile:valid-prior") != CST_RESERVED ||
+            rowAmount("test:reconcile:valid-prior") != 500u ||
+            rowState("test:reconcile:valid-delta") != CST_TERMINAL_OK)
+        {
+            printf("ahreconcile FAIL: valid worker envelope did not replay\n");
+            pass = false;
+        }
+    }
+
+    // ---- Part 3: malformed committed facts hold/tombstone, never release ----
+    {
+        CharacterDatabase.DirectExecute(
+            "DELETE FROM `custody_ledger` WHERE `auction_id`=993101");
+        CharacterDatabase.DirectExecute(
+            "UPDATE `characters` SET `money`=100000 WHERE `guid`=1");
+
+        PlayerMutationResult malformedRes;
+        malformedRes.uuid = malformedUuid + 1u;
+        malformedRes.op = uint8(IPC_PLAYER_BID & 0xFFu);
+        malformedRes.status = uint8(MUT_OK);
+        malformedRes.reason = 0u;
+        malformedRes.facts = MutationFacts();
+        malformedRes.facts.auctionId = malformedAuction;
+        malformedRes.facts.curBidderGuid = 1u;
+        malformedRes.facts.effectiveBid = 444u;
+        malformedRes.facts.curBid = 444u;
+        ByteBuffer bb;
+        malformedRes.Encode(bb);
+        std::string const malformedHex = TestHexEncode(bb);
+
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('test:reconcile:malformed',0,1,0,1,0,444,0,%u,0,0)",
+            malformedAuction);
+        CharacterDatabase.PExecute(
+            "INSERT INTO `ah_worker_journal` "
+            "(`uuid`,`auction_id`,`kind`,`state`,`facts`,"
+            "`created_time`,`resolved_time`) "
+            "VALUES (%llu,%u,%u,1,'%s',0,0)",
+            static_cast<unsigned long long>(malformedUuid), malformedAuction,
+            uint32(IPC_PLAYER_BID & 0xFFu), malformedHex.c_str());
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahreconcile FAIL: malformed-facts seed\n");
+            return 2;
+        }
+
+        PendingMutation pm;
+        pm.uuid = malformedUuid;
+        pm.playerGuidLow = 1u;
+        pm.op = uint16(IPC_PLAYER_BID);
+        pm.auctionId = malformedAuction;
+        pm.state = uint8(PMUT_AWAIT_RESULT);
+        pm.sentSec = uint32(time(NULL));
+        pm.reservedAmount = 444u;
+        pm.reserveKey = "test:reconcile:malformed";
+        pm.itemKey.clear();
+        pm.depKey.clear();
+        pend.Register(pm);
+
+        uint64 const before = readMoney();
+        AhReconcileOnReconnect();
+
+        PendingMutation held;
+        if (!pend.Peek(malformedUuid, held) ||
+            held.state != uint8(PMUT_TOMBSTONE))
+        {
+            printf("ahreconcile FAIL: malformed committed facts not held "
+                   "in-doubt\n");
+            pass = false;
+        }
+        if (rowState("test:reconcile:malformed") != CST_RESERVED ||
+            readMoney() != before)
+        {
+            printf("ahreconcile FAIL: malformed committed facts released "
+                   "gold\n");
+            pass = false;
+        }
+        pend.Take(malformedUuid, held);
+    }
+
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `custody_ledger` "
+        "WHERE `auction_id` IN (993101,993102,993104) "
+        "OR `idem_key` IN ('resolve:%llu','resolve:%llu','resolve:%llu')",
+        static_cast<unsigned long long>(commitUuid),
+        static_cast<unsigned long long>(malformedUuid),
+        static_cast<unsigned long long>(validUuid));
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `ah_worker_journal` "
+        "WHERE `auction_id` IN (993101,993102,993104) "
+        "OR `uuid` IN (%llu,%llu,%llu)",
+        static_cast<unsigned long long>(commitUuid),
+        static_cast<unsigned long long>(malformedUuid),
+        static_cast<unsigned long long>(validUuid));
+    CharacterDatabase.DirectExecute("DELETE FROM `characters` WHERE `guid`=1");
+
+    if (pass)
+    {
+        printf("ahreconcile OK\n");
+        return 0;
+    }
+    return 2;
+}
+
+/// Cancel-abort reconnect regression in its own process so the one-shot commit
+/// failpoint is independent of RunAhReconcileTest's release failpoint.
+static int RunAhReconcileAbortTest()
+{
+    bool pass = true;
+    CharacterDatabase.AllowAsyncTransactions();
+
+    uint32 const auctionId = 993103u;
+    uint64 const uuid = 0xC103ull;
+    std::string const cutKey = "test:reconcile:abort";
+
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `custody_ledger` WHERE `auction_id`=%u "
+        "OR `idem_key`='resolve:%llu'",
+        auctionId, static_cast<unsigned long long>(uuid));
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `ah_worker_journal` WHERE `auction_id`=%u OR `uuid`=%llu",
+        auctionId, static_cast<unsigned long long>(uuid));
+    CharacterDatabase.DirectExecute("DELETE FROM `characters` WHERE `guid`=1");
+    CharacterDatabase.DirectExecute(
+        "INSERT INTO `characters` (`guid`,`account`,`name`,`money`) "
+        "VALUES (1,1,'AhAbortTest',100000)");
+
+    PlayerMutationResult prepared;
+    prepared.uuid = uuid;
+    prepared.op = uint8(IPC_PLAYER_CANCEL & 0xFFu);
+    prepared.status = uint8(MUT_PREPARED);
+    prepared.reason = 0u;
+    prepared.facts = MutationFacts();
+    prepared.facts.auctionId = auctionId;
+    prepared.facts.houseId = 7u;
+    prepared.facts.sellerGuid = 1u;
+    prepared.facts.curBid = 1000u;
+
+    ByteBuffer bb;
+    prepared.Encode(bb);
+    std::string const factsHex = TestHexEncode(bb);
+
+    CharacterDatabase.BeginTransaction();
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+        "VALUES ('%s',0,2,0,1,0,55,0,%u,0,0)", cutKey.c_str(), auctionId);
+    CharacterDatabase.PExecute(
+        "INSERT INTO `ah_worker_journal` "
+        "(`uuid`,`auction_id`,`kind`,`state`,`facts`,"
+        "`created_time`,`resolved_time`) "
+        "VALUES (%llu,%u,%u,4,'%s',0,0)",
+        static_cast<unsigned long long>(uuid), auctionId,
+        uint32(IPC_PLAYER_CANCEL & 0xFFu), factsHex.c_str());
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        printf("ahreconcileabort FAIL: seed commit\n");
+        return 2;
+    }
+
+    PendingMutation pm;
+    pm.uuid = uuid;
+    pm.playerGuidLow = 1u;
+    pm.op = uint16(IPC_PLAYER_CANCEL);
+    pm.auctionId = auctionId;
+    pm.state = uint8(PMUT_AWAIT_CONFIRM);
+    pm.sentSec = uint32(time(NULL));
+    pm.reservedAmount = 55u;
+    pm.reserveKey = cutKey;
+    pm.itemKey.clear();
+    pm.depKey.clear();
+    MutationPendingMap& pend = sWorld.GetMutationPending();
+    pend.Register(pm);
+
+    auto readMoney = []() -> uint64
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT `money` FROM `characters` WHERE `guid`=1"));
+        return res ? res->Fetch()[0].GetUInt64() : 0u;
+    };
+    auto rowState = [&cutKey]() -> uint32
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT `state` FROM `custody_ledger` WHERE `idem_key`='%s'",
+            cutKey.c_str()));
+        return res ? res->Fetch()[0].GetUInt32() : 255u;
+    };
+
+    uint64 const before = readMoney();
+    std::string originalConfig;
+    std::string testConfig;
+    if (!TestArmCustodyCommitFailure(
+            "reconcile-abort-release", originalConfig, testConfig))
+    {
+        TestRestoreConfig(originalConfig, testConfig);
+        printf("ahreconcileabort FAIL: could not arm commit failure\n");
+        return 2;
+    }
+    AhReconcileOnReconnect();
+    if (!TestRestoreConfig(originalConfig, testConfig))
+    {
+        printf("ahreconcileabort FAIL: could not restore configuration\n");
+        return 2;
+    }
+
+    PendingMutation held;
+    if (!pend.Peek(uuid, held) || pend.Size() != 1u ||
+        rowState() != CST_RESERVED || readMoney() != before)
+    {
+        printf("ahreconcileabort FAIL: failed cut release consumed "
+               "disposition\n");
+        pass = false;
+    }
+
+    AhProcessReconnectRetryQueue(uint32(time(NULL)) + 6u);
+    if (pend.Peek(uuid, held) || pend.Size() != 0u ||
+        rowState() != CST_TERMINAL_BACK || readMoney() != before + 55u)
+    {
+        printf("ahreconcileabort FAIL: retained cut release did not apply "
+               "once on retry\n");
+        pass = false;
+    }
+
+    pend.Take(uuid, held);
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `custody_ledger` WHERE `auction_id`=%u "
+        "OR `idem_key`='resolve:%llu'",
+        auctionId, static_cast<unsigned long long>(uuid));
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `ah_worker_journal` WHERE `auction_id`=%u OR `uuid`=%llu",
+        auctionId, static_cast<unsigned long long>(uuid));
+    CharacterDatabase.DirectExecute("DELETE FROM `characters` WHERE `guid`=1");
+
+    if (pass)
+    {
+        printf("ahreconcileabort OK\n");
+        return 0;
+    }
+    return 2;
+}
+
 /// SP-2 Task 13 self-test for the bot-sell materialization leg. Drives
 /// AuctionIntentExecutor::TestMaterializeSell directly -- the live path reaches
 /// it through Apply() -> ApplySell(), but that re-validation chain needs a fully
@@ -4790,7 +5644,85 @@ static int RunAhMaterializeTest()
         }
     }
 
-    // ---- Part 3: orphan sweep reaps strays but spares delivered items ----
+    // ---- Part 3: failed sweep commit preserves DB and cache ownership ----
+    {
+        CharacterDatabase.DirectPExecute(
+            "UPDATE `custody_ledger` SET `created_time`=0 "
+            "WHERE `idem_key`='%s'",
+            key.c_str());
+        Item* const cachedBefore = sAuctionMgr.GetAItem(itemGuid);
+        if (!cachedBefore)
+        {
+            printf("ahmaterialize FAIL: materialized item missing from "
+                   "cache before sweep\n");
+            return 2;
+        }
+        CustodyRow custodyBefore;
+        if (!CustodyLedger::Get(key, custodyBefore))
+        {
+            printf("ahmaterialize FAIL: materialization custody missing "
+                   "before sweep\n");
+            return 2;
+        }
+        std::unique_ptr<QueryResult> candidates(CharacterDatabase.Query(
+            "SELECT COUNT(*) FROM `custody_ledger` "
+            "WHERE `idem_key` LIKE 'botlist:%' AND `created_time` < 1 "
+            "AND `auction_id` NOT IN (SELECT `id` FROM `auction`)"));
+        if (!candidates || candidates->Fetch()[0].GetUInt64() != 1u)
+        {
+            printf("ahmaterialize FAIL: orphan-sweep failure fixture is "
+                   "not isolated\n");
+            return 2;
+        }
+
+        std::string originalConfig;
+        std::string testConfig;
+        if (!TestArmCustodyCommitFailure(
+                "orphan-sweep", originalConfig, testConfig))
+        {
+            TestRestoreConfig(originalConfig, testConfig);
+            printf("ahmaterialize FAIL: could not arm orphan-sweep failure\n");
+            return 2;
+        }
+        sAuctionIntentExecutor.SweepOrphanMaterializations(301u, 100u);
+        if (!TestRestoreConfig(originalConfig, testConfig))
+        {
+            printf("ahmaterialize FAIL: could not restore configuration\n");
+            return 2;
+        }
+
+        std::unique_ptr<QueryResult> itemRow(CharacterDatabase.PQuery(
+            "SELECT `owner_guid` FROM `item_instance` WHERE `guid`=%u",
+            itemGuid));
+        CustodyRow custodyRow;
+        if (!itemRow || !CustodyLedger::Get(key, custodyRow) ||
+            itemRow->Fetch()[0].GetUInt32() != botGuid ||
+            custodyRow.state != custodyBefore.state ||
+            custodyRow.ownerGuid != custodyBefore.ownerGuid ||
+            custodyRow.itemGuid != custodyBefore.itemGuid ||
+            custodyRow.auctionId != custodyBefore.auctionId ||
+            sAuctionMgr.GetAItem(itemGuid) != cachedBefore ||
+            cachedBefore->GetOwnerGuid().GetCounter() != botGuid)
+        {
+            printf("ahmaterialize FAIL: failed sweep commit changed "
+                   "durable/cache ownership\n");
+            pass = false;
+        }
+
+        sAuctionIntentExecutor.SweepOrphanMaterializations(301u, 100u);
+        std::unique_ptr<QueryResult> retriedItem(CharacterDatabase.PQuery(
+            "SELECT 1 FROM `item_instance` WHERE `guid`=%u", itemGuid));
+        if (CustodyLedger::Get(key, custodyRow) || retriedItem ||
+            sAuctionMgr.GetAItem(itemGuid))
+        {
+            printf("ahmaterialize FAIL: retained sweep did not apply on "
+                   "retry\n");
+            pass = false;
+        }
+    }
+
+    // ---- Part 4: successful sweep reaps strays but spares delivered
+    // items ----
     {
         // Seed synthetic item_instance + botlist rows AFTER SetHighestGuids so
         // they never influence the generators. Both are "old" (past the 300s
@@ -4847,7 +5779,7 @@ static int RunAhMaterializeTest()
         }
     }
 
-    // ---- Part 4: an outage backlog drains across bounded invocations ----
+    // ---- Part 5: an outage backlog drains across bounded invocations ----
     {
         CharacterDatabase.BeginTransaction();
         for (uint32 i = 1u; i <= 101u; ++i)
@@ -4895,7 +5827,7 @@ static int RunAhMaterializeTest()
         }
     }
 
-    // Clean up (Part-1 minted item survives the sweep; drop it + fixtures).
+    // Clean up the minted item and synthetic fixtures.
     CharacterDatabase.DirectPExecute(
         "DELETE FROM `custody_ledger` WHERE `idem_key` IN "
         "('%s','botlist:test:orphan','botlist:test:sold')", key.c_str());
@@ -4993,6 +5925,16 @@ int RunMangosdTest(std::string const& name)
     if (name == "ahcustodyroute")
     {
         return RunAhCustodyRouteTest();
+    }
+
+    if (name == "ahreconcile")
+    {
+        return RunAhReconcileTest();
+    }
+
+    if (name == "ahreconcileabort")
+    {
+        return RunAhReconcileAbortTest();
     }
 
     if (name == "ahmaterialize")

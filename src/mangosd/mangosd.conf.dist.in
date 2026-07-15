@@ -1911,9 +1911,10 @@ SOAP.Port      = 7878
 #        Default: "" (off)
 #
 #    AH.Service.CustodyFailCommitAt
-#        TEST ONLY.  Force a finalize checked-commit to roll back and report
-#        failure ONCE (one-shot per process) to exercise the redrive path:
-#        empty = off, finalize-fail.
+#        TEST ONLY.  Force an AH custody checked-commit to roll back and report
+#        failure ONCE (one-shot per process) to exercise its retention/redrive
+#        path: empty = off, finalize-fail, reconcile-release,
+#        reconcile-abort-release, orphan-sweep.
 #        NEVER set on a live realm.
 #        Default: "" (off)
 #
