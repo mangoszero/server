@@ -404,34 +404,47 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
 
 void RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
 {
-    vector<WorldLocation> locs;
-    QueryResult* results = WorldDatabase.PQuery("SELECT `map`, `position_x`, `position_y`, `position_z` FROM ("
-        "SELECT MIN(`c`.`map`) `map`, MIN(`c`.`position_x`) `position_x`, MIN(`c`.`position_y`) `position_y`, "
-        "MIN(`c`.`position_z`) `position_z`, AVG(`t`.`maxlevel`), AVG(`t`.`minlevel`), "
-        "%u - (AVG(`t`.`maxlevel`) + AVG(`t`.`minlevel`)) / 2 `delta` FROM `creature` `c` "
-        "INNER JOIN `creature_template` `t` ON `c`.`id` = `t`.`entry` GROUP BY `t`.`entry`) `q` "
-        "WHERE `delta` >= 0 AND `delta` <= %u AND `map` IN (%s)",
-        bot->getLevel(), sPlayerbotAIConfig.randomBotTeleLevel, sPlayerbotAIConfig.randomBotMapsAsString.c_str());
-
-    if (results)
+    for (int attempt = 0; attempt < 100; ++attempt)
     {
-        do
+        int index = urand(0, sPlayerbotAIConfig.randomBotMaps.size() - 1);
+        uint32 mapId = sPlayerbotAIConfig.randomBotMaps[index];
+
+        vector<GameTele const*> locs;
+        GameTeleMap const& teleMap = sObjectMgr.GetGameTeleMap();
+        for (GameTeleMap::const_iterator itr = teleMap.begin(); itr != teleMap.end(); ++itr)
         {
-            Field* fields = results->Fetch();
-            uint32 mapId = fields[0].GetUInt32();
-            float x = fields[1].GetFloat();
-            float y = fields[2].GetFloat();
-            float z = fields[3].GetFloat();
-            if (IsZoneSafeForBot(bot, mapId, x, y, z))
+            GameTele const* tele = &itr->second;
+            if (tele->mapId == mapId)
             {
-                WorldLocation loc(mapId, x, y, z, 0);
-                locs.push_back(loc);
+                locs.push_back(tele);
             }
-        } while (results->NextRow());
-        delete results;
+        }
+
+        if (locs.empty())
+        {
+            continue;
+        }
+
+        index = urand(0, locs.size() - 1);
+        if (index >= locs.size())
+        {
+            return;
+        }
+
+        GameTele const* tele = locs[index];
+        uint32 level = GetZoneLevel(tele->mapId, tele->position_x, tele->position_y, tele->position_z);
+        if ((level > bot->getLevel() + sPlayerbotAIConfig.randomBotTeleLevel) ||
+          (level < sPlayerbotAIConfig.randomBotMinLevel) ||
+          (!IsZoneSafeForBot(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z, level)))
+        {
+            continue;
+        }
+
+        RandomTeleport(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z);
+        return;
     }
 
-    RandomTeleport(bot, locs);
+    sLog.outError("Cannot teleport bot %s - no locations available", bot->GetName());
 }
 
 void RandomPlayerbotMgr::RandomTeleport(Player* bot, uint32 mapId, float teleX, float teleY, float teleZ)
