@@ -130,12 +130,10 @@ INSTANTIATE_SINGLETON_1(World);
 
 extern void LoadGameObjectModelList();
 
-// SP-1 coordinator: the "AH unavailable" responder + house re-resolution (for
-// the BIDDER outbid-prepend), defined in AuctionHouseHandler.cpp (next to the
-// three async-proxy handlers). The world thread calls these from the
-// IPC_BROWSE_RESULT reply branch and the TTL sweep.
+// SP-1 coordinator: the "AH unavailable" responder, defined in
+// AuctionHouseHandler.cpp next to the three async-proxy handlers. The world
+// thread calls it from the IPC_BROWSE_RESULT reply branch and the TTL sweep.
 void AhSendBrowseUnavailable(WorldSession* session, uint8 kind);
-AuctionHouseObject* AhResolveHouse(const PendingBrowse& pb);
 
 volatile bool World::m_stopEvent = false;
 uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
@@ -1663,61 +1661,6 @@ void World::HandleAhInbound(const IpcMessage& msg)
             else if (pb.kind == uint8(BROWSE_BIDDER))
             {
                 opcode = SMSG_AUCTION_BIDDER_LIST_RESULT;
-            }
-
-            if (pb.kind == uint8(BROWSE_BIDDER))
-            {
-                // I1: BIDDER prepends the client-supplied outbid entries in CLIENT
-                // ORDER (mirroring HandleAuctionListBidderItems) before the worker
-                // bidder-sweep entries. The client outbid rows are resolved live
-                // from the player's house via GetAuction(id)->BuildAuctionInfo.
-                AuctionHouseObject* house = AhResolveHouse(pb);
-                ByteBuffer rows;
-                uint32 prependCount = 0;
-                if (house)
-                {
-                    for (size_t i = 0; i < pb.clientOutbidIds.size(); ++i)
-                    {
-                        AuctionEntry* ae = house->GetAuction(pb.clientOutbidIds[i]);
-                        if (!ae)
-                        {
-                            continue;
-                        }
-                        WorldPacket one(opcode, 60);
-                        if (ae->BuildAuctionInfo(one))
-                        {
-                            rows.append(one.contents(), one.size());
-                            ++prependCount;
-                        }
-                    }
-                }
-                // Assemble: count(prepend+sweep) | client rows | sweep rows | total
-                WorldPacket data(opcode, 4 + rows.size() + finalEntries.size() * 60 + 4);
-                data << uint32(prependCount + uint32(finalEntries.size()));
-                if (rows.size())
-                {
-                    data.append(rows.contents(), rows.size());
-                }
-                ByteBuffer sweepRows;
-                for (size_t i = 0; i < finalEntries.size(); ++i)
-                {
-                    const BrowseEntry& e = finalEntries[i];
-                    sweepRows << uint32(e.id) << uint32(e.itemEntry) << uint32(e.enchantId)
-                              << uint32(e.randomPropId) << uint32(e.suffixFactor)
-                              << uint32(e.count) << uint32(e.charges)
-                              << ObjectGuid(HIGHGUID_PLAYER, e.ownerGuidLow)
-                              << uint32(e.startbid) << uint32(e.outbid) << uint32(e.buyout)
-                              << uint32(e.timeLeftMs)
-                              << ObjectGuid(HIGHGUID_PLAYER, e.bidderGuidLow)
-                              << uint32(e.curBid);
-                }
-                if (sweepRows.size())
-                {
-                    data.append(sweepRows.contents(), sweepRows.size());
-                }
-                data << uint32(totalcount + prependCount);
-                session->SendPacket(&data);
-                break;
             }
 
             WorldPacket data(opcode, 4 + 4 + finalEntries.size() * 60);

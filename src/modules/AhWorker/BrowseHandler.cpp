@@ -28,6 +28,7 @@
 #include "Log/Log.h"
 #include <cstdio>
 #include <cstring>
+#include <unordered_map>
 
 namespace
 {
@@ -121,6 +122,44 @@ namespace
 namespace BrowseHandler
 {
 
+std::vector<BrowseRow> ComposeBidderRows(const std::vector<BrowseRow>& rows,
+                                         const BrowseQuery& q)
+{
+    std::vector<BrowseRow> composed;
+    composed.reserve(q.outbidIds.size() + rows.size());
+
+    std::unordered_map<uint32, const BrowseRow*> byAuctionId;
+    byAuctionId.reserve(rows.size());
+    for (size_t i = 0; i < rows.size(); ++i)
+    {
+        byAuctionId[rows[i].entry.id] = &rows[i];
+    }
+
+    // Legacy parity: trust the validated client list, preserve its order and
+    // duplicates, and silently skip ids absent from this house-scoped result.
+    for (size_t i = 0; i < q.outbidIds.size(); ++i)
+    {
+        std::unordered_map<uint32, const BrowseRow*>::const_iterator it =
+            byAuctionId.find(q.outbidIds[i]);
+        if (it != byAuctionId.end())
+        {
+            composed.push_back(*it->second);
+        }
+    }
+
+    // Fetch orders rows by auction id, matching BuildListBidderItems' map
+    // traversal. An auction also present above intentionally appears twice.
+    for (size_t i = 0; i < rows.size(); ++i)
+    {
+        if (rows[i].entry.bidderGuidLow == q.requesterGuidLow)
+        {
+            composed.push_back(rows[i]);
+        }
+    }
+
+    return composed;
+}
+
 BrowseResult Fetch(ServiceDatabase& db, const BrowseQuery& q, FetchStatus& status)
 {
     status = FETCH_OK;
@@ -203,15 +242,35 @@ BrowseResult Fetch(ServiceDatabase& db, const BrowseQuery& q, FetchStatus& statu
             sql += buf;
         }
     }
+    else if (q.kind == static_cast<uint8>(BROWSE_OWNER))
+    {
+        char buf[96];
+        snprintf(buf, sizeof(buf), " AND a.itemowner = %u", q.requesterGuidLow);
+        sql += buf;
+    }
     else
     {
-        // OWNER or BIDDER: scope by the requester GUID.
-        char buf[96];
-        const char* col = (q.kind == static_cast<uint8>(BROWSE_BIDDER))
-            ? "a.buyguid"
-            : "a.itemowner";
-        snprintf(buf, sizeof(buf), " AND %s = %u", col, q.requesterGuidLow);
+        // BIDDER needs both parts of the legacy reply: auctions currently bid
+        // by the requester plus client-supplied outbid ids. The decoded rows
+        // are composed in exact client-visible order after this single query.
+        char buf[64];
+        snprintf(buf, sizeof(buf), " AND (a.buyguid = %u", q.requesterGuidLow);
         sql += buf;
+        if (!q.outbidIds.empty())
+        {
+            sql += " OR a.id IN (";
+            for (size_t i = 0; i < q.outbidIds.size(); ++i)
+            {
+                if (i != 0u)
+                {
+                    sql += ',';
+                }
+                snprintf(buf, sizeof(buf), "%u", q.outbidIds[i]);
+                sql += buf;
+            }
+            sql += ')';
+        }
+        sql += ')';
     }
 
     sql += " ORDER BY a.id";
@@ -384,6 +443,11 @@ BrowseResult Fetch(ServiceDatabase& db, const BrowseQuery& q, FetchStatus& statu
     while (result->NextRow());
     delete result;
 
+    if (q.kind == static_cast<uint8>(BROWSE_BIDDER))
+    {
+        rows = BrowseHandler::ComposeBidderRows(rows, q);
+    }
+
     status = rows.empty() ? FETCH_EMPTY : FETCH_OK;
     return BrowseHandler::FilterAndPaginate(rows, q);
 }
@@ -439,19 +503,32 @@ void BrowseThread::run()
             }
             IpcMessage rm;
             rm.op = IPC_BROWSE_RESULT;
-            res.Encode(rm.body);
+            if (res.entries.size() > BrowseResult::MAX_ENTRIES)
+            {
+                BrowseResult capped;
+                capped.queryId      = res.queryId;
+                capped.kind         = res.kind;
+                capped.elunaPending = 0u;
+                capped.tooMany      = 1u;
+                capped.totalcount   = 0u;
+                capped.Encode(rm.body);
+            }
+            else
+            {
+                res.Encode(rm.body);
+            }
             // I8: preflight outbound body size; never emit over the MAXLEN cap.
             if (rm.body.size() > BrowseResult::MAX_WIRE)
             {
-                // Should be impossible at cap 1000 entries; fail safe by
+                // Should be impossible within MAX_ENTRIES; fail safe by
                 // replying tooMany so mangosd tells the player the AH is
                 // unavailable (coordinator model: no in-process fallback).
                 BrowseResult capped;
                 capped.queryId      = res.queryId;
                 capped.kind         = res.kind;
-                capped.elunaPending = res.elunaPending;
+                capped.elunaPending = 0u;
                 capped.tooMany      = 1u;
-                capped.totalcount   = res.totalcount;
+                capped.totalcount   = 0u;
                 rm.body.clear();
                 capped.Encode(rm.body);
             }
@@ -519,6 +596,16 @@ namespace BrowseHandler
             if (!isList)
             {
                 // OWNER/BIDDER: every row is an entry.
+                if (res.entries.size() >= BrowseResult::MAX_ENTRIES)
+                {
+                    // The IPC decoder rejects a larger count. Decline now so
+                    // mangosd consumes the pending request and immediately
+                    // reports the AH as unavailable instead of timing out.
+                    res.tooMany = 1u;
+                    res.entries.clear();
+                    res.totalcount = 0u;
+                    return res;
+                }
                 ++res.totalcount;
                 res.entries.push_back(r.entry);
                 continue;

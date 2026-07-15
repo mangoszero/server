@@ -1612,22 +1612,6 @@ static void AhBuildKnownRecipeCastSpells(Player* player, std::vector<uint32>& ou
     }
 }
 
-// V8: re-resolve the AuctionHouseObject for a stored pending request, mirroring
-// GetAuctionsMap by team. pb.house: 0=ALLIANCE,1=HORDE,2=NEUTRAL (== the
-// AuctionHouseType values); allHouses => the neutral house. Non-static so the
-// world thread's IPC_BROWSE_RESULT reply branch can use it for BIDDER prepends.
-AuctionHouseObject* AhResolveHouse(const PendingBrowse& pb)
-{
-    AuctionHouseType t = AUCTION_HOUSE_NEUTRAL;
-    if (pb.allHouses == 0u)
-    {
-        t = (pb.house == 0u) ? AUCTION_HOUSE_ALLIANCE
-          : (pb.house == 1u) ? AUCTION_HOUSE_HORDE
-          :                    AUCTION_HOUSE_NEUTRAL;
-    }
-    return sAuctionMgr.GetAuctionsMap(t);
-}
-
 // Coordinator model: the worker is the AH read authority. When it cannot serve
 // (down, a transient register/encode/send failure, queue-full, oversize, or a
 // reply timeout) mangosd serves NOTHING in-process. It sends an empty list so
@@ -1713,7 +1697,6 @@ void WorldSession::HandleAuctionListBidderItems(WorldPacket& recv_data)
         pb.deferEluna     = 0u;
         pb.listfrom       = listfrom;
         pb.wname.clear();
-        pb.clientOutbidIds = clientOutbidIds;
         pb.seq            = sWorld.GetBrowsePending().NextSeqFor(pb.playerGuidLow, pb.kind);
 
         BrowseQuery q;

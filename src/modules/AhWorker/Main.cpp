@@ -746,6 +746,84 @@ static int RunIntentCodecSelfTest()
             return 1;
         }
 
+        // BIDDER: client outbid ids come first in client order. Missing ids are
+        // skipped, duplicate ids remain duplicated, then the requester's live
+        // bids append in SQL row order. An overlap appears in both groups.
+        std::vector<BrowseRow> bidderRows;
+        const uint32 bidderIds[] = { 3u, 7u, 9u, 12u };
+        const uint32 bidders[]   = { 41u, 42u, 42u, 0u };
+        for (size_t i = 0; i < 4u; ++i)
+        {
+            BrowseRow r;
+            r.entry = BrowseEntry();
+            r.entry.id = bidderIds[i];
+            r.entry.bidderGuidLow = bidders[i];
+            bidderRows.push_back(r);
+        }
+        BrowseQuery qb = qo;
+        qb.kind = static_cast<uint8>(BROWSE_BIDDER);
+        qb.requesterGuidLow = 42u;
+        qb.outbidIds.push_back(9u);
+        qb.outbidIds.push_back(99u); // missing
+        qb.outbidIds.push_back(3u);
+        qb.outbidIds.push_back(9u);  // duplicate
+        std::vector<BrowseRow> composed =
+            BrowseHandler::ComposeBidderRows(bidderRows, qb);
+        const uint32 expectedBidderIds[] = { 9u, 3u, 9u, 7u, 9u };
+        if (composed.size() != 5u)
+        {
+            fprintf(stderr, "browse selftest FAILED: bidder composed size=%u"
+                            " (exp 5)\n",
+                    unsigned(composed.size()));
+            return 1;
+        }
+        for (size_t i = 0; i < composed.size(); ++i)
+        {
+            if (composed[i].entry.id != expectedBidderIds[i])
+            {
+                fprintf(stderr, "browse selftest FAILED: bidder id[%u]=%u"
+                                " (exp %u)\n",
+                        unsigned(i), unsigned(composed[i].entry.id),
+                        unsigned(expectedBidderIds[i]));
+                return 1;
+            }
+        }
+
+        // IPC entry-count boundary: 1024 duplicate outbid rows are valid;
+        // 1025 must become an immediate tooMany response rather than a frame
+        // mangosd rejects before consuming its pending request.
+        std::vector<BrowseRow> boundaryRows;
+        BrowseRow boundaryRow;
+        boundaryRow.entry = BrowseEntry();
+        boundaryRow.entry.id = 9u;
+        boundaryRow.entry.bidderGuidLow = 0u;
+        boundaryRows.push_back(boundaryRow);
+        BrowseQuery qlimit = qb;
+        qlimit.outbidIds.assign(BrowseResult::MAX_ENTRIES, 9u);
+        std::vector<BrowseRow> atLimit =
+            BrowseHandler::ComposeBidderRows(boundaryRows, qlimit);
+        BrowseResult limitResult =
+            BrowseHandler::FilterAndPaginate(atLimit, qlimit);
+        if (limitResult.tooMany != 0u ||
+            limitResult.entries.size() != BrowseResult::MAX_ENTRIES)
+        {
+            fprintf(stderr, "browse selftest FAILED: bidder limit rejected\n");
+            return 1;
+        }
+        qlimit.outbidIds.push_back(9u);
+        std::vector<BrowseRow> overLimit =
+            BrowseHandler::ComposeBidderRows(boundaryRows, qlimit);
+        BrowseResult overLimitResult =
+            BrowseHandler::FilterAndPaginate(overLimit, qlimit);
+        if (overLimitResult.tooMany != 1u ||
+            !overLimitResult.entries.empty() ||
+            overLimitResult.totalcount != 0u)
+        {
+            fprintf(stderr, "browse selftest FAILED: bidder over-limit"
+                            " not declined\n");
+            return 1;
+        }
+
         // Over-cap deferred-Eluna (decision #2): >cap survivors -> the worker
         // declines with tooMany (no entries) so mangosd sends "AH unavailable",
         // rather than serving an approximate short page.

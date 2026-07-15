@@ -70,6 +70,12 @@ enum FetchStatus
 
 namespace BrowseHandler
 {
+    /// PURE: compose a BIDDER result exactly like the legacy client path.
+    /// Client-supplied outbid ids are resolved in client order (including
+    /// duplicates), then the requester's current bids follow in row order.
+    std::vector<BrowseRow> ComposeBidderRows(const std::vector<BrowseRow>& rows,
+                                             const BrowseQuery& q);
+
     /// PURE: usable filter (Task 6) + name filter (LIST) + pagination OR
     /// defer-un-paginated. Cheap proto filters are assumed SQL-applied.
     BrowseResult FilterAndPaginate(const std::vector<BrowseRow>& rows,

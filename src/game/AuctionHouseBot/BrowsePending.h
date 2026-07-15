@@ -53,7 +53,6 @@ struct PendingBrowse
     uint8  deferEluna;
     uint32 listfrom;
     std::wstring wname;                  ///< lower-cased UTF-16 (in-process Utf8FitTo)
-    std::vector<uint32> clientOutbidIds; ///< BIDDER client outbid ids (client order)
 };
 
 class BrowsePendingMap

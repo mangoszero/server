@@ -1193,40 +1193,54 @@ static int RunAhBrowsePendingTest()
         return 1;
     }
 
-    // SMSG assembly: count, first entry id, totalcount appear in order.
+    // SMSG assembly preserves the worker's complete bidder order, including a
+    // duplicate auction id, and writes the worker-provided totalcount.
     {
         std::vector<BrowseEntry> entries;
-        BrowseEntry e; e.id=42u; e.itemEntry=19019u; e.enchantId=0u; e.randomPropId=0u;
-        e.suffixFactor=0u; e.count=1u; e.charges=0; e.ownerGuidLow=4u; e.startbid=100u;
-        e.outbid=0u; e.buyout=5000u; e.timeLeftMs=720000u; e.bidderGuidLow=0u; e.curBid=100u;
-        entries.push_back(e);
+        const uint32 orderedIds[] = { 9u, 3u, 9u, 7u };
+        for (size_t i = 0; i < 4u; ++i)
+        {
+            BrowseEntry e;
+            e.id=orderedIds[i]; e.itemEntry=19019u; e.enchantId=0u;
+            e.randomPropId=0u; e.suffixFactor=0u; e.count=1u;
+            e.charges=0; e.ownerGuidLow=4u; e.startbid=100u;
+            e.outbid=0u; e.buyout=5000u; e.timeLeftMs=720000u;
+            e.bidderGuidLow=0u; e.curBid=100u;
+            entries.push_back(e);
+        }
         ByteBuffer body;
-        AhAssembleBrowseListBody(entries, 3u, body);
+        AhAssembleBrowseListBody(entries, 4u, body);
         uint32 c=0; body >> c;
-        if (c != 1u) { printf("ahbrowsepending FAIL: assembled count %u\n", unsigned(c)); return 1; }
-        uint32 firstId=0; body >> firstId;
-        if (firstId != 42u) { printf("ahbrowsepending FAIL: first id %u\n", unsigned(firstId)); return 1; }
-        // Verify all remaining BrowseEntry fields + trailing totalcount.
-        // AhAssembleBrowseListBody writes fields in BuildAuctionInfo wire order:
-        // itemEntry, enchantId, randomPropId, suffixFactor, count, charges (6 x uint32),
-        // ownerGuid (uint64), startbid, outbid, buyout, timeLeftMs (4 x uint32),
-        // bidderGuid (uint64), curBid (uint32), then trailing uint32 totalcount.
+        if (c != 4u)
+        {
+            printf("ahbrowsepending FAIL: assembled count %u\n",
+                   unsigned(c));
+            return 1;
+        }
         uint32 dummy32 = 0; uint64 dummy64 = 0;
-        body >> dummy32;   // itemEntry
-        body >> dummy32;   // enchantId
-        body >> dummy32;   // randomPropId
-        body >> dummy32;   // suffixFactor
-        body >> dummy32;   // count
-        body >> dummy32;   // charges
-        body >> dummy64;   // ownerGuid (uint64)
-        body >> dummy32;   // startbid
-        body >> dummy32;   // outbid
-        body >> dummy32;   // buyout
-        body >> dummy32;   // timeLeftMs
-        body >> dummy64;   // bidderGuid (uint64)
-        body >> dummy32;   // curBid
+        for (size_t i = 0; i < 4u; ++i)
+        {
+            uint32 id = 0; body >> id;
+            if (id != orderedIds[i])
+            {
+                printf("ahbrowsepending FAIL: ordered id[%u]=%u\n",
+                       unsigned(i), unsigned(id));
+                return 1;
+            }
+            body >> dummy32 >> dummy32 >> dummy32;
+            body >> dummy32 >> dummy32 >> dummy32;
+            body >> dummy64;
+            body >> dummy32 >> dummy32 >> dummy32 >> dummy32;
+            body >> dummy64;
+            body >> dummy32;
+        }
         uint32 totalcount = 0; body >> totalcount;
-        if (totalcount != 3u) { printf("ahbrowsepending FAIL: totalcount %u\n", unsigned(totalcount)); return 1; }
+        if (totalcount != 4u)
+        {
+            printf("ahbrowsepending FAIL: totalcount %u\n",
+                   unsigned(totalcount));
+            return 1;
+        }
         (void)dummy32; (void)dummy64;
     }
 
