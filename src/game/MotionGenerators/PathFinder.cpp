@@ -290,7 +290,7 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
             const Creature* owner = m_sourceUnit->ToCreature();
 
             Vector3 p = (distToStartPoly > 7.0f) ? startPos : endPos;
-            if (m_sourceUnit->GetMap()->GetTerrain()->IsUnderWater(p.x, p.y, p.z))
+            if (m_sourceUnit->GetMap()->GetTerrain()->IsInWater(p.x, p.y, p.z + 1.0))
             {
                 DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: underWater case for %s\n", m_sourceUnit->GetGuidStr().c_str());
                 if (owner->CanSwim())
