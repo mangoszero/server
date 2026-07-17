@@ -42,7 +42,7 @@ ConsoleLogWriter::ConsoleLogWriter()
 
 void ConsoleLogWriter::Enqueue(ConsoleLogRecord& rec)
 {
-    if (m_depth.value() >= MAX_CONSOLE_QUEUE)
+    if (m_depth.load() >= MAX_CONSOLE_QUEUE)
     {
         ++m_dropped;
         return;
@@ -57,7 +57,7 @@ void ConsoleLogWriter::run()
     {
         if (!DrainOnce())
         {
-            ACE_Based::Thread::Sleep(5);
+            MaNGOS::Thread::Sleep(5);
         }
     }
     // Authoritative final drain: runs on the writer thread while wait()
@@ -69,22 +69,22 @@ bool ConsoleLogWriter::DrainOnce()
 {
     bool didWork = false;
 
-    long dropped = m_dropped.value();
+    long dropped = m_dropped.load();
     if (dropped > 0)
     {
         m_dropped -= dropped;
         char note[96];
-        // Leading '\n' starts the notice on a fresh line: a progress-bar redraw
-        // may have left the cursor mid-line (its trailing '\r' + left edge), and
-        // without this the red notice would land on top of the bar.
         int n = snprintf(note, sizeof(note),
-            "\n[Log] %ld console line(s) dropped (queue full)\n", dropped);
+            "[Log] %ld console line(s) dropped (queue full)\n", dropped);
         if (n >= (int)sizeof(note))
         {
             n = (int)sizeof(note) - 1;                       // clamp: never fwrite past note[]
         }
         if (n > 0)
         {
+            // A progress-bar redraw may have parked the cursor mid-line; wipe it
+            // first so the notice does not land on top of the bar.
+            Log::ClearConsoleLine(stdout);
             Log::SetColor(true, RED);
             fwrite(note, 1, (size_t)n, stdout);
             Log::ResetColor(true);
@@ -123,9 +123,17 @@ void ConsoleLogWriter::Emit(const ConsoleLogRecord& rec)
         if (!rec.text.empty())
         {
             fwrite(rec.text.data(), 1, rec.text.size(), out);
+            // Anything not terminated by a newline leaves the cursor parked on a
+            // drawn line, which the next ordinary log line has to wipe first.
+            Log::MarkConsoleLineDirty(rec.text[rec.text.size() - 1] != '\n');
         }
         return;
     }
+
+    // An ordinary line must never be printed on top of a bar / startup-UI line
+    // that is still drawn: erase it and start from a clean column 0.
+    Log::ClearConsoleLine(out);
+
     if (rec.applyColor)
     {
         Log::SetColor(rec.toStdout, rec.color);

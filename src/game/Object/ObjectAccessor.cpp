@@ -37,9 +37,7 @@
 
 #include <algorithm>
 
-#define CLASS_LOCK MaNGOS::ClassLevelLockable<ObjectAccessor, ACE_Recursive_Thread_Mutex>
-    INSTANTIATE_SINGLETON_2(ObjectAccessor, CLASS_LOCK);
-INSTANTIATE_CLASS_MUTEX(ObjectAccessor, ACE_Recursive_Thread_Mutex);
+// Singleton instantiation is implicit now (MaNGOS::Singleton is a Meyers singleton).
 
 /**
  * @brief Initializes the global object accessor.
@@ -140,7 +138,7 @@ Player* ObjectAccessor::FindPlayer(ObjectGuid guid, bool inWorld /*= true*/)
  */
 Player* ObjectAccessor::FindPlayerByName(const char* name)
 {
-    ACE_READ_GUARD_RETURN(HashMapHolder<Player>::LockType, guard, i_playerMap.GetLock(), nullptr)
+    std::shared_lock<HashMapHolder<Player>::LockType> guard(i_playerMap.GetLock());
     for (auto& iter : i_playerMap.GetContainer())
     {
         if (iter.second->IsInWorld() && (::strcmp(name, iter.second->GetName()) == 0))
@@ -195,7 +193,7 @@ void ObjectAccessor::KickPlayer(ObjectGuid guid)
  */
 Corpse* ObjectAccessor::GetCorpseForPlayerGUID(ObjectGuid guid)
 {
-    ACE_GUARD_RETURN(LockType, guard, i_corpseGuard, nullptr)
+    std::lock_guard<LockType> guard(i_corpseGuard);
 
     Player2CorpsesMapType::iterator iter = i_player2corpse.find(guid);
 
@@ -217,7 +215,7 @@ void ObjectAccessor::RemoveCorpse(Corpse* corpse)
 {
     MANGOS_ASSERT(corpse && corpse->GetType() != CORPSE_BONES);
 
-    ACE_GUARD(LockType, guard, i_corpseGuard)
+    std::lock_guard<LockType> guard(i_corpseGuard);
 
     Player2CorpsesMapType::iterator iter = i_player2corpse.find(corpse->GetOwnerGuid());
     if (iter == i_player2corpse.end())
@@ -244,7 +242,7 @@ void ObjectAccessor::AddCorpse(Corpse* corpse)
 {
     MANGOS_ASSERT(corpse && corpse->GetType() != CORPSE_BONES);
 
-    ACE_GUARD(LockType, guard, i_corpseGuard)
+    std::lock_guard<LockType> guard(i_corpseGuard);
 
     MANGOS_ASSERT(i_player2corpse.find(corpse->GetOwnerGuid()) == i_player2corpse.end());
     i_player2corpse[corpse->GetOwnerGuid()] = corpse;
@@ -265,7 +263,7 @@ void ObjectAccessor::AddCorpse(Corpse* corpse)
  */
 void ObjectAccessor::AddCorpsesToGrid(GridPair const& gridpair, GridType& grid, Map* map)
 {
-    ACE_GUARD(LockType, guard, i_corpseGuard)
+    std::lock_guard<LockType> guard(i_corpseGuard);
 
     for (Player2CorpsesMapType::iterator iter = i_player2corpse.begin(); iter != i_player2corpse.end(); ++iter)
     {

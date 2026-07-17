@@ -70,6 +70,7 @@
 #include "ScriptMgr.h"
 #include "CreatureAIRegistry.h"
 #include "ProgressBar.h"
+#include "StartupUI.h"
 #include "Policies/Singleton.h"
 #include "BattleGround/BattleGroundMgr.h"
 #include "OutdoorPvP/OutdoorPvP.h"
@@ -122,6 +123,7 @@
 #include "AuctionHouseBot/MutationPending.h"
 #include "PlayerMutations.h"
 
+#include <cstdarg>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -138,7 +140,7 @@ void AhSendBrowseUnavailable(WorldSession* session, uint8 kind);
 volatile bool World::m_stopEvent = false;
 uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
 
-ACE_Atomic_Op<ACE_Thread_Mutex, uint32> World::m_worldLoopCounter = 0;
+std::atomic<uint32> World::m_worldLoopCounter{0};
 
 float World::m_MaxVisibleDistanceOnContinents = DEFAULT_VISIBILITY_DISTANCE;
 float World::m_MaxVisibleDistanceInInstances  = DEFAULT_VISIBILITY_INSTANCE;
@@ -413,8 +415,10 @@ void World::SetInitialWorldSettings()
         exit(1);
     }
 
+    StartupUI::BeginPhase("Core data");
+
     ///- Loading strings. Getting no records means core load has to be canceled because no error message can be output.
-    sLog.outString("Loading MaNGOS strings...");
+    StartupUI::Step("Loading MaNGOS strings...");
     if (!sObjectMgr.LoadMangosStrings())
     {
         Log::WaitBeforeContinueIfNeed();
@@ -433,21 +437,21 @@ void World::SetInitialWorldSettings()
     CharacterDatabase.PExecute("DELETE FROM `corpse` WHERE `corpse_type` = '0' OR `time` < (UNIX_TIMESTAMP()-'%u')", 3 * DAY);
 
     ///- Load the DBC files
-    sLog.outString("Initialize DBC data stores...");
+    StartupUI::Step("Initialize DBC data stores...");
     LoadDBCStores(m_dataPath);
     DetectDBCLang();
     sObjectMgr.SetDBCLocaleIndex(GetDefaultDbcLocale());    // Get once for all the locale index of DBC language (console/broadcasts)
 
-    sLog.outString("Loading Script Names...");
+    StartupUI::Step("Loading Script Names...");
     sScriptMgr.LoadScriptNames();
 
-    sLog.outString("Loading InstanceTemplate...");
+    StartupUI::Step("Loading InstanceTemplate...");
     sObjectMgr.LoadInstanceTemplate();
 
-    sLog.outString("Loading SkillLineAbilityMultiMap Data...");
+    StartupUI::Step("Loading SkillLineAbilityMultiMap Data...");
     sSpellMgr.LoadSkillLineAbilityMap();
 
-    sLog.outString("Loading SkillRaceClassInfoMultiMap Data...");
+    StartupUI::Step("Loading SkillRaceClassInfoMultiMap Data...");
     sSpellMgr.LoadSkillRaceClassInfoMap();
 
     ///- Clean up and pack instances
@@ -470,135 +474,137 @@ void World::SetInitialWorldSettings()
     // lua state begins uninitialized
     eluna = nullptr;
 
-    sLog.outString("Loading Eluna config...");
+    StartupUI::Step("Loading Eluna config...");
     sElunaConfig->Initialize();
 
     if (sElunaConfig->IsElunaEnabled())
     {
         ///- Initialize Lua Engine
-        sLog.outString("Loading Lua scripts...");
+        StartupUI::Step("Loading Lua scripts...");
         sElunaLoader->LoadScripts();
     }
 #endif /* ENABLE_ELUNA */
 
-    sLog.outString("Loading Page Texts...");
+    StartupUI::BeginPhase("World data");
+
+    StartupUI::Step("Loading Page Texts...");
     sObjectMgr.LoadPageTexts();
 
-    sLog.outString("Loading Game Object Templates...");     // must be after LoadPageTexts
+    StartupUI::Step("Loading Game Object Templates...");     // must be after LoadPageTexts
     sObjectMgr.LoadGameobjectInfo();
 
-    sLog.outString("Loading GameObject models...");
+    StartupUI::Step("Loading GameObject models...");
     LoadGameObjectModelList();
     sLog.outString();
 
-    sLog.outString("Loading Spell Chain Data...");
+    StartupUI::Step("Loading Spell Chain Data...");
     sSpellMgr.LoadSpellChains();
 
-    sLog.outString("Loading Spell Elixir types...");
+    StartupUI::Step("Loading Spell Elixir types...");
     sSpellMgr.LoadSpellElixirs();
 
-    sLog.outString("Loading Spell Facing Flags...");
+    StartupUI::Step("Loading Spell Facing Flags...");
     sSpellMgr.LoadFacingCasterFlags();
 
-    sLog.outString("Loading Spell Learn Skills...");
+    StartupUI::Step("Loading Spell Learn Skills...");
     sSpellMgr.LoadSpellLearnSkills();                       // must be after LoadSpellChains
 
-    sLog.outString("Loading Spell Learn Spells...");
+    StartupUI::Step("Loading Spell Learn Spells...");
     sSpellMgr.LoadSpellLearnSpells();
 
-    sLog.outString("Loading Spell Proc Event conditions...");
+    StartupUI::Step("Loading Spell Proc Event conditions...");
     sSpellMgr.LoadSpellProcEvents();
 
-    sLog.outString("Loading Spell Bonus Data...");
+    StartupUI::Step("Loading Spell Bonus Data...");
     sSpellMgr.LoadSpellBonuses();
 
-    sLog.outString("Loading Spell Proc Item Enchant...");
+    StartupUI::Step("Loading Spell Proc Item Enchant...");
     sSpellMgr.LoadSpellProcItemEnchant();                   // must be after LoadSpellChains
 
-    sLog.outString("Loading Spell Linked definitions...");
+    StartupUI::Step("Loading Spell Linked definitions...");
     sSpellMgr.LoadSpellLinked();                            // must be after LoadSpellChains
 
-    sLog.outString("Loading Aggro Spells Definitions...");
+    StartupUI::Step("Loading Aggro Spells Definitions...");
     sSpellMgr.LoadSpellThreats();
 
-    sLog.outString("Loading NPC Texts...");
+    StartupUI::Step("Loading NPC Texts...");
     sObjectMgr.LoadGossipText();
 
-    sLog.outString("Loading Item Random Enchantments Table...");
+    StartupUI::Step("Loading Item Random Enchantments Table...");
     LoadRandomEnchantmentsTable();
 
-    sLog.outString("Loading Disables...");                  // must be before loading quests and items
+    StartupUI::Step("Loading Disables...");                  // must be before loading quests and items
     DisableMgr::LoadDisables();
 
-    sLog.outString("Loading Item Templates...");            // must be after LoadRandomEnchantmentsTable and LoadPageTexts
+    StartupUI::Step("Loading Item Templates...");            // must be after LoadRandomEnchantmentsTable and LoadPageTexts
     sObjectMgr.LoadItemPrototypes();
 
-    sLog.outString("Loading Creature Model Based Info Data...");
+    StartupUI::Step("Loading Creature Model Based Info Data...");
     sObjectMgr.LoadCreatureModelInfo();
 
-    sLog.outString("Loading Creature Items...");
+    StartupUI::Step("Loading Creature Items...");
     sObjectMgr.LoadCreatureItemTemplates();
 
-    sLog.outString("Loading Equipment templates...");
+    StartupUI::Step("Loading Equipment templates...");
     sObjectMgr.LoadEquipmentTemplates();
 
-    sLog.outString("Loading Creature Stats...");
+    StartupUI::Step("Loading Creature Stats...");
     sObjectMgr.LoadCreatureClassLvlStats();
 
-    sLog.outString("Loading Creature templates...");
+    StartupUI::Step("Loading Creature templates...");
     sObjectMgr.LoadCreatureTemplates();
 
-    sLog.outString("Loading Creature template spells...");
+    StartupUI::Step("Loading Creature template spells...");
     sObjectMgr.LoadCreatureTemplateSpells();
 
-    sLog.outString("Loading Creature spells...");
+    StartupUI::Step("Loading Creature spells...");
     sObjectMgr.LoadCreatureSpells();
 
-    sLog.outString("Loading SpellsScriptTarget...");
+    StartupUI::Step("Loading SpellsScriptTarget...");
     sSpellMgr.LoadSpellScriptTarget();                      // must be after LoadCreatureTemplates and LoadGameobjectInfo
 
-    sLog.outString("Loading ItemRequiredTarget...");
+    StartupUI::Step("Loading ItemRequiredTarget...");
     sObjectMgr.LoadItemRequiredTarget();
 
-    sLog.outString("Loading Reputation Reward Rates...");
+    StartupUI::Step("Loading Reputation Reward Rates...");
     sObjectMgr.LoadReputationRewardRate();
 
-    sLog.outString("Loading Creature Reputation OnKill Data...");
+    StartupUI::Step("Loading Creature Reputation OnKill Data...");
     sObjectMgr.LoadReputationOnKill();
 
-    sLog.outString("Loading Reputation Spillover Data...");
+    StartupUI::Step("Loading Reputation Spillover Data...");
     sObjectMgr.LoadReputationSpilloverTemplate();
 
-    sLog.outString("Loading Points Of Interest Data...");
+    StartupUI::Step("Loading Points Of Interest Data...");
     sObjectMgr.LoadPointsOfInterest();
 
-    sLog.outString("Loading Pet Create Spells...");
+    StartupUI::Step("Loading Pet Create Spells...");
     sObjectMgr.LoadPetCreateSpells();
 
-    sLog.outString("Loading Creature Data...");
+    StartupUI::Step("Loading Creature Data...");
     sObjectMgr.LoadCreatures();
 
-    sLog.outString("Loading Creature Addon Data...");
+    StartupUI::Step("Loading Creature Addon Data...");
     sObjectMgr.LoadCreatureAddons();                        // must be after LoadCreatureTemplates() and LoadCreatures()
     sLog.outString(">>> Creature Addon Data loaded");
     sLog.outString();
 
-    sLog.outString("Loading Gameobject Data...");
+    StartupUI::Step("Loading Gameobject Data...");
     sObjectMgr.LoadGameObjects();
 
-    sLog.outString("Loading CreatureLinking Data...");      // must be after Creatures
+    StartupUI::Step("Loading CreatureLinking Data...");      // must be after Creatures
     sCreatureLinkingMgr.LoadFromDB();
 
-    sLog.outString("Loading Objects Pooling Data...");
+    StartupUI::Step("Loading Objects Pooling Data...");
     sPoolMgr.LoadFromDB();
 
-    sLog.outString("Loading Weather Data...");
+    StartupUI::Step("Loading Weather Data...");
     sWeatherMgr.LoadWeatherZoneChances();
 
-    sLog.outString("Loading Quests...");
+    StartupUI::Step("Loading Quests...");
     sObjectMgr.LoadQuests();                                // must be loaded after DBCs, creature_template, item_template, gameobject tables
 
-    sLog.outString("Loading Quests Relations...");
+    StartupUI::Step("Loading Quests Relations...");
     sObjectMgr.LoadQuestRelations();                        // must be after quest load
     sLog.outString(">>> Quests Relations loaded");
     sLog.outString();
@@ -606,133 +612,133 @@ void World::SetInitialWorldSettings()
     sLog.outString("Checking Quest Disables...");
     DisableMgr::CheckQuestDisables();                       // must be after loading quests
 
-    sLog.outString("Loading Game Event Data...");           // must be after sPoolMgr.LoadFromDB and quests to properly load pool events and quests for events
+    StartupUI::Step("Loading Game Event Data...");           // must be after sPoolMgr.LoadFromDB and quests to properly load pool events and quests for events
     sGameEventMgr.LoadFromDB();
     sLog.outString(">>> Game Event Data loaded");
     sLog.outString();
 
     // Load Conditions
-    sLog.outString("Loading Conditions...");
+    StartupUI::Step("Loading Conditions...");
     sObjectMgr.LoadConditions();
 
     sLog.outString("Creating map persistent states for non-instanceable maps...");     // must be after PackInstances(), LoadCreatures(), sPoolMgr.LoadFromDB(), sGameEventMgr.LoadFromDB();
     sMapPersistentStateMgr.InitWorldMaps();
     sLog.outString();
 
-    sLog.outString("Loading Creature Respawn Data...");     // must be after LoadCreatures(), and sMapPersistentStateMgr.InitWorldMaps()
+    StartupUI::Step("Loading Creature Respawn Data...");     // must be after LoadCreatures(), and sMapPersistentStateMgr.InitWorldMaps()
     sMapPersistentStateMgr.LoadCreatureRespawnTimes();
 
-    sLog.outString("Loading Gameobject Respawn Data...");   // must be after LoadGameObjects(), and sMapPersistentStateMgr.InitWorldMaps()
+    StartupUI::Step("Loading Gameobject Respawn Data...");   // must be after LoadGameObjects(), and sMapPersistentStateMgr.InitWorldMaps()
     sMapPersistentStateMgr.LoadGameobjectRespawnTimes();
 
-    sLog.outString("Loading SpellArea Data...");            // must be after quest load
+    StartupUI::Step("Loading SpellArea Data...");            // must be after quest load
     sSpellMgr.LoadSpellAreas();
 
-    sLog.outString("Loading AreaTrigger definitions...");
+    StartupUI::Step("Loading AreaTrigger definitions...");
     sObjectMgr.LoadAreaTriggerTeleports();                  // must be after item template load
 
-    sLog.outString("Loading Quest Area Triggers...");
+    StartupUI::Step("Loading Quest Area Triggers...");
     sObjectMgr.LoadQuestAreaTriggers();                     // must be after LoadQuests
 
-    sLog.outString("Loading Tavern Area Triggers...");
+    StartupUI::Step("Loading Tavern Area Triggers...");
     sObjectMgr.LoadTavernAreaTriggers();
 
-    //sLog.outString("Loading AreaTrigger script names...");
+    //StartupUI::Step("Loading AreaTrigger script names...");
     //sScriptMgr.LoadAreaTriggerScripts();
 
-    //sLog.outString("Loading event id script names...");
+    //StartupUI::Step("Loading event id script names...");
     //sScriptMgr.LoadEventIdScripts();
 
-    //sLog.outString("Loading spell script names...");
+    //StartupUI::Step("Loading spell script names...");
     //sScriptMgr.LoadSpellIdScripts();
 
 #ifdef ENABLE_SD3
-    sLog.outString("Loading all script bindings...");
+    StartupUI::Step("Loading all script bindings...");
     sScriptMgr.LoadScriptBinding();
 #endif /* ENABLE_SD3 */
 
-    sLog.outString("Loading Graveyard-zone links...");
+    StartupUI::Step("Loading Graveyard-zone links...");
     sObjectMgr.LoadGraveyardZones();
 
-    sLog.outString("Loading spell target destination coordinates...");
+    StartupUI::Step("Loading spell target destination coordinates...");
     sSpellMgr.LoadSpellTargetPositions();
 
-    sLog.outString("Loading SpellAffect definitions...");
+    StartupUI::Step("Loading SpellAffect definitions...");
     sSpellMgr.LoadSpellAffects();
 
-    sLog.outString("Loading spell pet auras...");
+    StartupUI::Step("Loading spell pet auras...");
     sSpellMgr.LoadSpellPetAuras();
 
-    sLog.outString("Loading Player Create Info & Level Stats...");
+    StartupUI::Step("Loading Player Create Info & Level Stats...");
     sObjectMgr.LoadPlayerInfo();
     sLog.outString(">>> Player Create Info & Level Stats loaded");
     sLog.outString();
 
-    sLog.outString("Loading Exploration BaseXP Data...");
+    StartupUI::Step("Loading Exploration BaseXP Data...");
     sObjectMgr.LoadExplorationBaseXP();
 
-    sLog.outString("Loading Pet Name Parts...");
+    StartupUI::Step("Loading Pet Name Parts...");
     sObjectMgr.LoadPetNames();
 
     CharacterDatabaseCleaner::CleanDatabase();
     sLog.outString();
 
-    sLog.outString("Loading the max pet number...");
+    StartupUI::Step("Loading the max pet number...");
     sObjectMgr.LoadPetNumber();
 
-    sLog.outString("Loading pet level stats...");
+    StartupUI::Step("Loading pet level stats...");
     sObjectMgr.LoadPetLevelInfo();
 
-    sLog.outString("Loading Player Corpses...");
+    StartupUI::Step("Loading Player Corpses...");
     sObjectMgr.LoadCorpses();
 
-    sLog.outString("Loading Loot Tables...");
+    StartupUI::Step("Loading Loot Tables...");
     LoadLootTables();
     sLog.outString(">>> Loot Tables loaded");
     sLog.outString();
 
-    sLog.outString("Loading Skill Fishing base level requirements...");
+    StartupUI::Step("Loading Skill Fishing base level requirements...");
     sObjectMgr.LoadFishingBaseSkillLevel();
 
-    sLog.outString("Loading Gossip scripts...");
+    StartupUI::Step("Loading Gossip scripts...");
     sScriptMgr.LoadDbScripts(DBS_ON_GOSSIP);                 // must be before gossip menu options
 
     sObjectMgr.LoadGossipMenus();
 
-    sLog.outString("Loading Vendors...");
+    StartupUI::Step("Loading Vendors...");
     sObjectMgr.LoadVendorTemplates();                       // must be after load ItemTemplate
     sObjectMgr.LoadVendors();                               // must be after load CreatureTemplate, VendorTemplate, and ItemTemplate
 
-    sLog.outString("Loading Trainers...");
+    StartupUI::Step("Loading Trainers...");
     sObjectMgr.LoadTrainerTemplates();                      // must be after load CreatureTemplate
     sObjectMgr.LoadTrainers();                              // must be after load CreatureTemplate, TrainerTemplate
 
-    sLog.outString("Loading Waypoint scripts...");          // before loading from creature_movement
+    StartupUI::Step("Loading Waypoint scripts...");          // before loading from creature_movement
     sScriptMgr.LoadDbScripts(DBS_ON_CREATURE_MOVEMENT);
 
-    sLog.outString("Loading Waypoints...");
+    StartupUI::Step("Loading Waypoints...");
     sWaypointMgr.Load();
 
     sLog.outString("Modifying in-memory dbc spell attributes...");
     sSpellMgr.ModDBCSpellAttributes();
 
-    sLog.outString("Loading ReservedNames...");
+    StartupUI::Step("Loading ReservedNames...");
     sObjectMgr.LoadReservedPlayersNames();
 
-    sLog.outString("Loading GameObjects for quests...");
+    StartupUI::Step("Loading GameObjects for quests...");
     sObjectMgr.LoadGameObjectForQuests();
 
-    sLog.outString("Loading BattleMasters...");
+    StartupUI::Step("Loading BattleMasters...");
     sBattleGroundMgr.LoadBattleMastersEntry();
 
-    sLog.outString("Loading BattleGround event indexes...");
+    StartupUI::Step("Loading BattleGround event indexes...");
     sBattleGroundMgr.LoadBattleEventIndexes();
 
-    sLog.outString("Loading GameTeleports...");
+    StartupUI::Step("Loading GameTeleports...");
     sObjectMgr.LoadGameTele();
 
     ///- Loading localization data
-    sLog.outString("Loading Localization strings...");
+    StartupUI::Step("Loading Localization strings...");
     sObjectMgr.LoadCreatureLocales();                       // must be after CreatureInfo loading
     sObjectMgr.LoadGameObjectLocales();                     // must be after GameobjectInfo loading
     sObjectMgr.LoadItemLocales();                           // must be after ItemPrototypes loading
@@ -745,30 +751,34 @@ void World::SetInitialWorldSettings()
     sLog.outString(">>> Localization strings loaded");
     sLog.outString();
 
+    StartupUI::BeginPhase("Characters and economy");
+
     ///- Load dynamic data tables from the database
-    sLog.outString("Loading Auctions...");
+    StartupUI::Step("Loading Auctions...");
     sAuctionMgr.LoadAuctionItems();
     sAuctionMgr.LoadAuctions();
     sLog.outString(">>> Auctions loaded");
     sLog.outString();
 
-    sLog.outString("Loading Guilds...");
+    StartupUI::Step("Loading Guilds...");
     sGuildMgr.LoadGuilds();
 
-    sLog.outString("Loading Groups...");
+    StartupUI::Step("Loading Groups...");
     sObjectMgr.LoadGroups();
 
     sLog.outString("Returning old mails...");
     sObjectMgr.ReturnOrDeleteOldMails(false);
 
-    sLog.outString("Loading GM tickets...");
+    StartupUI::Step("Loading GM tickets...");
     sTicketMgr.LoadGMTickets();
+
+    StartupUI::BeginPhase("Scripts");
 
 #ifdef ENABLE_ELUNA
     if (sElunaConfig->IsElunaEnabled())
     {
         ///- Run eluna scripts.
-        sLog.outString("Starting Eluna world state...");
+        StartupUI::Step("Starting Eluna world state...");
         // use map id -1 for the global Eluna state
         eluna = new Eluna(nullptr);
         sLog.outString();
@@ -776,7 +786,7 @@ void World::SetInitialWorldSettings()
 #endif /*ENABLE_ELUNA*/
 
     ///- Load and initialize DBScripts Engine
-    sLog.outString("Loading DB-Scripts Engine...");
+    StartupUI::Step("Loading DB-Scripts Engine...");
     sScriptMgr.LoadDbScripts(DBS_ON_QUEST_START);           // must be after load Creature/Gameobject(Template/Data) and QuestTemplate
     sScriptMgr.LoadDbScripts(DBS_ON_QUEST_END);             // must be after load Creature/Gameobject(Template/Data) and QuestTemplate
     sScriptMgr.LoadDbScripts(DBS_ON_SPELL);                 // must be after load Creature/Gameobject(Template/Data)
@@ -787,17 +797,17 @@ void World::SetInitialWorldSettings()
     sLog.outString(">>> DB Scripts loaded");
     sLog.outString();
 
-    sLog.outString("Loading Scripts text locales...");      // must be after Load*Scripts calls
+    StartupUI::Step("Loading Scripts text locales...");      // must be after Load*Scripts calls
     sScriptMgr.LoadDbScriptStrings();
 
     ///- Load and initialize EventAI Scripts
-    sLog.outString("Loading CreatureEventAI Texts...");
+    StartupUI::Step("Loading CreatureEventAI Texts...");
     sEventAIMgr.LoadCreatureEventAI_Texts(false);           // false, will checked in LoadCreatureEventAI_Scripts
 
-    sLog.outString("Loading CreatureEventAI Summons...");
+    StartupUI::Step("Loading CreatureEventAI Summons...");
     sEventAIMgr.LoadCreatureEventAI_Summons(false);         // false, will checked in LoadCreatureEventAI_Scripts
 
-    sLog.outString("Loading CreatureEventAI Scripts...");
+    StartupUI::Step("Loading CreatureEventAI Scripts...");
     sEventAIMgr.LoadCreatureEventAI_Scripts();
 
     sLog.outString("Initializing Scripts...");
@@ -822,8 +832,10 @@ void World::SetInitialWorldSettings()
 #endif /* ENABLE_SD3 */
     sLog.outString();
 
+    StartupUI::BeginPhase("World systems");
+
     ///- Initialize game time and timers
-    sLog.outString("Initialize game time and timers");
+    StartupUI::Step("Initialize game time and timers");
     m_gameTime = time(NULL);
     m_startTime = m_gameTime;
 
@@ -890,11 +902,11 @@ void World::SetInitialWorldSettings()
     sOutdoorPvPMgr.InitOutdoorPvP();
 
     // Initialize Warden
-    sLog.outString("Loading Warden Checks...");
+    StartupUI::Step("Loading Warden Checks...");
     sWardenCheckMgr->LoadWardenChecks();
     sLog.outString();
 
-    sLog.outString("Loading Warden Action Overrides...");
+    StartupUI::Step("Loading Warden Action Overrides...");
     sWardenCheckMgr->LoadWardenOverrides();
     sLog.outString();
 
@@ -905,7 +917,7 @@ void World::SetInitialWorldSettings()
     sLog.outString("Starting server Maintenance system...");
     InitServerMaintenanceCheck();
 
-    sLog.outString("Loading Honor Standing list...");
+    StartupUI::Step("Loading Honor Standing list...");
     sObjectMgr.LoadStandingList();
 
     sLog.outString("Starting Game Event system...");
@@ -913,7 +925,7 @@ void World::SetInitialWorldSettings()
     m_timers[WUPDATE_EVENTS].SetInterval(nextGameEvent);    // depend on next event
     sLog.outString();
 
-    sLog.outString("Loading grids for active creatures and local transports...");
+    StartupUI::Step("Loading grids for active creatures and local transports...");
     uint32 loadContinentsBegin = getMSTime();
     MapManager::LivingWorldStartupStats lwStats = sMapMgr.LoadContinents();
     uint32 loadContinentsMs = GetMSTimeDiffToNow(loadContinentsBegin);
@@ -921,7 +933,7 @@ void World::SetInitialWorldSettings()
                    lwStats.forcedMaps, lwStats.totalUniqueGrids, lwStats.totalNewlyLoaded, lwStats.totalLocalTransports, loadContinentsMs);
     sLog.outString();
 
-    sLog.outString("Loading global transports...");
+    StartupUI::Step("Loading global transports...");
     sMapMgr.LoadTransports();
     sLog.outString();
 
@@ -968,105 +980,130 @@ void World::SetInitialWorldSettings()
     sPlayerbotAIConfig.Initialize();
 #endif
 
-    showFooter();
+    StartupUI::EndPhase();
 
     uint32 startupDuration = GetMSTimeDiffToNow(startupBegin);
-    sLog.outString("SERVER STARTUP TIME: %i minutes %i seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000));
-    sLog.outString();
+
+    // The completion panel says this in a nicer way, but the line is a long-lived
+    // grep target for ops tooling, so the log file keeps it verbatim.
+    char startupLine[128];
+    snprintf(startupLine, sizeof(startupLine), "SERVER STARTUP TIME: %i minutes %i seconds",
+             (startupDuration / 60000), ((startupDuration % 60000) / 1000));
+    StartupUI::LogOnly(startupLine);
+
+    showFooter(startupDuration);
+
+    ///- World initialization is over: drop the console hooks, so no runtime log
+    ///  line and no reload-time progress bar pays for them.
+    StartupUI::Shutdown();
+}
+
+namespace
+{
+    /// "Eluna, ScriptDev3, Warden" -- or "none" for an empty list.
+    std::string JoinList(const std::vector<std::string>& items)
+    {
+        std::string joined;
+
+        for (std::size_t i = 0; i < items.size(); ++i)
+        {
+            if (i > 0)
+            {
+                joined += ", ";
+            }
+            joined += items[i];
+        }
+
+        return joined.empty() ? std::string("none") : joined;
+    }
 }
 
 /**
- * @brief Prints the startup footer and enabled module summary.
+ * @brief Draws the completion panel: what this build is, what it is talking to,
+ *        and which optional subsystems came up.
+ *
+ * @param startupMs how long world initialization took
  */
-void World::showFooter()
+void World::showFooter(uint32 startupMs)
 {
-    std::set<std::string> modules_;
+    std::vector<std::string> enabled;
+    std::vector<std::string> disabled;
 
-    // ELUNA is either included or disabled
+    // Eluna and SD3 are either compiled in or not there at all.
 #ifdef ENABLE_ELUNA
-    modules_.insert("                 Eluna : Enabled");
+    enabled.push_back("Eluna");
 #endif
 
-    // SD3 is either included or disabled
 #ifdef ENABLE_SD3
-    modules_.insert("      ScriptDev3 (SD3) : Enabled");
+    enabled.push_back("ScriptDev3");
 #endif
 
-    // PLAYERBOTS can be included or excluded but also disabled via mangos.conf
+    // The rest are compiled in but mangosd.conf still decides whether they run.
 #ifdef ENABLE_PLAYERBOTS
-    bool playerBotActive = sConfig.GetBoolDefault("PlayerbotAI.DisableBots", true);
-    if (playerBotActive)
+    if (sConfig.GetBoolDefault("PlayerbotAI.DisableBots", true))
     {
-        modules_.insert("            PlayerBots : Disabled");
+        disabled.push_back("PlayerBots");
     }
     else
     {
-        modules_.insert("            PlayerBots : Enabled");
+        enabled.push_back("PlayerBots");
     }
 #endif
 
-    // Remote Access can be activated / deactivated via mangos.conf
-    bool raActive = sConfig.GetBoolDefault("Ra.Enable", false);
-    if (raActive)
+    if (sConfig.GetBoolDefault("Ra.Enable", false))
     {
-        modules_.insert("    Remote Access (RA) : Enabled");
+        enabled.push_back("Remote Access");
     }
     else
     {
-        modules_.insert("    Remote Access (RA) : Disabled");
+        disabled.push_back("Remote Access");
     }
 
-    // SOAP can be included or excluded but also disabled via mangos.conf
 #ifdef ENABLE_SOAP
-    bool soapActive = sConfig.GetBoolDefault("SOAP.Enabled", false);
-    if (soapActive)
+    if (sConfig.GetBoolDefault("SOAP.Enabled", false))
     {
-        modules_.insert("                  SOAP : Enabled");
+        enabled.push_back("SOAP");
     }
     else
     {
-        modules_.insert("                  SOAP : Disabled");
+        disabled.push_back("SOAP");
     }
 #endif
 
-    // Warden is always included, set active or disabled via mangos.conf
-    bool wardenActive = (sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED) || sWorld.getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED));
-    if (wardenActive)
+    if (getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED) || getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED))
     {
-        modules_.insert("                Warden : Enabled");
+        enabled.push_back("Warden");
     }
     else
     {
-        modules_.insert("                Warden : Disabled");
+        disabled.push_back("Warden");
     }
 
-    std::string thisClientVersion (EXPECTED_MANGOSD_CLIENT_VERSION);
-    std::string thisClientBuilds = AcceptableClientBuildsListStr();
+    char database[128];
+    snprintf(database, sizeof(database), "Rel%s.%s.%s", GitRevision::GetWorldDBVersion(),
+             GitRevision::GetWorldDBStructure(), GitRevision::GetWorldDBContent());
 
-    std::string sModules;
-    for (std::set<std::string>::const_iterator it = modules_.begin(); it != modules_.end(); ++it)
+    char ready[64];
+    if (startupMs >= 60000)
     {
-        sModules = sModules + " \n" + *it;
+        snprintf(ready, sizeof(ready), "ready in %um %02us", startupMs / 60000, (startupMs % 60000) / 1000);
+    }
+    else
+    {
+        snprintf(ready, sizeof(ready), "ready in %.1fs", startupMs / 1000.0);
     }
 
-    sLog.outString("\n"
-        "_______________________________________________________\n"
-        "\n"
-        " MaNGOS Server: World Initialization Complete\n"
-        "_______________________________________________________\n"
-        "\n"
-        "        Server Version : %s\n"
-        "         Eluna Version : %s\n"
-        "           SD3 Version : %s\n"
-        "      Database Version : Rel%s.%s.%s\n"
-        "\n"
-        "    Supporting Clients : %s\n"
-        "                Builds : %s\n"
-        "\n"
-        "         Module Status -\n%s\n"
-        "_______________________________________________________\n",
-    GitRevision::GetProductVersionStr(), GitRevision::GetDepElunaFullRevision(), GitRevision::GetDepSD3FullRevision(), GitRevision::GetWorldDBVersion(), GitRevision::GetWorldDBStructure(), GitRevision::GetWorldDBContent(),
-        thisClientVersion.c_str(), thisClientBuilds.c_str(), sModules.c_str());
+    std::vector<StartupUI::Row> rows;
+    rows.push_back(StartupUI::Row("server", GitRevision::GetProductVersionStr()));
+    rows.push_back(StartupUI::Row("eluna", GitRevision::GetDepElunaFullRevision()));
+    rows.push_back(StartupUI::Row("sd3", GitRevision::GetDepSD3FullRevision()));
+    rows.push_back(StartupUI::Row("database", database));
+    rows.push_back(StartupUI::Row("clients", EXPECTED_MANGOSD_CLIENT_VERSION));
+    rows.push_back(StartupUI::Row("builds", AcceptableClientBuildsListStr()));
+    rows.push_back(StartupUI::Row("enabled", JoinList(enabled)));
+    rows.push_back(StartupUI::Row("disabled", JoinList(disabled)));
+
+    StartupUI::Panel("World initialization complete", ready, rows);
 }
 
 /**

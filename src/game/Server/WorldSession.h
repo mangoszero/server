@@ -35,6 +35,7 @@
 #include "ObjectGuid.h"
 #include "AuctionHouseMgr.h"
 #include "Item.h"
+#include <memory>
 
 struct ItemPrototype;
 struct AuctionEntry;
@@ -223,7 +224,7 @@ class WorldSession
          * @param mute_time Mute time
          * @param locale Locale
          */
-        WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, time_t mute_time, LocaleConstant locale);
+        WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, AccountTypes sec, time_t mute_time, LocaleConstant locale);
 
         /**
          * @brief Destructor
@@ -892,7 +893,7 @@ class WorldSession
         void LogUnprocessedTail(WorldPacket* packet);
 
         Player* _player;
-        WorldSocket* m_Socket;
+        std::shared_ptr<WorldSocket> m_Socket;
         std::string m_Address;
 
         AccountTypes _security;
@@ -915,7 +916,7 @@ class WorldSession
         TutorialDataState m_tutorialState;
         uint32 m_clientTimeDelay;
         ObjectGuid m_npcWatchLastGuid;
-        ACE_Based::LockedQueue<WorldPacket*, ACE_Thread_Mutex> _recvQueue;
+        MaNGOS::LockedQueue<WorldPacket*> _recvQueue;
 };
 #endif
 /// @}

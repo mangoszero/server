@@ -78,12 +78,10 @@
 #include "AuctionBook.h"
 #include "MutationHandler.h"
 
-#include <ace/OS_NS_stdio.h>
-#include <ace/OS_NS_stdlib.h>
-#include <ace/OS_NS_unistd.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <limits>
 #include <string>
 #include <vector>
@@ -2340,22 +2338,14 @@ static int RunJournalPruneSchedulerSelfTest()
 {
     std::string const sourceBefore = sConfig.GetFilename();
     Config testConfig;
-    char configPath[] = "ah-service-prune-selftest-XXXXXX";
-    ACE_HANDLE const configHandle = ACE_OS::mkstemp(configPath);
-    if (configHandle == ACE_INVALID_HANDLE)
+    std::string const configPath = "ah-service-prune-selftest-"
+        + std::to_string(static_cast<unsigned long long>(time(nullptr))) + ".conf";
+
+    FILE* configFile = fopen(configPath.c_str(), "w");
+    if (configFile == nullptr)
     {
         fprintf(stderr, "journal prune scheduler selftest FAILED:"
                         " could not create config fixture\n");
-        return 1;
-    }
-
-    FILE* configFile = ACE_OS::fdopen(configHandle, "w");
-    if (configFile == nullptr)
-    {
-        ACE_OS::close(configHandle);
-        remove(configPath);
-        fprintf(stderr, "journal prune scheduler selftest FAILED:"
-                        " could not open config fixture\n");
         return 1;
     }
 
@@ -2369,9 +2359,9 @@ static int RunJournalPruneSchedulerSelfTest()
             "AH.Service.JournalAppliedRetentionSec = 0\n");
     fclose(configFile);
 
-    if (!testConfig.SetSource(configPath))
+    if (!testConfig.SetSource(configPath.c_str()))
     {
-        remove(configPath);
+        remove(configPath.c_str());
         fprintf(stderr, "journal prune scheduler selftest FAILED:"
                         " could not load config fixture\n");
         return 1;
@@ -2384,7 +2374,7 @@ static int RunJournalPruneSchedulerSelfTest()
                         " legacy disable setting was not preserved\n");
         return 1;
     }
-    remove(configPath);
+    remove(configPath.c_str());
 
     if (AhConfigNonNegativeSeconds(testConfig, "AhTest.Valid", fallback) != 3600u ||
         AhConfigNonNegativeSeconds(testConfig, "AhTest.Zero", fallback) != 0u ||
@@ -3355,7 +3345,7 @@ static int RunSelfTest()
     }
 
     // Give the acceptor a moment to bind before the client connects.
-    ACE_Based::Thread::Sleep(50);
+    MaNGOS::Thread::Sleep(50);
 
     // --- Connect client ---
     IpcClient cli;
@@ -3381,7 +3371,7 @@ static int RunSelfTest()
             srv.Stop();
             return 1;
         }
-        ACE_Based::Thread::Sleep(20);
+        MaNGOS::Thread::Sleep(20);
         waited += 20;
     }
 
@@ -3443,7 +3433,7 @@ static int RunSelfTest()
             break;
         }
 
-        ACE_Based::Thread::Sleep(20);
+        MaNGOS::Thread::Sleep(20);
         echoWaited += 20;
     }
 
@@ -4132,7 +4122,7 @@ int main(int argc, char** argv)
             botDb.Shutdown();
             return 1;
         }
-        ACE_Based::Thread::Sleep(50);
+        MaNGOS::Thread::Sleep(50);
         waited += 50;
     }
 
@@ -4220,7 +4210,7 @@ int main(int argc, char** argv)
     // SP-1: dedicated browse thread (owns per-thread MySQL init in run()).
     BrowseThread* browseRunnable = new BrowseThread(botDb, cli);
     browseRunnable->incReference();
-    ACE_Based::Thread browseThread(browseRunnable);
+    MaNGOS::Thread browseThread(browseRunnable);
 
     // --- Service loop ---
     volatile bool stop = false;
@@ -4689,7 +4679,7 @@ int main(int argc, char** argv)
             }
         }
 
-        ACE_Based::Thread::Sleep(10);
+        MaNGOS::Thread::Sleep(10);
     }
 
     // C4: stop the browse thread and JOIN before DB/client teardown so the

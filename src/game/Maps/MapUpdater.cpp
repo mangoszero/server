@@ -24,168 +24,150 @@
 
 /**
  * @file MapUpdater.cpp
- * @brief Implementation of the MapUpdater class for managing map update requests.
- *
- * This file contains the implementation of the MapUpdater class which is responsible
- * for managing and scheduling map updates. It includes:
- * - Map update request scheduling
- * - Thread management for concurrent map updates
- * - Synchronization mechanisms for pending requests
+ * @brief Implementation of the parallel map-update worker pool.
  */
 
 #include "MapUpdater.h"
-#include "DelayExecutor.h"
+
 #include "Map.h"
 #include "DatabaseEnv.h"
-#include "Timer.h"
+#include "Log.h"
+#include <mutex>
+#include <thread>
 
-#include <ace/Guard_T.h>
-#include <ace/Method_Request.h>
-
-/**
- * @brief A request to update a map.
- */
-class MapUpdateRequest : public ACE_Method_Request
-{
-    private:
-        Map& m_map; ///< Reference to the map to be updated.
-        MapUpdater& m_updater; ///< Reference to the map updater.
-        ACE_UINT32 m_diff; ///< Time difference for the update.
-
-    public:
-        /**
-         * @brief Constructor for MapUpdateRequest.
-         * @param m Reference to the map.
-         * @param u Reference to the map updater.
-         * @param d Time difference for the update.
-         */
-        MapUpdateRequest(Map& m, MapUpdater& u, ACE_UINT32 d)
-            : m_map(m), m_updater(u), m_diff(d)
-        {
-        }
-
-        /**
-         * @brief Executes the map update request.
-         * @return Always returns 0.
-         */
-        virtual int call()
-        {
-            m_map.Update(m_diff);
-            m_updater.update_finished();
-            return 0;
-        }
-};
-
-/**
- * @brief Constructor for MapUpdater.
- */
-MapUpdater::MapUpdater():
-m_executor(), m_mutex(), m_condition(m_mutex), pending_requests(0)
+MapUpdater::MapUpdater()
+    : m_pending(0), m_stop(false)
 {
 }
 
-/**
- * @brief Destructor for MapUpdater.
- */
 MapUpdater::~MapUpdater()
 {
     deactivate();
 }
 
-/**
- * @brief Activates the map updater with the specified number of threads.
- * @param num_threads Number of threads to activate.
- * @return Result of the activation.
- */
 int MapUpdater::activate(size_t num_threads)
 {
-    return m_executor._activate((int)num_threads);
-}
-
-/**
- * @brief Deactivates the map updater.
- * @return Result of the deactivation.
- */
-int MapUpdater::deactivate()
-{
-    sLog.outString("[shutdown] MapUpdater::deactivate: draining pending map updates (pending=%zu)", pending_requests);
-    wait();
-    sLog.outString("[shutdown] MapUpdater::deactivate: pending drained; joining worker threads");
-    int r = m_executor.deactivate();
-    sLog.outString("[shutdown] MapUpdater::deactivate: worker threads joined");
-    return r;
-}
-
-/**
- * @brief Waits for all pending requests to be processed.
- * @return Always returns 0.
- */
-int MapUpdater::wait()
-{
-    uint32 start = getMSTime();
+    if (num_threads == 0 || activated())
     {
-        ACE_GUARD_RETURN(ACE_Thread_Mutex, guard, m_mutex, -1);
-
-        while (pending_requests > 0)
-        {
-            m_condition.wait();
-        }
-    }
-
-    uint32 waited = getMSTimeDiff(start, getMSTime());
-    if (waited > 1000)
-    {
-        sLog.outError("MapUpdater::wait() took %u ms", waited);
-    }
-    return 0;
-}
-
-/**
- * @brief Schedules a map update.
- * @param map Reference to the map to be updated.
- * @param diff Time difference for the update.
- * @return Result of the scheduling.
- */
-int MapUpdater::schedule_update(Map& map, ACE_UINT32 diff)
-{
-    ACE_GUARD_RETURN(ACE_Thread_Mutex, guard, m_mutex, -1);
-
-    ++pending_requests;
-
-    if (m_executor.execute(new MapUpdateRequest(map, *this, diff)) == -1)
-    {
-        ACE_DEBUG((LM_ERROR, ACE_TEXT("(%t) \n"), ACE_TEXT("Failed to schedule Map Update")));
-
-        --pending_requests;
         return -1;
     }
 
+    {
+        std::lock_guard<std::mutex> guard(m_mutex);
+        m_stop = false;
+    }
+
+    m_workers.reserve(num_threads);
+    for (size_t i = 0; i < num_threads; ++i)
+    {
+        m_workers.emplace_back([this] { workerLoop(); });
+    }
+
     return 0;
 }
 
-/**
- * @brief Checks if the map updater is activated.
- * @return True if activated, false otherwise.
- */
-bool MapUpdater::activated()
+int MapUpdater::deactivate()
 {
-    return m_executor.activated();
-}
-
-/**
- * @brief Called when a map update is finished.
- */
-void MapUpdater::update_finished()
-{
-    ACE_GUARD(ACE_Thread_Mutex, guard, m_mutex);
-
-    if (pending_requests == 0)
+    if (!activated())
     {
-        ACE_ERROR((LM_ERROR, ACE_TEXT("(%t)\n"), ACE_TEXT("MapUpdater::update_finished BUG, report to devs")));
-        return;
+        return 0;
     }
 
-    --pending_requests;
+    sLog.outString("[shutdown] MapUpdater::deactivate: draining pending map updates (pending=%zu)", m_pending);
 
-    m_condition.broadcast();
+    // Drain first: a map must not be left half-updated, and Map::Update touches world
+    // state that is torn down right after this returns.
+    wait();
+
+    sLog.outString("[shutdown] MapUpdater::deactivate: pending drained; joining worker threads");
+
+    {
+        std::lock_guard<std::mutex> guard(m_mutex);
+        m_stop = true;
+    }
+    m_taskAdded.notify_all();
+
+    for (std::thread& worker : m_workers)
+    {
+        if (worker.joinable())
+        {
+            worker.join();
+        }
+    }
+    m_workers.clear();
+
+    sLog.outString("[shutdown] MapUpdater::deactivate: worker threads joined");
+    return 0;
+}
+
+bool MapUpdater::activated()
+{
+    return !m_workers.empty();
+}
+
+int MapUpdater::schedule_update(Map& map, uint32 diff)
+{
+    std::unique_lock<std::mutex> guard(m_mutex);
+
+    if (m_stop || m_workers.empty())
+    {
+        sLog.outError("MapUpdater::schedule_update: pool is not running, map %u not updated", map.GetId());
+        return -1;
+    }
+
+    m_tasks.push(Task(&map, diff));
+    ++m_pending;
+
+    guard.unlock();
+    m_taskAdded.notify_one();
+
+    return 0;
+}
+
+int MapUpdater::wait()
+{
+    std::unique_lock<std::mutex> guard(m_mutex);
+
+    m_taskDone.wait(guard, [this] { return m_pending == 0; });
+
+    return 0;
+}
+
+void MapUpdater::workerLoop()
+{
+    for (;;)
+    {
+        Task task(nullptr, 0);
+
+        {
+            std::unique_lock<std::mutex> guard(m_mutex);
+
+            m_taskAdded.wait(guard, [this] { return m_stop || !m_tasks.empty(); });
+
+            // Only retire once the queue is genuinely empty, so a stop racing with a
+            // still-queued tick cannot drop that map's update on the floor.
+            if (m_tasks.empty())
+            {
+                if (m_stop)
+                {
+                    return;
+                }
+                continue;
+            }
+
+            task = m_tasks.front();
+            m_tasks.pop();
+        }
+
+        task.first->Update(task.second);
+
+        {
+            std::lock_guard<std::mutex> guard(m_mutex);
+            --m_pending;
+        }
+
+        // Outside the lock: wait() only ever cares about the count reaching zero, and
+        // notifying while holding the mutex would just make the waiter block again.
+        m_taskDone.notify_all();
+    }
 }

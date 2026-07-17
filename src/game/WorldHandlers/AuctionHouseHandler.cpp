@@ -1439,11 +1439,22 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
     }
     else
     {
+        uint32 cutDebited = 0;
+
+        // Opened BEFORE the mails: Database::Execute queues onto the calling
+        // thread's open transaction, so both mails, the item rows, the auction
+        // DELETE and the seller's gold co-commit as one unit. Sending a mail
+        // first would make the returned item durable independently of the
+        // auction DELETE -- a failed DELETE then leaves the auction in the DB
+        // with its item already mailed, duplicating it on the next load.
+        CharacterDatabase.BeginTransaction();
+
         if (auction->bid)                                   // If we have a bid, we have to send him the money he paid
         {
             uint32 auctionCut = auction->GetAuctionCut();
             if (pl->GetMoney() < auctionCut)                // player doesn't have enough money, maybe message needed
             {
+                CharacterDatabase.RollbackTransaction();
                 return;
             }
 
@@ -1453,6 +1464,7 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
             }
 
             pl->ModifyMoney(-int32(auctionCut));
+            cutDebited = auctionCut;
         }
         // Return the item by mail
         std::ostringstream msgAuctionCanceledOwner;
@@ -1463,13 +1475,22 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
             .AddItem(pItem)
             .SendMailTo(pl, auction, MAIL_CHECK_MASK_COPIED);
 
-        // inform player, that auction is removed
-        SendAuctionCommandResult(auction, AUCTION_REMOVED, AUCTION_OK);
-        // Now remove the auction
-        CharacterDatabase.BeginTransaction();
         auction->DeleteFromDB();
         pl->SaveInventoryAndGoldToDB();
-        CharacterDatabase.CommitTransaction();
+
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            // Nothing durable landed. Undo the only in-memory mutation; the
+            // auction and its item stay live (the item survives in mAitems) so
+            // the seller can retry.
+            pl->ModifyMoney(int32(cutDebited));
+            SendAuctionCommandResult(auction, AUCTION_REMOVED, AUCTION_ERR_DATABASE);
+            sLog.outError("AH: cancel txn rolled back for auction %u; cut restored", auction->Id);
+            return;
+        }
+
+        // inform player, that auction is removed
+        SendAuctionCommandResult(auction, AUCTION_REMOVED, AUCTION_OK);
         sAuctionMgr.RemoveAItem(auction->itemGuidLow);
         auctionHouse->RemoveAuction(auction->Id);
 

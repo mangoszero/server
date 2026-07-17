@@ -52,18 +52,21 @@ if (_MYSQL_USE_PKGCONFIG)
 endif ()
 
 if(NOT MySQL_FOUND)
-# https://mariadb.org/mariadb/all-releases/
-  set(_MySQL_mariadb_versions 10.1 10.2 10.3 10.4 10.5 10.6 10.7 10.8 10.9 10.10 10.11
-                              11.0 11.1 11.2 11.3 11.4 11.5 11.6 11.7 11.8
-							  12.0 12.1 12.2)
-
   set(_MySQL_versions 5.4 5.5 5.6 5.7 8.0)
   set(_MySQL_paths)
-  foreach (_MySQL_version IN LISTS _MySQL_mariadb_versions)
-    list(APPEND _MySQL_paths
-      "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MariaDB ${_MySQL_version};INSTALLDIR]"
-      "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MariaDB ${_MySQL_version} (x64);INSTALLDIR]")
-  endforeach ()
+
+  # MariaDB ships a new minor/major version regularly, and its registry key
+  # and default install directory both embed the version number (e.g.
+  # "MariaDB 10.11"), so hardcoding every version ever released requires
+  # updating this file on every release. Instead, glob the default install
+  # directories for any "MariaDB *" folder, which finds whatever is actually
+  # installed regardless of version.
+  file(GLOB _MySQL_mariadb_install_dirs
+    "C:/Program Files/MariaDB */"
+    "C:/Program Files (x86)/MariaDB */")
+  list(APPEND _MySQL_paths ${_MySQL_mariadb_install_dirs})
+  unset(_MySQL_mariadb_install_dirs)
+
   foreach (_MySQL_version IN LISTS _MySQL_versions)
     list(APPEND _MySQL_paths
       "C:/Program Files/MySQL/MySQL Server ${_MySQL_version}/lib/opt"
@@ -72,7 +75,6 @@ if(NOT MySQL_FOUND)
   endforeach ()
   unset(_MySQL_version)
   unset(_MySQL_versions)
-  unset(_MySQL_mariadb_versions)
 
   find_path(MySQL_INCLUDE_DIR
     NAMES mysql.h

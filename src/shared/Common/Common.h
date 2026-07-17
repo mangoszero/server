@@ -90,6 +90,11 @@
 #include <ieeefp.h> // finite() on Solaris
 #endif
 
+// Containers and utilities that many translation units rely on. Common.h names them
+// explicitly, so dropping one is a visible change rather than a silent break.
+#include <array>
+#include <functional>
+#include <memory>
 #include <set>
 #include <list>
 #include <string>
@@ -99,82 +104,53 @@
 #include <algorithm>
 #include <thread>
 #include <atomic>
+#include <utility>
+#include <vector>
+#include <cinttypes>
+#include <shared_mutex>
 
 #include "Utilities/Errors.h"
 #include "LockedQueue/LockedQueue.h"
 #include "Threading/Threading.h"
 
-#include <ace/Basic_Types.h>
-#include <ace/Guard_T.h>
-#include <ace/RW_Thread_Mutex.h>
-#include <ace/Thread_Mutex.h>
-#include <ace/OS_NS_arpa_inet.h>
-
-// Old ACE versions (pre-ACE-5.5.4) not have this type (add for allow use at Unix side external old ACE versions)
-#if PLATFORM != PLATFORM_WINDOWS
-#  ifndef ACE_OFF_T
-
-/**
- * @brief
- *
- */
-typedef off_t ACE_OFF_T;
-#  endif
-#endif
-
+// The POSIX block below is deliberately explicit: much of the tree depends on these
+// system headers arriving through Common.h, so anything it does not name here is not
+// declared -- name it.
 #if PLATFORM == PLATFORM_WINDOWS
 #  if !defined (FD_SETSIZE)
 #    define FD_SETSIZE 4096
 #  endif
-#  include <ace/config-all.h>
+#  include <winsock2.h>
 #  include <ws2tcpip.h>
 #else
 #  include <sys/types.h>
 #  include <sys/ioctl.h>
 #  include <sys/socket.h>
+#  include <sys/stat.h>
+#  include <sys/time.h>
 #  include <netinet/in.h>
+#  include <arpa/inet.h>
 #  include <unistd.h>
 #  include <netdb.h>
+#  include <strings.h>   // strcasecmp/strncasecmp, for the stricmp/strnicmp aliases below
 #endif
 
 #if COMPILER == COMPILER_MICROSOFT
-
 #  include <float.h>
-
-#  define I32FMT "%08I32X"
-#  define I64FMT "%016I64X"
-#
-#  define vsnprintf _vsnprintf
-#  define finite(X) _finite(X)
-
 #else
-
 #  define stricmp strcasecmp
 #  define strnicmp strncasecmp
-
-#  define I32FMT "%08X"
-#  if ACE_SIZEOF_LONG == 8
-#    define I64FMT "%016lX"
-#  else
-#    define I64FMT "%016llX"
-#  endif /* ACE_SIZEOF_LONG == 8 */
-
 #endif
 
-#if defined(__APPLE__)
-#  ifdef I64FMT
-#    undef I64FMT
-#  endif
-#  define I64FMT "%016llX"
-#  define UI64FMTD "%llu"
-#else
-#  define UI64FMTD ACE_UINT64_FORMAT_SPECIFIER
-#endif
+// 64-bit printf specifiers and literals. <cinttypes> gives us these portably, so the
+// per-compiler ladder these used to need is gone.
+#define I32FMT   "%08" PRIX32
+#define I64FMT   "%016" PRIX64
+#define UI64FMTD "%" PRIu64
+#define SI64FMTD "%" PRId64
 
-#define UI64LIT(N) ACE_UINT64_LITERAL(N)
-
-#define SI64FMTD ACE_INT64_FORMAT_SPECIFIER
-#define SI64LIT(N) ACE_INT64_LITERAL(N)
+#define UI64LIT(N) UINT64_C(N)
+#define SI64LIT(N) INT64_C(N)
 
 /**
  * @brief
@@ -182,7 +158,7 @@ typedef off_t ACE_OFF_T;
  * @param f
  * @return float
  */
-inline float finiteAlways(float f) { return finite(f) ? f : 0.0f; }
+inline float finiteAlways(float f) { return std::isfinite(f) ? f : 0.0f; }
 
 #define atol(a) strtoul( a, NULL, 10)
 

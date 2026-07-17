@@ -20,29 +20,29 @@
  */
 
 #include "IpcChannel.h"
-#include "IpcOutboundNotifier.h"
+#include "IpcServerHandler.h"
+#include "IpcClientHandler.h"
 #include "Log/Log.h"
+
 #include <cstdio>
+#include <memory>
 
 // ===========================================================================
 // Concurrency model
 // ---------------------------------------------------------------------------
 // The facade (IpcServer / IpcClient) is used by the CALLER thread (mangosd's
-// world thread, or the child's service loop). The socket handler runs on a
-// separate REACTOR thread. To stay race-free and free of use-after-free:
+// world thread, or the child's service loop). The socket handler runs its own
+// receiver thread. To stay race-free:
 //
-//   - All handler-pointer access and all peer().send() / socket I/O happen on
-//     the reactor thread, never on the caller thread.
-//   - SendFrame() (caller thread) enqueues the frame into a thread-safe
-//     outbound queue and wakes the reactor via ACE_Reactor::notify(). The
-//     reactor-thread notifier (IpcOutboundNotifier::handle_exception) drains
-//     the queue and performs the actual send through the live handler.
-//   - Liveness is a std::atomic<bool> published by the reactor thread on READY
-//     and cleared on handle_close(); Connected() just reads the atomic.
+//   - Liveness / run-id / write-authority are std::atomics on the shared,
+//     reference-counted IpcLink, published by the receiver thread.
+//   - SendFrame() copies the live handler shared_ptr from the link under its
+//     mutex and sends outside the lock; the copied reference keeps the handler
+//     alive for the duration of the send even if the receiver thread closes
+//     concurrently, and the handler serialises the socket write internally.
 //
-// The IpcLink object couples the two threads. It is reference-counted and
-// outlives both the handler and the reactor thread, so the notifier can always
-// touch it safely.
+// The IpcLink outlives both the handler and the driver thread, so the reliable
+// lane and atomics can always be touched safely.
 // ===========================================================================
 
 // ===========================================================================
@@ -53,7 +53,7 @@ IpcServer::IpcServer()
     : m_inbound(IPC_INBOUND_QUEUE_CAP, IPC_INBOUND_BYTE_CAP),
       m_link(nullptr),
       m_thread(nullptr),
-      m_aceThread(nullptr)
+      m_worker(nullptr)
 {
 }
 
@@ -70,15 +70,13 @@ bool IpcServer::Start(const char* host, uint16 port, const std::string& secret)
         return false;
     }
 
-    // Create the coupling object (one ref held by the facade); the thread takes
-    // its own ref in its constructor.
+    // Create the coupling object (one ref for the facade; the driver thread
+    // takes its own ref in its constructor).
     m_link = new IpcServerLink();
     m_link->AddRef();
 
     m_thread = new IpcThread(host, port, secret, &m_inbound, m_link);
-    m_aceThread = new ACE_Based::Thread(m_thread);
-    // ACE_Based::Thread::start() is called in its constructor when given a
-    // Runnable (see Threading.h).
+    m_worker = new MaNGOS::Thread(m_thread); // starts the thread immediately
     return true;
 }
 
@@ -88,14 +86,12 @@ void IpcServer::Stop()
     {
         m_thread->Stop();
     }
-    if (m_aceThread)
+    if (m_worker)
     {
-        m_aceThread->wait();
-        delete m_aceThread;
-        m_aceThread = nullptr;
+        m_worker->wait();
+        delete m_worker;   // joins + drops the last reference, reclaiming m_thread
+        m_worker = nullptr;
     }
-    // m_thread is deleted by ACE_Based reference counting when decReference()
-    // reaches 0.
     m_thread = nullptr;
 
     if (m_link)
@@ -107,47 +103,18 @@ void IpcServer::Stop()
 
 bool IpcServer::SendFrame(const IpcMessage& msg)
 {
-    if (!m_link)
+    if (!m_link || !m_link->live.load(std::memory_order_acquire))
     {
         return false;
     }
 
-    // Only enqueue while the channel is live; otherwise the frame would sit in
-    // the queue with no handler to drain it.
-    if (!m_link->live.load(std::memory_order_acquire))
+    std::shared_ptr<IpcServerHandler> h = m_link->GetSendTarget();
+    if (!h)
     {
         return false;
     }
 
-    // Enqueue on the caller thread (thread-safe queue), then poke the reactor.
-    if (!m_link->outbound.push(msg))
-    {
-        sLog.outError("IpcServer::SendFrame: outbound queue full"
-                      " - frame 0x%04X dropped", msg.op);
-        return false;
-    }
-
-    // Poke the reactor under m_notifyMtx so the notify can never race teardown
-    // destroying the reactor/notifier. Teardown nulls reactor/notifier under
-    // this same mutex AFTER joining the reactor thread, so here reactor is
-    // either still valid (and notify is safe) or already null (we skip).
-    // ACE_Reactor::notify() is documented thread-safe; the notifier's
-    // handle_exception() runs on the reactor thread and drains the queue.
-    std::lock_guard<std::mutex> guard(m_link->m_notifyMtx);
-
-    ACE_Reactor* r = m_link->reactor.load(std::memory_order_acquire);
-    if (!r)
-    {
-        return false;
-    }
-
-    if (r->notify(m_link->notifier) == -1)
-    {
-        sLog.outError("IpcServer::SendFrame: reactor notify failed");
-        return false;
-    }
-
-    return true;
+    return h->SendFrame(msg) == 0;
 }
 
 bool IpcServer::PopInbound(IpcMessage& out)
@@ -157,8 +124,6 @@ bool IpcServer::PopInbound(IpcMessage& out)
 
 bool IpcServer::PopReliable(IpcMessage& out)
 {
-    // The reliable lane lives on the shared, reference-counted link so it
-    // survives child reconnects (the reactor pushes, the world thread drains).
     return m_link && m_link->PopReliable(out);
 }
 
@@ -174,12 +139,18 @@ bool IpcServer::Connected() const
 
 void IpcServer::SetRunId(uint32 runId)
 {
-    IpcServerHandler::SetPendingRunId(runId);
+    if (m_link)
+    {
+        m_link->runId.store(runId, std::memory_order_release);
+    }
 }
 
 void IpcServer::SetWriteAuthority(bool on)
 {
-    IpcServerHandler::SetPendingWriteAuthority(on);
+    if (m_link)
+    {
+        m_link->writeAuthority.store(on ? 1u : 0u, std::memory_order_release);
+    }
 }
 
 // ===========================================================================
@@ -190,7 +161,7 @@ IpcClient::IpcClient()
     : m_inbound(IPC_INBOUND_QUEUE_CAP),
       m_link(nullptr),
       m_thread(nullptr),
-      m_aceThread(nullptr)
+      m_worker(nullptr)
 {
 }
 
@@ -210,9 +181,8 @@ bool IpcClient::Connect(const char* host, uint16 port, const std::string& secret
     m_link = new IpcClientLink();
     m_link->AddRef();
 
-    m_thread = new IpcClientThread(host, port, secret,
-                                   &m_inbound, m_link);
-    m_aceThread = new ACE_Based::Thread(m_thread);
+    m_thread = new IpcClientThread(host, port, secret, &m_inbound, m_link);
+    m_worker = new MaNGOS::Thread(m_thread);
     return true;
 }
 
@@ -222,11 +192,11 @@ void IpcClient::Stop()
     {
         m_thread->Stop();
     }
-    if (m_aceThread)
+    if (m_worker)
     {
-        m_aceThread->wait();
-        delete m_aceThread;
-        m_aceThread = nullptr;
+        m_worker->wait();
+        delete m_worker;
+        m_worker = nullptr;
     }
     m_thread = nullptr;
 
@@ -239,41 +209,18 @@ void IpcClient::Stop()
 
 bool IpcClient::SendFrame(const IpcMessage& msg)
 {
-    if (!m_link)
+    if (!m_link || !m_link->live.load(std::memory_order_acquire))
     {
         return false;
     }
 
-    if (!m_link->live.load(std::memory_order_acquire))
+    std::shared_ptr<IpcClientHandler> h = m_link->GetSendTarget();
+    if (!h)
     {
         return false;
     }
 
-    if (!m_link->outbound.push(msg))
-    {
-        fprintf(stderr, "IpcClient::SendFrame: outbound queue full"
-                        " - frame 0x%04X dropped\n",
-                        static_cast<unsigned>(msg.op));
-        return false;
-    }
-
-    // See IpcServer::SendFrame: notify under m_notifyMtx so it cannot race
-    // teardown destroying the reactor/notifier.
-    std::lock_guard<std::mutex> guard(m_link->m_notifyMtx);
-
-    ACE_Reactor* r = m_link->reactor.load(std::memory_order_acquire);
-    if (!r)
-    {
-        return false;
-    }
-
-    if (r->notify(m_link->notifier) == -1)
-    {
-        fprintf(stderr, "IpcClient::SendFrame: reactor notify failed\n");
-        return false;
-    }
-
-    return true;
+    return h->SendFrame(msg) == 0;
 }
 
 bool IpcClient::PopInbound(IpcMessage& out)
@@ -293,18 +240,10 @@ bool IpcClient::Connected() const
 
 uint32 IpcClient::RunId() const
 {
-    if (!m_link)
-    {
-        return 0;
-    }
-    return m_link->runId.load(std::memory_order_acquire);
+    return m_link ? m_link->runId.load(std::memory_order_acquire) : 0u;
 }
 
 bool IpcClient::WriteAuthority() const
 {
-    if (!m_link)
-    {
-        return false;
-    }
-    return m_link->writeAuthority.load(std::memory_order_acquire) != 0u;
+    return m_link && m_link->writeAuthority.load(std::memory_order_acquire) != 0u;
 }

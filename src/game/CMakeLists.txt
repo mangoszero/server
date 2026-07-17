@@ -289,6 +289,8 @@ target_link_libraries(game
         g3dlite
         $<$<BOOL:${SCRIPT_LIB_SD3}>:mangosscript>
         $<$<BOOL:${SCRIPT_LIB_ELUNA}>:lualib>
+    PRIVATE
+        mangos_openssl_strict
 )
 
 # Generate precompiled header

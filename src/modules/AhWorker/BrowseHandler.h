@@ -26,7 +26,7 @@
 #include "BrowseMessages.h"
 #include "ServiceDatabase.h"
 #include "IpcChannel.h"            // IpcClient
-#include "Threading/Threading.h"   // ACE_Based::Runnable, Thread
+#include "Threading/Threading.h"   // MaNGOS::Runnable, Thread
 #include "BoundedQueue.h"          // explicit-capacity thread-safe queue
 #include <atomic>
 #include <string>
@@ -93,7 +93,7 @@ namespace BrowseHandler
 /// Dedicated worker browse thread. Single thread (FIFO, open-d). Owns per-thread
 /// MySQL init/teardown (C4). Explicit-capacity bounded queue (C4: BoundedQueue
 /// has no default ctor). Atomic stop. Joined before DB/client shutdown.
-class BrowseThread : public ACE_Based::Runnable
+class BrowseThread : public MaNGOS::Runnable
 {
     public:
         static const size_t QUEUE_CAP      = 256u;                  ///< max queued browses

@@ -43,16 +43,21 @@
 #include "ConsoleLogWriter.h"
 #include "Policies/Singleton.h"
 #include "Config/Config.h"
+#include "Utilities/ConsoleStyle.h"
 #include "Utilities/Util.h"
 #include "Utilities/ByteBuffer.h"
 #include "Utilities/ProgressBar.h"
 
 #include <stdarg.h>
+#include <cstdio>
 #include <fstream>
 #include <iostream>
+#include <string>
 #include <utility>
+#include <chrono>
+#include <mutex>
+#include <thread>
 
-#include <ace/OS_NS_unistd.h>
 
 INSTANTIATE_SINGLETON_1(Log);
 
@@ -110,8 +115,8 @@ Log::Log()
 #endif /* ENABLE_ELUNA */
 
 eventAiErLogfile(NULL), scriptErrLogFile(NULL), worldLogfile(NULL), wardenLogfile(NULL),
-    m_consoleBody(NULL), m_consoleThread(NULL), m_consoleAsync(false), m_colored(false),
-    m_includeTime(false), m_gmlog_per_account(false), m_scriptLibName(NULL)
+    m_consoleBody(NULL), m_consoleThread(NULL), m_consoleAsync(false), m_consoleFilter(NULL),
+    m_colored(false), m_includeTime(false), m_gmlog_per_account(false), m_scriptLibName(NULL)
 {
     Initialize();
 }
@@ -344,7 +349,7 @@ void Log::Flush()
     fflush(stdout);
 
     {
-        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
+        std::lock_guard<std::mutex> fileGuard(m_fileMtx);
         if (logfile != NULL)
         {
             fflush(logfile);
@@ -352,7 +357,7 @@ void Log::Flush()
     }
 
     {
-        ACE_GUARD(ACE_Thread_Mutex, worldGuard, m_worldLogMtx);
+        std::lock_guard<std::mutex> worldGuard(m_worldLogMtx);
         if (worldLogfile != NULL)
         {
             fflush(worldLogfile);
@@ -376,14 +381,27 @@ std::string Log::ConsoleTimePrefix() const
 
 void Log::ConsoleEmit(bool toStdout, Color color, bool applyColor, const char* fmt, va_list* ap)
 {
+    // Format first, so the filter sees the message the way the user wrote it
+    // (the time prefix, if any, is prepended only once the line survives).
+    std::string message = vutf8format(fmt, ap);
+
+    // Console-side filter: the startup UI folds the ">> Loaded N rows" result
+    // lines into the step they belong to instead of printing them. The caller
+    // still writes the line to the log file, so nothing is lost from the record.
+    // stderr (outError/outErrorDb) is never offered: errors must always show.
+    if (toStdout && m_consoleFilter && m_consoleFilter(message.c_str()))
+    {
+        return;
+    }
+
     // Record text carries NO trailing newline: the newline is emitted after
     // ResetColor (here and in ConsoleLogWriter::Emit) so the line terminator
     // stays OUTSIDE the color span, byte-matching the legacy ordering
     // (SetColor -> body -> ResetColor -> "\n").
     std::string body;
-    body.reserve(256);
+    body.reserve(message.size() + 16);
     body += ConsoleTimePrefix();
-    body += vutf8format(fmt, ap);
+    body += message;
 
     if (m_consoleAsync && m_consoleBody)
     {
@@ -398,6 +416,7 @@ void Log::ConsoleEmit(bool toStdout, Color color, bool applyColor, const char* f
     {
         // synchronous fallback (thread not started yet / already stopped)
         FILE* out = toStdout ? stdout : stderr;
+        Log::ClearConsoleLine(out);
         if (applyColor)
         {
             Log::SetColor(toStdout, color);
@@ -417,6 +436,13 @@ void Log::ConsoleEmit(bool toStdout, Color color, bool applyColor, const char* f
 
 void Log::ConsoleEmitBlank(bool toStdout)
 {
+    // A blank spacer would break a line the startup UI is repainting in place,
+    // so offer it to the filter too (as the empty string) before drawing it.
+    if (toStdout && m_consoleFilter && m_consoleFilter(""))
+    {
+        return;
+    }
+
     // Uncolored variant: text is the (possibly empty) time prefix only; the
     // newline is appended after it, matching the legacy bare fprintf("\n").
     std::string b = ConsoleTimePrefix();
@@ -431,6 +457,7 @@ void Log::ConsoleEmitBlank(bool toStdout)
     else
     {
         FILE* out = toStdout ? stdout : stderr;
+        Log::ClearConsoleLine(out);
         fwrite(b.data(), 1, b.size(), out);
         fputc('\n', out);
         if (!toStdout)
@@ -466,7 +493,44 @@ void Log::ConsoleEmitRaw(const std::string& bytes)
     {
         fwrite(bytes.data(), 1, bytes.size(), stdout);
         fflush(stdout);
+        Log::MarkConsoleLineDirty(bytes[bytes.size() - 1] != '\n');
     }
+}
+
+// Cursor bookkeeping for in-place repaints. Written only by whoever currently
+// owns stdout -- the writer thread while it runs, the producer on the
+// synchronous fallback before it starts / after it stops -- and those two never
+// overlap (see the StopConsoleThread invariant), so a plain bool is sufficient.
+namespace
+{
+    bool s_consoleLineDirty = false;
+}
+
+void Log::MarkConsoleLineDirty(bool dirty)
+{
+    s_consoleLineDirty = dirty;
+}
+
+void Log::ClearConsoleLine(FILE* out)
+{
+    if (!s_consoleLineDirty)
+    {
+        return;
+    }
+
+    if (ConsoleStyle::Colored())
+    {
+        fputs("\r\x1b[K", out);                             // CSI K: erase to end of line
+    }
+    else
+    {
+        const std::string blank(size_t(ConsoleStyle::Width() - 1), ' ');
+        fputc('\r', out);
+        fwrite(blank.data(), 1, blank.size(), out);
+        fputc('\r', out);
+    }
+
+    s_consoleLineDirty = false;
 }
 
 void Log::StartConsoleThread()
@@ -476,12 +540,12 @@ void Log::StartConsoleThread()
         return;                                             // idempotent (realmd double-init)
     }
     m_consoleBody = new ConsoleLogWriter();
-    m_consoleThread = new ACE_Based::Thread(m_consoleBody); // ctor auto-starts run()
+    m_consoleThread = new MaNGOS::Thread(m_consoleBody); // ctor auto-starts run()
     m_consoleAsync = true;
 }
 
 // INVARIANT: call only after every console-producing thread is quiesced (world +
-// map-update workers and ACE tasks joined). After m_consoleAsync=false a straggler
+// map-update workers joined). After m_consoleAsync=false a straggler
 // producer takes the synchronous fallback, but a producer already past the
 // m_consoleAsync check in ConsoleEmit could still touch m_consoleBody while we
 // delete it; the shutdown ordering at the call site guarantees no such concurrent
@@ -697,7 +761,7 @@ void Log::outString()
     ConsoleEmitBlank(true);
     if (logfile)
     {
-        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
+        std::lock_guard<std::mutex> fileGuard(m_fileMtx);
         outTimestamp(logfile);
         fprintf(logfile, "\n");
     }
@@ -718,7 +782,7 @@ void Log::outString(const char* str, ...)
 
     if (logfile)
     {
-        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
+        std::lock_guard<std::mutex> fileGuard(m_fileMtx);
         outTimestamp(logfile);
 
         va_start(ap, str);
@@ -959,7 +1023,7 @@ void Log::outBasic(const char* str, ...)
 
     if (logfile && m_logFileLevel >= LOG_LVL_BASIC)
     {
-        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
+        std::lock_guard<std::mutex> fileGuard(m_fileMtx);
         va_list ap;
         outTimestamp(logfile);
         va_start(ap, str);
@@ -986,7 +1050,7 @@ void Log::outDetail(const char* str, ...)
 
     if (logfile && m_logFileLevel >= LOG_LVL_DETAIL)
     {
-        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
+        std::lock_guard<std::mutex> fileGuard(m_fileMtx);
         outTimestamp(logfile);
 
         va_list ap;
@@ -1015,7 +1079,7 @@ void Log::outDebug(const char* str, ...)
 
     if (logfile && m_logFileLevel >= LOG_LVL_DEBUG)
     {
-        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
+        std::lock_guard<std::mutex> fileGuard(m_fileMtx);
         outTimestamp(logfile);
 
         va_list ap;
@@ -1225,7 +1289,7 @@ void Log::outWorldPacketDump(uint32 socket, uint32 opcode, char const* opcodeNam
         return;
     }
 
-    ACE_GUARD(ACE_Thread_Mutex, GuardObj, m_worldLogMtx);
+    std::lock_guard<std::mutex> GuardObj(m_worldLogMtx);
 
     outTimestamp(worldLogfile);
 
@@ -1309,7 +1373,7 @@ void Log::WaitBeforeContinueIfNeed()
         for (int i = 0; i < mode; ++i)
         {
             bar.step();
-            ACE_OS::sleep(1);
+            std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     }
 }

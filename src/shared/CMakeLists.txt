@@ -115,12 +115,59 @@ set(SRC_GRP_LOG
 source_group("Log" FILES ${SRC_GRP_LOG})
 
 set(SRC_GRP_THREAD
-  Threading/DelayExecutor.cpp
-  Threading/DelayExecutor.h
+  Threading/ThreadLocalStore.h
   Threading/Threading.cpp
   Threading/Threading.h
 )
 source_group("Threading" FILES ${SRC_GRP_THREAD})
+
+# Optional io_uring backend. Off by default: the epoll reactor is the supported Linux
+# default, and liburing is not present on every distro CI builds on. When enabled it
+# defines MANGOS_USE_IO_URING, which is what net/Server.hpp keys the backend choice on.
+option(WITH_IO_URING "Build the io_uring networking backend (Linux only, needs liburing)" OFF)
+set(MANGOS_USE_IO_URING OFF)
+if(WITH_IO_URING AND UNIX AND NOT APPLE)
+  find_library(URING_LIBRARY NAMES uring)
+  find_path(URING_INCLUDE_DIR NAMES liburing.h)
+  if(URING_LIBRARY AND URING_INCLUDE_DIR)
+    set(MANGOS_USE_IO_URING ON)
+    message(STATUS "Networking backend: io_uring (${URING_LIBRARY})")
+  else()
+    message(WARNING "WITH_IO_URING requested but liburing was not found; "
+                    "falling back to the epoll reactor")
+  endif()
+endif()
+
+# Shared networking engine. The backends self-collapse on the platforms they do not
+# serve (IocpServer is #ifdef _WIN32, the reactor is #ifndef _WIN32), so they can all
+# be listed unconditionally. io_uring is the exception: it needs liburing, so it is
+# only compiled when the option above resolved.
+set(SRC_GRP_NET
+  net/BindAddress.cpp
+  net/BindAddress.hpp
+  net/FlowControl.hpp
+  net/ISession.hpp
+  net/SendQueue.hpp
+  net/Server.hpp
+  net/iocp/IocpServer.cpp
+  net/iocp/IocpServer.hpp
+  net/reactor/Connection.hpp
+  net/reactor/EpollPoller.cpp
+  net/reactor/EpollPoller.hpp
+  net/reactor/KqueuePoller.cpp
+  net/reactor/KqueuePoller.hpp
+  net/reactor/Poller.hpp
+  net/reactor/PollerFactory.cpp
+  net/reactor/ReactorServer.cpp
+  net/reactor/ReactorServer.hpp
+)
+if(MANGOS_USE_IO_URING)
+  list(APPEND SRC_GRP_NET
+    net/uring/UringServer.cpp
+    net/uring/UringServer.hpp
+  )
+endif()
+source_group("net" FILES ${SRC_GRP_NET})
 
 set(SRC_GRP_PLATFORM
   Platform/CompilerDefs.h
@@ -129,11 +176,7 @@ set(SRC_GRP_PLATFORM
 source_group("Platform" FILES ${SRC_GRP_PLATFORM})
 
 set(SRC_GRP_POLICIES
-  Policies/CreationPolicy.h
-  Policies/ObjectLifeTime.cpp
-  Policies/ObjectLifeTime.h
   Policies/Singleton.h
-  Policies/ThreadingModel.h
 )
 source_group("Policies" FILES ${SRC_GRP_POLICIES})
 
@@ -155,10 +198,15 @@ source_group("Services" FILES ${SRC_GRP_SVC})
 set(SRC_GRP_UTILITIES
   Utilities/ByteBuffer.cpp
   Utilities/ByteBuffer.h
+  Utilities/ConsoleStyle.cpp
+  Utilities/ConsoleStyle.h
   Utilities/Errors.h
   Utilities/ProgressBar.cpp
   Utilities/ProgressBar.h
   Utilities/ProgressBarRender.h
+  Utilities/StartupUI.cpp
+  Utilities/StartupUI.h
+  Utilities/StartupUIDemo.cpp
   Utilities/RNGen.h
   Utilities/ScheduledExit.cpp
   Utilities/ScheduledExit.h
@@ -212,6 +260,7 @@ add_library(shared STATIC
     ${SRC_GRP_GAMESYSTEM}
     ${SRC_GRP_LOCKQ}
     ${SRC_GRP_LOG}
+    ${SRC_GRP_NET}
     ${SRC_GRP_THREAD}
     ${SRC_GRP_PLATFORM}
     ${SRC_GRP_POLICIES}
@@ -235,15 +284,26 @@ target_compile_definitions(shared
         MANGOS_ENDIAN=${ENDIAN_VALUE}
         $<$<BOOL:${ENDIAN_VALUE}>:ARCH_IS_BIG_ENDIAN>
         $<$<BOOL:${SCRIPT_LIB_ELUNA}>:ENABLE_ELUNA ELUNA_EXPANSION=0 ELUNA_MANGOS>
+        # PUBLIC: net/Server.hpp is a header, so every consumer must agree on which
+        # backend it selects, or they would disagree about what net::Server even is.
+        $<$<BOOL:${MANGOS_USE_IO_URING}>:MANGOS_USE_IO_URING>
 )
 
 target_link_libraries(shared
     PUBLIC
-        ace
         utf8
         MySQL::MySQL
         ${CMAKE_DL_LIBS}
-        OpenSSL::Crypto
-        OpenSSL::SSL
+        mangos_openssl
         $<$<BOOL:${WIN32}>:dbghelp>
+        # Winsock + the AcceptEx/GetAcceptExSockaddrs extensions used by IocpServer.
+        $<$<BOOL:${WIN32}>:ws2_32>
+        $<$<BOOL:${WIN32}>:mswsock>
+        $<$<BOOL:${MANGOS_USE_IO_URING}>:${URING_LIBRARY}>
+    PRIVATE
+        mangos_openssl_strict
 )
+
+if(MANGOS_USE_IO_URING)
+    target_include_directories(shared PUBLIC ${URING_INCLUDE_DIR})
+endif()

@@ -121,6 +121,17 @@ else()
 endif()
 
 # =============================================================================
+# Runtime library search path (RPATH)
+# =============================================================================
+if(APPLE)
+    set(CMAKE_INSTALL_RPATH "@loader_path/../lib")
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+elseif(UNIX)
+    set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+endif()
+
+# =============================================================================
 # Dependencies
 # =============================================================================
 
@@ -134,12 +145,56 @@ if(NOT WITHOUT_GIT)
 endif()
 
 find_package(Threads REQUIRED)
-find_package(OpenSSL REQUIRED)
+find_package(OpenSSL 3.0 REQUIRED)
 find_package(MySQL REQUIRED)
+
+# =============================================================================
+# OpenSSL policy
+#
+# OpenSSL 3.x is the baseline: there are no version conditionals left in src/.
+# Every OpenSSL decision lives here, in two interface targets:
+#
+#   mangos_openssl        - what to link against and where the headers live.
+#                           Linked PUBLIC by anything exposing OpenSSL types in
+#                           its own headers (`shared`), so consumers inherit it.
+#
+#   mangos_openssl_strict - the API level we hold ourselves to. Together these
+#                           two definitions delete the *declarations* of
+#                           everything OpenSSL deprecated up to 3.0 -- the
+#                           low-level MD5_*, SHA1_*, HMAC_CTX and SSLeay_*
+#                           families. Reaching for the old API is then a
+#                           compile error rather than a warning nobody reads.
+#
+#                           Link it PRIVATE, always: it must not leak into the
+#                           vendored code under dep/, which still uses the old API.
+# =============================================================================
+add_library(mangos_openssl INTERFACE)
+target_link_libraries(mangos_openssl
+    INTERFACE
+        OpenSSL::SSL
+        OpenSSL::Crypto
+)
+
+add_library(mangos_openssl_strict INTERFACE)
+target_compile_definitions(mangos_openssl_strict
+    INTERFACE
+        OPENSSL_API_COMPAT=0x30000000L
+        OPENSSL_NO_DEPRECATED
+)
 
 find_package(ZLIB QUIET)
 find_package(BZip2 QUIET)
 
+# dep/lualib (the Lua build used by Eluna) links against readline by its bare
+# library name and is not itself touched here; find_package(Readline) below
+# declares a GLOBAL IMPORTED target literally named `readline` (see
+# cmake/FindReadline.cmake) before that subdirectory is added, so its
+# existing bare-name references resolve to a properly-detected library
+# instead of an unqualified linker search. Readline has no Windows build and
+# is only needed when Eluna is being built.
+if(NOT WIN32 AND SCRIPT_LIB_ELUNA)
+  find_package(Readline REQUIRED)
+endif()
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenRevision.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/EnsureVersion.cmake)

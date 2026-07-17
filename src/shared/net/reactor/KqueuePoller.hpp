@@ -22,25 +22,39 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#ifndef ANTIFREEZE_THREAD
-#define ANTIFREEZE_THREAD
+#pragma once
+#include "net/reactor/Poller.hpp"
+#include <cstdint>
 
-#include "ace/Task.h"
-#include "Common.h"
+// kqueue(2): FreeBSD / Darwin / NetBSD / OpenBSD / DragonFly.
+#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__NetBSD__) || \
+    defined(__OpenBSD__) || defined(__DragonFly__)
+#define MANGOS_HAVE_KQUEUE 1
+#endif
 
-class AntiFreezeThread : public ACE_Task_Base
-{
-    public:
-        explicit AntiFreezeThread(uint32 delay);
-        int open(void*) override;
-        int svc() override;
+#ifdef MANGOS_HAVE_KQUEUE
 
-    private:
-        uint32 m_loops;
-        uint32 m_lastchange;
-        uint32 w_loops;
-        uint32 w_lastchange;
-        uint32 delaytime_;
+namespace net {
+
+class KqueuePoller final : public Poller {
+public:
+    ~KqueuePoller() override { shutdown(); }
+
+    bool init() override;
+    bool add(int fd, uint32_t interest, void* udata) override;
+    bool mod(int fd, uint32_t interest, void* udata) override;
+    bool del(int fd) override;
+    int  wait(PollerEvent* out, int maxEvents) override;
+    void wake() override;
+    void shutdown() override;
+    const char* name() const override { return "kqueue"; }
+
+private:
+    int m_kq = -1;
+    // EVFILT_USER identifier used as the cross-thread wakeup source.
+    static constexpr uintptr_t kWakeIdent = 1;
 };
 
-#endif
+} // namespace net
+
+#endif // MANGOS_HAVE_KQUEUE

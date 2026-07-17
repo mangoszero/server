@@ -2,12 +2,17 @@ name: Linux Build (GCC + Clang)
 
 on:
   push:
-    branches: [ master, devel ]
+    branches: [master, devel]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 permissions:
   contents: read
+
+# A second push to the same branch makes the first run's result worthless.
+concurrency:
+  group: linux-build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -34,21 +39,25 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      - name: Cache CMake build
+      # ccache, not a cached build directory: actions/checkout rewrites every source file,
+      # so restored objects are always older than their sources and make rebuilds everything.
+      # ccache keys on translation-unit content instead. github.sha keeps the key unique so
+      # the cache is always re-saved; restore-keys seeds it from the newest previous run.
+      - name: Cache ccache
         uses: actions/cache@v4
         with:
-          path: _build
-          key: ${{ runner.os }}-${{ matrix.name }}-cmake-${{ hashFiles('**/CMakeLists.txt') }}
+          path: ~/.cache/ccache
+          key: ${{ runner.os }}-${{ matrix.name }}-ccache-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.name }}-cmake-
+            ${{ runner.os }}-${{ matrix.name }}-ccache-
 
       - name: Install build dependencies
         run: |
           sudo apt-get update -qq
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-            git cmake make build-essential \
+            git cmake make build-essential ccache \
             libssl-dev libbz2-dev default-libmysqlclient-dev \
-            libace-dev libreadline-dev \
+            libreadline-dev \
             ${{ matrix.pkg }}
 
       - name: Configure project
@@ -60,16 +69,19 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=../_install \
             -DCMAKE_C_COMPILER=${{ matrix.cc }} \
             -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DBUILD_TOOLS=1 \
             -DBUILD_MANGOSD=1 \
             -DBUILD_REALMD=1 \
             -DSOAP=1 \
             -DSCRIPT_LIB_ELUNA=1 \
-            -DSCRIPT_LIB_SD3_GATE=1 \
+            -DSCRIPT_LIB_SD3=1 \
             -DPLAYERBOTS=1 \
             -DUSE_STORMLIB=1 \
             -DBUILD_AH_SERVICE=1 \
-            -DPCH=0
+            -DPCH=0 \
+            --warn-uninitialized
 
       - name: Build and install
         run: |
@@ -86,3 +98,7 @@ jobs:
           echo "$out"
           echo "$out" | grep -q "intent codec selftest OK" || { echo "MISSING: intent codec selftest OK"; exit 1; }
           echo "$out" | grep -q "ipc selftest OK"           || { echo "MISSING: ipc selftest OK"; exit 1; }
+
+      - name: ccache statistics
+        if: always()
+        run: ccache -s

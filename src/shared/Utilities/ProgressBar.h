@@ -28,6 +28,7 @@
 #include "Platform/Define.h"
 
 #include <cstddef>
+#include <string>
 
 /**
  * @brief
@@ -83,6 +84,32 @@ class BarGoLink
          * @param sink
          */
         static void SetConsoleSink(ConsoleSink sink);
+
+        /**
+         * @brief Optional renderer for one bar redraw.
+         *
+         * mangosd's startup UI installs one so the bar is drawn as part of the
+         * step line it belongs to (label, blocks, percentage, rows and elapsed
+         * time on a single line that is repainted in place). It also lets the UI
+         * learn each step's row count, which is what @p total carries.
+         *
+         * When no renderer is installed -- realmd, the offline tools -- the
+         * legacy ASCII bar in ProgressBarRender is emitted, unchanged.
+         *
+         * @param done      rows processed so far
+         * @param total     rows expected in this bar
+         * @param elapsedMs milliseconds since the bar was created
+         * @param finished  true for the final call, made when the bar is torn down
+         * @return the exact bytes of this redraw (carrying their own '\r'/'\n');
+         *         may be empty to draw nothing
+         */
+        typedef std::string (*Renderer)(int done, int total, uint32 elapsedMs, bool finished);
+
+        /**
+         * @brief Install the styled renderer. Passing NULL restores the legacy bar.
+         * @param renderer
+         */
+        static void SetRenderer(Renderer renderer);
     private:
         /**
          * @brief
@@ -91,15 +118,23 @@ class BarGoLink
          */
         void init(int row_count);
 
+        /// Hand one built redraw to the active sink.
+        void emit(std::string const& bytes);
+
+        /// Milliseconds since this bar was constructed.
+        uint32 elapsedMs() const;
+
         /// Default synchronous sink: fwrite(stdout)+fflush (legacy behaviour).
         static void DefaultSink(char const* bytes, size_t len);
 
         static ConsoleSink m_sink; /**< active console sink for built bar redraws */
+        static Renderer m_renderer; /**< active styled renderer, or NULL for the legacy bar */
         static bool m_showOutput; /**< not recommended change with existed active bar */
 
         int rec_no; /**< TODO */
         int rec_pos; /**< TODO */
         int num_rec; /**< TODO */
         int indic_len; /**< TODO */
+        uint64 start_ms; /**< construction time, for the elapsed-time readout */
 };
 #endif

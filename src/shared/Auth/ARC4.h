@@ -35,6 +35,11 @@
  *
  * ARC4 is a stream cipher that uses a key to generate a keystream.
  * This class provides ARC4 encryption and decryption functionality using OpenSSL.
+ *
+ * @note RC4 lives in OpenSSL's legacy provider. Loading it is the daemon's
+ * job, done once at startup (see OpenSSLProviderManager in mangosd's main());
+ * an ARC4 instance does not load it, so constructing one before that point
+ * will fail to initialize the cipher.
  */
 class ARC4
 {
@@ -44,25 +49,21 @@ class ARC4
          * @param len Length of the key in bytes
          */
         ARC4(uint8 len);
-
         /**
          * @brief Constructor with seed data
          * @param seed Pointer to the seed/key data
          * @param len Length of the seed data in bytes
          */
         ARC4(uint8 *seed, uint8 len);
-
         /**
          * @brief Destructor
          */
         ~ARC4();
-
         /**
          * @brief Initialize the cipher with seed data
          * @param seed Pointer to the seed/key data
          */
         void Init(uint8 *seed);
-
         /**
          * @brief Update/encrypt data using the cipher
          * @param len Length of the data to process
@@ -70,9 +71,6 @@ class ARC4
          */
         void UpdateData(int len, uint8 *data);
     private:
-#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
-        OpenSSLProviderManager m_providerManager;  /**< RAII provider management */
-#endif
         OpenSSLCipherContext m_cipherContext;        /**< RAII cipher context */
 };
 

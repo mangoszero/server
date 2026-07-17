@@ -27,6 +27,7 @@
 #define _WARDENCHECKMGR_H
 
 #include <map>
+#include <shared_mutex>
 #include "BigNumber.h"
 
 /**
@@ -125,7 +126,7 @@ class WardenCheckMgr
         void LoadWardenOverrides();
 
     private:
-        typedef ACE_RW_Thread_Mutex LOCK;
+        typedef std::shared_mutex LOCK;
         typedef std::multimap<uint16, WardenCheck*> CheckMap;
         typedef std::multimap<uint16, WardenCheckResult*> CheckResultMap;
 

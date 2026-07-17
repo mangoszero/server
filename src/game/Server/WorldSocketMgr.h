@@ -31,73 +31,41 @@
 #ifndef MANGOS_H_WORLDSOCKETMGR
 #define MANGOS_H_WORLDSOCKETMGR
 
-#include <ace/Basic_Types.h>
-#include <ace/Singleton.h>
-#include <ace/TSS_T.h>
-#include <ace/INET_Addr.h>
-#include <ace/Task.h>
-#include <ace/Acceptor.h>
+#include "Common.h"
+#include "Policies/Singleton.h"
 
-class WorldSocket;
+#include "net/Server.hpp"
+
+#include <cstdint>
+#include <string>
 
 /**
- * @brief World socket manager class
- *
- * This is a pool of threads designed to be used by an ACE_TP_Reactor.
- * Manages all sockets connected to peers.
+ * Owns the world server's listening socket: starts a net::Server on the world port
+ * with a factory that mints one WorldSocket per accepted connection. The engine owns
+ * the threads, sockets and byte plumbing; everything protocol-shaped lives in WorldSocket.
  */
-class WorldSocketMgr : public ACE_Task_Base
+class WorldSocketMgr : public MaNGOS::Singleton<WorldSocketMgr>
 {
-    friend class ACE_Singleton<WorldSocketMgr, ACE_Thread_Mutex>;
-    friend class WorldSocket;
+        friend class MaNGOS::Singleton<WorldSocketMgr>;
 
     public:
-        /**
-         * @brief Start network
-         * @param addr Internet address
-         * @return Result code
-         */
-        int StartNetwork(ACE_INET_Addr& addr);
 
-        /**
-         * @brief Stop network
-         */
+        /// Bind and start accepting world connections. Returns 0 on success, -1 on failure.
+        int StartNetwork(uint16_t port, const std::string& bindIp);
+
+        /// Stop accepting and tear down every live connection.
         void StopNetwork();
 
     private:
-        /**
-         * @brief Handle socket open
-         * @param sock World socket
-         * @return Result code
-         */
-        int OnSocketOpen(WorldSocket* sock);
 
-        /**
-         * @brief Service method (ACE thread pool)
-         * @return Result code
-         */
-        virtual int svc();
-
-        /**
-         * @brief Constructor
-         */
         WorldSocketMgr();
+        ~WorldSocketMgr();
 
-        /**
-         * @brief Virtual destructor
-         */
-        virtual ~WorldSocketMgr();
-
-    private:
-        int m_SockOutKBuff; ///< Socket output kernel buffer size
-        int m_SockOutUBuff; ///< Socket output user buffer size
-        bool m_UseNoDelay; ///< Use TCP_NODELAY
-
-        ACE_Reactor* reactor_; ///< ACE reactor
-        WorldAcceptor* acceptor_; ///< World acceptor
+        net::Server m_server;
+        bool        m_started;
 };
 
-#define sWorldSocketMgr ACE_Singleton<WorldSocketMgr, ACE_Thread_Mutex>::instance()
+#define sWorldSocketMgr MaNGOS::Singleton<WorldSocketMgr>::Instance()
 
 #endif
 /// @}

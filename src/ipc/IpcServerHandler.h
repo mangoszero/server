@@ -22,19 +22,17 @@
 #ifndef AH_IPC_SERVER_HANDLER_H
 #define AH_IPC_SERVER_HANDLER_H
 
-#include <ace/Svc_Handler.h>
-#include <ace/SOCK_Stream.h>
-#include <ace/SOCK_Acceptor.h>
-#include <ace/Acceptor.h>
-#include <ace/Thread_Mutex.h>
-#include <ace/Guard_T.h>
-#include <ace/Message_Block.h>
-
 #include "Common.h"
 #include "Utilities/ByteBuffer.h"
 #include "IpcMessage.h"
 #include "BoundedQueue.h"
 #include "IpcLink.h"
+#include "IpcSocket.h"
+
+#include <atomic>
+#include <memory>
+#include <mutex>
+#include <string>
 
 /**
  * @brief Handshake state for the server side of the IPC connection.
@@ -48,147 +46,64 @@ enum IpcServerHandshakeState
 };
 
 /**
- * @brief Server-side IPC socket handler.
+ * @brief Server-side IPC connection handler.
  *
- * Modelled on WorldSocket. Registered with the reactor by IpcThread's
- * ACE_Acceptor. On handle_input, received bytes are appended to a
- * reassembly ByteBuffer and looped through IpcMessage::Decode; complete
- * frames are pushed into the shared inbound BoundedQueue.
+ * Owns the accepted socket and runs a receive loop on the server thread: bytes
+ * are reassembled into IpcMessage frames and dispatched through the handshake
+ * state machine, then application frames are pushed onto the shared inbound
+ * queue (or the reliable lane). SendFrame() writes directly to the socket under
+ * a mutex, so it is safe to call from the world thread via the facade.
  *
- * The handshake sequence (server side):
- *   recv IPC_HELLO  -> verify proto + secret -> send IPC_HELLO_ACK
- *   recv IPC_READY  -> mark live, log "AH service READY"
+ * Handshake (server side):
+ *   recv IPC_HELLO -> verify proto + secret -> send IPC_HELLO_ACK
+ *   recv IPC_READY -> mark live
  *
- * This is a 1-connection server; only one IpcServerHandler is ever active.
+ * This is a 1-connection server; the owning thread guarantees only one handler
+ * is active at a time (single-owner guard on the link).
  */
-class IpcServerHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
+class IpcServerHandler : public std::enable_shared_from_this<IpcServerHandler>
 {
     public:
-        typedef ACE_Thread_Mutex LockType;
+        IpcServerHandler(IpcSocket&& sock,
+                         BoundedQueue<IpcMessage>* inbound,
+                         const std::string& secret,
+                         IpcServerLink* link,
+                         uint32 runId,
+                         uint8 writeAuthority);
+        ~IpcServerHandler();
 
-        // --- static injection used by IpcThread before the acceptor runs ---
-
-        /**
-         * @brief Provide the shared inbound queue, secret and link before any
-         *        connection is accepted. Called once by IpcThread::run on the
-         *        reactor thread before the acceptor fires open().
-         *
-         * @param inbound Inbound queue shared with the IpcServer facade.
-         * @param secret  Shared secret validated against IPC_HELLO.
-         * @param link    Coupling object (outbound queue + liveness + handler
-         *                slot) shared with the facade. May be null in legacy
-         *                paths but is always set by IpcThread.
-         */
-        static void SetPendingContext(BoundedQueue<IpcMessage>* inbound,
-                                      const std::string& secret,
-                                      IpcServerLink* link);
-
-        static void SetPendingRunId(uint32 runId);
-
-        /// Set the write-authority bit sent in IPC_HELLO_ACK (supervisor
-        /// thread, before SpawnChild). SP-2: the worker only becomes the
-        /// auction write-authority when this is true.
-        static void SetPendingWriteAuthority(bool on);
-
-        // --- ACE framework callbacks ---
-
-        IpcServerHandler();
-        virtual ~IpcServerHandler();
-
-        /// Called by the acceptor when a new connection is accepted.
-        int open(void* acceptor = 0) override;
-
-        /// Called when the close(u_long) hook fires.
-        int close(u_long flags = 0) override;
-
-        /// Called by the reactor when data is available to read.
-        int handle_input(ACE_HANDLE = ACE_INVALID_HANDLE) override;
-
-        /// Called by the reactor when the socket is ready to write.
-        int handle_output(ACE_HANDLE = ACE_INVALID_HANDLE) override;
-
-        /// Called on connection close or error.
-        int handle_close(
-                ACE_HANDLE = ACE_INVALID_HANDLE,
-                ACE_Reactor_Mask = ACE_Event_Handler::ALL_EVENTS_MASK) override;
-
-        // --- Public interface used by IpcServer facade ---
+        /// Run the blocking receive loop until the peer closes, an error occurs,
+        /// or @p stop is set. Clears the link on exit.
+        void ReceiveLoop(std::atomic<bool>& stop);
 
         /**
-         * @brief Encode and queue @p msg for send; schedule WRITE_MASK.
+         * @brief Encode and send @p msg on the socket. Thread-safe.
          * @return 0 on success, -1 on failure.
          */
         int SendFrame(const IpcMessage& msg);
 
-        /// True once the handshake is complete.
-        bool IsLive() const;
-
-        /// True once handle_close has been called.
-        bool IsClosing() const;
+        bool IsLive() const { return m_state == IPC_SRV_LIVE; }
+        bool IsClosing() const { return m_closing.load(std::memory_order_acquire); }
 
     private:
-        // Output buffer and lock (mirrors WorldSocket pattern).
-        LockType                    m_outLock;
-        ACE_Message_Block*          m_outBuffer;
-        static const size_t         k_outBufSize = 65536;
+        IpcSocket                   m_sock;
+        std::mutex                  m_sendMtx;
 
-        // Reassembly buffer for incoming raw bytes.
         ByteBuffer                  m_recvBuf;
-
-        // Handshake state.
         IpcServerHandshakeState     m_state;
-
-        // Shared secret expected in IPC_HELLO.
         std::string                 m_secret;
+        uint32                      m_runId;
+        uint8                       m_writeAuthority;
 
-        uint32                      m_runId;  ///< Per-spawn run-id from handshake.
-        uint8                       m_writeAuthority;  ///< Snapshot at ctor.
-
-        // Inbound queue shared with IpcServer facade.
         BoundedQueue<IpcMessage>*   m_inbound;
-
-        // Coupling object shared with the facade (outbound queue + liveness +
-        // reactor-thread handler slot). Owned via reference count.
         IpcServerLink*              m_link;
 
-        // Closing flag. Only touched on the reactor thread (under m_outLock for
-        // the close transition); the facade never reads it.
-        bool                        m_closing;
+        std::atomic<bool>           m_closing;
 
-        // True only for the handler that won the single-owner test-and-set in
-        // open(). A handler refused because another is already active never
-        // sets this, so its handle_close() does NOT clear the owner's
-        // handlerActive flag or its handler slot. Reactor-thread only.
-        bool                        m_isOwner;
-
-        // --- static context set before first accept (reactor thread only) ---
-        static BoundedQueue<IpcMessage>*  s_pendingInbound;
-        static std::string                s_pendingSecret;
-        static IpcServerLink*             s_pendingLink;
-        static std::atomic<uint32>        s_pendingRunId;
-        static std::atomic<uint8>         s_pendingWriteAuthority;
-
-        // Helpers.
-        int ProcessFrame(const IpcMessage& msg);
-        int FlushOutBuffer();
+        int  ProcessFrame(const IpcMessage& msg);
         void CompactRecvBuf();
-
-        /**
-         * @brief PF2-C: reject an oversize-for-op frame at header parse.
-         *
-         * Precondition: at least 8 header bytes are buffered at m_recvBuf's
-         * current read position. Peeks the opcode + declared body length
-         * WITHOUT consuming any bytes and, for a KNOWN opcode, returns true
-         * when the declared length exceeds that opcode's allowed body size -
-         * so the caller can close the connection before the body is buffered/
-         * reassembled. Unknown opcodes and in-range lengths return false (the
-         * normal Decode()/ProcessFrame() path handles them).
-         *
-         * @return true if the frame must be rejected (close the connection).
-         */
         bool RejectOversizeForOp();
+        void OnClose();
 };
-
-typedef ACE_Acceptor<IpcServerHandler, ACE_SOCK_ACCEPTOR> IpcAcceptor;
 
 #endif // AH_IPC_SERVER_HANDLER_H

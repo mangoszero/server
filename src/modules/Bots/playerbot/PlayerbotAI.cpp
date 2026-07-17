@@ -16,6 +16,7 @@
 #include "PlayerbotFactory.h"
 #include "PlayerbotSecurity.h"
 #include "Util.h"
+#include <cstdarg>
 
 using namespace ai;
 using namespace std;

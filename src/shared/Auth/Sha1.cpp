@@ -25,20 +25,50 @@
 #include "Auth/Sha1.h"
 #include "Auth/BigNumber.h"
 #include <stdarg.h>
+#include <cstring>
+#include <string>
 
-Sha1Hash::Sha1Hash()
+Sha1Hash::Sha1Hash() : mC(EVP_MD_CTX_new())
 {
-    SHA1_Init(&mC);
+    Initialize();
 }
 
 Sha1Hash::~Sha1Hash()
 {
-    SHA1_Init(&mC);
+    EVP_MD_CTX_free(mC);
+    mC = nullptr;
+}
+
+Sha1Hash::Sha1Hash(const Sha1Hash& other) : mC(EVP_MD_CTX_new())
+{
+    memcpy(mDigest, other.mDigest, SHA_DIGEST_LENGTH);
+
+    // A copy of an already-finalized hash only ever has its digest read, so a
+    // context that refuses to duplicate is not fatal -- leave it freshly
+    // initialized rather than half-copied.
+    if (!mC || !other.mC || EVP_MD_CTX_copy_ex(mC, other.mC) != 1)
+    {
+        Initialize();
+    }
+}
+
+Sha1Hash& Sha1Hash::operator=(const Sha1Hash& other)
+{
+    if (this != &other)
+    {
+        memcpy(mDigest, other.mDigest, SHA_DIGEST_LENGTH);
+
+        if (!mC || !other.mC || EVP_MD_CTX_copy_ex(mC, other.mC) != 1)
+        {
+            Initialize();
+        }
+    }
+    return *this;
 }
 
 void Sha1Hash::UpdateData(const uint8* dta, int len)
 {
-    SHA1_Update(&mC, dta, len);
+    EVP_DigestUpdate(mC, dta, len);
 }
 
 void Sha1Hash::UpdateData(const std::string& str)
@@ -63,10 +93,11 @@ void Sha1Hash::UpdateBigNumbers(BigNumber* bn0, ...)
 
 void Sha1Hash::Initialize()
 {
-    SHA1_Init(&mC);
+    EVP_DigestInit_ex(mC, EVP_sha1(), nullptr);
 }
 
 void Sha1Hash::Finalize(void)
 {
-    SHA1_Final(mDigest, &mC);
+    unsigned int length = 0;
+    EVP_DigestFinal_ex(mC, mDigest, &length);
 }

@@ -59,6 +59,7 @@
 #include "InstanceData.h"
 #include "ProgressBar.h"
 #include <vector>
+#include <cstdarg>
 
 INSTANTIATE_SINGLETON_1(MapPersistentStateManager);
 

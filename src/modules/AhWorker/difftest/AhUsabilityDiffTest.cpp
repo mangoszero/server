@@ -24,12 +24,6 @@
 // synthetic (profile, item) pair, or one side has drifted. Separate exe; never
 // linked into production mangosd.
 //
-// ACE's config-all.h (pulled transitively through Common.h -> RW_Thread_Mutex.h
-// -> OS_NS_Thread.h -> config-all.h -> OS_main.h) redefines `main` on Windows
-// to `ace_main_i(int, char*[])` and injects its own real `main`. We do NOT want
-// that here: this is a tiny standalone test binary with its own real `main`.
-// Defining ACE_DOESNT_DEFINE_MAIN before any ACE header suppresses the macro.
-#define ACE_DOESNT_DEFINE_MAIN
 #include "Usability.h"              // worker port (ah_usability)
 #include "Object/AhUsabilityRef.h"  // reference (compiled in directly)
 #include <cstdio>

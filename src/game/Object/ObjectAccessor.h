@@ -28,7 +28,7 @@
  *
  * This file contains the ObjectAccessor singleton class which provides centralized
  * access to all players and corpses in the game world. It maintains hash maps for
- * fast GUID-based lookups with thread-safe access using ACE synchronization primitives.
+ * fast GUID-based lookups with thread-safe access.
  *
  * Key responsibilities:
  * - Global player lookups by GUID or name
@@ -50,14 +50,14 @@
 #include "Common.h"
 #include "Platform/Define.h"
 #include "Policies/Singleton.h"
-#include <ace/Recursive_Thread_Mutex.h>
-#include "Policies/ThreadingModel.h"
 #include "UpdateData.h"
 #include "GridDefines.h"
 #include "Object.h"
 #include "Player.h"
 #include "Corpse.h"
 
+#include <mutex>
+#include <shared_mutex>
 #include <unordered_map>
 
 class Unit;
@@ -77,14 +77,14 @@ class Map;
 /// - Player-to-corpse associations for PvP mechanics
 /// - Batch operations (save all players, etc.)
 ///
-/// All access is protected by ACE synchronization primitives to prevent
-/// race conditions during concurrent reads and writes.
+/// All access is mutex-protected to prevent race conditions during concurrent
+/// reads and writes.
 ///
 /// @note This is a thread-safe singleton, should not be instantiated directly
 /// @see sObjectAccessor for the singleton accessor macro
-class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLevelLockable<ObjectAccessor, ACE_Recursive_Thread_Mutex> >
+class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor>
 {
-    friend class MaNGOS::OperatorNew<ObjectAccessor>;
+    friend class MaNGOS::Singleton<ObjectAccessor>;
 
     ObjectAccessor();
     ~ObjectAccessor();
@@ -94,87 +94,45 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
     /// @brief Thread-safe hash map holder template for GUID-indexed objects.
     ///
     /// This template provides a generic, thread-safe container for objects indexed
-    /// by ObjectGuid. It encapsulates an unordered_map with ACE synchronization.
-    ///
-    /// The holder supports:
-    /// - Thread-safe insertion of objects
-    /// - Thread-safe removal of objects
-    /// - Thread-safe lookup by GUID
-    /// - Read access to the underlying container and lock
+    /// by ObjectGuid, pairing an unordered_map with a read/write mutex.
     ///
     /// @tparam T The object type to store (Player, Corpse, etc.)
-    ///
-    /// @note Uses ACE_RW_Thread_Mutex for read/write locking
-    /// @see Insert() for adding objects
-    /// @see Remove() for removing objects
-    /// @see Find() for looking up objects
     template <class T>
         struct HashMapHolder
     {
-        /// @brief Underlying hash map type (ObjectGuid -> Object pointer)
-        using MapType = std::unordered_map<ObjectGuid, T*>;
-        /// @brief Lock type for synchronization
-        using LockType = ACE_RW_Thread_Mutex;
+        using MapType  = std::unordered_map<ObjectGuid, T*>;
+        using LockType = std::shared_mutex;
 
-        /// @brief Constructor initializes empty map
-        HashMapHolder() : i_lock(nullptr), m_objectMap() {}
-
-        /// @brief Insert an object into the map with write lock.
-        ///
-        /// @param o Pointer to object to insert
         void Insert(T* o)
         {
-            ACE_WRITE_GUARD(LockType, guard, i_lock)
+            std::unique_lock<LockType> guard(i_lock);
             m_objectMap[o->GetObjectGuid()] = o;
         }
 
-        /// @brief Remove an object from the map with write lock.
-        ///
-        /// @param o Pointer to object to remove
         void Remove(T* o)
         {
-            ACE_WRITE_GUARD(LockType, guard, i_lock)
+            std::unique_lock<LockType> guard(i_lock);
             m_objectMap.erase(o->GetObjectGuid());
         }
 
-        /// @brief Find an object by GUID with read lock.
-        ///
-        /// @param guid Object GUID to search for
-        /// @return Pointer to object if found, nullptr otherwise
         T* Find(ObjectGuid guid)
         {
-            ACE_READ_GUARD_RETURN (LockType, guard, i_lock, nullptr)
+            std::shared_lock<LockType> guard(i_lock);
             auto itr = m_objectMap.find(guid);
             return (itr != m_objectMap.end()) ? itr->second : nullptr;
         }
 
-        /// @brief Get reference to the underlying container (for external iteration).
-        ///
-        /// @return Reference to the unordered_map
-        /// @warning Caller must acquire lock separately before iterating
-        inline MapType& GetContainer()
-        {
-            return m_objectMap;
-        }
-
-        /// @brief Get reference to the synchronization lock.
-        ///
-        /// @return Reference to the ACE RW thread mutex
-        /// @note Use ACE guard macros when accessing this
-        inline LockType& GetLock()
-        {
-            return i_lock;
-        }
+        /// External iteration; caller must hold GetLock() for the duration.
+        inline MapType& GetContainer() { return m_objectMap; }
+        inline LockType& GetLock() { return i_lock; }
 
         LockType i_lock;
         MapType  m_objectMap;
-        /// @brief Cache line guard to prevent false sharing (512 bytes padding)
-        char _cache_guard[512];
-
+        char     _cache_guard[512];   ///< padding to avoid false sharing
     };
 
     using Player2CorpsesMapType = std::unordered_map<ObjectGuid, Corpse*>;
-    using LockType = ACE_Recursive_Thread_Mutex;
+    using LockType = std::mutex;   ///< guards i_player2corpse; all uses are flat, non-recursive
 
     public:
 
@@ -327,7 +285,7 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
         template<typename F>
             void DoForAllPlayers(F&& f)
         {
-            ACE_READ_GUARD(HashMapHolder<Player>::LockType, g, i_playerMap.GetLock())
+            std::shared_lock<HashMapHolder<Player>::LockType> g(i_playerMap.GetLock());
             for (auto& iter : i_playerMap.GetContainer())
             {
                 if (iter.second != nullptr)

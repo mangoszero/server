@@ -76,7 +76,7 @@
 
 INSTANTIATE_SINGLETON_1(ScriptMgr);
 
-ScriptMgr::ScriptMgr() : m_scheduledScripts(0), m_lock(0)
+ScriptMgr::ScriptMgr() : m_scheduledScripts(0)
 {
     m_dbScripts.resize(DBS_END);
 

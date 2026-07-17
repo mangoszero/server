@@ -25,184 +25,79 @@
 #ifndef THREADING_H
 #define THREADING_H
 
-#include <ace/Thread.h>
-#include <ace/TSS_T.h>
-#include <ace/Atomic_Op.h>
-#include <assert.h>
+#include <atomic>
+#include <chrono>
+#include <thread>
 
-namespace ACE_Based
+namespace MaNGOS
 {
-
     /**
-     * @brief Base class for runnable tasks
+     * @brief Base class for a task that runs on its own thread.
      *
-     * Runnable provides an interface for tasks that can be executed
-     * in separate threads. Uses reference counting for automatic cleanup.
+     * Reference-counted, so the Runnable can be handed to a Thread and forgotten:
+     * the creator holds one reference, the running thread holds another for the
+     * duration of run(), and whichever drops last deletes it.
      */
     class Runnable
     {
         public:
-            /**
-             * @brief Virtual destructor
-             */
+
             virtual ~Runnable() {}
 
-            /**
-             * @brief Main execution method for the task
-             */
+            /// Body of the task; runs on the spawned thread.
             virtual void run() = 0;
 
-            /**
-             * @brief Increment reference count
-             */
-            void incReference()
-            {
-                ++m_refs;
-            }
+            void incReference() { ++m_refs; }
 
-            /**
-             * @brief Decrement reference count, delete if zero
-             */
             void decReference()
             {
-                if (!--m_refs)
+                if (--m_refs == 0)
                 {
                     delete this;
                 }
             }
-        private:
-            ACE_Atomic_Op<ACE_Thread_Mutex, long> m_refs; /**< Reference counter */
-    };
-
-    /**
-     * @brief Thread priority levels
-     */
-    enum Priority
-    {
-        Idle,
-        Lowest,
-        Low,
-        Normal,
-        High,
-        Highest,
-        Realtime
-    };
-
-#define MAXPRIORITYNUM (Realtime + 1)
-
-    /**
-     * @brief Thread priority management
-     *
-     * ThreadPriority maps platform-independent priority levels
-     * to OS-specific priority values.
-     */
-    class ThreadPriority
-    {
-        public:
-            /**
-             * @brief Constructor - initializes priority mappings
-             */
-            ThreadPriority();
-
-            /**
-             * @brief Get OS-specific priority value
-             * @param p Platform-independent priority level
-             * @return OS-specific priority value
-             */
-            int getPriority(Priority p) const;
 
         private:
-            int m_priority[MAXPRIORITYNUM]; /**< Priority value array */
+
+            std::atomic<long> m_refs{0}; ///< Reference counter
     };
 
     /**
-     * @brief
+     * @brief A joinable OS thread running a Runnable.
      *
+     * Constructing with a Runnable starts it immediately. Deleting the Thread joins
+     * it and then drops the Thread's reference to the task — so `delete someThread`
+     * is a "stop and reclaim", and by the time it returns the task is gone. Callers
+     * are expected to have already told the Runnable to finish (its run() must
+     * return), otherwise the join blocks forever.
      */
     class Thread
     {
         public:
-            /**
-             * @brief Default constructor
-             */
+
             Thread();
-
-            /**
-             * @brief Constructor with runnable task
-             * @param instance Runnable task to execute
-             */
             explicit Thread(Runnable* instance);
-
-            /**
-             * @brief Destructor
-             */
             ~Thread();
 
-            /**
-             * @brief Start the thread execution
-             * @return True on success, false on failure
-             */
+            Thread(const Thread&) = delete;
+            Thread& operator=(const Thread&) = delete;
+
+            /// Spawn the thread. Returns false if it is already running or has no task.
             bool start();
 
-            /**
-             * @brief Wait for thread to finish
-             * @return True on success, false on failure
-             */
+            /// Join the thread. Returns false if it was not running.
             bool wait();
 
-            /**
-             * @brief Destroy the thread
-             */
-            void destroy();
-
-            /**
-             * @brief Suspend thread execution
-             */
-            void suspend();
-
-            /**
-             * @brief Resume thread execution
-             */
-            void resume();
-
-            /**
-             * @brief Set thread priority
-             * @param type Priority level
-             */
-            void setPriority(Priority type);
-
-            /**
-             * @brief Sleep for specified milliseconds
-             * @param msecs Milliseconds to sleep
-             */
-            static void Sleep(unsigned long msecs);
+            static void Sleep(unsigned long msecs)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(msecs));
+            }
 
         private:
-            /**
-             * @brief Copy constructor (disabled)
-             */
-            Thread(const Thread&);
 
-            /**
-             * @brief Assignment operator (disabled)
-             */
-            Thread& operator=(const Thread&);
-
-            /**
-             * @brief Thread entry point function
-             * @param param Thread parameter
-             * @return Thread return value
-             */
-            static ACE_THR_FUNC_RETURN ThreadTask(void* param);
-
-            ACE_thread_t m_iThreadId; /**< Thread ID */
-            ACE_hthread_t m_hThreadHandle; /**< Thread handle */
-            Runnable* m_task; /**< Runnable task */
-
-            /**
-             * @brief Static priority mapping object
-             */
-            static ThreadPriority m_TpEnum; /**< Maps Priority enum to OS-specific values */
+            std::thread m_thread; ///< The OS thread; joinable while running
+            Runnable*   m_task;   ///< Task executed by m_thread (we hold one reference)
     };
 }
+
 #endif

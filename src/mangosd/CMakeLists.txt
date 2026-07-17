@@ -24,16 +24,13 @@
 
 #Main Files
 set(SRC_GRP_MAIN
-  AFThread.cpp
-  AFThread.h
-  CliThread.cpp
-  CliThread.h
   MangosdTest.cpp
   MangosdTest.h
-  RAThread.cpp
-  RAThread.h
-  WorldThread.cpp
-  WorldThread.h
+  Master.cpp
+  Master.h
+  RASession.cpp
+  RASession.h
+  Service.h
   mangosd.cpp
 )
 source_group("Main" FILES ${SRC_GRP_MAIN})
@@ -78,8 +75,9 @@ target_link_libraries(mangosd
         ah_ipc
         $<$<BOOL:${SOAP}>:gsoap>
         Threads::Threads
-        OpenSSL::Crypto
-        OpenSSL::SSL
+        mangos_openssl
+    PRIVATE
+        mangos_openssl_strict
 )
 
 install(

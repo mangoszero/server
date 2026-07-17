@@ -356,7 +356,8 @@ bool ChatHandler::HandleNpcAIInfoCommand(char* /*args*/)
 
     std::string strScript = pTarget->GetScriptName();
     std::string strAI = pTarget->GetAIName();
-    char const* cstrAIClass = pTarget->AI() ? typeid(*pTarget->AI()).name() : " - ";
+    CreatureAI* pAI = pTarget->AI();
+    char const* cstrAIClass = pAI ? typeid(*pAI).name() : " - ";
 
     PSendSysMessage(LANG_NPC_AI_NAMES,
         strAI.empty() ? " - " : strAI.c_str(),

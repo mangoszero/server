@@ -29,7 +29,10 @@
 #include <Policies/Singleton.h>
 #include "Platform/Define.h"
 
-class ACE_Configuration_Heap;
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 /**
  * @brief Manages configuration file loading and value retrieval
@@ -44,15 +47,10 @@ class Config
         /**
          * @brief Constructs a new Config instance
          *
-         * Initializes the configuration manager with an empty configuration heap.
+         * Initializes the configuration manager with no configuration loaded.
          */
         Config();
 
-        /**
-         * @brief Destructs the Config instance
-         *
-         * Cleans up the internal ACE_Configuration_Heap pointer.
-         */
         ~Config();
 
         /**
@@ -65,7 +63,6 @@ class Config
          * @return bool True if file was loaded successfully, false otherwise
          */
         bool SetSource(const char* file);
-
         /**
          * @brief Reloads the configuration from the source file
          *
@@ -87,7 +84,6 @@ class Config
          * @return std::string The configuration value or default value
          */
         std::string GetStringDefault(const char* name, const char* def);
-
         /**
          * @brief Retrieves a boolean configuration value with default fallback
          *
@@ -99,7 +95,6 @@ class Config
          * @return bool The configuration value or default value
          */
         bool GetBoolDefault(const char* name, const bool def = false);
-
         /**
          * @brief Retrieves an integer configuration value with default fallback
          *
@@ -111,7 +106,6 @@ class Config
          * @return int32 The configuration value or default value
          */
         int32 GetIntDefault(const char* name, const int32 def);
-
         /**
          * @brief Retrieves a floating-point configuration value with default fallback
          *
@@ -133,8 +127,20 @@ class Config
 
     private:
 
+        /// One [section] and its key/value pairs. Within a section the last assignment
+        /// of a key wins; across sections the first section holding the key wins (see
+        /// GetValue). Sections are kept in file order so that resolution is stable.
+        typedef std::map<std::string, std::string> SectionEntries;
+        typedef std::vector<std::pair<std::string, SectionEntries> > Sections;
+
+        /// Look @p name up across every section, first match wins.
+        bool GetValue(const char* name, std::string& result) const;
+
+    private:
+
         std::string mFilename; /**< Path to the currently loaded configuration file */
-        ACE_Configuration_Heap* mConf; /**< ACE configuration heap object for storing and retrieving configuration values */
+        Sections    mSections; /**< Parsed contents of mFilename, in file order */
+        bool        mLoaded;   /**< True once a file has been parsed successfully */
 };
 
 #define sConfig MaNGOS::Singleton<Config>::Instance()

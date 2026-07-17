@@ -32,6 +32,8 @@
 #include "Log.h"
 #include "Player.h"
 
+#include <cfloat>
+
 ////////////////// PathFinder //////////////////
 
 /**

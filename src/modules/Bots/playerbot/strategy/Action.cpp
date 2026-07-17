@@ -2,6 +2,7 @@
 #include "../playerbot.h"
 #include "AiObjectContext.h"
 #include "Action.h"
+#include <cstdarg>
 
 using namespace ai;
 

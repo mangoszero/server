@@ -24,87 +24,88 @@
 
 /**
  * @file MapUpdater.h
- * @brief Header file for the MapUpdater class.
+ * @brief Worker pool that ticks maps in parallel.
  *
- * This file contains the definition of the MapUpdater class which is responsible
- * for managing and scheduling map updates. It includes:
- * - MapUpdateRequest class for handling individual update requests
- * - Thread management for concurrent map updates
- * - Synchronization mechanisms for pending requests
+ * The world thread hands each map's Update() to this pool via schedule_update(), then
+ * blocks in wait() until the whole tick has been processed.
  */
 
 #ifndef _MAP_UPDATER_H_INCLUDED
 #define _MAP_UPDATER_H_INCLUDED
 
-#include <ace/Thread_Mutex.h>
-#include <ace/Condition_Thread_Mutex.h>
+#include "Platform/Define.h"
 
-#include "DelayExecutor.h"
+#include <condition_variable>
+#include <cstddef>
+#include <mutex>
+#include <queue>
+#include <thread>
+#include <utility>
+#include <vector>
 
 class Map;
 
 /**
- * @brief The MapUpdater class is responsible for managing map update requests.
+ * @brief Schedules map updates across a pool of worker threads.
  */
 class MapUpdater
 {
     public:
-        /**
-         * @brief Constructor for MapUpdater.
-         */
+
         MapUpdater();
+        ~MapUpdater();
+
+        MapUpdater(const MapUpdater&) = delete;
+        MapUpdater& operator=(const MapUpdater&) = delete;
 
         /**
-         * @brief Destructor for MapUpdater.
+         * @brief Queue map.Update(diff) for a worker.
+         * @return 0 on success, -1 if the pool is not running.
          */
-        virtual ~MapUpdater();
-
-        friend class MapUpdateRequest;
+        int schedule_update(Map& map, uint32 diff);
 
         /**
-         * @brief Schedules a map update.
-         * @param map Reference to the map to be updated.
-         * @param diff Time difference for the update.
-         * @return Result of the scheduling.
-         */
-        int schedule_update(Map& map, ACE_UINT32 diff);
-
-        /**
-         * @brief Waits for all pending requests to be processed.
-         * @return Always returns 0.
+         * @brief Block until every scheduled update has finished.
+         *
+         * This is the tick barrier: the world thread must not advance until every map
+         * queued this tick has been updated.
+         *
+         * @return Always 0.
          */
         int wait();
 
         /**
-         * @brief Activates the map updater with the specified number of threads.
-         * @param num_threads Number of threads to activate.
-         * @return Result of the activation.
+         * @brief Start @p num_threads workers.
+         * @return 0 on success, -1 on failure.
          */
         int activate(size_t num_threads);
 
         /**
-         * @brief Deactivates the map updater.
-         * @return Result of the deactivation.
+         * @brief Drain outstanding updates, then stop and join the workers.
+         * @return Always 0.
          */
         int deactivate();
 
-        /**
-         * @brief Checks if the map updater is activated.
-         * @return True if activated, false otherwise.
-         */
+        /// True while worker threads are running.
         bool activated();
 
     private:
-        DelayExecutor m_executor; ///< Executor for handling delayed tasks.
-        ACE_Thread_Mutex m_mutex; ///< Mutex for synchronizing access to pending requests.
-        ACE_Condition_Thread_Mutex m_condition; ///< Condition variable for signaling when requests are processed.
-        size_t pending_requests; ///< Number of pending update requests.
 
-        /**
-         * @brief Called when a map update is finished.
-         */
-        void update_finished();
+        /// One queued map tick.
+        typedef std::pair<Map*, uint32> Task;
+
+        /// Worker body: run tasks until stopped and the queue has drained.
+        void workerLoop();
+
+        std::vector<std::thread> m_workers;
+        std::queue<Task>         m_tasks;
+
+        std::mutex              m_mutex;      ///< Guards m_tasks, m_pending and m_stop
+        std::condition_variable m_taskAdded;  ///< Wakes a worker when work arrives
+        std::condition_variable m_taskDone;   ///< Wakes wait() once m_pending hits zero
+
+        size_t m_pending; ///< Scheduled but not yet finished updates
+        bool   m_stop;    ///< Set by deactivate() to retire the workers
 };
 
 #endif //_MAP_UPDATER_H_INCLUDED
-

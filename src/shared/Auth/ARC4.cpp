@@ -38,9 +38,6 @@
 #include "ARC4.h"
 #include "OpenSSLProvider.h"
 #include "Log/Log.h"
-#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
-#include <openssl/provider.h>
-#endif
 
 /**
  * @brief Construct ARC4 cipher with specified key length
@@ -49,27 +46,25 @@
  * Creates an ARC4 cipher context with the specified key length.
  * The key itself is not set in this constructor - use Init() to set it.
  *
- * @note On OpenSSL 3.x, this automatically initializes the legacy provider
- * required for ARC4 support.
+ * @note Requires the OpenSSL legacy provider, which the daemon loads once at
+ * startup; see the note on the class.
  */
 ARC4::ARC4(uint8 len) : m_cipherContext()
 {
-#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
-    // Provider management is now handled by OpenSSLProviderManager
-    if (!m_providerManager.IsInitialized())
-    {
-        sLog.outError("ARC4: Failed to initialize OpenSSL providers");
-        return;
-    }
-#endif
-
     if (!m_cipherContext.IsValid())
     {
         sLog.outError("ARC4: Failed to create cipher context");
         return;
     }
 
-    EVP_EncryptInit_ex(m_cipherContext.Get(), EVP_rc4(), NULL, NULL, NULL);
+    // RC4 is only supplied by the legacy provider, so this is where a daemon
+    // that never loaded it finds out.
+    if (EVP_EncryptInit_ex(m_cipherContext.Get(), EVP_rc4(), NULL, NULL, NULL) != 1)
+    {
+        sLog.outError("ARC4: Failed to initialize RC4 - is the OpenSSL legacy provider loaded?");
+        return;
+    }
+
     EVP_CIPHER_CTX_set_key_length(m_cipherContext.Get(), len);
 }
 
@@ -82,27 +77,25 @@ ARC4::ARC4(uint8 len) : m_cipherContext()
  * The cipher is ready to use for encryption/decryption immediately after
  * construction.
  *
- * @note On OpenSSL 3.x, this automatically initializes the legacy provider
- * required for ARC4 support.
+ * @note Requires the OpenSSL legacy provider, which the daemon loads once at
+ * startup; see the note on the class.
  */
 ARC4::ARC4(uint8 *seed, uint8 len) : m_cipherContext()
 {
-#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
-    // Provider management is now handled by OpenSSLProviderManager
-    if (!m_providerManager.IsInitialized())
-    {
-        sLog.outError("ARC4: Failed to initialize OpenSSL providers");
-        return;
-    }
-#endif
-
     if (!m_cipherContext.IsValid())
     {
         sLog.outError("ARC4: Failed to create cipher context");
         return;
     }
 
-    EVP_EncryptInit_ex(m_cipherContext.Get(), EVP_rc4(), NULL, NULL, NULL);
+    // RC4 is only supplied by the legacy provider, so this is where a daemon
+    // that never loaded it finds out.
+    if (EVP_EncryptInit_ex(m_cipherContext.Get(), EVP_rc4(), NULL, NULL, NULL) != 1)
+    {
+        sLog.outError("ARC4: Failed to initialize RC4 - is the OpenSSL legacy provider loaded?");
+        return;
+    }
+
     EVP_CIPHER_CTX_set_key_length(m_cipherContext.Get(), len);
     EVP_EncryptInit_ex(m_cipherContext.Get(), NULL, NULL, seed, NULL);
 }
@@ -110,8 +103,7 @@ ARC4::ARC4(uint8 *seed, uint8 len) : m_cipherContext()
 /**
  * @brief Destructor for ARC4 cipher
  *
- * All cleanup is handled automatically by the RAII wrappers
- * (OpenSSLProviderManager and OpenSSLCipherContext).
+ * All cleanup is handled automatically by the OpenSSLCipherContext RAII wrapper.
  */
 ARC4::~ARC4()
 {

@@ -25,145 +25,60 @@
 #ifndef MANGOS_SINGLETON_H
 #define MANGOS_SINGLETON_H
 
-/**
- * @brief class Singleton
- */
-
-#include "CreationPolicy.h"
-#include "ThreadingModel.h"
-#include "ObjectLifeTime.h"
-
 namespace MaNGOS
 {
-    template <
-        typename T,
-        class ThreadingModel = MaNGOS::SingleThreaded<T>,
-        class CreatePolicy = MaNGOS::OperatorNew<T>,
-        class LifeTimePolicy = MaNGOS::ObjectLifeTime<T>
-        >
-
     /**
-     * @brief Singleton class template
+     * @brief Lazily-constructed process-wide singleton.
      *
-     * This class provides a thread-safe singleton implementation.
+     * Derive and befriend, then reach the instance through the usual accessor macro:
+     * @code
+     *     class World : public MaNGOS::Singleton<World>
+     *     {
+     *             friend class MaNGOS::Singleton<World>;
+     *             World();      // may stay private
+     *             ~World();     // likewise
+     *     };
+     *     #define sWorld MaNGOS::Singleton<World>::Instance()
+     * @endcode
+     *
+     * A function-local static is initialised exactly once, thread-safely, with no
+     * mutex of our own.
      */
+    template<typename T>
     class Singleton
     {
         public:
 
             /**
-             * @brief Get the singleton instance
+             * @brief Get the singleton instance, constructing it on first use.
              *
-             * @return T& Reference to the singleton instance
+             * Initialisation is thread-safe and happens exactly once: concurrent
+             * callers block until the winner finishes ([stmt.dcl]/4). Destruction runs
+             * at exit, in reverse order of first use.
              */
-            static T& Instance();
+            static T& Instance()
+            {
+                static T instance;
+                return instance;
+            }
+
+            Singleton(const Singleton&) = delete;
+            Singleton& operator=(const Singleton&) = delete;
 
         protected:
 
-            /**
-             * @brief Protected constructor to prevent instantiation
-             */
-            Singleton()
-            {
-            }
-
-        private:
-
-            /**
-             * @brief Prohibited copy constructor
-             *
-             * @param other The other instance to copy from
-             */
-            Singleton(const Singleton&);
-
-            /**
-             * @brief Prohibited assignment operator
-             *
-             * @param other The other instance to assign from
-             * @return Singleton& Reference to this instance
-             */
-            Singleton& operator=(const Singleton&);
-
-            /**
-             * @brief Destroy the singleton instance
-             */
-            static void DestroySingleton();
-
-            /**
-             * @brief Type alias for the threading model's lock
-             */
-            typedef typename ThreadingModel::Lock Guard;
-
-            /**
-             * @brief Pointer to the singleton instance
-             */
-            static T* si_instance;
-
-            /**
-             * @brief Flag indicating if the singleton has been destroyed
-             */
-            static bool si_destroyed;
+            Singleton() = default;
+            ~Singleton() = default;
     };
-
-    template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-        T* Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_instance = NULL; /**< Initialize singleton instance pointer to NULL */
-
-    template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-        bool Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_destroyed = false; /**< Initialize destroyed flag to false */
-
-    template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-
-    /**
-     * @brief Get the singleton instance
-     *
-     * @return T& Reference to the singleton instance
-     */
-    T& MaNGOS::Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::Instance()
-    {
-        if (!si_instance)
-        {
-            // double-checked Locking pattern
-            Guard guard; // Named variable
-
-            if (!si_instance)
-            {
-                if (si_destroyed)
-                {
-                    si_destroyed = false;
-                    LifeTimePolicy::OnDeadReference();
-                }
-
-                si_instance = CreatePolicy::Create();
-                LifeTimePolicy::ScheduleCall(&DestroySingleton);
-            }
-        }
-
-        return *si_instance;
-    }
-
-    template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-
-    /**
-     * @brief Destroy the singleton instance
-     */
-    void MaNGOS::Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::DestroySingleton()
-    {
-        CreatePolicy::Destroy(si_instance);
-        si_instance = NULL;
-        si_destroyed = true;
-    }
 }
 
-#define INSTANTIATE_SINGLETON_1(TYPE) \
-template class MaNGOS::Singleton<TYPE, MaNGOS::SingleThreaded<TYPE>, MaNGOS::OperatorNew<TYPE>, MaNGOS::ObjectLifeTime<TYPE> >;
-
-#define INSTANTIATE_SINGLETON_2(TYPE, THREADINGMODEL) \
-template class MaNGOS::Singleton<TYPE, THREADINGMODEL, MaNGOS::OperatorNew<TYPE>, MaNGOS::ObjectLifeTime<TYPE> >;
-
-#define INSTANTIATE_SINGLETON_3(TYPE, THREADINGMODEL, CREATIONPOLICY ) \
-template class MaNGOS::Singleton<TYPE, THREADINGMODEL, CREATIONPOLICY, MaNGOS::ObjectLifeTime<TYPE> >;
-
-#define INSTANTIATE_SINGLETON_4(TYPE, THREADINGMODEL, CREATIONPOLICY, OBJECTLIFETIME) \
-template class MaNGOS::Singleton<TYPE, THREADINGMODEL, CREATIONPOLICY, OBJECTLIFETIME >;
+// Compatibility shims. The Meyers singleton above needs no explicit template
+// instantiation, so these former INSTANTIATE_SINGLETON_* macros expand to nothing.
+// They are kept only so the historical `INSTANTIATE_SINGLETON_1(Foo);` lines dotted
+// through the .cpp files still compile; new code should not use them.
+#define INSTANTIATE_SINGLETON_1(TYPE)
+#define INSTANTIATE_SINGLETON_2(TYPE, THREADINGMODEL)
+#define INSTANTIATE_SINGLETON_3(TYPE, THREADINGMODEL, CREATIONPOLICY)
+#define INSTANTIATE_SINGLETON_4(TYPE, THREADINGMODEL, CREATIONPOLICY, OBJECTLIFETIME)
 
 #endif

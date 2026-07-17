@@ -22,19 +22,17 @@
 #ifndef AH_IPC_CLIENT_HANDLER_H
 #define AH_IPC_CLIENT_HANDLER_H
 
-#include <ace/Svc_Handler.h>
-#include <ace/SOCK_Stream.h>
-#include <ace/SOCK_Connector.h>
-#include <ace/Connector.h>
-#include <ace/Thread_Mutex.h>
-#include <ace/Guard_T.h>
-#include <ace/Message_Block.h>
-
 #include "Common.h"
 #include "Utilities/ByteBuffer.h"
 #include "IpcMessage.h"
 #include "BoundedQueue.h"
 #include "IpcLink.h"
+#include "IpcSocket.h"
+
+#include <atomic>
+#include <memory>
+#include <mutex>
+#include <string>
 
 /**
  * @brief Handshake state for the client (child) side of the IPC connection.
@@ -49,94 +47,60 @@ enum IpcClientHandshakeState
 };
 
 /**
- * @brief Client-side IPC socket handler.
+ * @brief Client-side IPC connection handler (child / ah-service side).
  *
- * Modelled on WorldSocket / IpcServerHandler. Used by ACE_Connector on the
- * child (ah-service) side. On open(), immediately sends IPC_HELLO to begin
- * the handshake.
+ * Owns the connected socket. SendHello() begins the handshake; ReceiveLoop()
+ * reassembles frames and dispatches them until close. Symmetric to
+ * IpcServerHandler.
  *
- * Handshake sequence (client side):
- *   open()           -> send IPC_HELLO { proto, pid, secret }
- *   recv IPC_HELLO_ACK -> send IPC_READY
- *   (channel is now live)
+ * Handshake (client side):
+ *   SendHello()        -> send IPC_HELLO { proto, pid, secret }
+ *   recv IPC_HELLO_ACK -> send IPC_READY (channel now live)
  */
-class IpcClientHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
+class IpcClientHandler : public std::enable_shared_from_this<IpcClientHandler>
 {
     public:
-        typedef ACE_Thread_Mutex LockType;
+        IpcClientHandler(IpcSocket&& sock,
+                         BoundedQueue<IpcMessage>* inbound,
+                         const std::string& secret,
+                         IpcClientLink* link);
+        ~IpcClientHandler();
 
-        // --- static injection before connector fires ---
+        /// Send IPC_HELLO to begin the handshake. Call before ReceiveLoop.
+        int SendHello();
 
-        /**
-         * @brief Set shared secret, inbound queue and link before Connect() is
-         *        called. Invoked on the reactor thread before open() fires.
-         */
-        static void SetPendingContext(BoundedQueue<IpcMessage>* inbound,
-                                      const std::string& secret,
-                                      IpcClientLink* link);
-
-        // --- ACE framework callbacks ---
-
-        IpcClientHandler();
-        virtual ~IpcClientHandler();
-
-        /// Called by ACE_Connector when the connection is established.
-        int open(void* connector = 0) override;
-
-        int close(u_long flags = 0) override;
-
-        int handle_input(ACE_HANDLE = ACE_INVALID_HANDLE) override;
-        int handle_output(ACE_HANDLE = ACE_INVALID_HANDLE) override;
-        int handle_close(
-                ACE_HANDLE = ACE_INVALID_HANDLE,
-                ACE_Reactor_Mask = ACE_Event_Handler::ALL_EVENTS_MASK) override;
-
-        // --- Public interface used by IpcClient facade ---
+        /// Run the blocking receive loop until close / stop. Clears the link.
+        void ReceiveLoop(std::atomic<bool>& stop);
 
         /**
-         * @brief Encode and queue @p msg for send.
+         * @brief Encode and send @p msg on the socket. Thread-safe.
          * @return 0 on success, -1 on failure.
          */
         int SendFrame(const IpcMessage& msg);
 
         /// True iff a frame with this opcode + body length is acceptable to
-        /// stage (per-opcode size rule). Shared by ProcessFrame and tests.
+        /// stage (per-opcode size rule). Shared with tests.
         static bool InboundFrameAcceptable(uint16 op, uint32 bodyLen);
 
-        /// True once the handshake is complete.
-        bool IsLive() const;
-
-        /// True once handle_close has been called.
-        bool IsClosing() const;
-
-        /// Expose handshake state for the IpcClient facade polling loop.
+        bool IsLive() const { return m_state == IPC_CLI_LIVE; }
+        bool IsClosing() const { return m_closing.load(std::memory_order_acquire); }
         IpcClientHandshakeState GetState() const { return m_state; }
 
     private:
-        LockType                    m_outLock;
-        ACE_Message_Block*          m_outBuffer;
-        static const size_t         k_outBufSize = 65536;
+        IpcSocket                   m_sock;
+        std::mutex                  m_sendMtx;
 
         ByteBuffer                  m_recvBuf;
-
         IpcClientHandshakeState     m_state;
-
         std::string                 m_secret;
         BoundedQueue<IpcMessage>*   m_inbound;
         IpcClientLink*              m_link;
-        bool                        m_closing;
 
-        // Static context (reactor thread only).
-        static BoundedQueue<IpcMessage>*  s_pendingInbound;
-        static std::string                s_pendingSecret;
-        static IpcClientLink*             s_pendingLink;
+        std::atomic<bool>           m_closing;
 
-        int SendHello();
-        int ProcessFrame(const IpcMessage& msg);
-        int FlushOutBuffer();
+        int  ProcessFrame(const IpcMessage& msg);
         void CompactRecvBuf();
+        void OnClose();
 };
-
-typedef ACE_Connector<IpcClientHandler, ACE_SOCK_CONNECTOR> IpcConnector;
 
 #endif // AH_IPC_CLIENT_HANDLER_H

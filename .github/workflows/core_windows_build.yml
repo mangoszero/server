@@ -5,9 +5,14 @@ permissions:
 
 on:
   push:
-    branches: [ master , devel ]
+    branches: [master, devel]
   pull_request:
-    branches: [ master ]
+    branches: [master]
+
+# Supersede an in-flight run when the branch moves on: its result is already stale.
+concurrency:
+  group: windows-build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -24,6 +29,7 @@ jobs:
           fetch-depth: 1
 
 
+      # Bump the -vN suffix to force a re-install of OpenSSL.
       - name: Cache OpenSSL
         id: cache-openssl
         uses: actions/cache@v4
@@ -31,7 +37,7 @@ jobs:
           path: |
             C:\Program Files\OpenSSL
             C:\Program Files\OpenSSL-Win64
-          key: ${{ runner.os }}-openssl-full
+          key: ${{ runner.os }}-openssl-v1
 
 
       - name: Install full OpenSSL (developer)
@@ -63,16 +69,10 @@ jobs:
             echo "OPENSSL_INCLUDE_DIR=C:/Program Files/OpenSSL-Win64/include" >> $GITHUB_ENV
             echo "OPENSSL_CRYPTO_LIBRARY=C:/Program Files/OpenSSL-Win64/lib/VC/libcrypto64MT.lib" >> $GITHUB_ENV
             echo "OPENSSL_SSL_LIBRARY=C:/Program Files/OpenSSL-Win64/lib/VC/libssl64MT.lib" >> $GITHUB_ENV
+          else
+            echo "::error::OpenSSL not found in either expected location"
+            exit 1
           fi
-
-
-      - name: Cache CMake build
-        uses: actions/cache@v4
-        with:
-          path: build
-          key: ${{ runner.os }}-cmake-${{ hashFiles('**/CMakeLists.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-cmake-
 
 
       - name: Configure CMake project

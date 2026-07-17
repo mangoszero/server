@@ -1056,14 +1056,14 @@ void TerrainInfo::CleanUpGrids(const uint32 diff)
  *
  * @param x The grid x index.
  * @param y The grid y index.
- * @return The new reference count, or -1 on lock failure.
+ * @return The new reference count.
  */
 int TerrainInfo::RefGrid(const uint32& x, const uint32& y)
 {
     MANGOS_ASSERT(x < MAX_NUMBER_OF_GRIDS);
     MANGOS_ASSERT(y < MAX_NUMBER_OF_GRIDS);
 
-    ACE_GUARD_RETURN(LOCK_TYPE, _lock, m_refMutex, -1)
+    std::lock_guard<LOCK_TYPE> _lock(m_refMutex);
     return (m_GridRef[x][y] += 1);
 }
 
@@ -1072,7 +1072,7 @@ int TerrainInfo::RefGrid(const uint32& x, const uint32& y)
  *
  * @param x The grid x index.
  * @param y The grid y index.
- * @return The new reference count, or -1 on lock failure.
+ * @return The new reference count.
  */
 int TerrainInfo::UnrefGrid(const uint32& x, const uint32& y)
 {
@@ -1081,7 +1081,7 @@ int TerrainInfo::UnrefGrid(const uint32& x, const uint32& y)
 
     int16& iRef = m_GridRef[x][y];
 
-    ACE_GUARD_RETURN(LOCK_TYPE, _lock, m_refMutex, -1)
+    std::lock_guard<LOCK_TYPE> _lock(m_refMutex);
     if (iRef > 0)
     {
         return (iRef -= 1);
@@ -1559,7 +1559,7 @@ GridMap* TerrainInfo::LoadMapAndVMap(const uint32 x, const uint32 y)
     // double checked lock pattern
     if (!m_GridMaps[x][y])
     {
-        ACE_GUARD_RETURN(LOCK_TYPE, lock, m_mutex, NULL)
+        std::lock_guard<LOCK_TYPE> lock(m_mutex);
 
         if (!m_GridMaps[x][y])
         {
@@ -1642,9 +1642,7 @@ float TerrainInfo::GetWaterLevel(float x, float y, float z, float* pGround /*= N
 
 //////////////////////////////////////////////////////////////////////////
 
-#define CLASS_LOCK MaNGOS::ClassLevelLockable<TerrainManager, ACE_Thread_Mutex>
-    INSTANTIATE_SINGLETON_2(TerrainManager, CLASS_LOCK);
-INSTANTIATE_CLASS_MUTEX(TerrainManager, ACE_Thread_Mutex);
+// Singleton instantiation is implicit now (MaNGOS::Singleton is a Meyers singleton).
 
 TerrainManager::TerrainManager() : m_mutex()
 {
@@ -1666,7 +1664,7 @@ TerrainManager::~TerrainManager()
  */
 TerrainInfo* TerrainManager::LoadTerrain(const uint32 mapId)
 {
-    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_mutex, NULL)
+    std::lock_guard<LOCK_TYPE> _guard(m_mutex);
 
     TerrainDataMap::const_iterator iter = i_TerrainMap.find(mapId);
     if (iter == i_TerrainMap.end())
@@ -1690,7 +1688,7 @@ void TerrainManager::UnloadTerrain(const uint32 mapId)
         return;
     }
 
-    ACE_GUARD(LOCK_TYPE, _guard, m_mutex)
+    std::lock_guard<LOCK_TYPE> _guard(m_mutex);
 
     TerrainDataMap::iterator iter = i_TerrainMap.find(mapId);
     if (iter != i_TerrainMap.end())

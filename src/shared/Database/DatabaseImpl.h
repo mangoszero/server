@@ -26,6 +26,7 @@
 #define DATABASEIMPL_H
 #include "Database/Database.h"
 #include "Database/SqlOperations.h"
+#include <cstdarg>
 
 /// Function body definitions for the template function members of the Database class
 

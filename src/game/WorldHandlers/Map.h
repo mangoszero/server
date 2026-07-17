@@ -53,10 +53,6 @@
 
 #include "Common.h"
 #include "Platform/Define.h"
-#include "Policies/ThreadingModel.h"
-#include <ace/RW_Thread_Mutex.h>
-#include <ace/Thread_Mutex.h>
-
 #include "DBCStructure.h"
 #include "GridDefines.h"
 #include "Cell.h"

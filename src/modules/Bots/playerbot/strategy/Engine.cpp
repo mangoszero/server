@@ -3,6 +3,7 @@
 
 #include "Engine.h"
 #include "../PlayerbotAIConfig.h"
+#include <cstdarg>
 
 using namespace ai;
 using namespace std;

@@ -46,7 +46,7 @@
 #include "Log.h"
 #include "Opcodes.h"
 #include "ByteBuffer.h"
-#include <openssl/md5.h>
+#include <openssl/evp.h>
 #include "World.h"
 #include "Player.h"
 #include "Util.h"
@@ -129,10 +129,8 @@ ClientWardenModule* WardenMac::GetModuleForClient()
     memcpy(mod->Key, Module_0DBBF209A27B1E279A9FEC5C168A15F7_Key, 16);
 
     // md5 hash
-    MD5_CTX ctx;
-    MD5_Init(&ctx);
-    MD5_Update(&ctx, mod->CompressedData, len);
-    MD5_Final((uint8*)&mod->Id, &ctx);
+    unsigned int digestLen = 0;
+    EVP_Digest(mod->CompressedData, len, (uint8*)&mod->Id, &digestLen, EVP_md5(), NULL);
 
     return mod;
 }
@@ -279,11 +277,9 @@ void WardenMac::HandleData(ByteBuffer &buff)
         found = true;
     }
 
-    MD5_CTX ctx;
-    MD5_Init(&ctx);
-    MD5_Update(&ctx, str.c_str(), str.size());
     uint8 ourMD5Hash[16];
-    MD5_Final(ourMD5Hash, &ctx);
+    unsigned int ourMD5HashLen = 0;
+    EVP_Digest(str.c_str(), str.size(), ourMD5Hash, &ourMD5HashLen, EVP_md5(), NULL);
 
     uint8 theirsMD5Hash[16];
     buff.read(theirsMD5Hash, 16);

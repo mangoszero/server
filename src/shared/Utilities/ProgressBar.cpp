@@ -50,6 +50,20 @@
 #include "ProgressBarRender.h"
 #include "Errors.h"
 
+#include <chrono>
+#include <string>
+
+namespace
+{
+    /// Monotonic millisecond clock, independent of any game/world timer so the
+    /// bar keeps working in the offline tools.
+    uint64 NowMs()
+    {
+        using namespace std::chrono;
+        return (uint64)duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+    }
+}
+
 /**
  * @var BarGoLink::m_showOutput
  * @brief Global flag controlling progress bar visibility
@@ -71,10 +85,29 @@ void BarGoLink::DefaultSink(char const* bytes, size_t len)
 }
 
 BarGoLink::ConsoleSink BarGoLink::m_sink = &BarGoLink::DefaultSink;
+BarGoLink::Renderer BarGoLink::m_renderer = NULL;
 
 void BarGoLink::SetConsoleSink(ConsoleSink sink)
 {
     m_sink = sink ? sink : &BarGoLink::DefaultSink;
+}
+
+void BarGoLink::SetRenderer(Renderer renderer)
+{
+    m_renderer = renderer;
+}
+
+void BarGoLink::emit(std::string const& bytes)
+{
+    if (!bytes.empty())
+    {
+        m_sink(bytes.data(), bytes.size());
+    }
+}
+
+uint32 BarGoLink::elapsedMs() const
+{
+    return (uint32)(NowMs() - start_ms);
 }
 
 /**
@@ -104,8 +137,15 @@ BarGoLink::~BarGoLink()
         return;
     }
 
-    std::string const bar = ProgressBarRender::buildEnd();
-    m_sink(bar.data(), bar.size());
+    if (m_renderer)
+    {
+        // The styled bar shares its line with the step it belongs to: the final
+        // redraw is the startup UI's business, not a bare newline.
+        emit(m_renderer(rec_no, num_rec, elapsedMs(), true));
+        return;
+    }
+
+    emit(ProgressBarRender::buildEnd());
 }
 
 /**
@@ -123,14 +163,20 @@ void BarGoLink::init(int row_count)
     rec_pos   = 0;
     indic_len = 50;
     num_rec   = row_count;
+    start_ms  = NowMs();
 
     if (!m_showOutput)
     {
         return;
     }
 
-    std::string const bar = ProgressBarRender::buildInit(indic_len);
-    m_sink(bar.data(), bar.size());
+    if (m_renderer)
+    {
+        emit(m_renderer(0, num_rec, 0, false));
+        return;
+    }
+
+    emit(ProgressBarRender::buildInit(indic_len));
 }
 
 /**
@@ -159,8 +205,14 @@ void BarGoLink::step()
     int n = rec_no * indic_len / num_rec;
     if (n != rec_pos)
     {
-        std::string const bar = ProgressBarRender::buildStep(n, indic_len);
-        m_sink(bar.data(), bar.size());
+        if (m_renderer)
+        {
+            emit(m_renderer(rec_no, num_rec, elapsedMs(), false));
+        }
+        else
+        {
+            emit(ProgressBarRender::buildStep(n, indic_len));
+        }
         rec_pos = n;
     }
 }

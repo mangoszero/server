@@ -537,7 +537,7 @@ void BrowseThread::run()
         }
         else
         {
-            ACE_Based::Thread::Sleep(5);
+            MaNGOS::Thread::Sleep(5);
         }
     }
 

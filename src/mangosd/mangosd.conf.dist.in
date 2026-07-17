@@ -819,6 +819,16 @@ SD3ErrorLogFile              = "scriptdev3-errors.log"
 #        Default: 1 (true)
 #                 0 (false)
 #
+#    Console.Style
+#        Presentation of the startup output on the console. The log file is the
+#        same either way.
+#        Default: "auto"  (draw the boxed, coloured loading UI when stdout is an
+#                          interactive console; plain text when it is redirected
+#                          to a file or a pipe, or when running as a service)
+#                 "fancy" (force the loading UI on, for a terminal that cannot be
+#                          detected as one)
+#                 "plain" (never; plain text, as older releases printed it)
+#
 #    WaitAtStartupError
 #        After startup error report wait <Enter> or some time before continue (and possible close console window)
 #                 -1 (wait until <Enter> press)
@@ -909,6 +919,7 @@ PetUnsummonAtMount                        = 0
 Event.Announce                            = 0
 BeepAtStart                               = 1
 ShowProgressBars                          = 1
+Console.Style                             = "auto"
 WaitAtStartupError                        = 10
 PlayerCommands                            = 0
 Motd                                      = "Welcome to Mangos Zero"

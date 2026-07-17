@@ -141,8 +141,7 @@ void BattleGroundMgr::ToggleTesting()
  */
 void BattleGroundMgr::ScheduleQueueUpdate(BattleGroundQueueTypeId bgQueueTypeId, BattleGroundTypeId bgTypeId, BattleGroundBracketId bracket_id)
 {
-    // ACE_Guard<ACE_Thread_Mutex> guard(SchedulerLock);
-    // we will use only 1 number created of bgTypeId and bracket_id
+    // combine bgQueueTypeId, bgTypeId and bracket_id into a single schedule id
     uint32 schedule_id = (bgQueueTypeId << 16) | (bgTypeId << 8) | bracket_id;
     bool found = false;
     for (uint8 i = 0; i < m_QueueUpdateScheduler.size(); ++i)

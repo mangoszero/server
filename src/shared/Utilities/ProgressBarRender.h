@@ -35,7 +35,7 @@
  * to the off-thread console writer as ONE atomic record, so it can no longer
  * tear against concurrently-drained log lines.
  *
- * This header is intentionally free of any Log / ACE / stdio dependency so the
+ * This header is intentionally free of any Log / stdio dependency so the
  * rendering can be unit-tested in isolation and so offline tools that use a
  * progress bar do not gain a logging dependency.
  *

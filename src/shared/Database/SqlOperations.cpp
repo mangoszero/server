@@ -41,6 +41,7 @@
 #include "SqlDelayThread.h"
 #include "DatabaseEnv.h"
 #include "DatabaseImpl.h"
+#include <cstdarg>
 
 /**
  * @def LOCK_DB_CONN

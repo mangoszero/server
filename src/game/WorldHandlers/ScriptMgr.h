@@ -28,9 +28,10 @@
 #include "Common.h"
 #include "ObjectGuid.h"
 #include "DBCEnums.h"
-#include <ace/Atomic_Op.h>
-#include <ace/Thread_Mutex.h>
-#include <ace/Guard_T.h>
+
+#include <atomic>
+#include <mutex>
+#include <shared_mutex>
 
 struct AreaTriggerEntry;
 struct SpellEntry;
@@ -722,13 +723,13 @@ class ScriptMgr
         ScriptNameMap      m_scriptNames;
         DBScripts          m_dbScripts;
 #ifdef _DEBUG
-        // mutex allowing to reload the script binding table; TODO just do it AWAY from any map update, e.g. right after sessions update
-        ACE_RW_Thread_Mutex m_bindMutex;
+        // guards reloads of the script binding table against concurrent map updates
+        std::shared_mutex m_bindMutex;
 #endif /* _DEBUG */
-        // atomic op counter for active scripts amount
-        ACE_Atomic_Op<ACE_Thread_Mutex, long> m_scheduledScripts;
+        // active scheduled-script counter
+        std::atomic<long> m_scheduledScripts;
         char __cache_guard[1024];
-        ACE_Thread_Mutex m_lock;
+        std::mutex m_lock;
 };
 
 // Starters for events

@@ -22,29 +22,35 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-/// \addtogroup mangosd
-/// @{
-/// \file
+// The single place that maps an OS to its reactor backend. Adding a new platform
+// (poll, /dev/poll, event ports, ...) means: write the Poller subclass, then add
+// one branch here. The rest of the server never changes.
+#ifndef _WIN32
 
-#ifndef MANGOS_H_CLITHREAD
-#define MANGOS_H_CLITHREAD
+#include "net/reactor/Poller.hpp"
 
-#include "ace/Task.h"
+#include <memory>
 
-/**
- * @brief Command Line Interface handling thread
- *
- */
-class CliThread : public ACE_Task_Base
-{
-    enum { BUFFSIZE = 256 };
-    public:
-        CliThread(bool);
-        int svc() override;
-        void cli_shutdown();
-    private:
-        char buffer_[BUFFSIZE];
-        bool beep_;
-};
+#if defined(__linux__)
+#include "net/reactor/EpollPoller.hpp"
+#elif defined(__FreeBSD__) || defined(__APPLE__) || defined(__NetBSD__) || \
+      defined(__OpenBSD__) || defined(__DragonFly__)
+#include "net/reactor/KqueuePoller.hpp"
 #endif
-/// @}
+
+namespace net {
+
+std::unique_ptr<Poller> makePoller() {
+#if defined(__linux__)
+    return std::make_unique<EpollPoller>();
+#elif defined(__FreeBSD__) || defined(__APPLE__) || defined(__NetBSD__) || \
+      defined(__OpenBSD__) || defined(__DragonFly__)
+    return std::make_unique<KqueuePoller>();
+#else
+    return nullptr; // no reactor backend for this platform
+#endif
+}
+
+} // namespace net
+
+#endif // !_WIN32

@@ -29,11 +29,12 @@
 #include "Log.h"
 #include "IpcOpcodes.h"
 
-#include <ace/OS_NS_time.h>
-#include <ace/Time_Value.h>
-
-#include <ctime>
+#include <chrono>
 #include <cstdio>
+#include <ctime>
+#include <string>
+#include <thread>
+#include <vector>
 
 // ---------------------------------------------------------------------------
 // Constructor / Destructor
@@ -51,7 +52,7 @@ WorkerSupervisor::WorkerSupervisor(const std::string& name,
     , m_secret(secret)
     , m_botGuid(botGuid)
     , m_cfgPath(cfgPath)
-    , m_pid(ACE_INVALID_PID)
+    , m_pid(IpcProcess::INVALID_PID)
     , m_lastHeartbeatSent(0)
     , m_lastHeartbeatAck(0)
     , m_connectAnchor(0)
@@ -66,6 +67,7 @@ WorkerSupervisor::WorkerSupervisor(const std::string& name,
     // running, never toward a silent stall).
     , m_childHealthy(false)
     , m_runId(0)
+    , m_writeAuthority(false)
     , m_appDropped(0)
 #ifdef _WIN32
     , m_jobObject(NULL)
@@ -145,73 +147,49 @@ bool WorkerSupervisor::Start()
 
 bool WorkerSupervisor::SpawnChild()
 {
-    // Build command line.
+    // Build the argument list.
     // ah-service --port <p> --botguid <g> --config <c>
     //
     // C4: the shared secret is passed OUT-OF-BAND via the AH_SERVICE_SECRET
-    // environment variable (set below) and is NOT placed on argv, so it cannot
-    // be read from /proc/<pid>/cmdline (Linux) or the Win32 process command
-    // line by any local account. The child reads the env var first and only
-    // falls back to a manual-testing --secret when the env var is absent.
-    ACE_Process_Options opts;
+    // environment variable and is NOT placed on argv, so it cannot be read from
+    // /proc/<pid>/cmdline (Linux) or the Win32 process command line by any local
+    // account. The child reads the env var first and only falls back to a
+    // manual-testing --secret when the env var is absent.
+    std::vector<std::string> args;
+    args.push_back("--port");
+    args.push_back(std::to_string(static_cast<unsigned>(m_port)));
+    args.push_back("--botguid");
+    args.push_back(std::to_string(static_cast<unsigned>(m_botGuid)));
+    args.push_back("--config");
+    args.push_back(m_cfgPath);
 
-    // Buffer large enough for a typical path + args.
-    char cmdBuf[2048];
-    snprintf(cmdBuf, sizeof(cmdBuf),
-             "\"%s\" --port %u --botguid %u --config \"%s\"",
-             m_exePath.c_str(),
-             static_cast<unsigned>(m_port),
-             static_cast<unsigned>(m_botGuid),
-             m_cfgPath.c_str());
-
-    if (opts.command_line("%s", cmdBuf) != 0)
+    // For logging: the argument list carries NO secret, so it is safe to log.
+    std::string cmdLog = m_exePath;
+    for (const std::string& a : args)
     {
-        sLog.outError("[WorkerSupervisor:%s]"
-                      " ACE_Process_Options::command_line failed",
-                      m_name.c_str());
-        return false;
+        cmdLog += ' ';
+        cmdLog += a;
     }
-
-    // Pass the shared secret out-of-band in the child's environment. setenv()
-    // here adds to the child's env block only (it does not mutate mangosd's
-    // own environment). inherit_environment defaults to true so the rest of
-    // mangosd's environment is preserved for the child.
-    if (opts.setenv("AH_SERVICE_SECRET", "%s", m_secret.c_str()) != 0)
-    {
-        sLog.outError("[WorkerSupervisor:%s]"
-                      " ACE_Process_Options::setenv(AH_SERVICE_SECRET) failed",
-                      m_name.c_str());
-        return false;
-    }
-
-    // The command line carries NO secret, so it is safe to log verbatim.
-    const char* cmdLog = cmdBuf;
-
-#ifdef _WIN32
-    // CREATE_NEW_CONSOLE: child gets its own console window.
-    // The child will manage show/hide in Task 5.
-    opts.creation_flags(CREATE_NEW_CONSOLE);
-#endif
 
     // Assign a new per-spawn run-id (monotonically increasing; 0 is never used).
+    // Arm the run-id + SP-2 write-authority for the IPC_HELLO_ACK before the
+    // child can connect.
     ++m_runId;
     m_ipc.SetRunId(m_runId);
+    m_ipc.SetWriteAuthority(m_writeAuthority);
     sLog.outString("[WorkerSupervisor:%s] assigned run-id %u",
                    m_name.c_str(), static_cast<unsigned>(m_runId));
 
-    // Spawn via the singleton ACE_Process_Manager, passing our ACE_Process
-    // object so we can retrieve the process HANDLE for the Job Object.
-    pid_t pid = ACE_Process_Manager::instance()->spawn(&m_process, opts);
-
-    if (pid == ACE_INVALID_PID)
+    // Spawn the child (Windows: CREATE_NEW_CONSOLE + a HANDLE for the Job
+    // Object; secret injected into the child environment as AH_SERVICE_SECRET).
+    if (!m_process.Spawn(m_exePath, args, "AH_SERVICE_SECRET", m_secret))
     {
-        sLog.outError("[WorkerSupervisor:%s] ACE_Process_Manager::spawn"
-                      " failed (cmd: %s)",
-                      m_name.c_str(), cmdLog);
+        sLog.outError("[WorkerSupervisor:%s] spawn failed (cmd: %s)",
+                      m_name.c_str(), cmdLog.c_str());
         return false;
     }
 
-    m_pid         = pid;
+    m_pid         = m_process.Pid();
     m_childExited = false;
 
     // C2: arm the connect deadline from this spawn, and reset the
@@ -227,7 +205,7 @@ bool WorkerSupervisor::SpawnChild()
     ClearStagedFrames();
 
     sLog.outString("[WorkerSupervisor:%s] child spawned (pid=%u, cmd: %s)",
-                   m_name.c_str(), static_cast<unsigned>(m_pid), cmdLog);
+                   m_name.c_str(), static_cast<unsigned>(m_pid), cmdLog.c_str());
 
 #ifdef _WIN32
     // ------------------------------------------------------------------
@@ -269,12 +247,11 @@ bool WorkerSupervisor::SpawnChild()
         }
         else
         {
-            // ACE_Process::gethandle() returns the Windows HANDLE for child.
-            HANDLE hChild = m_process.gethandle();
+            HANDLE hChild = m_process.Handle();
             if (hChild == INVALID_HANDLE_VALUE || hChild == NULL)
             {
-                sLog.outError("[WorkerSupervisor:%s] ACE_Process::gethandle()"
-                              " returned invalid - orphan guard disabled",
+                sLog.outError("[WorkerSupervisor:%s] child process handle"
+                              " invalid - orphan guard disabled",
                               m_name.c_str());
                 CloseHandle(m_jobObject);
                 m_jobObject = NULL;
@@ -301,8 +278,8 @@ bool WorkerSupervisor::SpawnChild()
     // Console_InstallParentDeathGuard() (OPEN-2: a distinct signal so SIGTERM
     // keeps its default-terminate disposition), so the kernel signals the
     // child when this (the parent) dies. Nothing to arm on the supervisor side
-    // here. The supervisor's hard-kill uses ACE terminate() -> POSIX
-    // kill(pid, SIGKILL), which is uncatchable, so it always works regardless.
+    // here. The supervisor's hard-kill uses kill(pid, SIGKILL), which is
+    // uncatchable, so it always works regardless.
 #endif
 
     return true;
@@ -312,40 +289,21 @@ bool WorkerSupervisor::SpawnChild()
 // ReapChild (private)
 // ---------------------------------------------------------------------------
 
-void WorkerSupervisor::ReapChild(pid_t pid)
+void WorkerSupervisor::ReapChild()
 {
-    if (pid == ACE_INVALID_PID)
-    {
-        return;
-    }
+    const uint32 pid = m_pid;
 
-    // Non-blocking reap of the specific pid so the kernel releases the
-    // process-table entry (Linux zombie) / OS handle (Windows) before the
-    // ACE_Process object is reused by the next SpawnChild(). A zero timeout
-    // means "poll": the child has already exited (process-exit detection) or
-    // has just been terminate()'d, so the status is immediately available.
-    ACE_exitcode status = 0;
-    pid_t reaped = ACE_Process_Manager::instance()->wait(
-        pid, ACE_Time_Value::zero, &status);
+    // Release the child's OS handle (Windows) / reap the zombie (Linux) so the
+    // kernel frees the entry before the next SpawnChild(). Only ever called
+    // after the child is known dead/terminated, so the status is available.
+    m_process.Reap();
+    m_pid = IpcProcess::INVALID_PID;
 
-    if (reaped == pid)
+    if (pid != IpcProcess::INVALID_PID)
     {
-        DETAIL_LOG("[WorkerSupervisor:%s] reaped child pid=%u (status=%d)",
-                   m_name.c_str(), static_cast<unsigned>(pid),
-                   static_cast<int>(status));
-    }
-    else if (reaped == ACE_INVALID_PID)
-    {
-        // Already reaped by the process-manager's own SIGCHLD handling, or no
-        // longer tracked: benign. Logged at detail level only.
-        DETAIL_LOG("[WorkerSupervisor:%s] child pid=%u already reaped /"
-                   " not tracked",
+        DETAIL_LOG("[WorkerSupervisor:%s] reaped child pid=%u",
                    m_name.c_str(), static_cast<unsigned>(pid));
     }
-    // reaped == 0 (timeout) cannot normally happen here because we only call
-    // ReapChild after the child is known dead/terminated; if it did, the next
-    // SpawnChild()'s ACE_Process reuse still proceeds and the manager reaps it
-    // on the subsequent exit.
 }
 
 // ---------------------------------------------------------------------------
@@ -388,21 +346,18 @@ void WorkerSupervisor::Tick(uint32 gametime)
     // app frames staged in m_pendingFrames for World::HandleAhInbound.
     DrainInboundProtocol();
 
-    // Check if child has exited by polling ACE_Process_Manager.
-    if (!m_childExited && m_pid != ACE_INVALID_PID)
+    // Check if the child has exited.
+    if (!m_childExited && m_pid != IpcProcess::INVALID_PID)
     {
-        // running() returns 1 if alive, 0 if exited.
-        if (!m_process.running())
+        if (!m_process.Running())
         {
             sLog.outError("[WorkerSupervisor:%s] child process (pid=%u)"
                           " exited unexpectedly",
                           m_name.c_str(), static_cast<unsigned>(m_pid));
-            // C5: reap the dead child's process-table entry / handle before
-            // the ACE_Process is reused, so a flapping child never leaks.
-            const pid_t deadPid = m_pid;
+            // C5: reap the dead child's handle / process-table entry so a
+            // flapping child never leaks.
             m_childExited = true;
-            m_pid         = ACE_INVALID_PID;
-            ReapChild(deadPid);
+            ReapChild();
             // Discard the dead child's staged intents: a reconnecting child
             // must never replay the previous child's stale, half-applied
             // batch (which would over-post against the resumed in-process bot).
@@ -420,13 +375,10 @@ void WorkerSupervisor::Tick(uint32 gametime)
                           " (no ACK for %u s) - marking child dead",
                           m_name.c_str(), static_cast<unsigned>(ackAge));
             m_childExited = true;
-            if (m_pid != ACE_INVALID_PID)
+            if (m_pid != IpcProcess::INVALID_PID)
             {
-                const pid_t deadPid = m_pid;
-                ACE_Process_Manager::instance()->terminate(m_pid);
-                m_pid = ACE_INVALID_PID;
-                // C5: reap the terminated child before the ACE_Process reuse.
-                ReapChild(deadPid);
+                m_process.Terminate();
+                ReapChild();
             }
             // Discard the dead child's staged intents (see process-exit path).
             ClearStagedFrames();
@@ -473,13 +425,10 @@ void WorkerSupervisor::Tick(uint32 gametime)
                               static_cast<unsigned>(m_pid),
                               static_cast<unsigned>(WS_CONNECT_DEADLINE_SEC));
                 m_childExited = true;
-                if (m_pid != ACE_INVALID_PID)
+                if (m_pid != IpcProcess::INVALID_PID)
                 {
-                    const pid_t deadPid = m_pid;
-                    ACE_Process_Manager::instance()->terminate(m_pid);
-                    m_pid = ACE_INVALID_PID;
-                    // C5: reap the terminated child before the next spawn.
-                    ReapChild(deadPid);
+                    m_process.Terminate();
+                    ReapChild(); // reap the terminated child before the next spawn
                 }
                 ClearStagedFrames();
             }
@@ -852,7 +801,7 @@ void WorkerSupervisor::Shutdown()
             {
                 break;
             }
-            ACE_OS::sleep(ACE_Time_Value(0, 50 * 1000)); // 50 ms
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
 
         if (gotAck)
@@ -867,19 +816,17 @@ void WorkerSupervisor::Shutdown()
             // that was about to exit cleanly). Bounded by the remaining time in
             // the existing grace window, so the overall shutdown bound is
             // unchanged. We reap the pid as soon as it exits.
-            while (time(nullptr) < deadline && m_pid != ACE_INVALID_PID)
+            while (time(nullptr) < deadline && m_pid != IpcProcess::INVALID_PID)
             {
-                if (!m_process.running())
+                if (!m_process.Running())
                 {
-                    const pid_t donePid = m_pid;
-                    m_pid = ACE_INVALID_PID;
-                    ReapChild(donePid);
+                    ReapChild();
                     sLog.outString("[WorkerSupervisor:%s] child exited cleanly"
                                    " after ACK",
                                    m_name.c_str());
                     break;
                 }
-                ACE_OS::sleep(ACE_Time_Value(0, 50 * 1000)); // 50 ms
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
             }
         }
         else
@@ -892,12 +839,10 @@ void WorkerSupervisor::Shutdown()
 
     // 2. Hard-kill if child is still alive (no ACK, or it did not exit within
     //    the post-ACK grace), then reap so we never leak a handle/zombie.
-    if (m_pid != ACE_INVALID_PID)
+    if (m_pid != IpcProcess::INVALID_PID)
     {
-        const pid_t deadPid = m_pid;
-        ACE_Process_Manager::instance()->terminate(m_pid);
-        m_pid = ACE_INVALID_PID;
-        ReapChild(deadPid);
+        m_process.Terminate();
+        ReapChild();
     }
 
     // 3. Stop the IPC server (closes acceptor + reactor thread).

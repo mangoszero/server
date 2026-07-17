@@ -31,6 +31,7 @@
 
 #include <iomanip>
 #include <cctype>
+#include <cstdarg>    // va_copy/va_start/va_end are macros; only this header defines them
 #include <cstring>
 #include <string>
 #include <charconv>   // for std::to_chars
@@ -375,26 +376,28 @@ bool IsIPAddress(char const* ipaddress)
         return false;
     }
 
-    // Let the big boys do it.
-    // Drawback: all valid ip address formats are recognized e.g.: 12.23,121234,0xABCD)
-    return ACE_OS::inet_addr(ipaddress) != INADDR_NONE;
+    // inet_pton is strict about dotted-quad form, unlike the old inet_addr() which
+    // also accepted oddities such as "12.23", "121234" and "0xABCD".
+    in_addr addr;
+    return inet_pton(AF_INET, ipaddress, &addr) == 1;
 }
 
-std::string GetAddressString(ACE_INET_Addr const& addr)
+/// Render an IPv4 address (host byte order) plus port as "a.b.c.d:port".
+std::string GetAddressString(uint32 ip, uint16 port)
 {
-    char buf[ACE_MAX_FULLY_QUALIFIED_NAME_LEN + 16];
-    addr.addr_to_string(buf, ACE_MAX_FULLY_QUALIFIED_NAME_LEN + 16);
+    char buf[INET_ADDRSTRLEN + 8];
+
+    snprintf(buf, sizeof(buf), "%u.%u.%u.%u:%u",
+             (ip >> 24) & 0xFF, (ip >> 16) & 0xFF, (ip >> 8) & 0xFF, ip & 0xFF,
+             unsigned(port));
+
     return buf;
 }
 
-bool IsIPAddrInNetwork(ACE_INET_Addr const& net, ACE_INET_Addr const& addr, ACE_INET_Addr const& subnetMask)
+/// True when @p addr sits inside the network @p net/@p subnetMask (all host byte order).
+bool IsIPAddrInNetwork(uint32 net, uint32 addr, uint32 subnetMask)
 {
-    uint32 mask = subnetMask.get_ip_address();
-    if ((net.get_ip_address() & mask) == (addr.get_ip_address() & mask))
-    {
-        return true;
-    }
-    return false;
+    return (net & subnetMask) == (addr & subnetMask);
 }
 
 /// create PID file

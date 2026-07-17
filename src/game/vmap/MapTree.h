@@ -29,6 +29,12 @@
 #include "Utilities/UnorderedMapSet.h"
 #include "BIH.h"
 
+// Transitional: pulled in here so the Movemap-Generator's MapBuilder.cpp (in the
+// Extractor_projects submodule) gets FLT_MAX/INT_MAX without editing that repo.
+// Belongs in MapBuilder.cpp; move it there when the extractor submodule is updated.
+#include <cfloat>
+#include <climits>
+
 namespace VMAP
 {
     class ModelInstance;

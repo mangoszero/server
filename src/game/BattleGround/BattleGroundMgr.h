@@ -56,7 +56,6 @@
 #include "Common.h"
 #include "Policies/Singleton.h"
 #include "BattleGround.h"
-#include <ace/Recursive_Thread_Mutex.h>
 #include "Utilities/EventProcessor.h"
 
 /**
@@ -239,8 +238,6 @@ class BattleGroundQueue
         uint32 GetAverageQueueWaitTime(GroupQueueInfo* ginfo, BattleGroundBracketId bracket_id);
 
     private:
-        ACE_Recursive_Thread_Mutex  m_Lock; /**< Mutex that should not allow changing private data, nor allowing to update Queue during private data change. */
-
         /**
          * @brief Map for storing queued players.
          */
@@ -747,7 +744,6 @@ class BattleGroundMgr
          */
         static bool IsBGWeekend(BattleGroundTypeId bgTypeId);
     private:
-        ACE_Thread_Mutex    SchedulerLock; /**< Mutex to protect the scheduler from concurrent access. */
         BattleMastersMap    mBattleMastersMap; /**< Map storing battle master entries. */
         CreatureBattleEventIndexesMap m_CreatureBattleEventIndexMap; /**< Map storing creature battle event indexes. */
         GameObjectBattleEventIndexesMap m_GameObjectBattleEventIndexMap; /**< Map storing game object battle event indexes. */

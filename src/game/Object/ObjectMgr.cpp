@@ -57,6 +57,7 @@
 
 #include "ItemEnchantmentMgr.h"
 #include <limits>
+#include <cstdarg>
 
 INSTANTIATE_SINGLETON_1(ObjectMgr);
 

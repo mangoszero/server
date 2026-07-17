@@ -44,7 +44,7 @@
  * CONCURRENCY / INVARIANT: a SINGLE mutex (@ref m_mutex) guards the whole of
  * every operation - the container mutation AND the count/byte counters move
  * together under that one lock. The earlier design mutated an
- * ACE_Based::LockedQueue (with its own internal mutex) and then bumped
+ * MaNGOS::LockedQueue (with its own internal mutex) and then bumped
  * SEPARATE atomic counters OUTSIDE that mutex, so a producer preempted between
  * the enqueue and the counter increment could be overtaken by a consumer's
  * decrement, permanently drifting the counters away from the real contents.

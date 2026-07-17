@@ -144,7 +144,7 @@ class ObjectRegistry
 
     private:
         RegistryMapType i_registeredObjects; /**< TODO */
-        friend class MaNGOS::OperatorNew<ObjectRegistry<T, Key> >;
+        friend class MaNGOS::Singleton<ObjectRegistry<T, Key> >;
 
         /**
          * @brief protected for friend use since it should be a singleton

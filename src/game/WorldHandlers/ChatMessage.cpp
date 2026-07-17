@@ -64,6 +64,7 @@
 #include "CommandMgr.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <cstdarg>
 #endif /* ENABLE_ELUNA */
 
 /**

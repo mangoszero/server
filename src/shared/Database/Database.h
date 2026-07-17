@@ -26,13 +26,13 @@
 #define DATABASE_H
 
 #include "Threading/Threading.h"
+#include "Threading/ThreadLocalStore.h"
 #include "Utilities/UnorderedMapSet.h"
 #include "Database/SqlDelayThread.h"
-#include <ace/Recursive_Thread_Mutex.h>
-#include "Policies/ThreadingModel.h"
-#include <ace/TSS_T.h>
-#include <ace/Atomic_Op.h>
 #include "SqlPreparedStatement.h"
+
+#include <atomic>
+#include <mutex>
 
 class SqlTransaction;
 class SqlResultQueue;
@@ -173,7 +173,7 @@ class SqlConnection
                  *
                  * @param conn
                  */
-                Lock(SqlConnection* conn) : m_pConn(conn) { m_pConn->m_mutex.acquire(); }
+                Lock(SqlConnection* conn) : m_pConn(conn) { m_pConn->m_mutex.lock(); }
 
                 /**
                  * @brief
@@ -181,7 +181,7 @@ class SqlConnection
                  */
                 ~Lock()
                 {
-                    m_pConn->m_mutex.release();
+                    m_pConn->m_mutex.unlock();
                 }
 
                 /**
@@ -242,7 +242,7 @@ class SqlConnection
          * @brief
          *
          */
-        typedef ACE_Recursive_Thread_Mutex LOCK_TYPE;
+        typedef std::recursive_mutex LOCK_TYPE;
         LOCK_TYPE m_mutex; /**< TODO */
 
         /**
@@ -829,7 +829,7 @@ class Database
          * @brief per-thread based storage for SqlTransaction object initialization - no locking is required
          *
          */
-        typedef ACE_TSS<Database::TransHelper> DBTransHelperTSS;
+        typedef MaNGOS::ThreadLocalStore<Database::TransHelper> DBTransHelperTSS;
         Database::DBTransHelperTSS *m_TransStorage; /**< TODO */
 
         ///< DB connections
@@ -871,7 +871,7 @@ class Database
 
         // connection helper counters
         int m_nQueryConnPoolSize;                               /**< current size of query connection pool */
-        ACE_Atomic_Op<ACE_Thread_Mutex, long> m_nQueryCounter;  /**< counter for connection selection */
+        std::atomic<long> m_nQueryCounter;  /**< counter for connection selection */
 
         /**
          * @brief lets use pool of connections for sync queries
@@ -885,7 +885,7 @@ class Database
 
         SqlResultQueue*     m_pResultQueue;                 /**< Transaction queues from diff. threads */
         SqlDelayThread*     m_threadBody;                   /**< Pointer to delay sql executer (owned by m_delayThread) */
-        ACE_Based::Thread*  m_delayThread;                  /**< Pointer to executer thread */
+        MaNGOS::Thread*  m_delayThread;                  /**< Pointer to executer thread */
 
         bool m_bAllowAsyncTransactions;                     /**< flag which specifies if async transactions are enabled */
 
@@ -895,13 +895,13 @@ class Database
          * @brief
          *
          */
-        typedef ACE_Thread_Mutex LOCK_TYPE;
+        typedef std::mutex LOCK_TYPE;
 
         /**
          * @brief
          *
          */
-        typedef ACE_Guard<LOCK_TYPE> LOCK_GUARD;
+        typedef std::lock_guard<LOCK_TYPE> LOCK_GUARD;
 
         mutable LOCK_TYPE m_stmtGuard; /**< TODO */
 

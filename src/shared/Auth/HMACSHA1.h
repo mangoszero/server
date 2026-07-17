@@ -26,8 +26,9 @@
 #define _AUTH_HMACSHA1_H
 
 #include "Common/Common.h"
-#include <openssl/hmac.h>
-#include <openssl/sha.h>
+#include <openssl/evp.h>
+#include <openssl/sha.h>       // SHA_DIGEST_LENGTH
+#include <string>
 
 class BigNumber;
 
@@ -54,6 +55,10 @@ class HMACSHA1
          * @brief Destructor
          */
         ~HMACSHA1();
+
+        // The MAC context is owned; copying would double-free it.
+        HMACSHA1(const HMACSHA1&) = delete;
+        HMACSHA1& operator=(const HMACSHA1&) = delete;
 
         /**
          * @brief Update hash with a BigNumber
@@ -105,11 +110,7 @@ class HMACSHA1
         }
 
     private:
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-        HMAC_CTX m_ctx; /**< OpenSSL HMAC context (pre-1.1.0) */
-#else
-        HMAC_CTX* m_ctx; /**< OpenSSL HMAC context (1.1.0+) */
-#endif
+        EVP_MAC_CTX* m_ctx; /**< OpenSSL HMAC context */
         uint8 m_digest[SHA_DIGEST_LENGTH]; /**< Computed hash digest */
 };
 #endif

@@ -48,7 +48,7 @@
 #include "Log.h"
 #include "Opcodes.h"
 #include "ByteBuffer.h"
-#include <openssl/md5.h>
+#include <openssl/evp.h>
 #include "Database/DatabaseEnv.h"
 #include "World.h"
 #include "Player.h"
@@ -125,10 +125,8 @@ ClientWardenModule* WardenWin::GetModuleForClient()
     memcpy(mod->Key, Module.ModuleKey, 16);
 
     // md5 hash
-    MD5_CTX ctx;
-    MD5_Init(&ctx);
-    MD5_Update(&ctx, mod->CompressedData, length);
-    MD5_Final((uint8*)&mod->Id, &ctx);
+    unsigned int digestLen = 0;
+    EVP_Digest(mod->CompressedData, length, (uint8*)&mod->Id, &digestLen, EVP_md5(), NULL);
 
     return mod;
 }

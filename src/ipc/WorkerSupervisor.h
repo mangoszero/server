@@ -25,9 +25,7 @@
 #include "Common.h"
 #include "IpcChannel.h"
 #include "IpcMessage.h"
-
-#include <ace/Process.h>
-#include <ace/Process_Manager.h>
+#include "IpcProcess.h"
 
 #include <string>
 #include <vector>
@@ -168,6 +166,12 @@ class WorkerSupervisor
         IpcServer& Channel() { return m_ipc; }
 
         /**
+         * @brief [SP-2] Set the write-authority bit sent to the worker in
+         *        IPC_HELLO_ACK. Call before Start(); applied on every spawn.
+         */
+        void SetWriteAuthority(bool on) { m_writeAuthority = on; }
+
+        /**
          * @brief Drain up to @p maxPerTick application frames into @p out.
          *
          * Called from World::Update after Tick(). Protocol frames
@@ -243,15 +247,12 @@ class WorkerSupervisor
         /**
          * @brief Reap the dead child's process-table entry / OS handle.
          *
-         * The same ACE_Process is reused across restarts, so a flapping child
-         * would otherwise leak zombies (Linux) or HANDLEs (Windows). This
-         * waits (non-blocking) on the recorded pid via ACE_Process_Manager so
-         * the kernel releases the entry before the next SpawnChild(). Safe to
-         * call when there is nothing to reap. Clears @p pid to ACE_INVALID_PID.
-         *
-         * @param pid The child pid to reap (by value; caller clears its copy).
+         * A flapping child would otherwise leak zombies (Linux) or HANDLEs
+         * (Windows). Releases the child's OS handle / process-table entry so it
+         * is freed before the next SpawnChild(). Safe to call with nothing to
+         * reap; clears m_pid.
          */
-        void ReapChild(pid_t pid);
+        void ReapChild();
 
         /**
          * @brief Discard all staged (not-yet-applied) application frames.
@@ -283,12 +284,13 @@ class WorkerSupervisor
         uint32       m_botGuid;
         std::string  m_cfgPath;
         uint32       m_runId;       ///< Per-spawn run-id; incremented on every spawn.
+        bool         m_writeAuthority; ///< [SP-2] authority bit sent in IPC_HELLO_ACK.
 
         IpcServer    m_ipc;
 
-        /// ACE process handle for the spawned child.
-        ACE_Process  m_process;
-        pid_t        m_pid;
+        /// Handle to the spawned child process.
+        IpcProcess   m_process;
+        uint32       m_pid;         ///< Child pid (for logging); 0 when none.
 
         /// Wall-clock timestamps (seconds since epoch) for heartbeat logic.
         time_t       m_lastHeartbeatSent;

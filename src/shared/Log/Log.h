@@ -28,10 +28,15 @@
 #include "Common/Common.h"
 #include "Policies/Singleton.h"
 
+#include <cstdio>
+#include <mutex>
+#include <string>
+#include <cstdarg>
+
 class Config;
 class ByteBuffer;
 class ConsoleLogWriter;
-namespace ACE_Based { class Thread; }
+namespace MaNGOS { class Thread; }
 
 /**
  * @brief Logging severity levels for message filtering
@@ -160,9 +165,9 @@ struct ConsoleLogRecord
  * - Console color support for improved readability
  * - Formatted output with timestamps
  */
-class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Thread_Mutex> >
+class Log : public MaNGOS::Singleton<Log>
 {
-    friend class MaNGOS::OperatorNew<Log>;
+    friend class MaNGOS::Singleton<Log>;
 
     /**
      * @brief Constructs the Log singleton instance
@@ -474,6 +479,45 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
         void ConsoleEmitRaw(const std::string& bytes);
 
         /**
+         * @brief Console-side line filter, applied to a formatted log line before
+         *        it reaches the console. Returning true consumes the line: the
+         *        console does not show it, the file log still records it.
+         *
+         * The startup UI installs one for the duration of world initialization so
+         * it can fold the ">> Loaded N rows" result lines into the step they
+         * belong to, and drop the blank spacer lines that would break an in-place
+         * repaint. It is uninstalled once the world is up, so no runtime log line
+         * pays for it. Never applied to errors, which must always be visible.
+         *
+         * @param text the formatted line (no trailing newline), never NULL
+         * @return true to suppress the line on the console
+         */
+        typedef bool (*ConsoleLineFilter)(const char* text);
+
+        /**
+         * @brief Install (or, with NULL, remove) the console line filter.
+         */
+        void SetConsoleLineFilter(ConsoleLineFilter filter) { m_consoleFilter = filter; }
+
+        /**
+         * @brief Record whether the console cursor is parked mid-line.
+         *
+         * Set by whoever writes bytes that do not end in a newline -- a progress
+         * bar redraw or a startup-UI line that will be repainted in place. The
+         * console writer consults it before emitting an ordinary log line and, if
+         * the line is dirty, wipes it first (see ClearConsoleLine) so the log line
+         * cannot land on top of the half-drawn one.
+         */
+        static void MarkConsoleLineDirty(bool dirty);
+
+        /**
+         * @brief Return the cursor to a clean column 0, erasing whatever the
+         *        in-place line had drawn there, and clear the dirty flag. No-op
+         *        when the line is not dirty.
+         */
+        static void ClearConsoleLine(FILE* out);
+
+        /**
          * @brief Whether world packet logging is active. Gated by the
          *        PacketLoggingEnabled config flag at startup: worldLogfile is
          *        only opened when the flag is set, so this is the single source
@@ -574,12 +618,13 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
         FILE* scriptErrLogFile; /**< TODO */
         FILE* worldLogfile; /**< TODO */
         FILE* wardenLogfile; /**< TODO */
-        ACE_Thread_Mutex m_worldLogMtx; /**< Serializes packet-dump writes to worldLogfile */
-        ACE_Thread_Mutex m_fileMtx; /**< Serializes writes to the main logfile so concurrent map-update worker threads cannot tear lines */
+        std::mutex m_worldLogMtx; /**< Serializes packet-dump writes to worldLogfile */
+        std::mutex m_fileMtx; /**< Serializes writes to the main logfile so concurrent map-update worker threads cannot tear lines */
 
         ConsoleLogWriter* m_consoleBody; /**< Off-thread console writer Runnable (owned via thread refcount) */
-        ACE_Based::Thread* m_consoleThread; /**< Thread driving m_consoleBody; deleting it drops the Runnable refcount */
+        MaNGOS::Thread* m_consoleThread; /**< Thread driving m_consoleBody; deleting it drops the Runnable refcount */
         bool m_consoleAsync; /**< When true, console emits route to the writer thread; otherwise synchronous fallback */
+        ConsoleLineFilter m_consoleFilter; /**< Optional console-side line filter (startup UI); NULL once the world is up */
 
         LogLevel m_logLevel; /**< log/console control */
         LogLevel m_logFileLevel; /**< TODO */

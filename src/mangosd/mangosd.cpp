@@ -44,18 +44,14 @@
 
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
-#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
-#  include <openssl/provider.h>
-#  include "Auth/OpenSSLProvider.h"
-#endif
-#include <ace/Version.h>
-#include <ace/Get_Opt.h>
-
+#include <openssl/provider.h>
+#include "Auth/OpenSSLProvider.h"
 #include "Common.h"
 #include "Database/DatabaseEnv.h"
 #include "Config/Config.h"
 #include "GitRevision.h"
 #include "ProgressBar.h"
+#include "StartupUI.h"
 #include "Log.h"
 #include "SystemConfig.h"
 #include "AuctionHouseBot.h"
@@ -66,17 +62,7 @@
 #include "MassMailMgr.h"
 #include "ScriptMgr.h"
 
-#include "WorldThread.h"
-#include "CliThread.h"
-#include "AFThread.h"
-#include "RAThread.h"
-#include "WorkerSupervisor.h"
-#include "IpcServerHandler.h"
-#include "MangosdTest.h"
-
-#ifdef ENABLE_SOAP
-#include "SOAP/SoapThread.h"
-#endif
+#include "Master.h"
 
 #ifdef _WIN32
 #include <process.h>
@@ -98,161 +84,6 @@ DatabaseType CharacterDatabase;                             ///< Accessor to the
 DatabaseType LoginDatabase;                                 ///< Accessor to the realm/login database
 
 uint32 realmID = 0;                                         ///< Id of the realm
-
-/**
- * @brief Clear online status for realm accounts on startup
- *
- * Resets the 'online' status for all accounts that were marked as
- * connected to this realm. This handles cases where the server
- * crashed without properly logging out all players.
- *
- * Also resets character online status and battleground instance data.
- */
-static void clear_online_accounts()
-{
-    // Cleanup online status for characters hosted at current realm
-    /// \todo Only accounts with characters logged on *this* realm should have online status reset. Move the online column from 'account' to 'realmcharacters'?
-    LoginDatabase.PExecute("UPDATE `account` SET `active_realm_id` = 0, `os` = ''  WHERE `active_realm_id` = '%u'", realmID);
-
-    CharacterDatabase.Execute("UPDATE `characters` SET `online` = 0 WHERE `online`<>0");
-
-    // Battleground instance ids reset at server restart
-    CharacterDatabase.Execute("UPDATE `character_battleground_data` SET `instance_id` = 0");
-}
-
-/**
- * @brief Initialize database connections
- * @return true if all databases connected successfully, false otherwise
- *
- * Connects to three databases:
- * - World Database: Contains game data (creatures, items, quests, etc.)
- * - Character Database: Contains player character data
- * - Login Database: References realm authentication data
- *
- * Validates database versions and connection counts from configuration.
- * On failure, properly cleans up any connections that were established.
- */
-static bool start_db()
-{
-    ///- Get world database info from configuration file
-    std::string dbstring = sConfig.GetStringDefault("WorldDatabaseInfo", "");
-    int nConnections = sConfig.GetIntDefault("WorldDatabaseConnections", 1);
-    if (dbstring.empty())
-    {
-        sLog.outError("Database not specified in configuration file");
-        return false;
-    }
-    sLog.outString("World Database total connections: %i", nConnections + 1);
-
-    ///- Initialise the world database
-    if (!WorldDatabase.Initialize(dbstring.c_str(), nConnections))
-    {
-        sLog.outError("Can not connect to world database %s", dbstring.c_str());
-        return false;
-    }
-
-    ///- Check the World database version
-    if (!WorldDatabase.CheckDatabaseVersion(DATABASE_WORLD))
-    {
-        ///- Wait for already started DB delay threads to end
-        WorldDatabase.HaltDelayThread();
-        return false;
-    }
-
-    dbstring = sConfig.GetStringDefault("CharacterDatabaseInfo", "");
-    nConnections = sConfig.GetIntDefault("CharacterDatabaseConnections", 1);
-    if (dbstring.empty())
-    {
-        sLog.outError("Character Database not specified in configuration file");
-
-        ///- Wait for already started DB delay threads to end
-        WorldDatabase.HaltDelayThread();
-        return false;
-    }
-    sLog.outString("Character Database total connections: %i", nConnections + 1);
-
-    ///- Initialise the Character database
-    if (!CharacterDatabase.Initialize(dbstring.c_str(), nConnections))
-    {
-        sLog.outError("Can not connect to Character database %s", dbstring.c_str());
-
-        ///- Wait for already started DB delay threads to end
-        WorldDatabase.HaltDelayThread();
-        return false;
-    }
-
-    ///- Check the Character database version
-    if (!CharacterDatabase.CheckDatabaseVersion(DATABASE_CHARACTER))
-    {
-        ///- Wait for already started DB delay threads to end
-        WorldDatabase.HaltDelayThread();
-        CharacterDatabase.HaltDelayThread();
-        return false;
-    }
-
-    ///- Get login database info from configuration file
-    dbstring = sConfig.GetStringDefault("LoginDatabaseInfo", "");
-    nConnections = sConfig.GetIntDefault("LoginDatabaseConnections", 1);
-    if (dbstring.empty())
-    {
-        sLog.outError("Login database not specified in configuration file");
-
-        ///- Wait for already started DB delay threads to end
-        WorldDatabase.HaltDelayThread();
-        CharacterDatabase.HaltDelayThread();
-        return false;
-    }
-
-    ///- Initialise the login database
-    sLog.outString("Login Database total connections: %i", nConnections + 1);
-    if (!LoginDatabase.Initialize(dbstring.c_str(), nConnections))
-    {
-        sLog.outError("Can not connect to login database %s", dbstring.c_str());
-
-        ///- Wait for already started DB delay threads to end
-        WorldDatabase.HaltDelayThread();
-        CharacterDatabase.HaltDelayThread();
-        return false;
-    }
-
-    ///- Check the Realm database version
-    if (!LoginDatabase.CheckDatabaseVersion(DATABASE_REALMD))
-    {
-        ///- Wait for already started DB delay threads to end
-        WorldDatabase.HaltDelayThread();
-        CharacterDatabase.HaltDelayThread();
-        LoginDatabase.HaltDelayThread();
-        return false;
-    }
-
-    sLog.outString();
-
-    ///- Get the realm Id from the configuration file
-    realmID = sConfig.GetIntDefault("RealmID", 0);
-    if (!realmID)
-    {
-        sLog.outError("Realm ID not defined in configuration file");
-
-        ///- Wait for already started DB delay threads to end
-        WorldDatabase.HaltDelayThread();
-        CharacterDatabase.HaltDelayThread();
-        LoginDatabase.HaltDelayThread();
-        return false;
-    }
-
-    sLog.outString("Realm running as realm ID %d", realmID);
-    sLog.outString();
-
-    ///- Clean the database before starting
-    clear_online_accounts();
-
-    sWorld.LoadDBVersion();
-
-    sLog.outString("Using World DB: %s", sWorld.GetDBVersion());
-    sLog.outString();
-    return true;
-}
-
 /// Handle termination signals
 static void on_signal(int s)
 {
@@ -299,6 +130,8 @@ static void usage(const char* prog)
         "    -v, --version              print version and exist\n\r"
         "    -c <config_file>           use config_file as configuration file\n\r"
         "    -a, --ahbot <config_file>  use config_file as ahbot configuration file\n\r"
+        "    --console-demo [<style>]   draw a sample startup on this console and exit;\n\r"
+        "                               style is auto (default), fancy or plain\n\r"
 #ifdef WIN32
         "    Running as service functions:\n\r"
         "    -s run                     run as service\n\r"
@@ -310,16 +143,6 @@ static void usage(const char* prog)
         "    -s stop                    stop daemon\n\r"
 #endif
     , prog);
-}
-
-/// Progress-bar console sink: forward a fully-built bar redraw to the off-thread
-/// console writer (verbatim, no prefix/color/newline) so the bar shares one
-/// serialized stdout with the log lines and cannot tear against them. Installed
-/// once the writer thread is running; before that BarGoLink uses its default
-/// synchronous sink.
-static void MangosBarConsoleSink(char const* bytes, size_t len)
-{
-    sLog.ConsoleEmitRaw(std::string(bytes, len));
 }
 
 /// Launch the mangos server
@@ -334,75 +157,113 @@ int main(int argc, char** argv)
     ///- Command line parsing
     char const* cfg_file = MANGOSD_CONFIG_LOCATION;
 
-    char const* options = ":a:c:s:t:";
-
-    ACE_Get_Opt cmd_opts(argc, argv, options);
-    cmd_opts.long_option("version", 'v', ACE_Get_Opt::NO_ARG);
-    cmd_opts.long_option("ahbot", 'a', ACE_Get_Opt::ARG_REQUIRED);
-
     char serviceDaemonMode = '\0';
     std::string testMode;
+    bool consoleDemo = false;               ///< --console-demo: draw a sample startup and exit
+    std::string demoStyle = "auto";
 
-    int option;
-    while ((option = cmd_opts()) != EOF)
+    // Minimal command-line parser. Recognised: -c <file>, -a/--ahbot <file>,
+    // -s <mode>, -t <mode>, -v/--version.
+    for (int i = 1; i < argc; ++i)
     {
-        switch (option)
-        {
-            case 'a':
-                sAuctionBotConfig.SetConfigFileName(cmd_opts.opt_arg());
-                break;
-            case 'c':
-                cfg_file = cmd_opts.opt_arg();
-                break;
-            case 'v':
-                printf("%s\n", GitRevision::GetProjectRevision());
-                return 0;
-            case 's':
-            {
-                const char* mode = cmd_opts.opt_arg();
+        char const* arg = argv[i];
 
-                if (!strcmp(mode, "run"))
-                {
-                    serviceDaemonMode = 'r';
-                }
-#ifdef WIN32
-                else if (!strcmp(mode, "install"))
-                {
-                    serviceDaemonMode = 'i';
-                }
-                else if (!strcmp(mode, "uninstall"))
-                {
-                    serviceDaemonMode = 'u';
-                }
-#else
-                else if (!strcmp(mode, "stop"))
-                {
-                    serviceDaemonMode = 's';
-                }
-#endif
-                else
-                {
-                    sLog.outError("Runtime-Error: -%c unsupported argument %s", cmd_opts.opt_opt(), mode);
-                    usage(argv[0]);
-                    Log::WaitBeforeContinueIfNeed();
-                    return 1;
-                }
-                break;
+        // Fetch the value for an option that requires an argument, or fail.
+        auto value = [&](char const* name) -> char const*
+        {
+            if (i + 1 >= argc)
+            {
+                sLog.outError("Runtime-Error: %s option requires an input argument", name);
+                usage(argv[0]);
+                Log::WaitBeforeContinueIfNeed();
+                return nullptr;
             }
-            case 't':
-                testMode = cmd_opts.opt_arg();
-                break;
-            case ':':
-                sLog.outError("Runtime-Error: -%c option requires an input argument", cmd_opts.opt_opt());
-                usage(argv[0]);
-                Log::WaitBeforeContinueIfNeed();
-                return 1;
-            default:
-                sLog.outError("Runtime-Error: bad format of commandline arguments");
-                usage(argv[0]);
-                Log::WaitBeforeContinueIfNeed();
-                return 1;
+            return argv[++i];
+        };
+
+        if (!strcmp(arg, "-v") || !strcmp(arg, "--version"))
+        {
+            printf("%s\n", GitRevision::GetProjectRevision());
+            return 0;
         }
+        else if (!strcmp(arg, "-c"))
+        {
+            char const* v = value("-c");
+            if (!v) { return 1; }
+            cfg_file = v;
+        }
+        else if (!strcmp(arg, "-a") || !strcmp(arg, "--ahbot"))
+        {
+            char const* v = value("--ahbot");
+            if (!v) { return 1; }
+            sAuctionBotConfig.SetConfigFileName(v);
+        }
+        else if (!strcmp(arg, "-t"))
+        {
+            char const* v = value("-t");
+            if (!v) { return 1; }
+            testMode = v;
+        }
+        else if (!strcmp(arg, "--console-demo"))
+        {
+            consoleDemo = true;
+            // The style is optional: "--console-demo" alone means "auto".
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+            {
+                demoStyle = argv[++i];
+            }
+        }
+        else if (!strcmp(arg, "-s"))
+        {
+            char const* mode = value("-s");
+            if (!mode) { return 1; }
+
+            if (!strcmp(mode, "run"))
+            {
+                serviceDaemonMode = 'r';
+            }
+#ifdef WIN32
+            else if (!strcmp(mode, "install"))
+            {
+                serviceDaemonMode = 'i';
+            }
+            else if (!strcmp(mode, "uninstall"))
+            {
+                serviceDaemonMode = 'u';
+            }
+#else
+            else if (!strcmp(mode, "stop"))
+            {
+                serviceDaemonMode = 's';
+            }
+#endif
+            else
+            {
+                sLog.outError("Runtime-Error: -s unsupported argument %s", mode);
+                usage(argv[0]);
+                Log::WaitBeforeContinueIfNeed();
+                return 1;
+            }
+        }
+        else
+        {
+            sLog.outError("Runtime-Error: bad format of commandline arguments");
+            usage(argv[0]);
+            Log::WaitBeforeContinueIfNeed();
+            return 1;
+        }
+    }
+
+    ///- Draw a sample startup and leave. Deliberately ahead of the config and the
+    ///  databases: the point is to look at this console, and neither has to exist
+    ///  for that. Runs on the same off-thread writer the real startup uses, so what
+    ///  it shows is what a real startup shows.
+    if (consoleDemo)
+    {
+        sLog.StartConsoleThread();
+        StartupUI::Demo(demoStyle);
+        sLog.StopConsoleThread();
+        return 0;
     }
 
 #ifdef _WIN32                                                // windows service command need execute before config read
@@ -449,6 +310,10 @@ int main(int argc, char** argv)
     }
 #endif
 
+    ///- Probe the console and install the startup UI hooks. Must precede the first
+    ///  line drawn, and follows the config, which decides the style.
+    StartupUI::Initialize(sConfig.GetStringDefault("Console.Style", "auto"));
+
     sLog.outString("%s [world-daemon]", GitRevision::GetProjectRevision());
     sLog.outString("%s", GitRevision::GetFullRevision());
     sLog.outString("%s", GitRevision::GetDepElunaFullRevisionStr());
@@ -456,26 +321,15 @@ int main(int argc, char** argv)
     print_banner();
     sLog.outString("Using configuration file %s.", cfg_file);
 
-    DETAIL_LOG("Using SSL version: %s (Library: %s)", OPENSSL_VERSION_TEXT, SSLeay_version(SSLEAY_VERSION));
+    DETAIL_LOG("Using SSL version: %s (Library: %s)", OPENSSL_VERSION_TEXT, OpenSSL_version(OPENSSL_VERSION));
 
-#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
     // RAII provider management - automatically handles cleanup
     OpenSSLProviderManager providerManager;
-
     if (!providerManager.IsInitialized())
     {
         Log::WaitBeforeContinueIfNeed();
         return 0;
     }
-#else
-    if (SSLeay() < 0x10100000L || SSLeay() > 0x10200000L)
-    {
-        DETAIL_LOG("WARNING: OpenSSL version may be out of date or unsupported. Logins to server may not work!");
-        DETAIL_LOG("WARNING: Minimal required version [OpenSSL 1.1.x] and Maximum supported version [OpenSSL 1.2]");
-    }
-#endif
-
-    DETAIL_LOG("Using ACE: %s", ACE_VERSION);
 
     ///- Set progress bars show mode
     BarGoLink::SetOutputState(sConfig.GetBoolDefault("ShowProgressBars", true));
@@ -495,259 +349,26 @@ int main(int argc, char** argv)
         sLog.outString("Daemon PID: %u\n", pid);
     }
 
-    ///- Start the databases
-    if (!start_db())
-    {
-        Log::WaitBeforeContinueIfNeed();
-        return 1;
-    }
-
-    if (!testMode.empty())
-    {
-        int rc = RunMangosdTest(testMode);
-        sLog.outString("mangosd test '%s' exit %d", testMode.c_str(), rc);
-        fflush(stdout);
-        _exit(rc);
-    }
-
-    // Move the console emit off the world/map-update threads. Started only after
-    // the fallible init above (OpenSSL / PID file / DB) so the early-return error
-    // paths never leave a writer thread running into stdio teardown; still placed
-    // before SetInitialWorldSettings() -- the LivingWorld spawn burst -- so the
-    // hot console path is covered. Config/InitColors already applied, so colors
-    // are set; from here the per-call console flush runs on the writer thread.
-    sLog.StartConsoleThread();
-
-    // Now the writer owns stdout: route progress-bar redraws through it too, so
-    // the bars (previously raw printf on the loading/world thread) no longer
-    // race the writer thread. Must follow StartConsoleThread so the async path
-    // is live; SetConsoleSink is a plain pointer swap (ConsoleEmitRaw itself
-    // falls back to a synchronous write whenever the writer is not running).
-    BarGoLink::SetConsoleSink(&MangosBarConsoleSink);
-
-    ///- Set Realm to Offline, if crash happens. Only used once.
-    LoginDatabase.DirectPExecute("UPDATE `realmlist` SET `realmflags` = `realmflags` | %u WHERE `id` = '%u'", REALM_FLAG_OFFLINE, realmID);
-
-    ///- Initialize the World
-    sWorld.SetInitialWorldSettings();
-
-#ifndef _WIN32
-    detachDaemon();
-#endif
-
-    // set realm flag by configuration boolean
-    uint8 recommendedornew = sWorld.getConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW) ? REALM_FLAG_NEW_PLAYERS : REALM_FLAG_RECOMMENDED;
-    uint8 realmstatus = sWorld.getConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW_ENABLED) ? recommendedornew : uint8(REALM_FLAG_NONE);
-
-    // set realmbuilds depend on mangosd expected builds, and set server online
-    std::string builds = AcceptableClientBuildsListStr();
-    LoginDatabase.escape_string(builds);
-    LoginDatabase.DirectPExecute("UPDATE `realmlist` SET `realmflags` = %u, `population` = 0, `realmbuilds` = '%s'  WHERE `id` = '%u'", realmstatus, builds.c_str(), realmID);
-
-    // server loaded successfully => enable async DB requests
-    // this is done to forbid any async transactions during server startup!
-
-    WorldDatabase.ThreadStart();
-
-    CharacterDatabase.AllowAsyncTransactions();
-    WorldDatabase.AllowAsyncTransactions();
-    LoginDatabase.AllowAsyncTransactions();
-
     ///- Catch termination signals
     hook_signals();
 
-    //************************************************************************************************************************
-    // 1. Start the World thread
-    //************************************************************************************************************************
-
-    std::string host = sConfig.GetStringDefault("BindIP", "0.0.0.0");
-    uint16 port = sWorld.getConfig(CONFIG_UINT32_PORT_WORLD);
-
-    WorldThread* worldThread = new WorldThread(port, host.c_str());
-    worldThread->open(0);
-
-    //************************************************************************************************************************
-    // 2. Start the remote access listener thread
-    //************************************************************************************************************************
-    RAThread* raThread = NULL;
-    if (sConfig.GetBoolDefault("Ra.Enable", false))
-    {
-        port = sConfig.GetIntDefault("Ra.Port", 3443);
-        host = sConfig.GetStringDefault("Ra.IP", "0.0.0.0");
-
-        raThread = new RAThread(port, host.c_str());
-        raThread->open(0);
-    }
-
-    //************************************************************************************************************************
-    // 3. Start the SOAP listener thread, if enabled
-    //************************************************************************************************************************
-#ifdef ENABLE_SOAP
-    std::shared_ptr<std::thread> soapThread;
-    if (sConfig.GetBoolDefault("SOAP.Enabled", false))
-    {
-        soapThread.reset(new std::thread(SoapThread, sConfig.GetStringDefault("SOAP.IP", "127.0.0.1"), uint16(sConfig.GetIntDefault("SOAP.Port", 7878))), [](std::thread* thread)
-        {
-            thread->join();
-            delete thread;
-        });
-    }
-#else /* ENABLE_SOAP */
-    if (sConfig.GetBoolDefault("SOAP.Enabled", false))
-    {
-        sLog.outError("SOAP is enabled but wasn't included during compilation, not activating it.");
-    }
-#endif /* ENABLE_SOAP */
-
-    //************************************************************************************************************************
-    // 4. Start the freeze catcher thread
-    //************************************************************************************************************************
-    uint32 stuckTime = sConfig.GetIntDefault("MaxCoreStuckTime", 0);
-    sLog.outString("AntiFreezeThread: MaxCoreStuckTime = %u, watchdog %s", stuckTime, stuckTime > 0 ? "ARMED" : "DISABLED");
-    AntiFreezeThread* freezeThread = new AntiFreezeThread(1000 * stuckTime);
-    freezeThread->open(NULL);
-
-    //************************************************************************************************************************
-    // 5. Start the AH subprocess worker (optional, default-off)
-    //************************************************************************************************************************
-    WorkerSupervisor* ahSupervisor = NULL;
-    if (sConfig.GetBoolDefault("AH.Service.Enabled", false))
-    {
-        // SP-1 coordinator authority: the worker is the configured AH read
-        // authority from here on. Set BEFORE Start() so that even if Start()
-        // fails (missing exe / port taken / bad bot GUID) and the supervisor is
-        // torn down below, the read handlers still send "AH unavailable" rather
-        // than silently reverting to in-process reads.
-        sWorld.SetAhServiceConfigured(true);
-
-        // SP-2: arm the write-authority bit for the IPC handshake BEFORE
-        // Start() -- IPC_HELLO_ACK carries {runId, writeAuthority} to the
-        // worker (spec decision 7: the worker never reads it from its own
-        // conf). The flag is boot-latched and the setter is static, so this
-        // one call covers every child respawn.
-        IpcServerHandler::SetPendingWriteAuthority(sWorld.IsAhWriteAuthority());
-
-        ahSupervisor = new WorkerSupervisor(
-            "ah-service",
-            sConfig.GetStringDefault("AH.Service.Path", "service-workers/ah-service/ah-service"),
-            uint16(sConfig.GetIntDefault("AH.Service.Port", 5760)),
-            sConfig.GetStringDefault("AH.Service.Secret", "changeme"),
-            sAuctionBotConfig.GetAHBotId(),
-            sConfig.GetStringDefault("AH.Service.Config", "ah-service.conf"));
-
-        if (!ahSupervisor->Start())
-        {
-            sLog.outError("AH service failed to start; falling back to in-process bot");
-            delete ahSupervisor;
-            ahSupervisor = NULL;
-        }
-    }
-    // Expose supervisor to World so the "ah console" command can reach it.
-    // Per-tick Tick()/drain wiring is deferred to Task 6.
-    sWorld.SetAhSupervisor(ahSupervisor);
-
-    //************************************************************************************************************************
-    // 6. Start the console thread
-    //************************************************************************************************************************
-    CliThread* cliThread = NULL;
-#ifdef _WIN32
-    if (sConfig.GetBoolDefault("Console.Enable", true) && (m_ServiceStatus == -1)/* need disable console in service mode*/)
-#else
-    if (sConfig.GetBoolDefault("Console.Enable", true))
-#endif
-    {
-        ///- Launch CliRunnable thread
-        cliThread = new CliThread(sConfig.GetBoolDefault("BeepAtStart", true));
-        cliThread->activate();
-    }
-
-    worldThread->wait();
-    sLog.outString("[shutdown] worldThread->wait() returned (world thread joined)");
-
-    if (cliThread)
-    {
-        cliThread->cli_shutdown();
-        delete cliThread;
-    }
-
-    sLog.outString("[shutdown] joining all ACE task threads (ACE_Thread_Manager::wait)...");
-    ACE_Thread_Manager::instance()->wait();
-    sLog.outString("[shutdown] all ACE task threads joined");
-    sLog.outString("Halting process...");
-
-    ///- Stop freeze protection before shutdown tasks
-    if (freezeThread)
-    {
-        delete freezeThread;
-    }
-
-    if (raThread)
-    {
-        delete raThread;
-    }
-
-    // Shut down the AH subprocess supervisor BEFORE deleting worldThread.
-    // worldThread->wait() has already returned, so the world tick loop is
-    // stopped and no concurrent Tick() calls can race with Shutdown().
-    if (ahSupervisor)
-    {
-        ahSupervisor->Shutdown();
-        delete ahSupervisor;
-        ahSupervisor = NULL;
-    }
-
-    delete worldThread;
+    ///- Bring the world up, run it, and take it back down. Returns once the world has
+    ///  stopped and every auxiliary thread has been joined.
+    Master master;
+    const int code = master.Run(testMode);
 
     ///- Remove signal handling before leaving
     unhook_signals();
-
-    ///- Set server offline in realmlist
-    LoginDatabase.DirectPExecute("UPDATE `realmlist` SET `realmflags` = `realmflags` | %u WHERE `id` = '%u'", REALM_FLAG_OFFLINE, realmID);
-
-    ///- Clean account database before leaving
-    clear_online_accounts();
-
-    // send all still queued mass mails (before DB connections shutdown)
-    sMassMailMgr.Update(true);
-
-    ///- Wait for DB delay threads to end
-    sLog.outString("[shutdown] halting DB delay threads (Character/World/Login)...");
-    CharacterDatabase.HaltDelayThread();
-    WorldDatabase.HaltDelayThread();
-    LoginDatabase.HaltDelayThread();
-    sLog.outString("[shutdown] DB delay threads halted");
-
-    // This is done to make sure that we cleanup our so file before it's
-    // unloaded automatically, since the ~ScriptMgr() is called to late
-    // as it's allocated with static storage.
-    sLog.outString("[shutdown] unloading script library...");
-    sScriptMgr.UnloadScriptLibrary();
-    sLog.outString("[shutdown] script library unloaded");
-
-    ///- Exit the process with specified return value
-    int code = World::GetExitCode();
 
 #ifdef WIN32
     _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
 #endif
 
-#ifdef ENABLE_SOAP
-    // Join the SOAP listener before stopping the console writer. SOAP runs on a
-    // std::thread (NOT an ACE task), so ACE_Thread_Manager::wait() above did NOT
-    // join it; its shared_ptr deleter would otherwise join only at main() scope
-    // exit -- AFTER StopConsoleThread() deletes the writer -- leaving a window
-    // where a late SOAP log could enqueue into a freed ConsoleLogWriter (UAF).
-    // Resetting here runs the deleter (join + delete) now, so the writer's
-    // quiescence invariant holds for SOAP too.
-    soapThread.reset();
-#endif
-
     // Stop and join the off-thread console writer before the final shutdown lines:
-    // later lines ("Bye!") then take the synchronous fallback. Placed after EVERY
-    // console-producing thread is gone -- world/map ACE workers (joined by
-    // ACE_Thread_Manager::wait above), the CLI thread, and the SOAP std::thread
-    // (joined just above) -- so no concurrent producer can race the writer delete.
-    // The remaining main-thread shutdown lines are drained by the still-running
+    // later lines ("Bye!") then take the synchronous fallback. Master::Run() has already
+    // joined EVERY console-producing thread -- the world/map-update workers, the CLI
+    // reader and the SOAP listener -- so no concurrent producer can race the writer
+    // delete. The remaining main-thread shutdown lines are drained by the still-running
     // writer before it joins. Precedes the final Flush.
     sLog.StopConsoleThread();
 

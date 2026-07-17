@@ -45,7 +45,7 @@
  * @see Opcodes.cpp for opcode registration
  */
 
-#include "WorldSocket.h"                                    // must be first to make ACE happy with ACE includes in it
+#include "WorldSocket.h"
 #include "Common.h"
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
@@ -72,6 +72,7 @@
 // Warden
 #include "WardenWin.h"
 #include "WardenMac.h"
+#include <cstdarg>
 
 /**
  * @brief Helper for Map session filtering
@@ -144,17 +145,16 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
 }
 
 /// WorldSession constructor
-WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, time_t mute_time, LocaleConstant locale)
+WorldSession::WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, AccountTypes sec, time_t mute_time, LocaleConstant locale)
     : m_muteTime(mute_time),
-    _player(NULL), m_Socket(sock), _security(sec), _accountId(id), _warden(NULL), _build(0), _logoutTime(0),
+    _player(NULL), m_Socket(std::move(sock)), _security(sec), _accountId(id), _warden(NULL), _build(0), _logoutTime(0),
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
     m_latency(0), m_clientTimeDelay(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_npcWatchLastGuid()
 {
-    if (sock)
+    if (m_Socket)
     {
-        m_Address = sock->GetRemoteAddress();
-        sock->AddReference();
+        m_Address = m_Socket->GetRemoteAddress();
     }
 }
 
@@ -171,8 +171,7 @@ WorldSession::~WorldSession()
     if (m_Socket)
     {
         m_Socket->CloseSocket();
-        m_Socket->RemoveReference();
-        m_Socket = NULL;
+        m_Socket = nullptr;
     }
 
     // Warden
@@ -431,8 +430,7 @@ bool WorldSession::Update(PacketFilter& updater)
     ///- Cleanup socket pointer if need
     if (m_Socket && m_Socket->IsClosed())
     {
-        m_Socket->RemoveReference();
-        m_Socket = NULL;
+        m_Socket = nullptr;
     }
 
     // Warden

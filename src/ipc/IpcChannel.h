@@ -25,8 +25,6 @@
 #include "Common.h"
 #include "IpcMessage.h"
 #include "IpcThread.h"
-#include "IpcServerHandler.h"
-#include "IpcClientHandler.h"
 #include "IpcLink.h"
 #include "BoundedQueue.h"
 #include "Threading/Threading.h"
@@ -167,7 +165,7 @@ class IpcServer
         BoundedQueue<IpcMessage>    m_inbound;
         IpcServerLink*              m_link;       ///< Shared link (refcounted).
         IpcThread*                  m_thread;
-        ACE_Based::Thread*          m_aceThread;
+        MaNGOS::Thread*             m_worker;     ///< Server driver thread.
 
         // Non-copyable.
         IpcServer(const IpcServer&);
@@ -247,7 +245,7 @@ class IpcClient
         BoundedQueue<IpcMessage>    m_inbound;
         IpcClientLink*              m_link;       ///< Shared link (refcounted).
         IpcClientThread*            m_thread;
-        ACE_Based::Thread*          m_aceThread;
+        MaNGOS::Thread*             m_worker;     ///< Client driver thread.
 
         // Non-copyable.
         IpcClient(const IpcClient&);

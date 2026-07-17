@@ -29,8 +29,10 @@
 #include "Policies/Singleton.h"
 #include "GridDefines.h"
 
+#include <atomic>
 #include <bitset>
 #include <list>
+#include <mutex>
 
 class Creature;
 class Unit;
@@ -217,7 +219,7 @@ template<typename Countable>
         Countable m_count;
 };
 
-typedef ACE_Atomic_Op<ACE_Thread_Mutex, long> AtomicLong;
+typedef std::atomic<long> AtomicLong;
 
 #define MAX_HEIGHT            100000.0f                     // can be use for find ground height at surface
 #define INVALID_HEIGHT       -100000.0f                     // for check, must be equal to VMAP_INVALID_HEIGHT, real value for unknown height is VMAP_INVALID_HEIGHT_VALUE
@@ -286,17 +288,17 @@ class TerrainInfo : public Referencable<AtomicLong>
         // global garbage collection timer
         IntervalTimer i_timer;
 
-        typedef ACE_Thread_Mutex LOCK_TYPE;
+        typedef std::mutex LOCK_TYPE;
         LOCK_TYPE m_mutex;
         char _cache_guard[1024];
         LOCK_TYPE m_refMutex;
 };
 
 // class for managing TerrainData object and all sort of geometry querying operations
-class TerrainManager : public MaNGOS::Singleton<TerrainManager, MaNGOS::ClassLevelLockable<TerrainManager, ACE_Thread_Mutex> >
+class TerrainManager : public MaNGOS::Singleton<TerrainManager>
 {
     typedef UNORDERED_MAP<uint32,  TerrainInfo*> TerrainDataMap;
-    friend class MaNGOS::OperatorNew<TerrainManager>;
+    friend class MaNGOS::Singleton<TerrainManager>;
 
     public:
         TerrainInfo* LoadTerrain(const uint32 mapId);
@@ -334,7 +336,7 @@ class TerrainManager : public MaNGOS::Singleton<TerrainManager, MaNGOS::ClassLev
         TerrainManager(const TerrainManager&);
         TerrainManager& operator=(const TerrainManager&);
 
-        typedef ACE_Thread_Mutex LOCK_TYPE;
+        typedef std::mutex LOCK_TYPE;
         LOCK_TYPE m_mutex;
         TerrainDataMap i_TerrainMap;
 };

@@ -55,6 +55,7 @@
 #include "Chat.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <cstdarg>
 #endif /* ENABLE_ELUNA */
 
 namespace MaNGOS

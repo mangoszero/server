@@ -36,6 +36,8 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 
+#include <cfloat>
+
 /**
  * @brief Determines whether PetAI can control the given creature.
  *

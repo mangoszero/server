@@ -73,7 +73,6 @@ their systems package management instead of source packages.**
 
 * **[Git][34] / [Github for Windows][35]**: This version control software allows you to get the source files in the first place.
 * **[MySQL][40]** / **[MariaDB][41]**: These databases are used to store content and user data.
-* **[ACE][43]**: aka Adaptive Communication Environment, provides us with a solid cross-platform framework for abstracting operating system specific details.
 * **[Recast][44]**: In order to create navigation data from the client's map files, Recast is used to do the dirty work. It provides functions for rendering, pathing, etc.
 * **[G3D][45]**: This engine provides the basic framework for handling 3D data and is used to handle basic map data.
 * **[Stormlib][46]**: Provides an abstraction layer for reading from the client's data files.
@@ -81,7 +80,7 @@ their systems package management instead of source packages.**
 * **[Bzip2][54]/[Bzip2 for Windows][52]** provides compression algorithms used in MPQ archives.
 * **[OpenSSL][48]/[OpenSSL for Windows][55]** provides encryption algorithms used when authenticating clients.
 
-**ACE**, **Recast**, **G3D**, **Stormlib**, **Zlib** and **Bzip2** are included in the standard distribution as
+**Recast**, **G3D**, **Stormlib**, **Zlib** and **Bzip2** are included in the standard distribution as
 we rely on specific versions.
 
 Optional dependencies
@@ -199,7 +198,6 @@ World of Warcraft, and all related art, images, and lore are copyright [Blizzard
 [35]: http://windows.github.com/ "github - windows client"
 [40]: https://dev.mysql.com/downloads/ "MySQL - The world's most popular open source database"
 [41]: https://mariadb.org/download/ "MariaDB - An enhanced, drop-in replacement for MySQL"
-[43]: http://www.dre.vanderbilt.edu/~schmidt/ACE.html "ACE - The ADAPTIVE Communication Environment"
 [44]: http://github.com/memononen/recastnavigation "Recast - Navigation-mesh Toolset for Games"
 [45]: http://sourceforge.net/projects/g3d/ "G3D - G3D Innovation Engine"
 [46]: http://zezula.net/en/mpq/stormlib.html "Stormlib - A library for reading data from MPQ archives"

@@ -46,9 +46,8 @@
  * OPEN-2: a DISTINCT parent-death signal (SIGUSR1, not SIGTERM) is used so
  * SIGTERM keeps its default-terminate disposition. The child therefore does
  * NOT swallow a stray/operator SIGTERM while parented. The supervisor's
- * hard-kill is unaffected either way: ACE_Process_Manager::terminate() ->
- * ACE::terminate_process() uses POSIX kill(pid, SIGKILL) (signal 9,
- * ACE.cpp:250), which is uncatchable, so the supervisor can ALWAYS kill the
+ * hard-kill is unaffected either way: it uses POSIX kill(pid, SIGKILL)
+ * (signal 9), which is uncatchable, so the supervisor can ALWAYS kill the
  * child regardless of which signals it handles.
  */
 

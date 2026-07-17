@@ -4,7 +4,7 @@ FROM ubuntu:22.04 AS build-step
 ENV TZ=US DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get -y update
-RUN apt-get -y install curl autoconf automake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool \
+RUN apt-get -y install curl autoconf automake libbz2-dev libssl-dev libmysqlclient-dev libtool \
     build-essential lsb-release software-properties-common cmake libreadline-dev clang
 
 COPY . /mangoserver

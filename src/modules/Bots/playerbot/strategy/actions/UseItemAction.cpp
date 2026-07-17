@@ -7,6 +7,8 @@
 #include "CellImpl.h"
 #include "../../PlayerbotAIConfig.h"
 
+#include <cfloat>
+
 using namespace ai;
 
 

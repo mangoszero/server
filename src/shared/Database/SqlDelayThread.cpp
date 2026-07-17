@@ -75,7 +75,7 @@ SqlDelayThread::~SqlDelayThread()
  * database's configured ping interval.
  *
  * @note This method is called when the thread starts. It should not
- * be called directly - use ACE_Based::Thread::Start() instead.
+ * be called directly - use MaNGOS::Thread::Start() instead.
  */
 void SqlDelayThread::run()
 {
@@ -95,7 +95,7 @@ void SqlDelayThread::run()
     {
         // if the running state gets turned off while sleeping
         // empty the queue before exiting
-        ACE_Based::Thread::Sleep(loopSleepms);
+        MaNGOS::Thread::Sleep(loopSleepms);
 
         uint32 start = getMSTime();
         ProcessRequests();

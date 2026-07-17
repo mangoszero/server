@@ -161,6 +161,24 @@ else()
   endif()
 endif()
 
+# revision_data.h.in unconditionally references @dep_eluna_rev_hash@ /
+# @dep_sd3_rev_hash@ (and _date@/_branch@), but the blocks above only ever
+# set those variables when SCRIPT_LIB_ELUNA/SCRIPT_LIB_SD3 is enabled. When a
+# module is skipped, give its revision variables clear placeholder values
+# instead of leaving them undefined: configure_file() silently substitutes
+# an unset @VAR@ with an empty string, which produced a garbled banner like
+# "Eluna submodule revision:   ( branch)" instead of saying it wasn't built.
+if(NOT SCRIPT_LIB_ELUNA)
+  set(dep_eluna_rev_hash   "not built")
+  set(dep_eluna_rev_date   "n/a")
+  set(dep_eluna_rev_branch "disabled")
+endif()
+if(NOT SCRIPT_LIB_SD3)
+  set(dep_sd3_rev_hash   "not built")
+  set(dep_sd3_rev_date   "n/a")
+  set(dep_sd3_rev_branch "disabled")
+endif()
+
 # For package / copyright information we always need proper date
 string(REGEX MATCH "([0-9]+)-([0-9]+)-([0-9]+)" rev_date_fallback_match ${rev_date_fallback})
 set(rev_year  ${CMAKE_MATCH_1})
@@ -202,12 +220,12 @@ if(
   )
   set(rev_hash_cached             "${rev_hash}"             CACHE INTERNAL "Cached commit-hash"       )
   set(rev_branch_cached           "${rev_branch}"           CACHE INTERNAL "Cached branch name"       )
-  if(SCRIPT_LIB_ELUNA)
-    set(dep_eluna_rev_hash_cached   "${dep_eluna_rev_hash}"   CACHE INTERNAL "Cached Eluna commit-hash" )
-    set(dep_eluna_rev_branch_cached "${dep_eluna_rev_branch}" CACHE INTERNAL "Cached Eluna branch name" )
-  endif()
-  if(SCRIPT_LIB_SD3)
-    set(dep_sd3_rev_hash_cached     "${dep_sd3_rev_hash}"      CACHE INTERNAL "Cached SD3 commit-hash"   )
-    set(dep_sd3_rev_branch_cached   "${dep_sd3_rev_branch}"    CACHE INTERNAL "Cached SD3 branch name"   )
-  endif()
+  # Cached unconditionally (not just when the module is enabled), so the
+  # "not built"/"disabled" placeholders set above are remembered too -
+  # otherwise every reconfigure with the module off would see a permanent
+  # cache mismatch and needlessly regenerate revision_data.h every time.
+  set(dep_eluna_rev_hash_cached   "${dep_eluna_rev_hash}"   CACHE INTERNAL "Cached Eluna commit-hash" )
+  set(dep_eluna_rev_branch_cached "${dep_eluna_rev_branch}" CACHE INTERNAL "Cached Eluna branch name" )
+  set(dep_sd3_rev_hash_cached     "${dep_sd3_rev_hash}"      CACHE INTERNAL "Cached SD3 commit-hash"   )
+  set(dep_sd3_rev_branch_cached   "${dep_sd3_rev_branch}"    CACHE INTERNAL "Cached SD3 branch name"   )
 endif()

@@ -28,9 +28,10 @@
 #include "Common.h"
 #include "Platform/Define.h"
 #include "Policies/Singleton.h"
-#include <ace/Recursive_Thread_Mutex.h>
 #include "Map.h"
 #include "GridStates.h"
+
+#include <mutex>
 #include "MapUpdater.h"
 
 class Transport;
@@ -57,9 +58,9 @@ struct MapID
     uint32 nInstanceId;
 };
 
-class MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockable<MapManager, ACE_Recursive_Thread_Mutex> >
+class MapManager : public MaNGOS::Singleton<MapManager>
 {
-    friend class MaNGOS::OperatorNew<MapManager>;
+    friend class MaNGOS::Singleton<MapManager>;
 
     public:
         typedef std::map<MapID, Map* > MapMapType;
@@ -212,7 +213,8 @@ class MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockab
         MapUpdater m_updater;
         uint32 i_MaxInstanceId;
 
-        typedef ACE_Recursive_Thread_Mutex LOCK_TYPE;
+        // Recursive: CreateMap/CreateInstance hold this and call FindMap, which re-locks.
+        typedef std::recursive_mutex LOCK_TYPE;
         mutable LOCK_TYPE m_lock;
 };
 

@@ -1,4 +1,3 @@
-#include "ace/Task.h"
 #include "Category.h"
 #include "ItemBag.h"
 #include "AhBot.h"
@@ -15,6 +14,8 @@
 #include "playerbot/PlayerbotAIConfig.h"
 #include "AccountMgr.h"
 #include "playerbot/playerbot.h"
+
+#include <thread>
 
 using namespace ahbot;
 
@@ -125,15 +126,6 @@ ObjectGuid AhBot::GetAHBplayerGUID()
     return ObjectGuid(sAhBotConfig.guid);
 }
 
-class AhbotThread: public ACE_Task <ACE_MT_SYNCH>
-{
-    private:
-        AhBot* bot;
-    public:
-        AhbotThread(AhBot* bot) : bot(bot) {}
-        int svc(void) { bot->ForceUpdate(); return 0; }
-};
-
 void AhBot::Update()
 {
     time_t now = time(0);
@@ -150,8 +142,7 @@ void AhBot::Update()
 
     nextAICheckTime = time(0) + sAhBotConfig.updateInterval;
 
-    AhbotThread *thread = new AhbotThread(this);
-    thread->activate();
+    std::thread([this] { ForceUpdate(); }).detach();
 }
 
 void AhBot::ForceUpdate()
@@ -715,8 +706,7 @@ void AhBot::HandleCommand(string command)
 
     if (command == "update")
     {
-        AhbotThread *thread = new AhbotThread(this);
-        thread->activate();
+        std::thread([this] { ForceUpdate(); }).detach();
         return;
     }
 
