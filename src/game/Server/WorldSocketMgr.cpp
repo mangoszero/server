@@ -37,6 +37,7 @@
 WorldSocketMgr::WorldSocketMgr()
     : m_started(false)
 {
+    InitializeOpcodes();
 }
 
 WorldSocketMgr::~WorldSocketMgr()
