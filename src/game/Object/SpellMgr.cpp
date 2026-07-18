@@ -2514,6 +2514,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
         spellInfo_1->SpellIconID != 0 && spellInfo_2->SpellIconID != 0)
     {
         bool isModifier = false;
+        bool hasMatchingAura = false;
         for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
         {
             if (spellInfo_1->EffectAura[i] == SPELL_AURA_ADD_FLAT_MODIFIER ||
@@ -2523,9 +2524,15 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             {
                 isModifier = true;
             }
+
+            if (spellInfo_1->EffectAura[i] && spellInfo_2->EffectAura[i] &&
+                spellInfo_1->EffectAura[i] == spellInfo_2->EffectAura[i])
+            {
+                hasMatchingAura = true;
+            }
         }
 
-        if (!isModifier)
+        if (!isModifier && hasMatchingAura)
         {
             return true;
         }
