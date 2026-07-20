@@ -55,11 +55,6 @@ void FleeManager::calculateDistanceToCreatures(FleePoint *point)
         }
 
         float d = unit->GetDistance(point->x, point->y, point->z);
-        if (d <= sPlayerbotAIConfig.tooCloseDistance)
-        {
-            continue;
-        }
-
         distance.probe(d);
     }
 }
