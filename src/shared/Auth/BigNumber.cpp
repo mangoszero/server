@@ -183,13 +183,9 @@ uint8* BigNumber::AsByteArray(int minSize)
     delete[] _array;
     _array = new uint8[length];
 
-    // If we need more bytes than length of BigNumber set the rest to 0
-    if (length > GetNumBytes())
-    {
-        memset((void*)_array, 0, length);
-    }
-
-    BN_bn2bin(_bn, (unsigned char*)_array);
+    // Zero padding must be added as leading zeroes, not trailing ones -
+    // BN_bn2binpad right-aligns the value in the buffer for us.
+    BN_bn2binpad(_bn, (unsigned char*)_array, length);
 
     std::reverse(_array, _array + length);
 
@@ -207,13 +203,9 @@ uint8 *BigNumber::AsByteArray(int minSize, bool reverse)
     }
     _array = new uint8[length];
 
-    // If we need more bytes than length of BigNumber set the rest to 0
-    if (length > GetNumBytes())
-    {
-        memset((void*)_array, 0, length);
-    }
-
-    BN_bn2bin(_bn, (unsigned char *)_array);
+    // Zero padding must be added as leading zeroes, not trailing ones -
+    // BN_bn2binpad right-aligns the value in the buffer for us.
+    BN_bn2binpad(_bn, (unsigned char *)_array, length);
 
     if (reverse)
     {
