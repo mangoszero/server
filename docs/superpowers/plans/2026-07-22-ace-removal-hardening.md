@@ -58,15 +58,16 @@ add_test(NAME auth_crypto_tests COMMAND auth_crypto_tests)
 
 add_executable(lease_tests LeaseTests.cpp)
 target_include_directories(lease_tests PRIVATE "${PROJECT_SOURCE_DIR}/src/shared")
+target_link_libraries(lease_tests PRIVATE Threads::Threads)
 add_test(NAME lease_tests COMMAND lease_tests)
 
 add_executable(network_regression_tests NetworkRegressionTests.cpp)
-target_link_libraries(network_regression_tests PRIVATE shared)
+target_link_libraries(network_regression_tests PRIVATE shared Threads::Threads)
 add_test(NAME network_regression_tests COMMAND network_regression_tests)
 set_tests_properties(network_regression_tests PROPERTIES TIMEOUT 60)
 ```
 
-Guard backend-specific cases inside the source with `_WIN32`, `MANGOS_USE_IO_URING`, and the existing POSIX conditions; an unsupported backend prints a skip line but does not hide platform-independent tests.
+The root `CMakeLists.txt` already calls `find_package(Threads REQUIRED)` before adding `src` or `tests`, so `Threads::Threads` is visible in this subdirectory. Guard backend-specific cases inside the source with `_WIN32`, `MANGOS_USE_IO_URING`, and the existing POSIX conditions; an unsupported backend prints a skip line but does not hide platform-independent tests. `WITH_IO_URING` is the CMake option, and `src/shared/CMakeLists.txt` deliberately exports the `MANGOS_USE_IO_URING` compile definition as `PUBLIC` through the `shared` target when that option resolves successfully, so the test source must use `MANGOS_USE_IO_URING`.
 
 - [ ] **Step 3: Add minimal assertion support**
 
@@ -103,6 +104,8 @@ git commit -m "test: add ACE removal regression harness"
 - Modify: `CMakeLists.txt:148`
 - Modify: `src/shared/Auth/OpenSSLProvider.h`
 - Modify: `src/shared/Auth/OpenSSLProvider.cpp:82-178`
+- Modify: `src/realmd/Main.cpp:425-430`
+- Modify: `src/mangosd/mangosd.cpp:327-332`
 - Test: `tests/AuthCryptoTests.cpp`
 
 - [ ] **Step 1: Write fixed authentication vectors**
@@ -138,12 +141,14 @@ CHECK_HEX(hmac.GetDigest(), hmac.GetLength(),
 
 uint8 rc4Key[] = {'K', 'e', 'y'};
 uint8 rc4Data[] = {'P', 'l', 'a', 'i', 'n', 't', 'e', 'x', 't'};
-ARC4 rc4(rc4Key, sizeof(rc4Key));
+OpenSSLProviderManager providerManager;
+CHECK(providerManager.IsInitialized());
+ARC4 rc4(rc4Key, static_cast<uint8>(sizeof(rc4Key)));
 rc4.UpdateData(sizeof(rc4Data), rc4Data);
 CHECK_HEX(rc4Data, sizeof(rc4Data), "bbf316e8d940af0ad3");
 ```
 
-Construct `OpenSSLProviderManager` before the RC4 case and assert `IsInitialized()`. Also query `GetLegacyProvider().Version()` and compare its parsed major with `(OpenSSL_version_num() >> 28) & 0x0f`.
+Keep `providerManager` alive until the RC4 object has been destroyed. Query `GetLegacyProvider().Version()` and compare its parsed major with `(OpenSSL_version_num() >> 28) & 0x0f`. The constructor and update argument order above matches `ARC4(uint8* seed, uint8 len)` and `UpdateData(int len, uint8* data)` in `src/shared/Auth/ARC4.h`; similarly, the SHA-1 and HMAC calls match their current headers.
 
 - [ ] **Step 2: Run the tests red in the known mixed environment**
 
@@ -155,7 +160,7 @@ ctest --test-dir E:\Mangos\WIP\Zero\Testing\server_build `
   -C RelWithDebInfo -R auth_crypto_tests --output-on-failure
 ```
 
-Expected before the startup validation: the explicit major-agreement assertion exposes the mixed runtime/provider installation, or RC4 initialization fails. Record which assertion fails; do not copy both DLL majors into the test directory.
+Expected before the startup validation: the explicit major-agreement assertion exposes the mixed runtime/provider installation, or RC4 initialization fails. Record which assertion fails; do not copy both DLL majors into the test directory. This is a one-time manual demonstration because CI should not install deliberately mismatched OpenSSL binaries. The permanent automated guard is the provider/runtime major-agreement assertion plus the startup failure check below.
 
 - [ ] **Step 3: Add the configure-time upper bound and requested comment**
 
@@ -208,7 +213,49 @@ In `OpenSSLProviderManager`, after both providers load:
 
 Do not log “OpenSSL 3.x providers loaded successfully” before the version and RC4 probes pass.
 
-- [ ] **Step 5: Rebuild and run green with one OpenSSL 3.x installation**
+- [ ] **Step 5: Preserve the daemon startup gates and make failure observable**
+
+Both daemons already construct `OpenSSLProviderManager` before `StartDB()`/`Master::Run()` and return immediately when `IsInitialized()` is false. Preserve those locations, but change their failure return from `0` to `1` so service supervisors and the negative smoke test can distinguish a fatal provider failure from a clean stop:
+
+```cpp
+OpenSSLProviderManager providerManager;
+if (!providerManager.IsInitialized())
+{
+    Log::WaitBeforeContinueIfNeed();
+    return 1;
+}
+```
+
+Prove the existing gate without copying another OpenSSL major into the install directory. Point `OPENSSL_MODULES` at an empty temporary directory, start each installed daemon, and require a non-zero exit before any database connection or listener startup appears in its log:
+
+```powershell
+$emptyModules = Join-Path $env:TEMP 'mangos-empty-openssl-modules'
+New-Item -ItemType Directory -Path $emptyModules -Force | Out-Null
+$savedModules = $env:OPENSSL_MODULES
+try {
+  $env:OPENSSL_MODULES = $emptyModules
+  & C:\OpenSSL-Win64\bin\openssl.exe list -providers -provider legacy 2>&1 | Out-Null
+  if ($LASTEXITCODE -eq 0) {
+    throw 'OPENSSL_MODULES empty-directory probe unexpectedly loaded legacy'
+  }
+  Push-Location E:\Mangos\WIP\Zero\Testing\server_install
+  try {
+    & .\realmd.exe
+    if ($LASTEXITCODE -eq 0) { throw 'realmd accepted an unusable provider setup' }
+    & .\mangosd.exe
+    if ($LASTEXITCODE -eq 0) { throw 'mangosd accepted an unusable provider setup' }
+  } finally {
+    Pop-Location
+  }
+} finally {
+  $env:OPENSSL_MODULES = $savedModules
+  Remove-Item -LiteralPath $emptyModules -Force
+}
+```
+
+Expected: the preflight proves this OpenSSL distribution honors the empty module directory, both processes log provider initialization failure, exit non-zero, and never begin database or network initialization. This preflight was confirmed locally with OpenSSL 3.6.2; retaining it prevents a future distribution fallback from accidentally proceeding to database startup. The one-time mixed-major run from Step 2 separately confirms that the new mismatch branch reaches this same gate.
+
+- [ ] **Step 6: Rebuild and run green with one OpenSSL 3.x installation**
 
 ```powershell
 $env:OPENSSL_MODULES='C:\OpenSSL-Win64\bin'
@@ -220,10 +267,10 @@ ctest --test-dir E:\Mangos\WIP\Zero\Testing\server_build `
 
 Expected: BigNumber, SHA-1, HMAC-SHA1, RC4, provider-load, and major-agreement cases all pass using only OpenSSL 3.x.
 
-- [ ] **Step 6: Commit the policy and authentication coverage**
+- [ ] **Step 7: Commit the policy and authentication coverage**
 
 ```powershell
-git add CMakeLists.txt src/shared/Auth/OpenSSLProvider.h src/shared/Auth/OpenSSLProvider.cpp tests/AuthCryptoTests.cpp
+git add CMakeLists.txt src/shared/Auth/OpenSSLProvider.h src/shared/Auth/OpenSSLProvider.cpp src/realmd/Main.cpp src/mangosd/mangosd.cpp tests/AuthCryptoTests.cpp
 git commit -m "fix: enforce OpenSSL 3 and validate legacy crypto"
 ```
 
@@ -276,11 +323,24 @@ SendQueue out;
 
 Under `mu`, `post()` must reject data when `ctx == nullptr || closeRequested`; otherwise it appends and starts the send before releasing the same state lock. Under the same `mu`, `requestClose()` changes `closeRequested` exactly once and asks the owner to post the counted control operation. `disarm()` nulls `ctx`, keeps `closeRequested` true, and closes the flow gate.
 
+Dispatch `IoType::Control` before applying the existing zero-byte data-completion shortcut. `PostQueuedCompletionStatus` produces a successful completion with `bytesXfr == 0`; treating that as a peer close would call abortive `markDead()` and discard queued output before `handleControl()` can make the drain decision. The worker dispatch must have this shape:
+
+```cpp
+if (opType == IoType::Control)
+    handleControl(ctx);
+else if (!ok || bytesXfr == 0)
+    markDead(ctx);                    // zero bytes means peer close only for Recv/Send
+else if (opType == IoType::Recv)
+    handleRecv(ctx, bytesXfr);
+else
+    handleSend(ctx, bytesXfr);
+```
+
 - [ ] **Step 4: Drain only bytes accepted before close**
 
 Add `handleControl(ConnCtx*)` and a helper which, while holding `channel->mu`, tests `closeRequested && channel->out.empty()`. If true, release the channel lock and call idempotent `markDead(ctx)`. If false, leave the active send to drain.
 
-After every send completion, consume the reported byte count, re-post a short-write remainder when present, and repeat the same locked close-and-empty decision. Never accept a new cross-thread send after the close transition.
+After every send completion, consume the reported byte count, re-post a short-write remainder when present, and repeat the same locked close-and-empty decision. Use that one helper after `handleAccept`, `handleRecv`, `handleSend`, and `handleControl`; do not leave accept/receive completion keyed on an unlocked `session->closed() && out.empty()` check. Never accept a new cross-thread send after the close transition.
 
 Transport error and shutdown paths remain abortive and go straight to `markDead`.
 
@@ -314,19 +374,24 @@ git commit -m "fix: drain IOCP output before session close"
 
 - [ ] **Step 1: Add operation-accounting tests and a pending-I/O shutdown test**
 
-Factor a small `OutstandingOperations` class in the IOCP header with `begin()`, `complete()`, `waitForZero()`, and a test-only/read-only `count()` accessor. Test these invariants without Winsock:
+Factor a small `OutstandingOperations` class in the IOCP header with `tryBegin()`, `stopSubmissions()`, `complete()`, `waitForZero()`, and test-only/read-only `count()`/`acceptingSubmissions()` accessors. `tryBegin()` and `stopSubmissions()` use the same mutex so shutdown cannot observe zero and return while a checked-but-not-yet-counted submission races in. Test these invariants without Winsock:
 
 ```cpp
 OutstandingOperations ops;
-ops.begin();                 // submission entered the OS wrapper
+CHECK(ops.tryBegin());       // submission entered the OS wrapper
 CHECK(ops.count() == 1);
 ops.complete();              // synchronous non-pending failure: no completion follows
 CHECK(ops.count() == 0);
 
-ops.begin();
+CHECK(ops.tryBegin());
 auto completion = std::async(std::launch::async, [&] { ops.complete(); });
 ops.waitForZero();           // completion path wakes the waiter
 completion.get();
+CHECK(ops.count() == 0);
+
+ops.stopSubmissions();
+CHECK(!ops.acceptingSubmissions());
+CHECK(!ops.tryBegin());      // no operation can enter after the shutdown gate closes
 CHECK(ops.count() == 0);
 ```
 
@@ -341,13 +406,17 @@ Run the focused test first. If the current force-delete does not fail normally, 
 Add `OutstandingOperations m_operations` to `IocpServer`. Apply the same obligation to AcceptEx, receive, send, and the close control operation:
 
 ```text
-before submission                  -> begin()
+before submission                  -> tryBegin(); return without entering Winsock if false
 synchronous error != pending       -> complete() immediately
 dequeued completion                -> complete() exactly once
 worker shutdown sentinel           -> not counted
 ```
 
-For every completion keyed by `ConnCtx` (receive, send, and control), keep a `ConnCtx` reference alongside the server-wide count: add the reference before submission; on synchronous failure, release the reference and complete the count; on a dequeued completion, release and complete exactly once after dispatch.
+For every completion keyed by `ConnCtx` (receive, send, and control), keep a `ConnCtx` reference alongside the server-wide count: after `tryBegin()` succeeds, add the reference before submission; on synchronous failure, release the reference and complete the count; on a dequeued completion, release and complete exactly once after dispatch. Audit both counters together on every submit, completion, and synchronous-failure branch; a path that moves only one counter is incorrect.
+
+Make `postAccept`, `postRecv`, `postSend`/`startSend`, and `postControl` enter through `tryBegin()`. This pins the no-resubmit rule to every actual submission site: `handleAccept` can only start its initial receive through `postRecv`; `handleRecv` can only re-arm through `postRecv`; `onSendComplete`/`startSend` can only post a short-write remainder through `postSend`; and `requestClose` can only wake a worker through `postControl`. A rejected submission must not call Winsock and must follow the existing close/abort cleanup for that path.
+
+Under `SendChannel::mu`, `requestClose()` must return immediately when `ctx == nullptr || closeRequested`. Otherwise set `closeRequested` once and call the owner's `postControl(ctx)`. `postControl` owns the `controlPending` transition and must restore it if `tryBegin()` or `PostQueuedCompletionStatus` fails, balancing both the `ConnCtx` reference and operation count on a synchronous posting failure.
 
 Check the return value from `AcceptEx`; on a synchronous error other than `ERROR_IO_PENDING`, close `clientSock`, delete `AcceptOv`, and complete immediately. Otherwise only the accept completion path frees it.
 
@@ -357,14 +426,14 @@ When an accept completion is dequeued after `m_running` became false, close its 
 
 Implement this exact order in `IocpServer::stop()`:
 
-1. `m_running.exchange(false)` prevents all resubmission.
+1. `m_operations.stopSubmissions()` closes the authoritative submission gate, then `m_running.exchange(false)` stops accept-loop maintenance. An operation whose `tryBegin()` won before the gate closed is already counted; one arriving afterward is rejected.
 2. Shutdown and close `m_listen` so pending AcceptEx calls complete as cancelled.
 3. Snapshot `m_conns` under `m_connsMu`, then call idempotent `markDead()` for each connection outside the set lock; this disarms channels, calls `onClose()`, closes sockets, removes initial live references, and causes pending receives/sends to complete.
 4. `m_operations.waitForZero()` while workers continue dequeuing cancellations.
 5. Post one uncounted `SHUTDOWN_KEY` per worker, join, and clear the workers.
 6. Close the IOCP handle and balance Winsock startup.
 
-Delete the force-free loop entirely. No path may post another accept, receive, send, or control operation after `m_running` becomes false.
+Delete the force-free loop entirely. No path may post another accept, receive, send, or control operation after the submission gate closes. When an accept completion is dequeued after that transition, close its client socket and free its accept object without publishing a connection.
 
 - [ ] **Step 5: Verify shutdown and connection accounting**
 
@@ -415,7 +484,7 @@ Use the same disarm/`onClose()` ordering for connections left in `Worker::incomi
 
 - [ ] **Step 3: Add an io_uring peer-order test**
 
-When `MANGOS_USE_IO_URING` is enabled, start a loopback `UringServer` and record callback order plus the address. Assert `setPeerAddress("127.0.0.1")` occurs before `onConnect()`.
+When `MANGOS_USE_IO_URING` is enabled, start a loopback `UringServer` and record callback order plus the address. Assert `setPeerAddress("127.0.0.1")` occurs before `onConnect()`. This guard is the confirmed compile definition exported by `src/shared/CMakeLists.txt` when the `WITH_IO_URING` option succeeds.
 
 - [ ] **Step 4: Populate the accepted IPv4 address**
 
@@ -428,7 +497,7 @@ int cfd = ::accept4(m_listen, reinterpret_cast<sockaddr*>(&peer),
                     &peerLen, SOCK_CLOEXEC);
 ```
 
-After creating the session and before assigning channels or calling `onConnect()`, require `peer.sin_family == AF_INET`, convert with `inet_ntop(AF_INET, &peer.sin_addr, ...)`, and call `conn->session->setPeerAddress(peerIp)`. If the family or conversion is invalid, close the accepted fd and continue without publishing the session.
+Before allocating `UringConn`, require `peer.sin_family == AF_INET` and convert with `inet_ntop(AF_INET, &peer.sin_addr, ...)`. If either validation fails, close the accepted fd and continue; no connection or session has been allocated at that point. Only then create `UringConn`, set its fd, call `conn->session->setPeerAddress(peerIp)`, assign channels, and call `onConnect()`.
 
 - [ ] **Step 5: Run the supported backend cases**
 
