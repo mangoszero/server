@@ -12,6 +12,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -378,6 +379,293 @@ bool shutdownDrainsPendingOperations()
 
 #endif
 
+#ifndef _WIN32
+
+#include "net/reactor/ReactorServer.hpp"
+
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+namespace
+{
+using namespace std::chrono_literals;
+
+class PosixSocketHandle
+{
+public:
+    explicit PosixSocketHandle(int fd = -1) : m_fd(fd) {}
+    ~PosixSocketHandle() { if (m_fd >= 0) ::close(m_fd); }
+    PosixSocketHandle(PosixSocketHandle const&) = delete;
+    PosixSocketHandle& operator=(PosixSocketHandle const&) = delete;
+    PosixSocketHandle(PosixSocketHandle&& other) noexcept : m_fd(other.m_fd)
+    {
+        other.m_fd = -1;
+    }
+    PosixSocketHandle& operator=(PosixSocketHandle&& other) noexcept
+    {
+        if (this != &other)
+        {
+            if (m_fd >= 0)
+                ::close(m_fd);
+            m_fd = other.m_fd;
+            other.m_fd = -1;
+        }
+        return *this;
+    }
+    int get() const { return m_fd; }
+
+private:
+    int m_fd;
+};
+
+uint16_t reservePosixLoopbackPort()
+{
+    PosixSocketHandle socket(::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP));
+    if (socket.get() < 0)
+        return 0;
+
+    sockaddr_in address{};
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    address.sin_port = 0;
+    if (::bind(socket.get(), reinterpret_cast<sockaddr*>(&address), sizeof(address)) < 0)
+        return 0;
+
+    socklen_t length = sizeof(address);
+    if (::getsockname(socket.get(), reinterpret_cast<sockaddr*>(&address), &length) < 0)
+        return 0;
+    return ntohs(address.sin_port);
+}
+
+PosixSocketHandle connectPosixClient(uint16_t port)
+{
+    int fd = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (fd < 0)
+        return PosixSocketHandle{};
+
+    sockaddr_in address{};
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    address.sin_port = htons(port);
+    if (::connect(fd, reinterpret_cast<sockaddr*>(&address), sizeof(address)) < 0)
+    {
+        ::close(fd);
+        return PosixSocketHandle{};
+    }
+    return PosixSocketHandle(fd);
+}
+
+class CallbackRecorderSession final : public net::ISession
+{
+public:
+    void setPeerAddress(std::string const& address) override
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_events.push_back("peer:" + address);
+    }
+
+    void setSender(net::Sender sender) override
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_sender = std::move(sender);
+    }
+
+    std::vector<uint8_t> onConnect() override
+    {
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_events.push_back("connect");
+        }
+        m_changed.notify_all();
+        return {};
+    }
+
+    std::vector<uint8_t> onData(uint8_t const*, std::size_t) override { return {}; }
+
+    void onClose() override
+    {
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_events.push_back("close");
+            ++m_closeCount;
+            m_closed.store(true, std::memory_order_release);
+        }
+        m_changed.notify_all();
+    }
+
+    bool closed() const override { return m_closed.load(std::memory_order_acquire); }
+
+    bool waitForEventCount(std::size_t count)
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        return m_changed.wait_for(lock, 5s, [&] { return m_events.size() >= count; });
+    }
+
+    std::vector<std::string> events() const
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_events;
+    }
+
+    int closeCount() const
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_closeCount;
+    }
+
+    void sendOneByte()
+    {
+        net::Sender sender;
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            sender = m_sender;
+        }
+        uint8_t byte = 1;
+        sender(&byte, 1);
+    }
+
+private:
+    mutable std::mutex m_mutex;
+    std::condition_variable m_changed;
+    std::vector<std::string> m_events;
+    net::Sender m_sender;
+    std::atomic<bool> m_closed{false};
+    int m_closeCount = 0;
+};
+
+struct RejectingPollerState
+{
+    void signalAccept()
+    {
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            acceptReady = true;
+            ++epoch;
+        }
+        changed.notify_all();
+    }
+
+    std::mutex mutex;
+    std::condition_variable changed;
+    uint64_t epoch = 0;
+    bool acceptReady = false;
+    std::atomic<unsigned> created{0};
+    std::atomic<unsigned> workerWakeCalls{0};
+};
+
+class RejectingPoller final : public net::Poller
+{
+public:
+    RejectingPoller(std::shared_ptr<RejectingPollerState> state, bool acceptPoller)
+        : m_state(std::move(state)), m_acceptPoller(acceptPoller) {}
+
+    bool init() override { return true; }
+
+    bool add(int, uint32_t, void* udata) override
+    {
+        if (!m_acceptPoller)
+            return false;
+        m_acceptUdata = udata;
+        return true;
+    }
+
+    bool mod(int, uint32_t, void*) override { return true; }
+    bool del(int) override { return true; }
+
+    int wait(net::PollerEvent* out, int maxEvents) override
+    {
+        std::unique_lock<std::mutex> lock(m_state->mutex);
+        m_state->changed.wait(lock, [&] {
+            return m_state->epoch != m_seenEpoch ||
+                   (m_acceptPoller && m_state->acceptReady);
+        });
+        m_seenEpoch = m_state->epoch;
+        if (m_acceptPoller && m_state->acceptReady && maxEvents > 0)
+        {
+            m_state->acceptReady = false;
+            out[0] = {m_acceptUdata, net::EvRead, false};
+            return 1;
+        }
+        return 0;
+    }
+
+    void wake() override
+    {
+        if (!m_acceptPoller)
+            m_state->workerWakeCalls.fetch_add(1, std::memory_order_relaxed);
+        {
+            std::lock_guard<std::mutex> lock(m_state->mutex);
+            ++m_state->epoch;
+        }
+        m_state->changed.notify_all();
+    }
+
+    void shutdown() override { wake(); }
+    char const* name() const override { return "rejecting-test-poller"; }
+
+private:
+    std::shared_ptr<RejectingPollerState> m_state;
+    bool m_acceptPoller;
+    void* m_acceptUdata = nullptr;
+    uint64_t m_seenEpoch = 0;
+};
+
+bool reactorRejectedRegistrationRunsTeardown()
+{
+    auto state = std::make_shared<RejectingPollerState>();
+    net::ReactorServer server([state] {
+        bool const acceptPoller = state->created.fetch_add(1) == 0;
+        return std::make_unique<RejectingPoller>(state, acceptPoller);
+    });
+    auto session = std::make_shared<CallbackRecorderSession>();
+
+    uint16_t port = reservePosixLoopbackPort();
+    if (port == 0 || !server.start(port, [session] { return session; }, "127.0.0.1"))
+        return false;
+
+    PosixSocketHandle client = connectPosixClient(port);
+    if (client.get() < 0)
+        return false;
+    state->signalAccept();
+
+    bool passed = session->waitForEventCount(3) &&
+                  session->events() == std::vector<std::string>{"peer:127.0.0.1", "connect", "close"} &&
+                  session->closeCount() == 1;
+    if (passed)
+    {
+        unsigned const wakesBeforeSend = state->workerWakeCalls.load(std::memory_order_relaxed);
+        session->sendOneByte();
+        std::this_thread::sleep_for(20ms);
+        passed = state->workerWakeCalls.load(std::memory_order_relaxed) == wakesBeforeSend;
+    }
+
+    server.stop();
+    return passed && session->closeCount() == 1;
+}
+
+#ifdef MANGOS_USE_IO_URING
+bool uringPublishesPeerBeforeConnect()
+{
+    net::Server server;
+    auto session = std::make_shared<CallbackRecorderSession>();
+    uint16_t port = reservePosixLoopbackPort();
+    if (port == 0 || !server.start(port, [session] { return session; }, "127.0.0.1"))
+        return false;
+
+    PosixSocketHandle client = connectPosixClient(port);
+    bool const connected = client.get() >= 0 && session->waitForEventCount(2);
+    std::vector<std::string> const events = session->events();
+    server.stop();
+    return connected && events.size() >= 2 &&
+           events[0] == "peer:127.0.0.1" && events[1] == "connect";
+}
+#endif
+}
+
+#endif
+
 int main()
 {
 #ifdef _WIN32
@@ -392,7 +680,12 @@ int main()
     }
     WSACleanup();
 #else
-    std::cout << "SKIP: IOCP close regressions require Windows\n";
+    CHECK(reactorRejectedRegistrationRunsTeardown());
+#ifdef MANGOS_USE_IO_URING
+    CHECK(uringPublishesPeerBeforeConnect());
+#else
+    std::cout << "SKIP: io_uring peer-order regression requires MANGOS_USE_IO_URING\n";
+#endif
 #endif
     return mangos::test::failures == 0 ? 0 : 1;
 }

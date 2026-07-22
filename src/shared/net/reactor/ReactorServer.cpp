@@ -149,6 +149,7 @@ void ReactorServer::stop() {
     for (auto& w : m_workers) {
         for (auto* c : w->incoming) {
             if (c->channel) c->channel->disarm();   // wake any parked producer
+            if (c->session) c->session->onClose();
             ::close(c->fd);
             delete c;
         }
@@ -283,6 +284,10 @@ void ReactorServer::drainIncoming(Worker& w) {
     }
     for (auto* conn : pending) {
         if (!w.poller->add(conn->fd, EvRead, conn)) {
+            if (conn->channel)
+                conn->channel->disarm();
+            if (conn->session)
+                conn->session->onClose();
             ::close(conn->fd);
             delete conn;
             continue;
