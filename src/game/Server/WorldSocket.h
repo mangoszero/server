@@ -34,6 +34,7 @@
 #include "Common.h"
 #include "Auth/AuthCrypt.h"
 #include "Auth/Sha1.h"
+#include "Threading/LeasedPtr.h"
 
 #include "net/ISession.hpp"
 
@@ -92,21 +93,24 @@ class WorldSocket : public net::ISession
 
     private:
 
+        friend class WorldSession;
+        using SessionLease = LeasedPtr<WorldSession>::Lease;
+
         std::vector<uint8_t> EncodePacket(const WorldPacket& pct);
         int  ProcessIncoming(WorldPacket* new_pct);
         int  HandleAuthSession(WorldPacket& recvPacket);
         int  HandlePing(WorldPacket& recvPacket);
 
-        WorldSession* GetSession();
-        void          SetSession(WorldSession* session);
+        SessionLease GetSession();
+        void SetSession(WorldSession* session);
+        void DetachSessionAndWait();
 
         std::string m_Address;
 
         AuthCrypt  m_Crypt;
         std::mutex m_CryptSendLock;        ///< serialises header encryption on send
 
-        std::mutex    m_SessionLock;
-        WorldSession* m_Session;
+        LeasedPtr<WorldSession> m_session;
 
         std::atomic<bool> m_closed;
 

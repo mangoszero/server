@@ -147,7 +147,7 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
 /// WorldSession constructor
 WorldSession::WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, AccountTypes sec, time_t mute_time, LocaleConstant locale)
     : m_muteTime(mute_time),
-    _player(NULL), m_Socket(std::move(sock)), _security(sec), _accountId(id), _warden(NULL), _build(0), _logoutTime(0),
+    _player(NULL), m_OwningSocket(sock), m_Socket(std::move(sock)), _security(sec), _accountId(id), _warden(NULL), _build(0), _logoutTime(0),
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
     m_latency(0), m_clientTimeDelay(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_npcWatchLastGuid()
@@ -161,6 +161,11 @@ WorldSession::WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, Account
 /// WorldSession destructor
 WorldSession::~WorldSession()
 {
+    if (std::shared_ptr<WorldSocket> socket = m_OwningSocket.lock())
+    {
+        socket->DetachSessionAndWait();
+    }
+
     ///- unload player if not unloaded
     if (_player)
     {

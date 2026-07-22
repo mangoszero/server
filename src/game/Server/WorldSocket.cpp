@@ -75,8 +75,7 @@ std::atomic<uint32> WorldSocket::s_openConnections{0};
 #endif
 
 WorldSocket::WorldSocket()
-    : m_Session(0),
-      m_closed(false),
+    : m_closed(false),
       m_recvBuf(),
       m_headerPending(false),
       m_recvOpcode(0),
@@ -98,16 +97,19 @@ WorldSocket::~WorldSocket()
 #endif
 }
 
-WorldSession* WorldSocket::GetSession()
+WorldSocket::SessionLease WorldSocket::GetSession()
 {
-    std::lock_guard<std::mutex> guard(m_SessionLock);
-    return m_Session;
+    return m_session.acquire();
 }
 
 void WorldSocket::SetSession(WorldSession* session)
 {
-    std::lock_guard<std::mutex> guard(m_SessionLock);
-    m_Session = session;
+    m_session.publish(session);
+}
+
+void WorldSocket::DetachSessionAndWait()
+{
+    m_session.detachAndWait();
 }
 
 void WorldSocket::CloseSocket()
@@ -117,7 +119,7 @@ void WorldSocket::CloseSocket()
         return;
     }
 
-    SetSession(NULL);
+    m_session.detach();
 
     if (m_closer)
     {
@@ -185,7 +187,7 @@ std::vector<uint8_t> WorldSocket::onConnect()
 void WorldSocket::onClose()
 {
     m_closed.store(true);
-    SetSession(NULL);
+    m_session.detach();
 }
 
 std::vector<uint8_t> WorldSocket::onData(const uint8_t* data, size_t len)
@@ -287,7 +289,9 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
         sLog.outWorldPacketDump(0, new_pct->GetOpcode(), new_pct->GetOpcodeName(), new_pct, true);
     }
 
-    WorldSession* session = GetSession();
+    // HandlePing acquires its own narrow leases. In particular, do not keep a
+    // ProcessIncoming lease alive across its close-capable paths.
+    SessionLease session = opcode == CMSG_PING ? SessionLease{} : GetSession();
 
     try
     {
@@ -304,7 +308,7 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
 #ifdef ENABLE_ELUNA
                 if (Eluna* e = sWorld.GetEluna())
                 {
-                    if (!e->OnPacketReceive(session, *new_pct))
+                    if (!e->OnPacketReceive(session.get(), *new_pct))
                     {
                         return 0;
                     }
@@ -316,12 +320,12 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
 #ifdef ENABLE_ELUNA
                 if (Eluna* e = sWorld.GetEluna())
                 {
-                    e->OnPacketReceive(session, *new_pct);
+                    e->OnPacketReceive(session.get(), *new_pct);
                 }
 #endif /* ENABLE_ELUNA */
                 return 0;
             default:
-                if (session != NULL)
+                if (session)
                 {
                     aptr.release();
                     session->QueuePacket(new_pct);
@@ -591,7 +595,7 @@ int WorldSocket::HandlePing(WorldPacket& recvPacket)
 
             if (max_count && m_OverSpeedPings > max_count)
             {
-                WorldSession* session = GetSession();
+                SessionLease session = GetSession();
                 if (session && session->GetSecurity() == SEC_PLAYER)
                 {
                     sLog.outError("WorldSocket::HandlePing: Player kicked for overspeeded pings address = %s",
@@ -606,7 +610,7 @@ int WorldSocket::HandlePing(WorldPacket& recvPacket)
         }
     }
 
-    WorldSession* session = GetSession();
+    SessionLease session = GetSession();
     if (session)
     {
         session->SetLatency(latency);

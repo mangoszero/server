@@ -893,6 +893,7 @@ class WorldSession
         void LogUnprocessedTail(WorldPacket* packet);
 
         Player* _player;
+        std::weak_ptr<WorldSocket> m_OwningSocket;
         std::shared_ptr<WorldSocket> m_Socket;
         std::string m_Address;
 
