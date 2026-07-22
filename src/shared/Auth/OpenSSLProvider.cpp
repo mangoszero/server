@@ -35,6 +35,21 @@
 #include <openssl/params.h>
 #include <utility>
 
+namespace
+{
+bool ParseProviderMajor(std::string const& version, unsigned& major)
+{
+    std::size_t const separator = version.find('.');
+    if (separator == std::string::npos || separator == 0)
+        return false;
+
+    char const* const begin = version.data();
+    char const* const end = begin + separator;
+    std::from_chars_result const parsed = std::from_chars(begin, end, major);
+    return parsed.ec == std::errc{} && parsed.ptr == end;
+}
+}
+
 /**
  * Creates a new OpenSSL cipher context wrapper.
  */
@@ -183,26 +198,26 @@ OpenSSLProviderManager::OpenSSLProviderManager()
         return;
     }
 
-    std::string const providerVersion = m_legacyProvider.Version();
-    std::size_t const separator = providerVersion.find('.');
-    unsigned providerMajor = 0;
-    bool parsedProviderMajor = separator != std::string::npos && separator != 0;
-    if (parsedProviderMajor)
-    {
-        char const* const begin = providerVersion.data();
-        char const* const end = begin + separator;
-        std::from_chars_result const parsed = std::from_chars(begin, end, providerMajor);
-        parsedProviderMajor = parsed.ec == std::errc{} && parsed.ptr == end;
-    }
+    std::string const legacyProviderVersion = m_legacyProvider.Version();
+    std::string const defaultProviderVersion = m_defaultProvider.Version();
+    unsigned legacyProviderMajor = 0;
+    unsigned defaultProviderMajor = 0;
+    bool const parsedLegacyProviderMajor =
+        ParseProviderMajor(legacyProviderVersion, legacyProviderMajor);
+    bool const parsedDefaultProviderMajor =
+        ParseProviderMajor(defaultProviderVersion, defaultProviderMajor);
 
     unsigned long const runtimeVersionNumber = OpenSSL_version_num();
     unsigned const runtimeMajor = static_cast<unsigned>((runtimeVersionNumber >> 28) & 0x0f);
-    if (!parsedProviderMajor || providerMajor != runtimeMajor)
+    if (runtimeMajor != 3 ||
+        !parsedLegacyProviderMajor || legacyProviderMajor != runtimeMajor ||
+        !parsedDefaultProviderMajor || defaultProviderMajor != runtimeMajor)
     {
         char const* const modules = std::getenv("OPENSSL_MODULES");
-        sLog.outError("OpenSSL provider/runtime version mismatch: runtime='%s', legacy provider='%s', OPENSSL_MODULES='%s'",
+        sLog.outError("OpenSSL 3.x provider/runtime validation failed: runtime='%s', legacy provider='%s', default provider='%s', OPENSSL_MODULES='%s'",
                       OpenSSL_version(OPENSSL_VERSION),
-                      providerVersion.empty() ? "<unavailable>" : providerVersion.c_str(),
+                      legacyProviderVersion.empty() ? "<unavailable>" : legacyProviderVersion.c_str(),
+                      defaultProviderVersion.empty() ? "<unavailable>" : defaultProviderVersion.c_str(),
                       modules ? modules : "<unset>");
         return;
     }
@@ -216,8 +231,8 @@ OpenSSLProviderManager::OpenSSLProviderManager()
     EVP_CIPHER_free(rc4);
 
     m_initialized = true;
-    sLog.outString("OpenSSL 3.x providers loaded successfully: legacy %s, default",
-                   providerVersion.c_str());
+    sLog.outString("OpenSSL 3.x providers loaded successfully: legacy %s, default %s",
+                   legacyProviderVersion.c_str(), defaultProviderVersion.c_str());
 }
 
 /**

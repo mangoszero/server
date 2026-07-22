@@ -128,6 +128,9 @@ IocpServer::~IocpServer() { stop(); }
 
 bool IocpServer::start(uint16_t port, SessionFactory factory,
                        const std::string& bindIp) {
+    if (m_running.load() || !m_operations.startSubmissions())
+        return false;
+
     m_factory = std::move(factory);
 
     // Own one Winsock reference for this listener's lifetime. realmd (and every
@@ -459,9 +462,12 @@ void IocpServer::handleControl(ConnCtx* ctx) {
 }
 
 bool IocpServer::closeIfDrained(ConnCtx* ctx) {
+    bool const sessionClosed = ctx->session && ctx->session->closed();
     bool shouldClose = false;
     {
         std::lock_guard<std::mutex> lock(ctx->channel->mu);
+        if (sessionClosed)
+            ctx->channel->closeRequested = true;
         shouldClose = ctx->channel->closeRequested && !ctx->channel->sendShutdown &&
                       ctx->channel->out.empty();
         if (shouldClose)

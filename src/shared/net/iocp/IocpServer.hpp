@@ -55,6 +55,15 @@ namespace net {
 
 class OutstandingOperations {
 public:
+    bool startSubmissions()
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (m_count != 0)
+            return false;
+        m_acceptingSubmissions = true;
+        return true;
+    }
+
     bool tryBegin()
     {
         std::lock_guard<std::mutex> lock(m_mutex);

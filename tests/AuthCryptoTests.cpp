@@ -43,21 +43,28 @@ int main()
     OpenSSLProviderManager providerManager;
     CHECK(providerManager.IsInitialized());
 
-    std::string const providerVersion = providerManager.GetLegacyProvider().Version();
-    unsigned providerMajor = 0;
-    CHECK(!providerVersion.empty());
-    std::size_t const delimiter = providerVersion.find('.');
-    CHECK(delimiter != std::string::npos);
-    if (delimiter != std::string::npos)
+    unsigned const runtimeMajor = static_cast<unsigned>((OpenSSL_version_num() >> 28) & 0x0f);
+    CHECK(runtimeMajor == 3);
+    auto checkProviderMajor = [runtimeMajor](OpenSSLProvider const& provider)
     {
+        std::string const providerVersion = provider.Version();
+        unsigned providerMajor = 0;
+        CHECK(!providerVersion.empty());
+        std::size_t const delimiter = providerVersion.find('.');
+        CHECK(delimiter != std::string::npos);
+        if (delimiter == std::string::npos)
+            return;
+
         char const* const providerBegin = providerVersion.data();
         char const* const providerEnd = providerBegin + delimiter;
         std::from_chars_result const parsed =
             std::from_chars(providerBegin, providerEnd, providerMajor);
         CHECK(parsed.ec == std::errc{});
         CHECK(parsed.ptr == providerEnd);
-        CHECK(providerMajor == ((OpenSSL_version_num() >> 28) & 0x0f));
-    }
+        CHECK(providerMajor == runtimeMajor);
+    };
+    checkProviderMajor(providerManager.GetLegacyProvider());
+    checkProviderMajor(providerManager.GetDefaultProvider());
 
     uint8 rc4Key[] = {'K', 'e', 'y'};
     uint8 rc4Data[] = {'P', 'l', 'a', 'i', 'n', 't', 'e', 'x', 't'};

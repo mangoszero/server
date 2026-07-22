@@ -91,7 +91,7 @@ private:
 class LoopbackSession final : public net::ISession
 {
 public:
-    enum class Mode { FinalResponse, ExternalClose };
+    enum class Mode { FinalResponse, ContractClose, ExternalClose };
 
     LoopbackSession(Mode mode, std::vector<uint8_t> finalResponse,
                     SessionRegistry* registry = nullptr)
@@ -115,6 +115,11 @@ public:
         {
             m_sender(m_finalResponse.data(), m_finalResponse.size());
             requestClose();
+        }
+        else if (m_mode == Mode::ContractClose)
+        {
+            m_closed.store(true, std::memory_order_release);
+            return m_finalResponse;
         }
         return {};
     }
@@ -320,6 +325,58 @@ bool closeTransitionRejectsLaterSends()
 
     server.stop();
     return passed;
+}
+
+bool closedContractDrainsBeforeEof()
+{
+    std::vector<uint8_t> const payload = makeFinalPayload();
+    net::Server server;
+    uint16_t port = 0;
+    if (!startServer(server,
+            [payload] {
+                return std::make_shared<LoopbackSession>(
+                    LoopbackSession::Mode::ContractClose, payload);
+            }, port))
+        return false;
+
+    SocketHandle client = connectClient(port);
+    uint8_t trigger = 1;
+    bool passed = client.get() != INVALID_SOCKET &&
+                  send(client.get(), reinterpret_cast<char const*>(&trigger), 1, 0) == 1;
+    std::vector<uint8_t> received;
+    int socketError = 0;
+    if (passed)
+        passed = readToEof(client.get(), received, socketError) && received == payload;
+
+    server.stop();
+    return passed;
+}
+
+bool restartAcceptsConnections()
+{
+    SessionRegistry registry;
+    net::Server server;
+    auto factory = [&registry] {
+        return std::make_shared<LoopbackSession>(
+            LoopbackSession::Mode::ExternalClose, std::vector<uint8_t>{}, &registry);
+    };
+
+    uint16_t firstPort = 0;
+    if (!startServer(server, factory, firstPort))
+        return false;
+    SocketHandle firstClient = connectClient(firstPort);
+    bool const firstAccepted = firstClient.get() != INVALID_SOCKET && registry.take() != nullptr;
+    server.stop();
+    if (!firstAccepted)
+        return false;
+
+    uint16_t secondPort = 0;
+    if (!startServer(server, factory, secondPort))
+        return false;
+    SocketHandle secondClient = connectClient(secondPort);
+    bool const secondAccepted = secondClient.get() != INVALID_SOCKET && registry.take() != nullptr;
+    server.stop();
+    return secondAccepted;
 }
 
 bool outstandingOperationAccountingIsClosedByShutdown()
@@ -676,6 +733,8 @@ int main()
         CHECK(outstandingOperationAccountingIsClosedByShutdown());
         CHECK(finalResponseDrainsBeforeEof());
         CHECK(closeTransitionRejectsLaterSends());
+        CHECK(closedContractDrainsBeforeEof());
+        CHECK(restartAcceptsConnections());
         CHECK(shutdownDrainsPendingOperations());
     }
     WSACleanup();
