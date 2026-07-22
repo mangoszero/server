@@ -3,6 +3,9 @@ name: Windows Build (MSVC)
 permissions:
   contents: read
 
+env:
+  OPENSSL_VERSION: 3.6.2
+
 on:
   push:
     branches: [master, devel]
@@ -37,17 +40,34 @@ jobs:
           path: |
             C:\Program Files\OpenSSL
             C:\Program Files\OpenSSL-Win64
-          key: ${{ runner.os }}-openssl-v1
+          key: ${{ runner.os }}-openssl-${{ env.OPENSSL_VERSION }}-v1
 
 
       - name: Install full OpenSSL (developer)
         if: steps.cache-openssl.outputs.cache-hit != 'true'
         shell: powershell
         run: |
-          Write-Host "Installing latest full OpenSSL for development..."
-          choco upgrade openssl -y --no-progress
-          $ver = & openssl version
-          Write-Host "Installed OpenSSL version: $ver"
+          Write-Host "Installing OpenSSL $env:OPENSSL_VERSION for development..."
+          choco upgrade openssl --version="$env:OPENSSL_VERSION" --allow-downgrade -y --no-progress
+
+
+      - name: Verify OpenSSL major version
+        shell: powershell
+        run: |
+          $openssl = @(
+            "C:\Program Files\OpenSSL\bin\openssl.exe"
+            "C:\Program Files\OpenSSL-Win64\bin\openssl.exe"
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+          if (-not $openssl) {
+            throw "OpenSSL executable not found in either expected location"
+          }
+
+          $version = & $openssl version
+          Write-Host "Installed OpenSSL version: $version"
+          if ($version -notmatch '^OpenSSL 3\.') {
+            throw "Windows CI requires OpenSSL 3.x, found: $version"
+          }
 
 
       - name: Setup Windows 10 SDK
