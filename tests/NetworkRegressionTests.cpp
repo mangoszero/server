@@ -343,10 +343,12 @@ bool closedContractDrainsBeforeEof()
     uint8_t trigger = 1;
     bool passed = client.get() != INVALID_SOCKET &&
                   send(client.get(), reinterpret_cast<char const*>(&trigger), 1, 0) == 1;
-    std::vector<uint8_t> received;
-    int socketError = 0;
     if (passed)
+    {
+        std::vector<uint8_t> received;
+        int socketError = 0;
         passed = readToEof(client.get(), received, socketError) && received == payload;
+    }
 
     server.stop();
     return passed;

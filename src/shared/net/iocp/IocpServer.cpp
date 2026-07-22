@@ -419,6 +419,7 @@ bool IocpServer::postControl(ConnCtx* ctx) {
     }
 
     ZeroMemory(&ctx->closeOv.ov, sizeof(OVERLAPPED));
+    ctx->closeOv.type = IoType::Control;
     ctx->addRef();
     if (!PostQueuedCompletionStatus(m_iocp, 0,
             reinterpret_cast<ULONG_PTR>(ctx), &ctx->closeOv.ov)) {
