@@ -171,10 +171,15 @@ bool CastCcOnMyTargetAction::Execute(Event event)
         return true;
     }
 
-    float range = AI_VALUE2(float, "spell range", ccSpell);
-    if (bot->GetDistance(target) > range || bot->IsNonMeleeSpellCasted(false))
+    if (bot->IsNonMeleeSpellCasted(false))
     {
         return true;
+    }
+
+    float range = AI_VALUE2(float, "spell range", ccSpell);
+    if (bot->GetDistance(target) > range)
+    {
+        return MoveTo(target, range);
     }
 
     uint32 spellId = AI_VALUE2(uint32, "spell id", ccSpell);
@@ -189,6 +194,15 @@ bool CastCcOnMyTargetAction::Execute(Event event)
     if (m_lastCastAttempt > 0 && time(0) - m_lastCastAttempt < 1)
     {
         return true;
+    }
+
+    SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellId);
+    if (spellInfo && bot->GetShapeshiftForm() != FORM_NONE)
+    {
+        if (GetErrorAtShapeshiftedCast(spellInfo, bot->GetShapeshiftForm()) == SPELL_FAILED_NOT_SHAPESHIFT)
+        {
+            ai->RemoveShapeshift();
+        }
     }
 
     ai->CastSpell(spellId, target);
