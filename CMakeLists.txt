@@ -64,6 +64,7 @@ option(PCH                  "Enable precompiled headers"                    ON)
 option(DEBUG                "Enable debug build (only on non IDEs)"         OFF)
 option(WITHOUT_GIT          "Disable Git revision detection"                OFF)
 option(BUILD_AH_SERVICE     "Build the out-of-process auction-house service" ON)
+option(BUILD_TESTING        "Build focused regression tests"                OFF)
 #==================================================================================
 message("")
 message(
@@ -216,6 +217,11 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/CMakeLists.txt")
   add_subdirectory(src)
 else()
   message(WARNING "Source directory 'src' not found. Nothing to build.")
+endif()
+
+if(BUILD_TESTING)
+  enable_testing()
+  add_subdirectory(tests)
 endif()
 
 # =============================================================================
