@@ -35,6 +35,23 @@ public:
     SocketHandle(SocketHandle const&) = delete;
     SocketHandle& operator=(SocketHandle const&) = delete;
 
+    SocketHandle(SocketHandle&& other) noexcept : m_socket(other.m_socket)
+    {
+        other.m_socket = INVALID_SOCKET;
+    }
+
+    SocketHandle& operator=(SocketHandle&& other) noexcept
+    {
+        if (this != &other)
+        {
+            if (m_socket != INVALID_SOCKET)
+                closesocket(m_socket);
+            m_socket = other.m_socket;
+            other.m_socket = INVALID_SOCKET;
+        }
+        return *this;
+    }
+
     SOCKET get() const { return m_socket; }
 
 private:
@@ -303,6 +320,60 @@ bool closeTransitionRejectsLaterSends()
     server.stop();
     return passed;
 }
+
+bool outstandingOperationAccountingIsClosedByShutdown()
+{
+    net::OutstandingOperations operations;
+    if (!operations.tryBegin() || operations.count() != 1)
+        return false;
+    operations.complete();
+    if (operations.count() != 0)
+        return false;
+
+    if (!operations.tryBegin())
+        return false;
+    auto completion = std::async(std::launch::async, [&] { operations.complete(); });
+    operations.waitForZero();
+    completion.get();
+    if (operations.count() != 0)
+        return false;
+
+    operations.stopSubmissions();
+    return !operations.acceptingSubmissions() && !operations.tryBegin() &&
+           operations.count() == 0;
+}
+
+bool shutdownDrainsPendingOperations()
+{
+    for (int iteration = 0; iteration < 50; ++iteration)
+    {
+        net::Server server;
+        uint16_t port = 0;
+        if (!startServer(server,
+                [] {
+                    return std::make_shared<LoopbackSession>(
+                        LoopbackSession::Mode::ExternalClose, std::vector<uint8_t>{});
+                }, port))
+            return false;
+
+        std::array<SocketHandle, 4> clients;
+        for (SocketHandle& client : clients)
+        {
+            client = connectClient(port);
+            if (client.get() == INVALID_SOCKET)
+                return false;
+        }
+
+        auto stopped = std::async(std::launch::async, [&] { server.stop(); });
+        if (stopped.wait_for(5s) != std::future_status::ready)
+        {
+            std::cerr << "shutdown iteration=" << iteration << " exceeded five seconds\n";
+            return false;
+        }
+        stopped.get();
+    }
+    return true;
+}
 }
 
 #endif
@@ -314,8 +385,10 @@ int main()
     CHECK(WSAStartup(MAKEWORD(2, 2), &wsa) == 0);
     if (mangos::test::failures == 0)
     {
+        CHECK(outstandingOperationAccountingIsClosedByShutdown());
         CHECK(finalResponseDrainsBeforeEof());
         CHECK(closeTransitionRejectsLaterSends());
+        CHECK(shutdownDrainsPendingOperations());
     }
     WSACleanup();
 #else

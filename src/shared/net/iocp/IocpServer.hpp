@@ -41,6 +41,8 @@
 #include "net/ISession.hpp"
 #include "net/SendQueue.hpp"
 #include <atomic>
+#include <cassert>
+#include <condition_variable>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -50,6 +52,59 @@
 #include <vector>
 
 namespace net {
+
+class OutstandingOperations {
+public:
+    bool tryBegin()
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (!m_acceptingSubmissions)
+            return false;
+        ++m_count;
+        return true;
+    }
+
+    void stopSubmissions()
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_acceptingSubmissions = false;
+        if (m_count == 0)
+            m_zero.notify_all();
+    }
+
+    void complete()
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        assert(m_count != 0);
+        --m_count;
+        if (m_count == 0)
+            m_zero.notify_all();
+    }
+
+    void waitForZero()
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_zero.wait(lock, [&] { return m_count == 0; });
+    }
+
+    std::size_t count() const
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_count;
+    }
+
+    bool acceptingSubmissions() const
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_acceptingSubmissions;
+    }
+
+private:
+    mutable std::mutex m_mutex;
+    std::condition_variable m_zero;
+    std::size_t m_count = 0;
+    bool m_acceptingSubmissions = true;
+};
 
 // ── Per-operation type tag ────────────────────────────────────────────────────
 enum class IoType : uint8_t { Accept, Recv, Send, Control };
@@ -168,6 +223,7 @@ public:
 
 private:
     friend struct SendChannel;
+    friend struct ConnCtx;
 
     HANDLE   m_iocp{nullptr};
     SOCKET   m_listen{INVALID_SOCKET};
@@ -178,6 +234,7 @@ private:
 
     std::vector<std::thread>    m_workers;
     std::atomic<bool>           m_running{false};
+    OutstandingOperations       m_operations;
     bool                        m_wsaStarted{false};   // owns one WSAStartup ref
 
     static constexpr int PENDING_ACCEPTS = 4;
