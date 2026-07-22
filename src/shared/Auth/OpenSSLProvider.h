@@ -124,6 +124,12 @@ class OpenSSLProvider
         OSSL_PROVIDER* Get() const { return m_provider; }
 
         /**
+         * @brief Get the provider-reported version without taking ownership
+         * @return Provider version string, or empty when unavailable
+         */
+        std::string Version() const;
+
+        /**
          * @brief Move constructor
          */
         OpenSSLProvider(OpenSSLProvider&& other) noexcept;

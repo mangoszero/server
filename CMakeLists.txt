@@ -147,6 +147,11 @@ endif()
 
 find_package(Threads REQUIRED)
 find_package(OpenSSL 3.0 REQUIRED)
+# OpenSSL 4.x support is intentionally deferred until the OpenSSL 4.2 LTS migration.
+if(OPENSSL_VERSION VERSION_GREATER_EQUAL "4.0.0")
+  message(FATAL_ERROR
+    "Unsupported OpenSSL ${OPENSSL_VERSION}: MaNGOS currently requires >=3.0.0 and <4.0.0")
+endif()
 find_package(MySQL REQUIRED)
 
 # =============================================================================
