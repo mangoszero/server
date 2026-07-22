@@ -217,20 +217,31 @@ namespace ai
     class HunterEnsureRangedPositionAction : public MovementAction
     {
         private:
-            const float minShootDistance = 10.0;
+            float GetMinShootDistance() const
+            {
+                SpellEntry const* spellInfo = sSpellStore.LookupEntry(75);
+                if (!spellInfo)
+                    return 8.0f;
+                SpellRangeEntry const* sr = sSpellRangeStore.LookupEntry(spellInfo->RangeIndex);
+                if (!sr)
+                    return 8.0f;
+                return GetSpellMinRange(sr);
+            }
         public:
             HunterEnsureRangedPositionAction(PlayerbotAI* ai) : MovementAction(ai, "hunter ensure ranged position") {}
 
             virtual bool Execute(Event event)
             {
                 Unit* target = AI_VALUE(Unit*, "current target");
-                if(bot->GetDistance(target) > sPlayerbotAIConfig.spellDistance)
+                float minDist = GetMinShootDistance();
+                float reach = bot->GetCombatReach(target, false);
+                if(bot->GetCombatDistance(target, false) > sPlayerbotAIConfig.spellDistance)
                 {
                     return MoveTo(target, sPlayerbotAIConfig.spellDistance - 1.0);
                 }
                 else
                 {
-                    return MoveTo(target, minShootDistance + 1.0);
+                    return MoveTo(target, minDist + 1.0f + reach);
                 }
             }
             virtual bool isUseful()
@@ -240,8 +251,8 @@ namespace ai
                 {
                     return false;
                 }
-                float distance = bot->GetDistance(target);
-                return distance < minShootDistance || distance > sPlayerbotAIConfig.spellDistance;
+                float distance = bot->GetCombatDistance(target, false);
+                return distance < GetMinShootDistance() || distance > sPlayerbotAIConfig.spellDistance;
             }
     };
 }

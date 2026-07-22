@@ -23,16 +23,22 @@ namespace ai
 
                 // No aggro: apply cooldown.
                 time_t now = time(nullptr);
-                if (lastNoAggroFlee_ == 0 || (now - lastNoAggroFlee_) >= NO_AGGRO_FLEE_COOLDOWN)
+                if (lastNoAggroFlee_ == 0 ||
+                   (now - lastNoAggroFlee_) >= NO_AGGRO_FLEE_COOLDOWN)
                 {
                     lastNoAggroFlee_ = now;
+                    return true;
+                }
+                if(now - lastNoAggroFlee_ < NO_AGGRO_FLEE_ACTIVE)
+                {
                     return true;
                 }
                 return false;
             }
         private:
             time_t lastNoAggroFlee_;
-            static const time_t NO_AGGRO_FLEE_COOLDOWN = 6;
+            static const time_t NO_AGGRO_FLEE_ACTIVE = 5;
+            static const time_t NO_AGGRO_FLEE_COOLDOWN = 11;
     };
 
     class EnemyTooCloseForSpellNoAggroTrigger : public Trigger {
