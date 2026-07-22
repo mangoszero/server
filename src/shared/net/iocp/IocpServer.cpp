@@ -295,6 +295,16 @@ void IocpServer::workerThread() {
 
         if (!ov) continue; // timeout or spurious
 
+        // Control completions use the connection's dedicated OVERLAPPED. Identify
+        // them by address before decoding the type tag used by kernel I/O operations.
+        auto* ctx = key == 0 ? nullptr : reinterpret_cast<ConnCtx*>(key);
+        if (ctx && ov == &ctx->closeOv) {
+            handleControl(ctx);
+            ctx->release();
+            m_operations.complete();
+            continue;
+        }
+
         // Determine operation type from the IoType field embedded right after OVERLAPPED
         auto* base = reinterpret_cast<IoType*>(
             reinterpret_cast<char*>(ov) + sizeof(OVERLAPPED));
@@ -315,11 +325,7 @@ void IocpServer::workerThread() {
         // Data operation: key == ConnCtx*. Exactly one completion per posted op, so
         // we release() once here no matter which branch runs — that balances the
         // addRef() the post did and is what eventually frees the ctx.
-        auto* ctx = reinterpret_cast<ConnCtx*>(key);
-
-        if (opType == IoType::Control)
-            handleControl(ctx);
-        else if (!ok || bytesXfr == 0)
+        if (!ok || bytesXfr == 0)
             markDead(ctx);                      // closed or error: tear down (idempotent)
         else if (opType == IoType::Recv)
             handleRecv(ctx, bytesXfr);
@@ -418,11 +424,10 @@ bool IocpServer::postControl(ConnCtx* ctx) {
         return false;
     }
 
-    ZeroMemory(&ctx->closeOv.ov, sizeof(OVERLAPPED));
-    ctx->closeOv.type = IoType::Control;
+    ZeroMemory(&ctx->closeOv, sizeof(OVERLAPPED));
     ctx->addRef();
     if (!PostQueuedCompletionStatus(m_iocp, 0,
-            reinterpret_cast<ULONG_PTR>(ctx), &ctx->closeOv.ov)) {
+            reinterpret_cast<ULONG_PTR>(ctx), &ctx->closeOv)) {
         ctx->controlPending.store(false);
         ctx->release();
         m_operations.complete();

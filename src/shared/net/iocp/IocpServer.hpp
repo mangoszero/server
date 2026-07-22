@@ -116,7 +116,7 @@ private:
 };
 
 // ── Per-operation type tag ────────────────────────────────────────────────────
-enum class IoType : uint8_t { Accept, Recv, Send, Control };
+enum class IoType : uint8_t { Accept, Recv, Send };
 
 // Overlapped structs — OVERLAPPED must be the first member, and IoType the second,
 // so the worker can recover the op type from a bare OVERLAPPED* completion.
@@ -143,11 +143,6 @@ struct SendOv {
     OVERLAPPED ov{};
     IoType     type{IoType::Send};
     WSABUF     wsabuf{};
-};
-
-struct ControlOv {
-    OVERLAPPED ov{};
-    IoType     type{IoType::Control};
 };
 
 // ── Per-connection context ────────────────────────────────────────────────────
@@ -179,7 +174,7 @@ struct ConnCtx {
     SOCKET   sock{INVALID_SOCKET};
     RecvOv   recvOv;
     SendOv   sendOv;
-    ControlOv closeOv;
+    OVERLAPPED closeOv{};
     std::shared_ptr<ISession>    session;
     std::shared_ptr<SendChannel> channel;
     IocpServer* owner = nullptr;
