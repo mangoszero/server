@@ -4,7 +4,8 @@ permissions:
   contents: read
 
 env:
-  OPENSSL_VERSION: 3.6.2
+  OPENSSL_VERSION: 3.6.3
+  OPENSSL_SHA512: 120A2E9A3E8B961484CB94D52F85D48DC2C8AF777B5B3B9E26BF49B4408797281F7C0FB2D543FD7796B3C3232ADFAA0F675E7122C0E5C4225B3B02E767197AC6
 
 on:
   push:
@@ -37,9 +38,7 @@ jobs:
         id: cache-openssl
         uses: actions/cache@v4
         with:
-          path: |
-            C:\Program Files\OpenSSL
-            C:\Program Files\OpenSSL-Win64
+          path: C:\Program Files\OpenSSL-Win64
           key: ${{ runner.os }}-openssl-${{ env.OPENSSL_VERSION }}-v1
 
 
@@ -47,20 +46,35 @@ jobs:
         if: steps.cache-openssl.outputs.cache-hit != 'true'
         shell: powershell
         run: |
-          Write-Host "Installing OpenSSL $env:OPENSSL_VERSION for development..."
-          choco upgrade openssl --version="$env:OPENSSL_VERSION" --allow-downgrade -y --no-progress
+          $versionSlug = $env:OPENSSL_VERSION.Replace('.', '_')
+          $installer = Join-Path $env:RUNNER_TEMP "Win64OpenSSL-$versionSlug.exe"
+          $url = "https://slproweb.com/download/Win64OpenSSL-$versionSlug.exe"
+
+          Write-Host "Downloading OpenSSL $env:OPENSSL_VERSION for development..."
+          curl.exe --fail --location --retry 3 --output $installer $url
+          if ($LASTEXITCODE -ne 0) {
+            throw "OpenSSL download failed with exit code $LASTEXITCODE"
+          }
+
+          $actualHash = (Get-FileHash -Algorithm SHA512 $installer).Hash
+          if ($actualHash -ne $env:OPENSSL_SHA512) {
+            throw "OpenSSL installer checksum mismatch: $actualHash"
+          }
+
+          $installArgs = '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- /DIR="C:\Program Files\OpenSSL-Win64"'
+          $process = Start-Process -FilePath $installer -ArgumentList $installArgs -Wait -PassThru
+          if ($process.ExitCode -ne 0) {
+            throw "OpenSSL installer failed with exit code $($process.ExitCode)"
+          }
 
 
       - name: Verify OpenSSL major version
         shell: powershell
         run: |
-          $openssl = @(
-            "C:\Program Files\OpenSSL\bin\openssl.exe"
-            "C:\Program Files\OpenSSL-Win64\bin\openssl.exe"
-          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          $openssl = "C:\Program Files\OpenSSL-Win64\bin\openssl.exe"
 
-          if (-not $openssl) {
-            throw "OpenSSL executable not found in either expected location"
+          if (-not (Test-Path $openssl)) {
+            throw "OpenSSL executable not found at $openssl"
           }
 
           $version = & $openssl version
@@ -79,18 +93,13 @@ jobs:
       - name: Configure OpenSSL environment
         shell: bash
         run: |
-          if [ -d "C:/Program Files/OpenSSL/lib/VC" ]; then
-            echo "OPENSSL_ROOT_DIR=C:/Program Files/OpenSSL" >> $GITHUB_ENV
-            echo "OPENSSL_INCLUDE_DIR=C:/Program Files/OpenSSL/include" >> $GITHUB_ENV
-            echo "OPENSSL_CRYPTO_LIBRARY=C:/Program Files/OpenSSL/lib/VC/libcrypto64MT.lib" >> $GITHUB_ENV
-            echo "OPENSSL_SSL_LIBRARY=C:/Program Files/OpenSSL/lib/VC/libssl64MT.lib" >> $GITHUB_ENV
-          elif [ -d "C:/Program Files/OpenSSL-Win64/lib/VC" ]; then
+          if [ -d "C:/Program Files/OpenSSL-Win64/lib/VC" ]; then
             echo "OPENSSL_ROOT_DIR=C:/Program Files/OpenSSL-Win64" >> $GITHUB_ENV
             echo "OPENSSL_INCLUDE_DIR=C:/Program Files/OpenSSL-Win64/include" >> $GITHUB_ENV
             echo "OPENSSL_CRYPTO_LIBRARY=C:/Program Files/OpenSSL-Win64/lib/VC/libcrypto64MT.lib" >> $GITHUB_ENV
             echo "OPENSSL_SSL_LIBRARY=C:/Program Files/OpenSSL-Win64/lib/VC/libssl64MT.lib" >> $GITHUB_ENV
           else
-            echo "::error::OpenSSL not found in either expected location"
+            echo "::error::OpenSSL developer libraries not found"
             exit 1
           fi
 
