@@ -42,18 +42,23 @@ namespace net {
 
 void SendChannel::post(const uint8_t* data, size_t len) {
     std::lock_guard<std::mutex> lock(mu);
-    if (ctx)
+    if (ctx && !closeRequested)
         ctx->enqueue(data, len);
 }
 
 void SendChannel::requestClose() {
     std::lock_guard<std::mutex> lock(mu);
-    if (ctx)
-        ctx->close();  // closing the socket makes pending I/O complete -> markDead
+    if (!ctx || closeRequested)
+        return;
+
+    closeRequested = true;
+    if (!ctx->owner->postControl(ctx))
+        ctx->close();
 }
 
 void SendChannel::disarm() {
     std::lock_guard<std::mutex> lock(mu);
+    closeRequested = true;
     ctx = nullptr;
     out.close();  // release any bulk producer parked on backpressure
 }
@@ -269,7 +274,9 @@ void IocpServer::workerThread() {
         // addRef() the post did and is what eventually frees the ctx.
         auto* ctx = reinterpret_cast<ConnCtx*>(key);
 
-        if (!ok || bytesXfr == 0)
+        if (opType == IoType::Control)
+            handleControl(ctx);
+        else if (!ok || bytesXfr == 0)
             markDead(ctx);                      // closed or error: tear down (idempotent)
         else if (opType == IoType::Recv)
             handleRecv(ctx, bytesXfr);
@@ -285,7 +292,7 @@ void IocpServer::handleAccept(AcceptOv* aov, DWORD /*bytes*/) {
     setsockopt(aov->clientSock, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT,
                reinterpret_cast<char*>(&m_listen), sizeof(m_listen));
 
-    auto* ctx = new ConnCtx(m_factory);
+    auto* ctx = new ConnCtx(m_factory, this);
     ctx->sock = aov->clientSock;
 
     // Associate new socket with IOCP; key = ctx pointer
@@ -329,10 +336,8 @@ void IocpServer::handleAccept(AcceptOv* aov, DWORD /*bytes*/) {
     if (!greeting.empty())
         ctx->enqueue(greeting.data(), greeting.size());
 
-    if (ctx->session->closed() && ctx->channel->out.empty()) {
-        markDead(ctx);
+    if (closeIfDrained(ctx))
         return;
-    }
 
     // Post initial recv.
     if (!postRecv(ctx))
@@ -355,6 +360,22 @@ bool IocpServer::postRecv(ConnCtx* ctx) {
     return true;
 }
 
+bool IocpServer::postControl(ConnCtx* ctx) {
+    bool expected = false;
+    if (!ctx->controlPending.compare_exchange_strong(expected, true))
+        return true;
+
+    ZeroMemory(&ctx->closeOv.ov, sizeof(OVERLAPPED));
+    ctx->addRef();
+    if (!PostQueuedCompletionStatus(m_iocp, 0,
+            reinterpret_cast<ULONG_PTR>(ctx), &ctx->closeOv.ov)) {
+        ctx->controlPending.store(false);
+        ctx->release();
+        return false;
+    }
+    return true;
+}
+
 void IocpServer::handleRecv(ConnCtx* ctx, DWORD bytes) {
     auto response = ctx->session->onData(
         reinterpret_cast<const uint8_t*>(ctx->recvOv.buf), bytes);
@@ -366,10 +387,8 @@ void IocpServer::handleRecv(ConnCtx* ctx, DWORD bytes) {
     // rejection, say) must still get them out, so only tear down once the outbound
     // buffer has actually drained. Otherwise keep a recv posted: it guarantees a
     // completion will arrive to carry the teardown even if the peer goes quiet.
-    if (ctx->session->closed() && ctx->channel->out.empty()) {
-        markDead(ctx);
+    if (closeIfDrained(ctx))
         return;
-    }
 
     if (!postRecv(ctx))
         markDead(ctx);
@@ -380,8 +399,33 @@ void IocpServer::handleSend(ConnCtx* ctx, DWORD bytes) {
     // Only tear down once the session's remaining output has actually drained —
     // otherwise a session that closes right after queueing its last packet (e.g. an
     // auth rejection followed by a disconnect) loses those bytes.
-    if (ctx->session->closed() && ctx->channel->out.empty())
+    closeIfDrained(ctx);
+}
+
+void IocpServer::handleControl(ConnCtx* ctx) {
+    ctx->controlPending.store(false);
+    closeIfDrained(ctx);
+}
+
+bool IocpServer::closeIfDrained(ConnCtx* ctx) {
+    bool shouldClose = false;
+    {
+        std::lock_guard<std::mutex> lock(ctx->channel->mu);
+        shouldClose = ctx->channel->closeRequested && !ctx->channel->sendShutdown &&
+                      ctx->channel->out.empty();
+        if (shouldClose)
+            ctx->channel->sendShutdown = true;
+    }
+
+    if (shouldClose)
+    {
+        // On Winsock, closing an overlapped socket directly can reset the peer even
+        // after the final WSASend completion. Queue the FIN first, then perform the
+        // normal idempotent teardown so clients receive all bytes followed by EOF.
+        shutdown(ctx->sock, SD_SEND);
         markDead(ctx);
+    }
+    return shouldClose;
 }
 
 void IocpServer::markDead(ConnCtx* ctx) {

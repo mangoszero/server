@@ -52,7 +52,7 @@
 namespace net {
 
 // ── Per-operation type tag ────────────────────────────────────────────────────
-enum class IoType : uint8_t { Accept, Recv, Send };
+enum class IoType : uint8_t { Accept, Recv, Send, Control };
 
 // Overlapped structs — OVERLAPPED must be the first member, and IoType the second,
 // so the worker can recover the op type from a bare OVERLAPPED* completion.
@@ -81,7 +81,13 @@ struct SendOv {
     WSABUF     wsabuf{};
 };
 
+struct ControlOv {
+    OVERLAPPED ov{};
+    IoType     type{IoType::Control};
+};
+
 // ── Per-connection context ────────────────────────────────────────────────────
+class IocpServer;
 struct ConnCtx;
 
 // Lifetime-safe handle the session uses to send from any thread (e.g. the world
@@ -96,6 +102,8 @@ struct ConnCtx;
 struct SendChannel {
     std::mutex mu;
     ConnCtx*   ctx = nullptr;
+    bool       closeRequested = false;
+    bool       sendShutdown = false;
     SendQueue  out;                        // coalescing buffer + byte backpressure
 
     void post(const uint8_t* data, size_t len);  // append + kick a write while armed
@@ -107,8 +115,10 @@ struct ConnCtx {
     SOCKET   sock{INVALID_SOCKET};
     RecvOv   recvOv;
     SendOv   sendOv;
+    ControlOv closeOv;
     std::shared_ptr<ISession>    session;
     std::shared_ptr<SendChannel> channel;
+    IocpServer* owner = nullptr;
 
     // Lifetime: the ConnCtx must outlive every overlapped op posted on it, because
     // their completions arrive (keyed by this pointer) on an IOCP worker possibly
@@ -118,8 +128,10 @@ struct ConnCtx {
     // teardown idempotent across the recv/send/close paths that can all race to it.
     std::atomic<long> refs{1};
     std::atomic<bool> dead{false};
+    std::atomic<bool> controlPending{false};
 
-    explicit ConnCtx(const SessionFactory& factory) : session(factory()) {}
+    ConnCtx(const SessionFactory& factory, IocpServer* server)
+        : session(factory()), owner(server) {}
 
     void addRef()  { refs.fetch_add(1, std::memory_order_relaxed); }
     void release() { if (refs.fetch_sub(1, std::memory_order_acq_rel) == 1) delete this; }
@@ -155,6 +167,8 @@ public:
     void stop();
 
 private:
+    friend struct SendChannel;
+
     HANDLE   m_iocp{nullptr};
     SOCKET   m_listen{INVALID_SOCKET};
     SessionFactory m_factory;
@@ -176,9 +190,12 @@ private:
     void workerThread();
     void postAccept();
     bool postRecv  (ConnCtx* ctx);              // refs++ on success
+    bool postControl(ConnCtx* ctx);              // refs++ on success
     void handleAccept(AcceptOv* aov, DWORD bytes);
     void handleRecv (ConnCtx* ctx, DWORD bytes);
     void handleSend (ConnCtx* ctx, DWORD bytes);// `bytes` MUST be honoured (short writes)
+    void handleControl(ConnCtx* ctx);
+    bool closeIfDrained(ConnCtx* ctx);
     void markDead   (ConnCtx* ctx);             // idempotent teardown; releases alive ref
 };
 
