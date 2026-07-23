@@ -85,6 +85,8 @@
 #include <signal.h>
 #include <assert.h>
 #include "ServerDefines.h"
+#include "Locales.h"
+#include "TimeConstants.h"
 
 #if defined(__sun__)
 #include <ieeefp.h> // finite() on Solaris
@@ -172,71 +174,6 @@ inline float finiteAlways(float f) { return std::isfinite(f) ? f : 0.0f; }
 #define MAKE_PAIR32(l, h)  uint32( uint16(l) | ( uint32(h) << 16 ) )
 #define PAIR32_HIPART(x)   (uint16)((uint32(x) >> 16) & 0x0000FFFF)
 #define PAIR32_LOPART(x)   (uint16)(uint32(x)         & 0x0000FFFF)
-
-/**
- * @brief
- *
- */
-enum TimeConstants
-{
-    MINUTE = 60,
-    HOUR   = MINUTE * 60,
-    DAY    = HOUR * 24,
-    WEEK   = DAY * 7,
-    MONTH  = DAY * 30,
-    YEAR   = MONTH * 12,
-    IN_MILLISECONDS = 1000
-};
-
-/**
- * @brief
- *
- */
-enum LocaleConstant
-{
-    LOCALE_enUS = 0,                                        // also enGB
-    LOCALE_koKR = 1,
-    LOCALE_frFR = 2,
-    LOCALE_deDE = 3,
-    LOCALE_zhCN = 4,
-    LOCALE_zhTW = 5,
-    LOCALE_esES = 6,
-    LOCALE_esMX = 7,
-#if !defined(CLASSIC)
-    LOCALE_ruRU = 8,
-#endif
-};
-
-#if defined(CLASSIC)
-#define MAX_LOCALE 8
-#else
-#define MAX_LOCALE 9
-#endif
-#define DEFAULT_LOCALE LOCALE_enUS
-
-/**
- * @brief
- *
- * @param name
- * @return LocaleConstant
- */
-LocaleConstant GetLocaleByName(const std::string& name);
-
-typedef std::vector<std::string> StringVector;
-
-extern char const* localeNames[MAX_LOCALE]; /**< TODO */
-
-/**
- * @brief
- *
- */
-struct LocaleNameStr
-{
-    char const* name; /**< TODO */
-    LocaleConstant locale; /**< TODO */
-};
-
-extern LocaleNameStr const fullLocaleNameList[]; /**< used for iterate all names including alternative */
 
 /**
  * @brief operator new[] based version of strdup() function! Release memory by using operator delete[] !
