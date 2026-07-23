@@ -15,11 +15,6 @@ if(WIN32)
     COMMENT "auth_crypto_tests: co-locating the OpenSSL 3.x crypto runtime")
 endif()
 
-add_executable(lease_tests LeaseTests.cpp)
-target_include_directories(lease_tests PRIVATE "${PROJECT_SOURCE_DIR}/src/shared")
-target_link_libraries(lease_tests PRIVATE Threads::Threads)
-add_test(NAME lease_tests COMMAND lease_tests)
-
 add_executable(network_regression_tests NetworkRegressionTests.cpp)
 target_link_libraries(network_regression_tests PRIVATE shared Threads::Threads)
 add_test(NAME network_regression_tests COMMAND network_regression_tests)
@@ -66,5 +61,5 @@ add_test(NAME session_mailbox_tests COMMAND session_mailbox_tests)
 add_test(NAME world_network_boundary
   COMMAND ${CMAKE_COMMAND}
     -DSOURCE_ROOT=${PROJECT_SOURCE_DIR}
-    -DEXPECT_LEGACY_REMOVED=OFF
+    -DEXPECT_LEGACY_REMOVED=ON
     -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckWorldNetworkBoundary.cmake)

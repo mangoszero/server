@@ -25,13 +25,28 @@ if(EXPECT_LEGACY_REMOVED)
     "${SOURCE_ROOT}/src/game/Server/${OLD_SOCKET_NAME}.cpp"
     "${SOURCE_ROOT}/src/game/Server/${OLD_SOCKET_MANAGER_NAME}.h"
     "${SOURCE_ROOT}/src/game/Server/${OLD_SOCKET_MANAGER_NAME}.cpp"
-    "${SOURCE_ROOT}/src/shared/Threading/${OLD_LEASE_NAME}.h")
+    "${SOURCE_ROOT}/src/shared/Threading/${OLD_LEASE_NAME}.h"
+    "${SOURCE_ROOT}/tests/LeaseTests.cpp")
   foreach(FILE_PATH IN LISTS REMOVED_FILES)
     if(EXISTS "${FILE_PATH}")
       message(FATAL_ERROR "Obsolete coupled file still exists: ${FILE_PATH}")
     endif()
   endforeach()
 endif()
+
+foreach(TRANSPORT_DIR IN ITEMS
+    "${SOURCE_ROOT}/src/shared/net/iocp"
+    "${SOURCE_ROOT}/src/shared/net/reactor"
+    "${SOURCE_ROOT}/src/shared/net/uring")
+  file(GLOB_RECURSE TRANSPORT_SOURCES
+    "${TRANSPORT_DIR}/*.h" "${TRANSPORT_DIR}/*.hpp" "${TRANSPORT_DIR}/*.cpp")
+  foreach(FILE_PATH IN LISTS TRANSPORT_SOURCES)
+    file(READ "${FILE_PATH}" CONTENTS)
+    if(CONTENTS MATCHES "#[ \t]*include[ \t]*[\"<](World|WorldSession|Opcode|Database|Addon|Warden)")
+      message(FATAL_ERROR "Transport gained game dependency: ${FILE_PATH}")
+    endif()
+  endforeach()
+endforeach()
 
 file(READ "${SOURCE_ROOT}/src/game/Server/WorldGateway.cpp" WORLD_GATEWAY_SOURCE)
 foreach(REQUIRED_TRANSACTION_STEP IN ITEMS
