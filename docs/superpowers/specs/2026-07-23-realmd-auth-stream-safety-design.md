@@ -20,10 +20,15 @@ The implementation must:
 ## Baseline
 
 - Parent server branch base: `91dd67482a002c6d44538ef9d1275ff9f56ea37b`
-- Updated realmd base: `39b78467d708263de9570fb9376fc9278912e01e`
+- Zero-compatible realmd base:
+  `3cf5f9690477a0bc2b33eb17eb1d9016da1d47e8`
 - Realmd GitHub default branch: `master`
 - Realmd GitHub sweep on 2026-07-23 found PRs #27, #28, and #29 merged,
   no open pull requests, and `39b7846` as the latest branch tip.
+- Build verification found that `39b7846` assumes split shared headers from
+  realmd PR #27 which do not exist in mangoszero/server, including its current
+  upstream `master`. The server continues to pin `3cf5f96`, which contains the
+  same provider-exit fix as PR #29 without the incompatible header split.
 - Build directory: `E:\Mangos\WIP\Zero\Testing\server_build`
 - Install directory: `E:\Mangos\WIP\Zero\Testing\server_install`
 - CMake generator: Visual Studio 18 2026
@@ -222,7 +227,7 @@ Run the full configured CTest suite once at phase end.
 ## Repository Ownership
 
 Production and unit-test changes are committed inside the realmd submodule on
-`fix/auth-stream-safety`, based on `39b7846`.
+`fix/auth-stream-safety`, based on the server-compatible `3cf5f96`.
 
 The parent branch `fix/realmd-auth-stream-safety` records:
 

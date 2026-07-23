@@ -22,7 +22,7 @@ runtime validation, Python only for small validation-data helpers if needed.
 - Work only in `E:\Mangos\WIP\Zero\Testing`.
 - Parent branch: `fix/realmd-auth-stream-safety`.
 - Realmd implementation branch: `fix/auth-stream-safety`, based on
-  `39b78467d708263de9570fb9376fc9278912e01e`.
+  `3cf5f9690477a0bc2b33eb17eb1d9016da1d47e8`.
 - Do not modify mangosd, shared IOCP/reactor/io_uring code, databases, clients,
   or `E:\Mangos\Repos\Zero\server`.
 - Keep command framing independent of client build.
@@ -74,7 +74,7 @@ runtime validation, Python only for small validation-data helpers if needed.
 
 **Interfaces:**
 
-- Consumes: parent commit `2318449c`, realmd commit `39b7846`.
+- Consumes: parent commit `2318449c`, realmd commit `3cf5f96`.
 - Produces: clean realmd branch `fix/auth-stream-safety` and verified baseline.
 
 - [ ] **Step 1: Confirm the designated Testing checkout is isolated and clean**
@@ -87,7 +87,7 @@ git -C E:\Mangos\WIP\Zero\Testing\server\src\realmd status --short --branch
 git -C E:\Mangos\WIP\Zero\Testing\server\src\realmd rev-parse HEAD
 ```
 
-Expected: parent has no uncommitted changes; realmd is clean at `39b7846`.
+Expected: parent has no uncommitted changes; realmd is clean at `3cf5f96`.
 
 - [ ] **Step 2: Create the realmd implementation branch**
 
@@ -97,7 +97,13 @@ Run:
 git -C E:\Mangos\WIP\Zero\Testing\server\src\realmd switch -c fix/auth-stream-safety
 ```
 
-Expected: new branch based exactly on `39b7846`.
+Expected: new branch based exactly on `3cf5f96`.
+
+Compatibility note: the GitHub sweep initially identified `39b7846` as the
+realmd default-branch tip. The first realmd build proved that tip requires
+split shared headers not present in mangoszero/server. Current Zero upstream
+still pins `3cf5f96`, so implementation was rebased there before production
+changes continued.
 
 - [ ] **Step 3: Reconfigure the existing build after the submodule update**
 
