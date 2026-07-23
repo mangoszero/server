@@ -26,7 +26,7 @@ source checkout, or client file was changed.
 - Parent implementation commit: `3526737067c418c422ac33b8ef7286e72c749385`
 - Parent live-log regression commit: `dd046df57ca0ecff1428f059381feb5d2981fc2c`
 - Realmd branch: `fix/auth-stream-safety`
-- Realmd implementation tip: `bb6768fed9f6f64c45a02d1b07ac67b95b5adfe7`
+- Realmd implementation tip: `a571d214aac54491c89375a4a0645a782ecc1fd8`
 - Realmd-compatible base: `3cf5f9690477a0bc2b33eb17eb1d9016da1d47e8`
 
 The GitHub sweep found realmd default-branch tip `39b7846`, with PRs #27,

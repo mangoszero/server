@@ -67,7 +67,7 @@ function Wait-ForListener {
             }
         }
         catch {
-            # The listener is not ready yet.
+            Write-Verbose "realmd listener not ready yet: $($_.Exception.Message)"
         }
         finally {
             $client.Dispose()
