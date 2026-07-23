@@ -51,7 +51,9 @@ bool WorldGateway::FilterAuthPacket(WorldPacket& packet)
 {
 #ifdef ENABLE_ELUNA
     if (Eluna* eluna = sWorld.GetEluna())
+    {
         return eluna->OnPacketReceive(nullptr, packet);
+    }
 #endif
     return true;
 }
@@ -70,7 +72,9 @@ proto::AuthLookup WorldGateway::LookupAccount(proto::AuthRequest const& request)
     EnsureDbThreadRegistered();
 
     if (!IsAcceptableClientBuild(request.build))
+    {
         return Rejected(proto::AuthStatus::VersionMismatch);
+    }
 
     std::string safeAccount = request.account;
     LoginDatabase.escape_string(safeAccount);
@@ -97,11 +101,15 @@ proto::AuthLookup WorldGateway::LookupAccount(proto::AuthRequest const& request)
         safeAddress.c_str(), safeAccount.c_str()));
 
     if (!result)
+    {
         return Rejected(proto::AuthStatus::UnknownAccount);
+    }
 
     Field const* fields = result->Fetch();
     if (fields[10].GetUInt32() || fields[11].GetUInt32())
+    {
         return Rejected(proto::AuthStatus::Banned);
+    }
 
     if (fields[4].GetBool()
         && std::strcmp(fields[3].GetString(), request.peerAddress.c_str()) != 0)
@@ -111,7 +119,9 @@ proto::AuthLookup WorldGateway::LookupAccount(proto::AuthRequest const& request)
 
     uint32 security = fields[1].GetUInt16();
     if (security > SEC_ADMINISTRATOR)
+    {
         security = SEC_ADMINISTRATOR;
+    }
 
     AccountTypes const allowedAccountType = sWorld.GetPlayerSecurityLimit();
     if (allowedAccountType > SEC_PLAYER
@@ -124,7 +134,9 @@ proto::AuthLookup WorldGateway::LookupAccount(proto::AuthRequest const& request)
     bool const wardenActive = sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED)
         || sWorld.getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED);
     if (wardenActive && os != "Win" && os != "OSX")
+    {
         return Rejected(proto::AuthStatus::Reject);
+    }
 
     char const* verifier = fields[5].GetString();
     char const* salt = fields[6].GetString();
@@ -156,7 +168,9 @@ proto::SessionId WorldGateway::Attach(proto::AuthRequest const& request,
     std::shared_ptr<AccountRow> const account =
         std::dynamic_pointer_cast<AccountRow>(context);
     if (!link || !account)
+    {
         return proto::INVALID_SESSION_ID;
+    }
 
     static SqlStatementID updateAccount;
     SqlStatement statement = LoginDatabase.CreateStatement(updateAccount,
@@ -170,12 +184,16 @@ proto::SessionId WorldGateway::Attach(proto::AuthRequest const& request,
 
     WorldPacket addonSource(CMSG_AUTH_SESSION, request.addonData.size());
     if (!request.addonData.empty())
+    {
         addonSource.append(request.addonData.data(), request.addonData.size());
+    }
 
     bool const wardenActive = sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED)
         || sWorld.getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED);
     if (wardenActive)
+    {
         session->InitWarden(uint16(request.build), &account->sessionKey, account->os);
+    }
 
     WorldPacket addonResponse;
     if (sAddOnHandler.BuildAddonPacket(&addonSource, &addonResponse))
@@ -184,7 +202,9 @@ proto::SessionId WorldGateway::Attach(proto::AuthRequest const& request,
             std::make_unique<WorldPacket>(std::move(addonResponse)));
     }
     if (link->IsClosed())
+    {
         return proto::INVALID_SESSION_ID;
+    }
 
     proto::SessionId sessionId;
     {
@@ -193,7 +213,9 @@ proto::SessionId WorldGateway::Attach(proto::AuthRequest const& request,
         {
             sessionId = ++m_nextSessionId;
             if (sessionId == proto::INVALID_SESSION_ID)
+            {
                 sessionId = ++m_nextSessionId;
+            }
         }
         while (m_routes.find(sessionId) != m_routes.end());
         m_routes.emplace(sessionId, mailbox);
@@ -220,7 +242,9 @@ void WorldGateway::Deliver(proto::SessionId session, WorldPacket&& packet)
         std::lock_guard<std::mutex> guard(m_lock);
         auto const route = m_routes.find(session);
         if (route == m_routes.end())
+        {
             return;
+        }
         mailbox = route->second;
     }
 
@@ -234,7 +258,9 @@ void WorldGateway::Detach(proto::SessionId session)
         std::lock_guard<std::mutex> guard(m_lock);
         auto const route = m_routes.find(session);
         if (route == m_routes.end())
+        {
             return;
+        }
         mailbox = route->second;
         m_routes.erase(route);
     }

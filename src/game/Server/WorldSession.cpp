@@ -156,10 +156,12 @@ WorldSession::WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
     m_latency(0), m_clientTimeDelay(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_npcWatchLastGuid(),
-    m_lastPingTime(0), m_overSpeedPings(0)
+    m_lastPingTime(), m_hasPinged(false), m_overSpeedPings(0)
 {
     if (m_link)
+    {
         m_Address = m_link->GetRemoteAddress();
+    }
 }
 
 /// WorldSession destructor
@@ -281,7 +283,9 @@ void WorldSession::SetPendingAddonInfo(std::unique_ptr<WorldPacket> packet)
 void WorldSession::SendPendingAddonInfo()
 {
     if (!m_pendingAddonInfo)
+    {
         return;
+    }
 
     SendPacket(m_pendingAddonInfo.get());
     m_pendingAddonInfo.reset();
@@ -755,7 +759,9 @@ void WorldSession::LogoutPlayer(bool Save)
 void WorldSession::KickPlayer()
 {
     if (m_link)
+    {
         m_link->Close();
+    }
 }
 
 void WorldSession::HandlePingOpcode(WorldPacket& recvPacket)
@@ -765,14 +771,18 @@ void WorldSession::HandlePingOpcode(WorldPacket& recvPacket)
     recvPacket >> ping;
     recvPacket >> latency;
 
-    time_t const currentTime = time(nullptr);
-    if (m_lastPingTime == 0)
+    std::chrono::steady_clock::time_point const currentTime =
+        std::chrono::steady_clock::now();
+    if (!m_hasPinged)
     {
+        m_hasPinged = true;
         m_lastPingTime = currentTime;
     }
     else
     {
-        time_t const difference = currentTime - m_lastPingTime;
+        std::chrono::seconds::rep const difference =
+            std::chrono::duration_cast<std::chrono::seconds>(
+                currentTime - m_lastPingTime).count();
         m_lastPingTime = currentTime;
 
         if (difference < 27)

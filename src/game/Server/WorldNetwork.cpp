@@ -17,7 +17,9 @@ WorldNetwork::~WorldNetwork()
 bool WorldNetwork::Start(uint16 port, std::string const& bindIp)
 {
     if (m_started)
+    {
         return false;
+    }
 
     InitializeOpcodes();
     if (!m_listener.Start(port, bindIp))
@@ -34,7 +36,9 @@ bool WorldNetwork::Start(uint16 port, std::string const& bindIp)
 void WorldNetwork::Stop()
 {
     if (!m_started)
+    {
         return;
+    }
 
     m_listener.Stop();
     m_started = false;

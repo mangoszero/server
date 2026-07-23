@@ -21,7 +21,9 @@ public:
     {
         std::lock_guard<std::mutex> guard(m_stateLock);
         if (m_closed)
+        {
             return false;
+        }
         return m_packets.next(packet, checker);
     }
 

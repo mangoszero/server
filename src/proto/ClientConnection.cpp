@@ -25,7 +25,9 @@ ClientConnection::~ClientConnection()
 std::vector<uint8_t> ClientConnection::onConnect()
 {
     if (m_closed.load())
+    {
         return {};
+    }
 
     try
     {
@@ -45,7 +47,9 @@ std::vector<uint8_t> ClientConnection::onData(
     uint8_t const* data, std::size_t len)
 {
     if (m_closed.load())
+    {
         return {};
+    }
 
     try
     {
@@ -71,12 +75,16 @@ std::vector<uint8_t> ClientConnection::onData(
                 break;
             }
             if (status == DecodeStatus::NeedMore)
+            {
                 break;
+            }
 
             WorldPacket& packet = packets.front();
             m_gateway.TracePacket(packet, true);
             if (!HandlePacket(packet))
+            {
                 Close();
+            }
         }
     }
     catch (...)
@@ -121,7 +129,9 @@ void ClientConnection::SendPacket(WorldPacket const& packet)
     {
         std::lock_guard<std::mutex> guard(m_sendOrderLock);
         if (m_closed.load() || !m_sender)
+        {
             return;
+        }
 
         m_gateway.TracePacket(packet, false);
         std::vector<uint8> const frame = PacketCodec::Encode(packet,
@@ -140,12 +150,16 @@ void ClientConnection::SendPacket(WorldPacket const& packet)
 void ClientConnection::Close()
 {
     if (m_closed.exchange(true))
+    {
         return;
+    }
 
     try
     {
         if (m_closer)
+        {
             m_closer();
+        }
     }
     catch (...)
     {
@@ -155,13 +169,19 @@ void ClientConnection::Close()
 bool ClientConnection::HandlePacket(WorldPacket& packet)
 {
     if (packet.GetOpcode() == CMSG_AUTH_SESSION)
+    {
         return HandleAuthSession(packet);
+    }
     if (packet.GetOpcode() >= NUM_MSG_TYPES)
+    {
         return false;
+    }
 
     SessionId const session = CurrentSession();
     if (session == INVALID_SESSION_ID)
+    {
         return false;
+    }
 
     m_gateway.Deliver(session, std::move(packet));
     return true;
@@ -176,9 +196,13 @@ SessionId ClientConnection::CurrentSession()
 bool ClientConnection::HandleAuthSession(WorldPacket& packet)
 {
     if (m_authStarted)
+    {
         return false;
+    }
     if (!m_gateway.FilterAuthPacket(packet))
+    {
         return true;
+    }
 
     m_authStarted = true;
     AuthRequest request;
@@ -237,7 +261,9 @@ bool ClientConnection::HandleAuthSession(WorldPacket& packet)
         std::lock_guard<std::mutex> guard(m_sessionLock);
         closedDuringAttach = m_closed.load();
         if (!closedDuringAttach)
+        {
             m_session = session;
+        }
     }
     if (closedDuringAttach)
     {

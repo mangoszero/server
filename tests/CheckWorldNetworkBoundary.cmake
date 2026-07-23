@@ -100,6 +100,7 @@ endif()
 foreach(REQUIRED_SESSION_BEHAVIOR IN ITEMS
     "void WorldSession::HandlePingOpcode"
     "void WorldSession::HandleKeepAliveOpcode"
+    "std::chrono::steady_clock::now()"
     "packet->GetOpcode() != CMSG_PING"
     "packet->GetOpcode() != CMSG_KEEP_ALIVE")
   string(FIND "${WORLD_SESSION_SOURCE}" "${REQUIRED_SESSION_BEHAVIOR}" POSITION)

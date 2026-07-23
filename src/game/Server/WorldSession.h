@@ -35,6 +35,7 @@
 #include "ObjectGuid.h"
 #include "AuctionHouseMgr.h"
 #include "Item.h"
+#include <chrono>
 #include <memory>
 
 struct ItemPrototype;
@@ -930,7 +931,8 @@ class WorldSession
         TutorialDataState m_tutorialState;
         uint32 m_clientTimeDelay;
         ObjectGuid m_npcWatchLastGuid;
-        time_t m_lastPingTime;
+        std::chrono::steady_clock::time_point m_lastPingTime;
+        bool m_hasPinged;
         uint32 m_overSpeedPings;
 };
 #endif
