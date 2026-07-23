@@ -241,6 +241,21 @@ bool MovementAction::FollowOnTransport(Unit* target, Player* master)
         return false;
     }
 
+    PlayerbotMgr* mgr = master->GetPlayerbotMgr();
+    uint32 botIdx = 0;
+    uint32 botCount = 0;
+    for (auto it = mgr->GetPlayerBotsBegin();
+         it != mgr->GetPlayerBotsEnd(); ++it, ++botCount)
+    {
+        if (it->second == bot)
+            break;
+        ++botIdx;
+    }
+    float offsetRadius = 1.0f;
+    float angleStep = 2.0f * M_PI / std::max((uint32)4, botCount);
+    float offsetX = cos(angleStep * botIdx) * offsetRadius;
+    float offsetY = sin(angleStep * botIdx) * offsetRadius;
+
     bool isApproaching = transportBoardingDelayTime > 0;
     bool approachTimedOut = isApproaching && (currentTime - transportBoardingDelayTime) > 1;
     // Determine if we should complete boarding now
@@ -253,15 +268,17 @@ bool MovementAction::FollowOnTransport(Unit* target, Player* master)
         bot->clearUnitState(UNIT_STAT_IGNORE_PATHFINDING);
         mm.Clear();
         bot->movespline->_Interrupt();
-        bot->NearTeleportTo(master->GetPositionX(),
-            master->GetPositionY(),
+        bot->NearTeleportTo(
+            master->GetPositionX() + offsetX,
+            master->GetPositionY() + offsetY,
             master->GetPositionZ(), bot->GetOrientation());
         bot->SetTransport(transport);
         transport->AddPassenger(bot);
+
         bot->m_movementInfo.SetTransportData(
             transport->GetObjectGuid(),
-            master->m_movementInfo.GetTransportPos()->x,
-            master->m_movementInfo.GetTransportPos()->y,
+            master->m_movementInfo.GetTransportPos()->x + offsetX,
+            master->m_movementInfo.GetTransportPos()->y + offsetY,
             master->m_movementInfo.GetTransportPos()->z,
             bot->GetOrientation(),
             getMSTime()
@@ -290,7 +307,9 @@ bool MovementAction::FollowOnTransport(Unit* target, Player* master)
             transportBoardingDelayTime = currentTime;
         }
         Movement::MoveSplineInit init(*bot);
-        init.MoveTo(master->GetPositionX(), master->GetPositionY(), master->GetPositionZ());
+        init.MoveTo(master->GetPositionX() + offsetX,
+                    master->GetPositionY() + offsetY,
+                    master->GetPositionZ());
         init.SetWalk(false);
         init.Launch();
         AI_VALUE(LastMovement&, "last movement").Set(target);
@@ -322,7 +341,7 @@ bool MovementAction::FollowOffTransport(Unit* target, Player* master)
         WorldPacket data(MSG_MOVE_HEARTBEAT, 64);
         data << bot->GetPackGUID();
         bot->m_movementInfo.Write(data);
-        bot->SendMessageToSet(&data, false);
+        bot->SendMessageToSetInRange(&data, DEFAULT_VISIBILITY_DISTANCE, false);
         AI_VALUE(LastMovement&, "last movement").Set(target);
         if(bot->GetPet())
         {
