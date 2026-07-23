@@ -129,6 +129,8 @@ namespace VMAP
             ModelFileMap iLoadedModelFiles; /**< Map of loaded model files. */
             InstanceTreeMap iInstanceMapTrees; /**< Map of instance trees. */
 
+            UNORDERED_MAP<uint32, uint8> iLiquidTypeMap; /**< DBC entry ID to liquid type bitmask. */
+
             /**
              * @brief Internal method to load a map tile.
              *
@@ -277,6 +279,8 @@ namespace VMAP
              * @return bool True if the liquid level was retrieved, false otherwise.
              */
             bool GetLiquidLevel(uint32 pMapId, float x, float y, float z, uint8 ReqLiquidType, float& level, float& floor, uint32& type) const override;
+
+            void SetLiquidTypeMap(uint32 entryId, uint8 bitmask) { iLiquidTypeMap[entryId] = bitmask; }
 
             /**
              * @brief Acquires a model instance.

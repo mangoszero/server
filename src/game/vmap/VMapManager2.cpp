@@ -360,10 +360,16 @@ namespace VMAP
                 {
                     floor = info.ground_Z;
                     type = info.hitModel->GetLiquidType();
-                    if (ReqLiquidType && !(type & ReqLiquidType))
+
+                    if (ReqLiquidType)
                     {
-                        return false;
+                        UNORDERED_MAP<uint32, uint8>::const_iterator it = iLiquidTypeMap.find(type);
+                        if (it != iLiquidTypeMap.end() && !(it->second & ReqLiquidType))
+                        {
+                            return false;
+                        }
                     }
+
                     if (info.hitInstance->GetLiquidLevel(pos, info, level))
                     {
                         return true;

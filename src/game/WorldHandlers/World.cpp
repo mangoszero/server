@@ -75,6 +75,7 @@
 #include "BattleGround/BattleGroundMgr.h"
 #include "OutdoorPvP/OutdoorPvP.h"
 #include "VMapFactory.h"
+#include "VMapManager2.h"
 #include "MoveMap.h"
 #include "GameEventMgr.h"
 #include "PoolManager.h"
@@ -443,6 +444,18 @@ void World::SetInitialWorldSettings()
     LoadDBCStores(m_dataPath);
     DetectDBCLang();
     sObjectMgr.SetDBCLocaleIndex(GetDefaultDbcLocale());    // Get once for all the locale index of DBC language (console/broadcasts)
+
+    ///- Populate vmap liquid type map from DBC data
+    if (VMAP::VMapManager2* vmmgr2 = dynamic_cast<VMAP::VMapManager2*>(VMAP::VMapFactory::createOrGetVMapManager()))
+    {
+        for (uint32 i = 0; i < sLiquidTypeStore.GetNumRows(); ++i)
+        {
+            if (LiquidTypeEntry const* entry = sLiquidTypeStore.LookupEntry(i))
+            {
+                vmmgr2->SetLiquidTypeMap(entry->ID, 1 << entry->Type);
+            }
+        }
+    }
 
     StartupUI::Step("Loading Script Names...");
     sScriptMgr.LoadScriptNames();
