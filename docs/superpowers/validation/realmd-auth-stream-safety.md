@@ -141,10 +141,10 @@ Executable version metadata confirms these installed clients:
 
 | Build | Version | Executable present | Automated evidence | Interactive UI login |
 |---:|---|---|---|---|
-| 5875 | 1.12.1 | Yes | Guard test and every-split installed-realmd smoke PASS | PASS to character selection |
-| 8606 | 2.4.3 | Yes | Guard framing PASS | Not run |
-| 12340 | 3.3.5 | Yes | Guard framing PASS | Not run |
-| 15595 | 4.3.4 | Yes | Guard framing PASS | Not run |
+| 5875 | 1.12.1 | Yes | Guard test and every-split installed-realmd smoke PASS | PASS through authentication and realm list |
+| 8606 | 2.4.3 | Yes | Guard framing PASS | PASS through authentication and realm list |
+| 12340 | 3.3.5 | Yes | Guard framing PASS | PASS through authentication and realm list |
+| 15595 | 4.3.4 | Yes | Guard framing PASS | PASS through authentication and realm list |
 | 18414 | 5.4.8 | Yes | Guard framing PASS | Not run |
 
 Accepted builds `6005`, `6141`, `18273`, `21742`, `26972`, `35662`, and
@@ -152,11 +152,13 @@ Accepted builds `6005`, `6141`, `18273`, `21742`, `26972`, `35662`, and
 their result is packet-framing PASS only, not an end-to-end client PASS. The
 installed WoD executable is build `20886`, not accepted build `21742`.
 
-The user manually authenticated the installed Classic 1.12.1 build-5875 client,
-received the realm list, selected the Zero realm, and reached character
-selection. The debug log records two complete successful authentication and
-realm-list exchanges at `17:50:01` and `17:50:26`. The later-expansion UI
-matrix remains untested.
+The user manually authenticated the installed Classic, TBC, WotLK, and Cata
+clients against the installed realmd and received their realm lists. The world
+servers were deliberately not running, so these results stop at the realmd
+boundary and do not claim realm entry or character selection. The debug log
+records successful challenge, proof, and realm-list exchanges for the manual
+test window without malformed-frame, unauthorized-command, timeout, or
+consumption errors.
 
 ## Repository and Deployment Boundaries
 
@@ -174,9 +176,11 @@ The next realmd BLOCKING finding is F-03: realm refresh can race concurrent
 realm-list serialization. It should be handled as a separate change with
 snapshot or reader/writer synchronization and concurrent refresh coverage.
 
-Credentialed installed-client UI checks for TBC, WotLK, Cata, and MoP remain
-manual validation steps, not correctness blockers for the build-independent
-framing, deadline, or logging implementation.
+Credentialed realm-entry and character-selection checks require matching world
+servers and remain manual validation steps for every expansion. MoP also still
+requires a manual realmd authentication and realm-list pass. These are not
+correctness blockers for the build-independent framing, deadline, or logging
+implementation.
 
 ## Cross-model Review
 
