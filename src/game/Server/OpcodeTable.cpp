@@ -43,8 +43,7 @@
  * @see WorldSession for packet handler implementations
  */
 
-#include "Opcodes.h"
-#include "WorldSession.h"
+#include "OpcodeTable.h"
 
 /**
  * @brief Define opcode handler

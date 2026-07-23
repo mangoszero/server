@@ -26,17 +26,10 @@
 /// @{
 /// \file
 
-#ifndef MANGOS_H_OPCODES
-#define MANGOS_H_OPCODES
+#ifndef MANGOS_PROTO_OPCODES_H
+#define MANGOS_PROTO_OPCODES_H
 
 #include "Common.h"
-#include "Policies/Singleton.h"
-
-// Note: this include need for be sure have full definition of class WorldSession
-//       if this class definition not complite then VS for x64 release use different size for
-//       struct OpcodeHandler in this header and Opcode.cpp and get totally wrong data from
-//       table opcodeTable in source when Opcode.h included but WorldSession.h not included
-#include "WorldSession.h"
 
 /**
  * This is a list of Opcodes that are known for the client/server communication, it is used
@@ -961,70 +954,8 @@ enum OpcodesList
     SMSG_SUMMON_CANCEL                              = 0x423
 };
 
-// Don't forget to change this value and add opcode name to Opcodes.cpp when you add new opcode!
+// Don't forget to change this value and add opcode metadata to OpcodeTable.cpp when you add a new opcode!
 #define NUM_MSG_TYPES 0x424
-
-/**
- * Initializes opcode handler metadata tables.
- */
-extern void InitializeOpcodes();
-
-/// Player state
-enum SessionStatus
-{
-    STATUS_AUTHED = 0,                     ///< Player authenticated (_player==NULL, m_playerRecentlyLogout = false or will be reset before handler call)
-    STATUS_LOGGEDIN,                       ///< Player in game (_player!=NULL, inWorld())
-    STATUS_TRANSFER,                       ///< Player transferring to another map (_player!=NULL, !inWorld())
-    STATUS_LOGGEDIN_OR_RECENTLY_LOGGEDOUT, ///< _player!= NULL or _player==NULL && m_playerRecentlyLogout)
-    STATUS_NEVER,                          ///< Opcode not accepted from client (deprecated or server side only)
-    STATUS_UNHANDLED                       ///< We don' handle this opcode yet
-};
-
-/**
- * This determines how a \ref WorldPacket is handled by MaNGOS. This can be either in the
- * same function as we received it in, this is unusual, or it can be in:
- * - \ref World::UpdateSessions if it's not thread safe
- * - \ref Map::Update if it is thread safe
- */
-enum PacketProcessing
-{
-    PROCESS_INPLACE = 0,   ///< process packet whenever we receive it - mostly for non-handled or non-implemented packets
-    PROCESS_THREADUNSAFE,  ///< packet is not thread-safe - process it in \ref World::UpdateSessions
-    PROCESS_THREADSAFE     ///< packet is thread-safe - process it in \ref Map::Update
-};
-
-class WorldPacket;
-
-/**
- * A structure containing some of the necessary info to handle a \ref WorldPacket when it comes in.
- * The most interesting thing in here is the \ref OpcodeHandler::handler that actually does
- * something with one of the opcodes (see \ref Opcodes) that came in.
- */
-struct OpcodeHandler
-{
-    ///A string representation of the name of this opcode (see \ref Opcodes)
-    char const* name;
-    ///The status for this handler, it tells whether or not we will handle the packet at all and
-    ///when we will handle it.
-    SessionStatus status;
-    ///This tells where the packet should be processed, ie: is it thread un/safe, which in turn
-    ///determines where it will be processed
-    PacketProcessing packetProcessing;
-    ///The callback called for this opcode which will work some magic
-    void (WorldSession::*handler)(WorldPacket& recvPacket);
-};
-
-extern OpcodeHandler opcodeTable[NUM_MSG_TYPES];
-
-/// Lookup opcode name for human understandable logging
-inline const char* LookupOpcodeName(uint16 id)
-{
-    if (id >= NUM_MSG_TYPES)
-    {
-        return "Received unknown opcode, it's more than max!";
-    }
-    return opcodeTable[id].name;
-}
 #endif
 
 /**

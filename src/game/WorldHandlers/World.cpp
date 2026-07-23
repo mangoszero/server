@@ -48,7 +48,7 @@
 #include "Platform/Define.h"
 #include "SystemConfig.h"
 #include "Log.h"
-#include "Opcodes.h"
+#include "OpcodeTable.h"
 #include "WorldSession.h"
 #include "WorldPacket.h"
 #include "Player.h"

@@ -27,7 +27,7 @@
 #include "Config/Config.h"
 #include "WorldSocket.h"
 #include "WorldSocketMgr.h"
-#include "Opcodes.h"
+#include "OpcodeTable.h"
 
 #include <memory>
 #include <cstdint>

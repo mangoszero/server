@@ -55,7 +55,7 @@
 #include "Common.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
-#include "Opcodes.h"
+#include "OpcodeTable.h"
 #include "Log.h"
 #include "Player.h"
 #include "MapManager.h"
@@ -397,7 +397,7 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
 void WorldSession::HandleForceSpeedChangeAckOpcodes(WorldPacket& recv_data)
 {
     uint16 opcode = recv_data.GetOpcode();
-    DEBUG_LOG("WORLD: Received %s (%u, 0x%X) opcode", recv_data.GetOpcodeName(), opcode, opcode);
+    DEBUG_LOG("WORLD: Received %s (%u, 0x%X) opcode", LookupOpcodeName(recv_data.GetOpcode()), opcode, opcode);
 
     /* extract packet */
     ObjectGuid guid;

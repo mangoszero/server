@@ -58,6 +58,7 @@
 #define MANGOS_H_UNIT
 
 #include "Common.h"
+#include "ItemPrototype.h"
 #include "Object.h"
 #include "Opcodes.h"
 #include "SpellAuraDefines.h"

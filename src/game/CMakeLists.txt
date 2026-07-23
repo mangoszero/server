@@ -282,6 +282,7 @@ target_compile_definitions(game
 
 target_link_libraries(game
     PUBLIC
+        proto
         shared
         ah_ipc
         RecastNavigation::Detour

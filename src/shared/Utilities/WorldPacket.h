@@ -27,7 +27,6 @@
 
 #include "Common.h"
 #include "ByteBuffer.h"
-#include "Opcodes.h"
 
 // Note: m_opcode and size stored in platfom dependent format
 // ignore endianess until send, and converted at receive
@@ -43,7 +42,7 @@ class WorldPacket : public ByteBuffer
          * @brief just container for later use
          *
          */
-        WorldPacket() : ByteBuffer(0), m_opcode(MSG_NULL_ACTION)
+        WorldPacket() : ByteBuffer(0), m_opcode(0)
         {
         }
 
@@ -96,8 +95,6 @@ class WorldPacket : public ByteBuffer
          *
          * @return const char
          */
-        inline const char* GetOpcodeName() const { return LookupOpcodeName(m_opcode); }
-
     protected:
         uint16 m_opcode; /**< TODO */
 };

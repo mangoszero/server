@@ -37,7 +37,7 @@
 #include "DBCStores.h"
 #include "WorldPacket.h"
 #include "Player.h"
-#include "Opcodes.h"
+#include "OpcodeTable.h"
 #include "Chat.h"
 #include "Log.h"
 #include "Unit.h"
@@ -290,7 +290,7 @@ bool ChatHandler::HandleDebugRecvOpcodeCommand(char* /*args*/)
     }
     stream.close();
 
-    DEBUG_LOG("Queued opcode %u, %s", data->GetOpcode(), data->GetOpcodeName());
+    DEBUG_LOG("Queued opcode %u, %s", data->GetOpcode(), LookupOpcodeName(data->GetOpcode()));
 
     m_session->QueuePacket(data);
 
@@ -403,7 +403,7 @@ bool ChatHandler::HandleDebugSendOpcodeCommand(char* /*args*/)
     }
     stream.close();
 
-    DEBUG_LOG("Sending opcode %u, %s", data.GetOpcode(), data.GetOpcodeName());
+    DEBUG_LOG("Sending opcode %u, %s", data.GetOpcode(), LookupOpcodeName(data.GetOpcode()));
 
     data.hexlike();
     unit->ToPlayer()->SendDirectMessage(&data);

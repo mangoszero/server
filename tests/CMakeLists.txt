@@ -24,3 +24,8 @@ add_executable(network_regression_tests NetworkRegressionTests.cpp)
 target_link_libraries(network_regression_tests PRIVATE shared Threads::Threads)
 add_test(NAME network_regression_tests COMMAND network_regression_tests)
 set_tests_properties(network_regression_tests PROPERTIES TIMEOUT 60)
+
+add_test(NAME proto_boundary
+  COMMAND ${CMAKE_COMMAND}
+    -DPROTO_DIR=${PROJECT_SOURCE_DIR}/src/proto
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckProtoBoundary.cmake)

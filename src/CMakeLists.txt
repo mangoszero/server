@@ -20,6 +20,8 @@
 # Build the mangos shared library
 add_subdirectory(shared)
 
+add_subdirectory(proto)
+
 # IPC substrate (always built; ah-service and mangosd both link it)
 add_subdirectory(ipc)
 
