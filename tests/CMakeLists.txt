@@ -28,6 +28,7 @@ add_test(NAME proto_boundary
 add_executable(protocol_tests ProtocolTests.cpp)
 target_link_libraries(protocol_tests PRIVATE proto shared Threads::Threads mangos_openssl_strict)
 add_test(NAME protocol_tests COMMAND protocol_tests)
+set_tests_properties(protocol_tests PROPERTIES TIMEOUT 5)
 if(WIN32)
   add_custom_command(TARGET protocol_tests POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different

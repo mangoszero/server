@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -97,6 +98,9 @@ public:
     bool throwOnSender = false;
     bool throwOnCloser = false;
     bool sendDuringAttach = false;
+    bool monotonicRoutes = false;
+    proto::SessionId nextSessionId = proto::INVALID_SESSION_ID;
+    std::unordered_set<proto::SessionId> liveRoutes;
     std::function<void()> duringAttach;
     std::vector<std::pair<uint16, bool>> traced;
     std::vector<WorldPacket> delivered;
@@ -141,12 +145,27 @@ public:
             addon << uint8(0xA5);
             link->SendPacket(addon);
         }
-        return attachResult;
+        proto::SessionId session = attachResult;
+        if (monotonicRoutes)
+        {
+            do
+            {
+                session = ++nextSessionId;
+                if (session == proto::INVALID_SESSION_ID)
+                    session = ++nextSessionId;
+            }
+            while (liveRoutes.find(session) != liveRoutes.end());
+        }
+        liveRoutes.insert(session);
+        return session;
     }
 
     void Deliver(proto::SessionId session, WorldPacket&& packet) override
     {
-        CHECK(session == attachResult);
+        if (liveRoutes.find(session) == liveRoutes.end())
+            return;
+        if (!monotonicRoutes)
+            CHECK(session == attachResult);
         ++deliverCalls;
         if (throwOnDeliver)
             throw std::runtime_error("simulated delivery failure");
@@ -155,8 +174,10 @@ public:
 
     void Detach(proto::SessionId session) override
     {
-        CHECK(session == attachResult);
+        if (!monotonicRoutes)
+            CHECK(session == attachResult);
         ++detachCalls;
+        liveRoutes.erase(session);
         if (throwOnDetach)
             throw std::runtime_error("simulated detach failure");
     }
@@ -639,6 +660,32 @@ void closeDetachesOnceAndLateSendsAreIgnored()
     CHECK(harness.sent.size() == sendsBefore);
 }
 
+void detachedRoutesDoNotReachMonotonicReplacements()
+{
+    FakeGateway gateway;
+    gateway.monotonicRoutes = true;
+    proto::AuthRequest request;
+
+    proto::SessionId const oldId = gateway.Attach(request, nullptr, nullptr);
+    CHECK(oldId != proto::INVALID_SESSION_ID);
+    gateway.Detach(oldId);
+
+    proto::SessionId const replacementId =
+        gateway.Attach(request, nullptr, nullptr);
+    CHECK(replacementId != proto::INVALID_SESSION_ID);
+    CHECK(replacementId != oldId);
+
+    WorldPacket delayed(CMSG_KEEP_ALIVE, 0);
+    gateway.Deliver(oldId, std::move(delayed));
+    CHECK(gateway.deliverCalls == 0);
+    CHECK(gateway.delivered.empty());
+
+    WorldPacket current(CMSG_KEEP_ALIVE, 0);
+    gateway.Deliver(replacementId, std::move(current));
+    CHECK(gateway.deliverCalls == 1);
+    CHECK(gateway.delivered.size() == 1);
+}
+
 void callbackExceptionsDoNotEscapeTransportCallbacks()
 {
     {
@@ -852,6 +899,7 @@ int main()
     repeatedAuthenticationClosesWithoutSecondLookup();
     closeDuringAttachDetachesThePublishedSession();
     closeDetachesOnceAndLateSendsAreIgnored();
+    detachedRoutesDoNotReachMonotonicReplacements();
     callbackExceptionsDoNotEscapeTransportCallbacks();
     coalescedAuthenticationActivatesCryptBeforeTheNextFrame();
     fragmentedEncryptedHeadersKeepCipherStateSynchronized();

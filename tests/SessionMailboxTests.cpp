@@ -88,6 +88,19 @@ void detachedRegistryRouteCannotReachItsReplacement()
     CHECK(packet->GetOpcode() == 5);
     CHECK(!replacement->Next(raw));
 }
+
+void closeDrainsResidualPackets()
+{
+    SessionMailbox mailbox;
+    CHECK(mailbox.Enqueue(Packet(7, 0x77)));
+    CHECK(mailbox.Enqueue(Packet(8, 0x88)));
+    mailbox.Close();
+
+    WorldPacket* raw = nullptr;
+    CHECK(mailbox.IsClosed());
+    CHECK(!mailbox.Next(raw));
+    CHECK(!mailbox.Enqueue(Packet(9, 0x99)));
+}
 }
 
 int main()
@@ -96,5 +109,6 @@ int main()
     closedMailboxRejectsNewOwnership();
     closeRacingProducersLeavesNoPostClosePackets();
     detachedRegistryRouteCannotReachItsReplacement();
+    closeDrainsResidualPackets();
     return mangos::test::failures == 0 ? 0 : 1;
 }

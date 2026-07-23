@@ -60,10 +60,35 @@ foreach(REQUIRED_TRANSACTION_STEP IN ITEMS
   endif()
 endforeach()
 
+foreach(REQUIRED_ALLOCATOR_STEP IN ITEMS
+    "sessionId = ++m_nextSessionId"
+    "sessionId == proto::INVALID_SESSION_ID"
+    "m_routes.find(sessionId) != m_routes.end()")
+  string(FIND "${WORLD_GATEWAY_SOURCE}" "${REQUIRED_ALLOCATOR_STEP}" ALLOCATOR_POSITION)
+  if(ALLOCATOR_POSITION EQUAL -1)
+    message(FATAL_ERROR
+      "WorldGateway monotonic route allocation is missing: ${REQUIRED_ALLOCATOR_STEP}")
+  endif()
+endforeach()
+if(WORLD_GATEWAY_SOURCE MATCHES "m_nextSessionId[ \t]*=")
+  message(FATAL_ERROR "WorldGateway must not recycle detached route IDs")
+endif()
+
 string(FIND "${WORLD_GATEWAY_SOURCE}" "link->SendPacket(addonResponse)" EARLY_ADDON_SEND)
 if(NOT EARLY_ADDON_SEND EQUAL -1)
   message(FATAL_ERROR "WorldGateway sends addon info before the world-thread auth response")
 endif()
+
+file(READ "${SOURCE_ROOT}/src/game/Server/SessionMailbox.cpp" SESSION_MAILBOX_SOURCE)
+foreach(REQUIRED_DRAIN_STEP IN ITEMS
+    "while (m_packets.next(packet))"
+    "delete packet")
+  string(FIND "${SESSION_MAILBOX_SOURCE}" "${REQUIRED_DRAIN_STEP}" DRAIN_POSITION)
+  if(DRAIN_POSITION EQUAL -1)
+    message(FATAL_ERROR
+      "SessionMailbox::Close is missing residual ownership cleanup: ${REQUIRED_DRAIN_STEP}")
+  endif()
+endforeach()
 
 file(READ "${SOURCE_ROOT}/src/game/Server/WorldSession.cpp" WORLD_SESSION_SOURCE)
 string(FIND "${WORLD_SESSION_SOURCE}" "m_mailbox->Close()" MAILBOX_CLOSE)
@@ -84,6 +109,17 @@ foreach(REQUIRED_SESSION_BEHAVIOR IN ITEMS
   endif()
 endforeach()
 
+file(READ "${SOURCE_ROOT}/src/game/Server/OpcodeTable.cpp" OPCODE_TABLE_SOURCE)
+foreach(REQUIRED_OPCODE_ROUTE IN ITEMS
+    "OPCODE(CMSG_PING,                                      STATUS_AUTHED,   PROCESS_THREADUNSAFE, &WorldSession::HandlePingOpcode)"
+    "OPCODE(CMSG_KEEP_ALIVE,                                STATUS_AUTHED,   PROCESS_THREADUNSAFE, &WorldSession::HandleKeepAliveOpcode)")
+  string(FIND "${OPCODE_TABLE_SOURCE}" "${REQUIRED_OPCODE_ROUTE}" OPCODE_POSITION)
+  if(OPCODE_POSITION EQUAL -1)
+    message(FATAL_ERROR
+      "World-thread protocol opcode registration is missing: ${REQUIRED_OPCODE_ROUTE}")
+  endif()
+endforeach()
+
 file(READ "${SOURCE_ROOT}/src/game/WorldHandlers/World.cpp" WORLD_SOURCE)
 foreach(REQUIRED_AUTH_ORDER IN ITEMS
     "AddQueuedSession(s);\n        s->SendPendingAddonInfo();"
@@ -92,6 +128,31 @@ foreach(REQUIRED_AUTH_ORDER IN ITEMS
   if(AUTH_ORDER_POSITION EQUAL -1)
     message(FATAL_ERROR
       "World-thread auth/addon ordering is missing: ${REQUIRED_AUTH_ORDER}")
+  endif()
+endforeach()
+
+foreach(REQUIRED_ACCEPTED_AUTH_FIELD IN ITEMS
+    "WorldPacket packet(SMSG_AUTH_RESPONSE, 1 + 4 + 1 + 4)"
+    "packet << uint8(AUTH_OK)"
+    "packet << uint32(0)"
+    "packet << uint8(0)")
+  string(FIND "${WORLD_SOURCE}" "${REQUIRED_ACCEPTED_AUTH_FIELD}" FIELD_POSITION)
+  if(FIELD_POSITION EQUAL -1)
+    message(FATAL_ERROR
+      "Zero accepted authentication response is incomplete: ${REQUIRED_ACCEPTED_AUTH_FIELD}")
+  endif()
+endforeach()
+
+file(READ "${SOURCE_ROOT}/src/game/WorldHandlers/WorldSessionMgr.cpp" SESSION_MGR_SOURCE)
+foreach(REQUIRED_QUEUE_AUTH_STEP IN ITEMS
+    "WorldPacket packet(SMSG_AUTH_RESPONSE, 1 + 4 + 1 + 4 + 4)"
+    "packet << uint8(AUTH_WAIT_QUEUE)"
+    "packet << uint32(GetQueuedSessionPos(sess))"
+    "pop_sess->SendAuthWaitQue(0)")
+  string(FIND "${SESSION_MGR_SOURCE}" "${REQUIRED_QUEUE_AUTH_STEP}" QUEUE_POSITION)
+  if(QUEUE_POSITION EQUAL -1)
+    message(FATAL_ERROR
+      "Zero queued authentication flow is incomplete: ${REQUIRED_QUEUE_AUTH_STEP}")
   endif()
 endforeach()
 
