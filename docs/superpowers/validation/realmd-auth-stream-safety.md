@@ -13,7 +13,9 @@ submodule. The installed Testing realmd now:
 - waits for a complete frame before any handler consumes bytes;
 - closes incomplete authentication after a configurable deadline;
 - exempts authenticated realm-list sessions and patch transfers from that
-  deadline.
+  deadline;
+- flushes buffered debug records about once per second while realmd remains
+  active.
 
 No mangosd production source, shared network backend, database, protected
 source checkout, or client file was changed.
@@ -22,8 +24,9 @@ source checkout, or client file was changed.
 
 - Parent branch: `fix/realmd-auth-stream-safety`
 - Parent implementation commit: `3526737067c418c422ac33b8ef7286e72c749385`
+- Parent live-log regression commit: `dd046df57ca0ecff1428f059381feb5d2981fc2c`
 - Realmd branch: `fix/auth-stream-safety`
-- Realmd implementation tip: `02436711af6e039aa760fc1dd456ec02795f8c88`
+- Realmd implementation tip: `bb6768fed9f6f64c45a02d1b07ac67b95b5adfe7`
 - Realmd-compatible base: `3cf5f9690477a0bc2b33eb17eb1d9016da1d47e8`
 
 The GitHub sweep found realmd default-branch tip `39b7846`, with PRs #27,
@@ -49,6 +52,17 @@ Realmd auth-stream smoke failures:
 The protocol-guard test was also introduced before its implementation; CMake
 configuration failed because `Auth/AuthProtocolGuard.cpp` did not yet exist,
 proving the new test target was wired to the intended production component.
+
+The live-log assertion was then run against the pre-flush installed binary.
+Authentication still succeeded, but the smoke test failed with:
+
+```text
+debug auth records were not flushed to the live log within 3 seconds
+```
+
+The shared logger uses a 64 KiB full buffer. Mangosd flushes it periodically,
+but realmd had no corresponding call, so normal and debug records became
+visible only when the buffer filled or `fclose()` ran during shutdown.
 
 ## Automated GREEN Evidence
 
@@ -98,12 +112,13 @@ Result:
 
 ```text
 Realmd auth-stream smoke passed: prompt reject, fragmented challenge,
-idle timeout, process survival.
+live debug log, idle timeout, process survival.
 ```
 
 The runtime test used a loopback-only temporary configuration, tested every
-split of the 40-byte build-5875 challenge, stopped only its tracked realmd PID,
-and removed only its validated temporary directory.
+split of the 40-byte build-5875 challenge, verified an auth debug record reached
+disk while realmd was still active, stopped only its tracked realmd PID, and
+removed only its validated temporary directory.
 
 Both repository diff checks passed:
 
@@ -126,7 +141,7 @@ Executable version metadata confirms these installed clients:
 
 | Build | Version | Executable present | Automated evidence | Interactive UI login |
 |---:|---|---|---|---|
-| 5875 | 1.12.1 | Yes | Guard test and every-split installed-realmd smoke PASS | Not run |
+| 5875 | 1.12.1 | Yes | Guard test and every-split installed-realmd smoke PASS | PASS to character selection |
 | 8606 | 2.4.3 | Yes | Guard framing PASS | Not run |
 | 12340 | 3.3.5 | Yes | Guard framing PASS | Not run |
 | 15595 | 4.3.4 | Yes | Guard framing PASS | Not run |
@@ -137,9 +152,11 @@ Accepted builds `6005`, `6141`, `18273`, `21742`, `26972`, `35662`, and
 their result is packet-framing PASS only, not an end-to-end client PASS. The
 installed WoD executable is build `20886`, not accepted build `21742`.
 
-Credentialed GUI login, realm-list display, and the build-5875 character screen
-require an interactive Testing account pass and were not automated here. No
-end-to-end client claim is made for that remaining step.
+The user manually authenticated the installed Classic 1.12.1 build-5875 client,
+received the realm list, selected the Zero realm, and reached character
+selection. The debug log records two complete successful authentication and
+realm-list exchanges at `17:50:01` and `17:50:26`. The later-expansion UI
+matrix remains untested.
 
 ## Repository and Deployment Boundaries
 
@@ -157,8 +174,9 @@ The next realmd BLOCKING finding is F-03: realm refresh can race concurrent
 realm-list serialization. It should be handled as a separate change with
 snapshot or reader/writer synchronization and concurrent refresh coverage.
 
-The credentialed installed-client UI matrix remains a manual validation step,
-not a correctness blocker for the bounded framing and deadline implementation.
+Credentialed installed-client UI checks for TBC, WotLK, Cata, and MoP remain
+manual validation steps, not correctness blockers for the build-independent
+framing, deadline, or logging implementation.
 
 ## Cross-model Review
 
@@ -188,3 +206,8 @@ Review ledgers (outside the repository):
   `C:\Users\Mark\AppData\Local\Temp\realmd-auth-review-20260723-173117.jsonl`
 - Focused re-review:
   `C:\Users\Mark\AppData\Local\Temp\realmd-auth-rereview-20260723.jsonl`
+
+The subsequent live-log change is a small lifecycle integration using the
+existing thread-safe `Log::Flush()` API. Per repository policy, this local
+low-risk follow-up did not require another external review; it was verified by
+an explicit failing-then-passing installed-runtime regression.
