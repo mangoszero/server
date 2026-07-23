@@ -218,6 +218,7 @@ try {
     $testConfig = Join-Path $testRoot "realmd-smoke.conf"
     $stdoutPath = Join-Path $testRoot "realmd.stdout.log"
     $stderrPath = Join-Path $testRoot "realmd.stderr.log"
+    $logPath = Join-Path $testRoot "realmd-smoke.log"
 
     $config = Get-Content -LiteralPath $sourceConfig
     $config = Set-ConfigValue -Lines $config -Name "BindIP" -Value '"127.0.0.1"'
@@ -227,6 +228,9 @@ try {
     $config = Set-ConfigValue -Lines $config -Name "PidFile" -Value '""'
     $config = Set-ConfigValue -Lines $config -Name "ScheduledExit.Enable" -Value "0"
     $config = Set-ConfigValue -Lines $config -Name "LogFile" -Value '"realmd-smoke.log"'
+    $config = Set-ConfigValue -Lines $config -Name "LogLevel" -Value "3"
+    $config = Set-ConfigValue -Lines $config -Name "LogFileLevel" -Value "3"
+    $config = Set-ConfigValue -Lines $config -Name "LogTimestamp" -Value "0"
     Set-Content -LiteralPath $testConfig -Value $config -Encoding ASCII
 
     $process = Start-Process -FilePath $realmd `
@@ -267,6 +271,25 @@ try {
         $failures.Add("complete build-5875 challenge produced no response")
     }
 
+    $liveLogDeadline = [DateTime]::UtcNow.AddSeconds(3)
+    $liveAuthLineVisible = $false
+    while ([DateTime]::UtcNow -lt $liveLogDeadline) {
+        if ((Test-Path -LiteralPath $logPath) -and
+            (Select-String -LiteralPath $logPath `
+                -SimpleMatch "[Auth] Received command 0" `
+                -Quiet)) {
+            $liveAuthLineVisible = $true
+            break
+        }
+        Start-Sleep -Milliseconds 100
+    }
+
+    if (-not $liveAuthLineVisible) {
+        $failures.Add(
+            "debug auth records were not flushed to the live log within 3 seconds"
+        )
+    }
+
     for ($split = 1; $split -lt $challenge.Length; ++$split) {
         [byte[]]$fragmentedResponse = @(
             Invoke-Challenge -ListenerPort $Port -Packet $challenge -SplitAt $split
@@ -300,7 +323,7 @@ try {
         throw "Realmd auth-stream smoke failures:`n - $($failures -join "`n - ")"
     }
 
-    Write-Host "Realmd auth-stream smoke passed: prompt reject, fragmented challenge, idle timeout, process survival."
+    Write-Host "Realmd auth-stream smoke passed: prompt reject, fragmented challenge, live debug log, idle timeout, process survival."
 }
 finally {
     if ($null -ne $process -and -not $process.HasExited) {
