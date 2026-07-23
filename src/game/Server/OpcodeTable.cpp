@@ -558,7 +558,7 @@ void InitializeOpcodes()
     OPCODE(SMSG_START_MIRROR_TIMER,                        STATUS_NEVER,    PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     OPCODE(SMSG_PAUSE_MIRROR_TIMER,                        STATUS_NEVER,    PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     OPCODE(SMSG_STOP_MIRROR_TIMER,                         STATUS_NEVER,    PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    OPCODE(CMSG_PING,                                      STATUS_NEVER,    PROCESS_INPLACE,      &WorldSession::Handle_EarlyProccess);
+    OPCODE(CMSG_PING,                                      STATUS_AUTHED,   PROCESS_THREADUNSAFE, &WorldSession::HandlePingOpcode);
     OPCODE(SMSG_PONG,                                      STATUS_NEVER,    PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     OPCODE(SMSG_CLEAR_COOLDOWN,                            STATUS_NEVER,    PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     OPCODE(SMSG_GAMEOBJECT_PAGETEXT,                       STATUS_NEVER,    PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
@@ -961,7 +961,7 @@ void InitializeOpcodes()
     OPCODE(SMSG_SPELL_CHANCE_RESIST_PUSHBACK,              STATUS_NEVER,    PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);      /// 0x403: @TODO need to check usage in vanilla WoW
     OPCODE(CMSG_IGNORE_DIMINISHING_RETURNS_CHEAT,          STATUS_NEVER,    PROCESS_INPLACE,      &WorldSession::Handle_NULL);     /// 0x404: @TODO need to check usage in vanilla WoW
     OPCODE(SMSG_IGNORE_DIMINISHING_RETURNS_CHEAT,          STATUS_NEVER,    PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);       /// 0x405: @TODO need to check usage in vanilla WoW
-    OPCODE(CMSG_KEEP_ALIVE,                                STATUS_NEVER,    PROCESS_INPLACE,      &WorldSession::Handle_EarlyProccess);        /// 0x406: @TODO need to check usage in vanilla WoW
+    OPCODE(CMSG_KEEP_ALIVE,                                STATUS_AUTHED,   PROCESS_THREADUNSAFE, &WorldSession::HandleKeepAliveOpcode);       /// 0x406: @TODO need to check usage in vanilla WoW
     OPCODE(SMSG_RAID_READY_CHECK_ERROR,                    STATUS_NEVER,    PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);       /// 0x407: @TODO need to check usage in vanilla WoW
     OPCODE(CMSG_OPT_OUT_OF_LOOT,                           STATUS_AUTHED,   PROCESS_THREADUNSAFE, &WorldSession::HandleOptOutOfLootOpcode);        /// 0x408: @TODO need to check usage in vanilla WoW
     OPCODE(CMSG_SET_GRANTABLE_LEVELS,                      STATUS_NEVER,    PROCESS_INPLACE,      &WorldSession::Handle_NULL);     /// 0x40B: @TODO need to check usage in vanilla WoW

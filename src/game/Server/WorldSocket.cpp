@@ -541,8 +541,10 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     SqlStatement stmt = LoginDatabase.CreateStatement(updAccount, "UPDATE `account` SET `last_ip` = ? WHERE `username` = ?");
     stmt.PExecute(address.c_str(), account.c_str());
 
-    WorldSession* session = new WorldSession(id, std::static_pointer_cast<WorldSocket>(shared_from_this()),
-                                             AccountTypes(security), mutetime, locale);
+    // Transitional compile path only: WorldNetwork replaces this legacy socket
+    // before runtime cutover in the next change.
+    WorldSession* session = new WorldSession(
+        id, nullptr, nullptr, AccountTypes(security), mutetime, locale);
 
     m_Crypt.SetKey(K.AsByteArray(), 40);
     m_Crypt.Init();

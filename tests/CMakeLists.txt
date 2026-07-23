@@ -62,3 +62,9 @@ target_include_directories(session_mailbox_tests PRIVATE
   ${PROJECT_SOURCE_DIR}/src/game/Server)
 target_link_libraries(session_mailbox_tests PRIVATE shared Threads::Threads)
 add_test(NAME session_mailbox_tests COMMAND session_mailbox_tests)
+
+add_test(NAME world_network_boundary
+  COMMAND ${CMAKE_COMMAND}
+    -DSOURCE_ROOT=${PROJECT_SOURCE_DIR}
+    -DEXPECT_LEGACY_REMOVED=OFF
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckWorldNetworkBoundary.cmake)

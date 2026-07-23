@@ -139,9 +139,11 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls)
     uint8 outfitId = 0;
 
 #if !defined(CLASSIC)
-    WorldSession* session = new WorldSession(accountId, NULL, SEC_PLAYER, MAX_EXPANSION, 0, LOCALE_enUS);
+    WorldSession* session = new WorldSession(
+        accountId, nullptr, nullptr, SEC_PLAYER, MAX_EXPANSION, 0, LOCALE_enUS);
 #else
-    WorldSession* session = new WorldSession(accountId, NULL, SEC_PLAYER, 0, LOCALE_enUS);
+    WorldSession* session = new WorldSession(
+        accountId, nullptr, nullptr, SEC_PLAYER, 0, LOCALE_enUS);
 #endif
     if (!session)
     {

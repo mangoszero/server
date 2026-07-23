@@ -298,7 +298,7 @@ World::AddSession_(WorldSession* s)
 {
     MANGOS_ASSERT(s);
 
-    // NOTE - Still there is race condition in WorldSession* being used in the Sockets
+    // New sessions arrive through a locked queue and become world-thread-owned here.
 
     ///- kick already loaded player with same account (if any) and remove session
     ///- if player is in loading and want to load again, return
@@ -345,6 +345,7 @@ World::AddSession_(WorldSession* s)
     if (pLimit > 0 && Sessions >= pLimit && s->GetSecurity() == SEC_PLAYER)
     {
         AddQueuedSession(s);
+        s->SendPendingAddonInfo();
         UpdateMaxSessionCounters();
         DETAIL_LOG("PlayerQueue: Account id %u is in Queue Position (%u).", s->GetAccountId(), ++QueueSize);
         return;
@@ -357,6 +358,7 @@ World::AddSession_(WorldSession* s)
     packet << uint8(0);                                     // BillingPlanFlags
     packet << uint32(0);                                    // BillingTimeRested
     s->SendPacket(&packet);
+    s->SendPendingAddonInfo();
 
     UpdateMaxSessionCounters();
 

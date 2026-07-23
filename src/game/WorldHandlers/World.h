@@ -54,7 +54,6 @@ class WorldSession;
 class Player;
 class SqlResultQueue;
 class QueryResult;
-class WorldSocket;
 class WorkerSupervisor;
 class IpcMessage;
 

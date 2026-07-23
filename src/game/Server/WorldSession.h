@@ -51,13 +51,18 @@ class Player;
 class Unit;
 class Warden;
 class WorldPacket;
-class WorldSocket;
+class SessionMailbox;
 class QueryResult;
 class LoginQueryHolder;
 class CharacterHandler;
 class GMTicket;
 class MovementInfo;
 class WorldSession;
+
+namespace proto
+{
+class IClientLink;
+}
 
 struct OpcodeHandler;
 
@@ -219,12 +224,15 @@ class WorldSession
         /**
          * @brief Constructor
          * @param id Session ID
-         * @param sock World socket
+         * @param link Client protocol link
+         * @param mailbox Incoming packet mailbox
          * @param sec Account security level
          * @param mute_time Mute time
          * @param locale Locale
          */
-        WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, AccountTypes sec, time_t mute_time, LocaleConstant locale);
+        WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
+                     std::shared_ptr<SessionMailbox> mailbox, AccountTypes sec,
+                     time_t mute_time, LocaleConstant locale);
 
         /**
          * @brief Destructor
@@ -261,6 +269,8 @@ class WorldSession
         void SizeError(WorldPacket const& packet, uint32 size) const;
 
         void SendPacket(WorldPacket const* packet);
+        void SetPendingAddonInfo(std::unique_ptr<WorldPacket> packet);
+        void SendPendingAddonInfo();
         void SendNotification(const char* format, ...) ATTR_PRINTF(2, 3);
         void SendNotification(int32 string_id, ...);
         void SendPetNameInvalid(uint32 error, const std::string& name);
@@ -491,7 +501,9 @@ class WorldSession
 
         // opcodes handlers
         void Handle_NULL(WorldPacket& recvPacket);          // not used
-        void Handle_EarlyProccess(WorldPacket& recvPacket); // just mark packets processed in WorldSocket::OnRead
+        void Handle_EarlyProccess(WorldPacket& recvPacket); // mark packets owned by the protocol layer
+        void HandlePingOpcode(WorldPacket& recvPacket);
+        void HandleKeepAliveOpcode(WorldPacket& recvPacket);
         void Handle_ServerSide(WorldPacket& recvPacket);    // sever side only, can't be accepted from client
         void Handle_Deprecated(WorldPacket& recvPacket);    // never used anymore by client
 
@@ -893,8 +905,9 @@ class WorldSession
         void LogUnprocessedTail(WorldPacket* packet);
 
         Player* _player;
-        std::weak_ptr<WorldSocket> m_OwningSocket;
-        std::shared_ptr<WorldSocket> m_Socket;
+        std::shared_ptr<proto::IClientLink> m_link;
+        std::shared_ptr<SessionMailbox> m_mailbox;
+        std::unique_ptr<WorldPacket> m_pendingAddonInfo;
         std::string m_Address;
 
         AccountTypes _security;
@@ -917,7 +930,8 @@ class WorldSession
         TutorialDataState m_tutorialState;
         uint32 m_clientTimeDelay;
         ObjectGuid m_npcWatchLastGuid;
-        MaNGOS::LockedQueue<WorldPacket*> _recvQueue;
+        time_t m_lastPingTime;
+        uint32 m_overSpeedPings;
 };
 #endif
 /// @}
