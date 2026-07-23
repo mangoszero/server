@@ -6183,6 +6183,7 @@ void Player::UpdateUnderwaterState(Map* m, float x, float y, float z)
 {
     GridMapLiquidData liquid_status;
     GridMapLiquidStatus res = m->GetTerrain()->getLiquidStatus(x, y, z, MAP_ALL_LIQUIDS, &liquid_status);
+    SetInWater(res & (LIQUID_MAP_IN_WATER | LIQUID_MAP_UNDER_WATER));
     if (!res)
     {
         m_MirrorTimerFlags &= ~(UNDERWATER_INWATER | UNDERWATER_INLAVA | UNDERWATER_INSLIME | UNDERWATER_INDARKWATER);
