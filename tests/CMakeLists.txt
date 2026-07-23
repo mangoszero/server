@@ -39,3 +39,26 @@ if(WIN32)
             "${MANGOS_TEST_OPENSSL_CRYPTO_DLL}" "$<TARGET_FILE_DIR:protocol_tests>"
     COMMENT "protocol_tests: co-locating the OpenSSL 3.x crypto runtime")
 endif()
+
+add_executable(database_concurrency_tests DatabaseConcurrencyTests.cpp)
+target_link_libraries(database_concurrency_tests PRIVATE shared Threads::Threads)
+add_test(NAME database_concurrency_tests COMMAND database_concurrency_tests)
+if(WIN32)
+  get_filename_component(MANGOS_TEST_MYSQL_DLL_DIR "${MySQL_LIBRARY}" DIRECTORY)
+  get_filename_component(MANGOS_TEST_MYSQL_DLL_NAME "${MySQL_LIBRARY}" NAME)
+  string(REPLACE ".lib" ".dll" MANGOS_TEST_MYSQL_DLL_NAME
+    "${MANGOS_TEST_MYSQL_DLL_NAME}")
+  add_custom_command(TARGET database_concurrency_tests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${MANGOS_TEST_MYSQL_DLL_DIR}/${MANGOS_TEST_MYSQL_DLL_NAME}"
+            "$<TARGET_FILE_DIR:database_concurrency_tests>"
+    COMMENT "database_concurrency_tests: co-locating the MariaDB client runtime")
+endif()
+
+add_executable(session_mailbox_tests
+  SessionMailboxTests.cpp
+  ${PROJECT_SOURCE_DIR}/src/game/Server/SessionMailbox.cpp)
+target_include_directories(session_mailbox_tests PRIVATE
+  ${PROJECT_SOURCE_DIR}/src/game/Server)
+target_link_libraries(session_mailbox_tests PRIVATE shared Threads::Threads)
+add_test(NAME session_mailbox_tests COMMAND session_mailbox_tests)

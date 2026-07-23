@@ -920,4 +920,26 @@ class Database
         std::string m_logsDir; /**< TODO */
         uint32 m_pingIntervallms; /**< TODO */
 };
+
+class DbThreadGuard
+{
+    public:
+        explicit DbThreadGuard(Database* database) : m_database(database)
+        {
+            if (m_database)
+                m_database->ThreadStart();
+        }
+
+        ~DbThreadGuard()
+        {
+            if (m_database)
+                m_database->ThreadEnd();
+        }
+
+        DbThreadGuard(DbThreadGuard const&) = delete;
+        DbThreadGuard& operator=(DbThreadGuard const&) = delete;
+
+    private:
+        Database* m_database;
+};
 #endif
