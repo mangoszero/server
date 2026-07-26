@@ -214,7 +214,7 @@ git -C src/realmd commit -m "fix: require explicit supported client builds"
 
 **Interfaces:**
 - Consumes: `FindClientBuildPolicy(uint32 build)` from Task 1.
-- Produces: `eAuthCmdResult LockedAccountResultForBuild(uint32 build)`.
+- Produces: `AuthResult LockedAccountResultForBuild(uint32 build)`.
 
 - [ ] **Step 1: Write the failing auth-result tests**
 
@@ -267,7 +267,7 @@ Create `AuthResultPolicy.h`:
 #include "AuthCodes.h"
 #include "Platform/Define.h"
 
-eAuthCmdResult LockedAccountResultForBuild(uint32 build);
+AuthResult LockedAccountResultForBuild(uint32 build);
 
 #endif
 ```
@@ -278,7 +278,7 @@ Create `AuthResultPolicy.cpp`:
 #include "AuthResultPolicy.h"
 #include "Realm/ClientBuildPolicy.h"
 
-eAuthCmdResult LockedAccountResultForBuild(uint32 build)
+AuthResult LockedAccountResultForBuild(uint32 build)
 {
     ClientBuildPolicy const* policy = FindClientBuildPolicy(build);
     if (!policy || policy->realmVersion == REALM_VERSION_VANILLA)
