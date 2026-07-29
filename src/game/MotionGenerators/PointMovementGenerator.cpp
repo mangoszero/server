@@ -25,6 +25,7 @@
 #include "PointMovementGenerator.h"
 #include "Creature.h"
 #include "CreatureAI.h"
+#include "Map.h"
 #include "MotionFrame.h"
 #include "TemporarySummon.h"
 #include "World.h"

@@ -44,12 +44,32 @@
  */
 
 #include "Utilities/Errors.h"
+#include <string>
 #include <set>
 #include "Log.h"
 #include "World.h"
 #include "Creature.h"
 #include "MoveMap.h"
 #include "MoveMapSharedDefines.h"
+
+namespace
+{
+    /// Named from the expansion, never from the format string: a deck map's id is seven
+    /// digits and the old sizing silently cut the extension off.
+    std::string MMapFileName(uint32 mapId)
+    {
+        char leaf[64];
+        snprintf(leaf, sizeof(leaf), "mmaps/%04u.mmap", mapId);
+        return sWorld.GetDataPath() + leaf;
+    }
+
+    std::string MMapTileFileName(uint32 mapId, int32 x, int32 y)
+    {
+        char leaf[64];
+        snprintf(leaf, sizeof(leaf), "mmaps/%04u%02i%02i.mmtile", mapId, x, y);
+        return sWorld.GetDataPath() + leaf;
+    }
+}
 
 namespace MMAP
 {
@@ -240,19 +260,19 @@ namespace MMAP
             return true;
         }
 
-        // load and init dtNavMesh - read parameters from file
-        uint32 pathLen = sWorld.GetDataPath().length() + strlen("mmaps/%04u.mmap") + 1;
-        char* fileName = new char[pathLen];
-        snprintf(fileName, pathLen, (sWorld.GetDataPath() + "mmaps/%04u.mmap").c_str(), mapId);
+        // The buffer is sized for the WIDEST EXPANSION, not for the format string: a map id
+        // wider than the %04u pad -- a vessel's deck, minted above a million -- expanded
+        // past a buffer measured from "mmaps/%04u.mmap" and the name was truncated to
+        // "...1181646.m", which fails to open and reads like missing data.
+        const std::string fileName = MMapFileName(mapId);
 
-        FILE* file = fopen(fileName, "rb");
+        FILE* file = fopen(fileName.c_str(), "rb");
         if (!file)
         {
             if (MMapFactory::IsPathfindingEnabled(mapId))
             {
-                sLog.outError("MMAP:loadMapData: Error: Could not open mmap file '%s'", fileName);
+                sLog.outError("MMAP:loadMapData: Error: Could not open mmap file '%s'", fileName.c_str());
             }
-            delete[] fileName;
             return false;
         }
 
@@ -260,8 +280,7 @@ namespace MMAP
         size_t file_read = fread(&params, sizeof(dtNavMeshParams), 1, file);
         if (file_read <= 0)
         {
-            sLog.outError("MMAP:loadMapData: Failed to load mmap %04u from file %s", mapId, fileName);
-            delete[] fileName;
+            sLog.outError("MMAP:loadMapData: Failed to load mmap %04u from file %s", mapId, fileName.c_str());
             fclose(file);
             return false;
         }
@@ -273,12 +292,10 @@ namespace MMAP
         if (dtStatusFailed(dtResult))
         {
             dtFreeNavMesh(mesh);
-            sLog.outError("MMAP:loadMapData: Failed to initialize dtNavMesh for mmap %04u from file %s", mapId, fileName);
-            delete[] fileName;
+            sLog.outError("MMAP:loadMapData: Failed to initialize dtNavMesh for mmap %04u from file %s", mapId, fileName.c_str());
             return false;
         }
 
-        delete[] fileName;
 
         DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "MMAP:loadMapData: Loaded %04u.mmap", mapId);
 
@@ -320,21 +337,14 @@ namespace MMAP
         const int32 filenameTileY = x;
 
         // load this tile :: mmaps/MMMYYXX.mmtile
-        uint32 pathLen = sWorld.GetDataPath().length() +
-                         strlen("mmaps/%04u%02i%02i.mmtile") + 1;
-        char* fileName = new char[pathLen];
-        snprintf(fileName, pathLen,
-                 (sWorld.GetDataPath() + "mmaps/%04u%02i%02i.mmtile").c_str(),
-                 mapId, filenameTileX, filenameTileY);
+        const std::string fileName = MMapTileFileName(mapId, filenameTileX, filenameTileY);
 
-        FILE* file = fopen(fileName, "rb");
+        FILE* file = fopen(fileName.c_str(), "rb");
         if (!file)
         {
-            DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "ERROR: MMAP:loadMap: Could not open mmtile file '%s'", fileName);
-            delete[] fileName;
+            DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "ERROR: MMAP:loadMap: Could not open mmtile file '%s'", fileName.c_str());
             return false;
         }
-        delete[] fileName;
 
         // read header
         MmapTileHeader fileHeader;
