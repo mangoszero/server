@@ -22,6 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <cmath>
 #include "Totem.h"
 #include "Log.h"
 #include "Group.h"
@@ -31,6 +32,7 @@
 #include "DBCStores.h"
 #include "CreatureAI.h"
 #include "InstanceData.h"
+#include "ObjectLookup.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -70,12 +72,12 @@ bool Totem::Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo const* 
     cPos.SelectFinalPoint(this);
 
     // totem must be at same Z in case swimming caster and etc.
-    if (fabs(cPos.m_pos.z - owner->GetPositionZ()) > 5.0f)
+    if (fabs(cPos.m_pos.z - owner->Where().Z()) > 5.0f)
     {
-        cPos.m_pos.z = owner->GetPositionZ();
+        cPos.m_pos.z = owner->Where().Z();
     }
 
-    if (!cPos.Relocate(this))
+    if (!cPos.PlaceOn(this))
     {
         return false;
     }
@@ -244,7 +246,7 @@ Unit* Totem::GetOwner()
 {
     if (ObjectGuid ownerGuid = GetOwnerGuid())
     {
-        return sObjectAccessor.GetUnit(*this, ownerGuid);
+        return ObjectLookup::GetUnit(*this, ownerGuid);
     }
 
     return NULL;

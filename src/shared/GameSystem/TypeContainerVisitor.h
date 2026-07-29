@@ -22,29 +22,31 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+
 #ifndef MANGOS_TYPECONTAINERVISITOR_H
 #define MANGOS_TYPECONTAINERVISITOR_H
 
-/**
+/*
  * @class TypeContainerVisitor is implemented as a visitor pattern.  It is
  * a visitor to the TypeMapContainer or ContainerMapList.  The visitor has
  * to overload its types as a visit method is called.
  */
 
+#include <utility>
 #include "TypeContainer.h"
 
 template<class VISITOR, class CONTAINER>
-    class TypeContainerVisitor
+class TypeContainerVisitor
 {
     public:
         TypeContainerVisitor(VISITOR& v) : i_visitor(v){}
         void Visit(CONTAINER& c)
         {
-            c.template accept<VISITOR>(std::forward<VISITOR>(i_visitor));
+            c.accept(i_visitor);
         }
         void Visit(const CONTAINER& c) const
         {
-            c.template accept<VISITOR>(std::forward<VISITOR>(i_visitor));
+            c.accept(i_visitor);
         }
     private:
         VISITOR& i_visitor;

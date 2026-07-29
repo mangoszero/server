@@ -54,6 +54,7 @@
  *   IPC_SHUTDOWN   -> IPC_SHUTDOWN_ACK, then exit
  */
 
+#include "Common/Locales.h"
 #include "IpcVersion.h"
 #include "IpcChannel.h"
 #include "IpcClientHandler.h"

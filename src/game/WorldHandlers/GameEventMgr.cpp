@@ -41,6 +41,8 @@
  * @see GameEventMgr for the manager class
  */
 
+#include <sstream>
+#include <map>
 #include "GameEventMgr.h"
 #include "World.h"
 #include "ObjectMgr.h"
@@ -58,7 +60,6 @@
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
 
-INSTANTIATE_SINGLETON_1(GameEventMgr);
 
 /**
  * @brief Checks whether a specific game event is active at the given time.

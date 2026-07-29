@@ -25,14 +25,36 @@
 #ifndef MANGOS_H_UTIL
 #define MANGOS_H_UTIL
 
-#include "Common/Common.h"
+#include <cstdio>
+#include <cstdarg>
+#include "Common/TimeConstants.h"
+#include "Platform/Define.h"
 
 #include <string>
 #include <vector>
 #include <algorithm>
 #include <cctype>
-#include <cstdarg>    // va_list, used in the vutf8* declarations below
+#include <cstring>
+#include <ctime>
 #include <functional>
+
+/**
+ * @brief strdup() built on operator new[].
+ *
+ * The result MUST be released with delete[], never free(). That asymmetry is the
+ * whole reason this exists rather than plain strdup: the buffers it returns are
+ * owned by code that frees with delete[].
+ *
+ * @param source NUL-terminated string to copy. Must not be null.
+ * @return A new[]-allocated copy.
+ */
+inline char* mangos_strdup(const char* source)
+{
+    const size_t len = std::strlen(source) + 1;
+    char* dest = new char[len];
+    std::memcpy(dest, source, len);
+    return dest;
+}
 
 enum class TimeFormat : uint8
 {
@@ -55,7 +77,6 @@ typedef std::vector<std::string> Tokens;
  * @return Tokens
  */
 Tokens StrSplit(const std::string& src, const std::string& sep);
-
 /**
  * @brief
  *
@@ -64,7 +85,6 @@ Tokens StrSplit(const std::string& src, const std::string& sep);
  * @return uint32
  */
 uint32 GetUInt32ValueFromArray(Tokens const& data, uint16 index);
-
 /**
  * @brief
  *
@@ -103,6 +123,7 @@ inline std::tm safe_localtime(const time_t time)
  */
 time_t GetLocalHourTimestamp(time_t time, uint8 hour, bool onlyAfterTime = true);
 
+
 /**
  * @brief
  *
@@ -112,7 +133,6 @@ time_t GetLocalHourTimestamp(time_t time, uint8 hour, bool onlyAfterTime = true)
  * @return std::string
  */
 std::string secsToTimeString(time_t timeInSecs, TimeFormat timeFormat = TimeFormat::FullText, bool hoursOnly = false);
-
 /**
  * @brief
  *
@@ -120,7 +140,6 @@ std::string secsToTimeString(time_t timeInSecs, TimeFormat timeFormat = TimeForm
  * @return uint32
  */
 uint32 TimeStringToSecs(const std::string& timestring);
-
 /**
  * @brief
  *
@@ -128,6 +147,10 @@ uint32 TimeStringToSecs(const std::string& timestring);
  * @return std::string
  */
 std::string TimeToTimestampStr(time_t t);
+
+
+time_t timeBitFieldsToSecs(uint32 packedDate);
+
 
 /**
  * @brief
@@ -138,9 +161,10 @@ std::string TimeToTimestampStr(time_t t);
 inline uint32 secsToTimeBitFields(time_t secs)
 {
     std::tm lt = safe_localtime(secs);
-    return (lt.tm_year - 100) << 24 | lt.tm_mon  <<
-        20 | (lt.tm_mday - 1) << 14 | lt.tm_wday << 11 | lt.tm_hour << 6 | lt.tm_min;
+    return (lt.tm_year - 100) << 24 | lt.tm_mon  << 20
+         | (lt.tm_mday - 1) << 14 | lt.tm_wday << 11 | lt.tm_hour << 6 | lt.tm_min;
 }
+
 
 inline std::string& ltrim(std::string& s)
 {
@@ -154,9 +178,9 @@ inline std::string& ltrim(std::string& s)
 inline std::string& rtrim(std::string& s)
 {
     s.erase(std::find_if (s.rbegin(), s.rend(), [](unsigned char ch)
-    {
-        return !std::isspace(ch);
-    }).base(), s.end());
+        {
+            return !std::isspace(ch);
+        }).base(), s.end());
     return s;
 }
 
@@ -172,7 +196,7 @@ inline std::string& trim(std::string& s)
  * @param max
  * @return int32
  */
-int32 irand(int32 min, int32 max);
+ int32 irand(int32 min, int32 max);
 
 /**
  * @brief Return a random number in the range min..max (inclusive).
@@ -184,7 +208,7 @@ int32 irand(int32 min, int32 max);
  * @param max
  * @return uint32
  */
-uint32 urand(uint32 min, uint32 max);
+ uint32 urand(uint32 min, uint32 max);
 
 /**
  * @brief Return a random number in the range min..max (inclusive).
@@ -193,7 +217,7 @@ uint32 urand(uint32 min, uint32 max);
  * @param max
  * @return float
  */
-float frand(float min, float max);
+ float frand(float min, float max);
 
 /**
  * @brief Return a random number in the range 0 .. RAND32_MAX.
@@ -211,14 +235,14 @@ uint32 rand32();
  *
  * @return double
  */
-double rand_norm(void);
+ double rand_norm(void);
 
 /**
  * @brief
  *
  * @return float
  */
-float rand_norm_f(void);
+ float rand_norm_f(void);
 
 /**
  * @brief Return a random double from 0.0 to 99.9999999999999.
@@ -229,14 +253,14 @@ float rand_norm_f(void);
  *
  * @return double
  */
-double rand_chance(void);
+ double rand_chance(void);
 
 /**
  * @brief
  *
  * @return float
  */
-float rand_chance_f(void);
+ float rand_chance_f(void);
 
 /**
  * @brief Return true if a random roll gets above the given chance
@@ -330,7 +354,6 @@ bool Utf8ToUpperOnlyLatin(std::string& utf8String);
  * @return bool
  */
 bool Utf8toWStr(const std::string& utf8str, std::wstring& wstr);
-
 /**
  * @brief
  *
@@ -341,7 +364,6 @@ bool Utf8toWStr(const std::string& utf8str, std::wstring& wstr);
  * @return bool
  */
 bool Utf8toWStr(char const* utf8str, size_t csize, wchar_t* wstr, size_t& wsize);
-
 /**
  * @brief
  *
@@ -363,7 +385,6 @@ inline bool Utf8toWStr(const std::string& utf8str, wchar_t* wstr, size_t& wsize)
  * @return bool
  */
 bool WStrToUtf8(std::wstring wstr, std::string& utf8str);
-
 /**
  * @brief
  *
@@ -381,7 +402,6 @@ bool WStrToUtf8(wchar_t* wstr, size_t size, std::string& utf8str);
  * @return size_t
  */
 size_t utf8length(std::string& utf8str);                    // set string to "" if invalid utf8 sequence
-
 /**
  * @brief
  *
@@ -581,6 +601,7 @@ inline bool isNumeric(char const* str)
             return false;
         }
     }
+
     return true;
 }
 
@@ -599,6 +620,7 @@ inline bool isNumeric(std::string const& str)
             return false;
         }
     }
+
     return true;
 }
 
@@ -617,6 +639,7 @@ inline bool isNumeric(std::wstring const& str)
             return false;
         }
     }
+
     return true;
 }
 
@@ -833,9 +856,7 @@ inline void wstrToLower(std::wstring& str)
     std::transform(str.begin(), str.end(), str.begin(), [](wchar_t w) {return wcharToLower(w); });
 }
 
-#if !defined(CLASSIC)
 std::wstring GetMainPartOfName(std::wstring wname, uint32 declension);
-#endif
 
 /**
  * @brief
@@ -845,7 +866,6 @@ std::wstring GetMainPartOfName(std::wstring wname, uint32 declension);
  * @return bool
  */
 bool utf8ToConsole(const std::string& utf8str, std::string& conStr);
-
 /**
  * @brief
  *
@@ -854,7 +874,6 @@ bool utf8ToConsole(const std::string& utf8str, std::string& conStr);
  * @return bool
  */
 bool consoleToUtf8(const std::string& conStr, std::string& utf8str);
-
 /**
  * @brief
  *
@@ -863,7 +882,6 @@ bool consoleToUtf8(const std::string& conStr, std::string& utf8str);
  * @return bool
  */
 bool Utf8FitTo(const std::string& str, std::wstring search);
-
 /**
  * @brief
  *
@@ -871,14 +889,12 @@ bool Utf8FitTo(const std::string& str, std::wstring search);
  * @param str...
  */
 void utf8printf(FILE* out, const char* str, ...);
-
 /**
  * @brief
  *
  * @param str
  */
 void utf8print(void* /*arg*/, const char* str);
-
 /**
  * @brief
  *
@@ -908,10 +924,10 @@ std::string vutf8format(const char* str, va_list* ap);
  */
 bool IsIPAddress(char const* ipaddress);
 
-/// Checks if address belongs to the a network with specified submask (all host byte order)
+/// Checks if address belongs to the a network with specified submask
 bool IsIPAddrInNetwork(uint32 net, uint32 addr, uint32 subnetMask);
 
-/// Transforms an IPv4 address (host byte order) plus port into "dotted_ip:port"
+/// Transforms a host-order IPv4 address into "dotted_ip:port"
 std::string GetAddressString(uint32 ip, uint16 port);
 
 /**
@@ -942,15 +958,15 @@ std::string ByteArrayToHexStr(uint8 const* bytes, uint32 length, bool reverse = 
 void HexStrToByteArray(std::string const& str, uint8* out, bool reverse = false);
 
 /**
- * @brief Define iCoreNumber to be set for the currently defined core
- *
- * @return int
- */
+* @brief Define iCoreNumber to be set for the currently defined core
+*
+* @return int
+*/
 int return_iCoreNumber();
 
 /**
- * @brief Display the startup banner
- */
+* @brief Display the startup banner
+*/
 void print_banner();
 
 /**

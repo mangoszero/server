@@ -19,6 +19,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "Common/Locales.h"
+#include <string>
+#include <vector>
 #include "BrowseHandler.h"
 #include "Usability.h"
 #include "Utilities/Util.h"   // Utf8FitTo / Utf8toWStr (src/shared; worker links `shared`)

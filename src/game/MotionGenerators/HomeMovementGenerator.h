@@ -25,77 +25,38 @@
 #ifndef MANGOS_HOMEMOVEMENTGENERATOR_H
 #define MANGOS_HOMEMOVEMENTGENERATOR_H
 
-#include "MovementGenerator.h"
-
-class Creature;
+#include "IntentMovementGenerator.h"
 
 /**
- * @brief HomeMovementGenerator is a movement generator that returns a creature to its home position.
+ * @brief Evade: run back to where the creature belongs, then hand back to its default
+ *        movement.
+ *
+ * The home position is captured in Initialize and never re-read, and that is
+ * load-bearing: MotionMaster::Mutate calls Initialize BEFORE pushing this generator, so
+ * at that moment the stack top is still the generator being evacuated — the only one
+ * that knows where "home" is (a patroller resumes at the point combat pulled it off its
+ * path, not at its spawn). By the time the first leg is laid we are on top and that
+ * answer is gone.
  */
-template < class T >
-    class HomeMovementGenerator;
-
-template <>
-    class HomeMovementGenerator<Creature>
-        : public MovementGeneratorMedium< Creature, HomeMovementGenerator<Creature> >
+class HomeMovementGenerator final : public IntentMovementGenerator
 {
     public:
-        /**
-         * @brief Constructor for HomeMovementGenerator.
-         */
-        HomeMovementGenerator() : arrived(false) {}
+        void Initialize(Unit& owner) override;
+        void Finalize(Unit& owner) override;
+        void Interrupt(Unit&) override {}
+        void Reset(Unit&) override {}
 
-        /**
-         * @brief Destructor for HomeMovementGenerator.
-         */
-        ~HomeMovementGenerator() {}
-
-        /**
-         * @brief Initializes the movement generator.
-         * @param creature Reference to the creature.
-         */
-        void Initialize(Creature&);
-
-        /**
-         * @brief Finalizes the movement generator.
-         * @param creature Reference to the creature.
-         */
-        void Finalize(Creature&);
-
-        /**
-         * @brief Interrupts the movement generator.
-         * @param creature Reference to the creature.
-         */
-        void Interrupt(Creature&) {}
-
-        /**
-         * @brief Resets the movement generator.
-         * @param creature Reference to the creature.
-         */
-        void Reset(Creature&);
-
-        /**
-         * @brief Updates the movement generator.
-         * @param creature Reference to the creature.
-         * @param diff Time difference.
-         * @return True if the update was successful, false otherwise.
-         */
-        bool Update(Creature&, const uint32&);
-
-        /**
-         * @brief Gets the type of the movement generator.
-         * @return The type of the movement generator.
-         */
         MovementGeneratorType GetMovementGeneratorType() const override { return HOME_MOTION_TYPE; }
 
-    private:
-        /**
-         * @brief Sets the target location for the creature.
-         * @param creature Reference to the creature.
-         */
-        void _setTargetLocation(Creature&);
+    protected:
+        Motion::MoveIntent Intent(Unit& owner, Motion::MoveStatus const& status,
+                                  uint32 diff) override;
 
-        bool arrived; ///< Indicates whether the creature has arrived at its home position.
+    private:
+        Motion::Vector3 m_home;  ///< Where home is, captured before we were pushed.
+        float m_facing = 0.0f;   ///< The orientation to hold once there.
+        bool m_haveHome = false; ///< False when the creature could not be sent home.
+        bool m_arrived = false;  ///< Whether Finalize should fire JustReachedHome.
 };
 
 #endif // MANGOS_HOMEMOVEMENTGENERATOR_H

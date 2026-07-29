@@ -1,3 +1,5 @@
+#include "Utilities/MathDefines.h"
+#include <sstream>
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "QuestAction.h"

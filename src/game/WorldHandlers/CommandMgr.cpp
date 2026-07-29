@@ -34,7 +34,9 @@
  */
 
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Common/Locales.h"
+#include <string>
 #include "SharedDefines.h"
 #include "Policies/Singleton.h"
 #include "ObjectGuid.h"
@@ -45,7 +47,6 @@
 
 class ChatCommand; // Forward declaration
 
-INSTANTIATE_SINGLETON_1(CommandMgr);
 
 /**
  * @brief Construct CommandMgr singleton

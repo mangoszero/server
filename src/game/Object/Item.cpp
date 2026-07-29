@@ -22,6 +22,8 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "Utilities/Errors.h"
+#include <cassert>
 #include "Item.h"
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"

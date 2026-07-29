@@ -42,6 +42,8 @@
 
 #ifndef DO_POSTGRESQL
 
+#include <string>
+#include "Utilities/Errors.h"
 #include "Utilities/Util.h"
 #include "Policies/Singleton.h"
 #include "Platform/Define.h"
@@ -106,13 +108,13 @@ DatabaseMysql::DatabaseMysql()
         if (mysql_library_init(-1, NULL, NULL))
         {
             sLog.outError("Could not initialize MySQL client library\n");
-            exit(1);
+            std::exit(1);
         }
         if (!mysql_thread_safe())
         {
             sLog.outError("FATAL ERROR: Used MySQL library isn't thread-safe.");
             Log::WaitBeforeContinueIfNeed();
-            exit(1);
+            std::exit(1);
         }
     }
 }
@@ -217,7 +219,15 @@ bool MySQLConnection::Initialize(const char* infoString)
     }
 
     mysql_options(mysqlInit, MYSQL_SET_CHARSET_NAME, "utf8");
+
+    // Auto-reconnect is deprecated from client 8.0.34 on, and asking for it makes the library
+    // print a warning of its own to stderr at every connect -- past our logging, so it cannot
+    // be filtered or levelled like anything else we emit. We do not need it either: a dropped
+    // connection silently reconnecting mid-transaction is how a transaction ends up half
+    // applied. Only ask for it where it is neither deprecated nor noisy.
+#if !defined(MYSQL_VERSION_ID) || MYSQL_VERSION_ID < 80034
     mysql_options(mysqlInit, MYSQL_OPT_RECONNECT, "1");
+#endif
 #ifdef WIN32
     if (host == ".")                                        // named pipe use option (Windows)
     {
@@ -248,19 +258,23 @@ bool MySQLConnection::Initialize(const char* infoString)
 #endif
 
     mMysql = mysql_real_connect(mysqlInit, host.c_str(), user.c_str(),
-        password.c_str(), database.c_str(), port, unix_socket, 0);
+                                password.c_str(), database.c_str(), port, unix_socket, 0);
 
     if (!mMysql)
     {
         sLog.outError("Could not connect to MySQL database at %s: %s\n",
-            host.c_str(), mysql_error(mysqlInit));
+                      host.c_str(), mysql_error(mysqlInit));
         mysql_close(mysqlInit);
         return false;
     }
 
     DETAIL_LOG("Connected to MySQL database %s@%s:%s/%s", user.c_str(), host.c_str(), port_or_socket.c_str(), database.c_str());
-    sLog.outString("MySQL client library: %s", mysql_get_client_info());
-    sLog.outString("MySQL server ver: %s ", mysql_get_server_info(mMysql));
+
+    // Detail, not console furniture: it is printed once per connection -- three times at
+    // start-up for one fact that does not change -- and it says nothing an operator needs
+    // before the first line of real output.
+    DETAIL_LOG("MySQL client library: %s, server: %s", mysql_get_client_info(),
+               mysql_get_server_info(mMysql));
 
     /*----------SET AUTOCOMMIT ON---------*/
     // It seems mysql 5.0.x have enabled this feature
@@ -531,7 +545,6 @@ unsigned long MySQLConnection::escape_string(char* to, const char* from, unsigne
 }
 
 //////////////////////////////////////////////////////////////////////////
-
 /**
  * @brief Create a prepared statement
  * @param fmt SQL statement format string with ? placeholders
@@ -546,7 +559,6 @@ SqlPreparedStatement* MySQLConnection::CreateStatement(const std::string& fmt)
 }
 
 //////////////////////////////////////////////////////////////////////////
-
 /**
  * @brief Construct MySQL prepared statement
  * @param fmt SQL format string with ? placeholders
@@ -760,7 +772,7 @@ enum_field_types MySqlPreparedStatement::ToMySQLType(const SqlStmtFieldData& dat
     switch (data.type())
     {
         case FIELD_NONE:    dataType = MYSQL_TYPE_NULL;                     break;
-        // MySQL does not support MYSQL_TYPE_BIT as input type
+            // MySQL does not support MYSQL_TYPE_BIT as input type
         case FIELD_BOOL:    // dataType = MYSQL_TYPE_BIT;      bUnsigned = 1;  break;
         case FIELD_UI8:     dataType = MYSQL_TYPE_TINY;     bUnsigned = 1;  break;
         case FIELD_I8:      dataType = MYSQL_TYPE_TINY;                     break;

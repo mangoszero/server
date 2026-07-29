@@ -25,202 +25,109 @@
 #ifndef MANGOS_POINTMOVEMENTGENERATOR_H
 #define MANGOS_POINTMOVEMENTGENERATOR_H
 
-#include "MovementGenerator.h"
+#include "IntentMovementGenerator.h"
 
 /**
- * @brief PointMovementGenerator is a movement generator that makes a unit move to a specific point.
- * @tparam T Type of the unit (Player or Creature).
+ * @brief One-shot: go to a fixed point, then pop.
+ *
+ * "Go there; when the leg ends, I am done" is all an intent-model one-shot ever is.
+ * The three variants below change only the flavour of the leg and what happens at the
+ * end, which is why they override nothing but LegFlags and Finalize.
  */
-template<class T>
-    class PointMovementGenerator
-        : public MovementGeneratorMedium< T, PointMovementGenerator<T> >
+class PointMovementGenerator : public IntentMovementGenerator
 {
     public:
-        /**
-         * @brief Constructor for PointMovementGenerator.
-         * @param _id ID of the movement.
-         * @param _x X-coordinate of the destination.
-         * @param _y Y-coordinate of the destination.
-         * @param _z Z-coordinate of the destination.
-         * @param _generatePath Whether to generate a path to the destination.
-         */
-        PointMovementGenerator(uint32 _id, float _x, float _y, float _z, bool _generatePath)
-            : id(_id), i_x(_x), i_y(_y), i_z(_z), m_generatePath(_generatePath) {}
+        PointMovementGenerator(uint32 id, float x, float y, float z, bool generatePath)
+            : m_id(id), m_dest(x, y, z), m_generatePath(generatePath) {}
 
-        /**
-         * @brief Initializes the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Initialize(T& owner);
+        void Initialize(Unit& owner) override;
+        void Finalize(Unit& owner) override;
+        void Interrupt(Unit& owner) override;
+        void Reset(Unit& owner) override;
 
-        /**
-         * @brief Finalizes the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Finalize(T& owner);
-
-        /**
-         * @brief Interrupts the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Interrupt(T& owner);
-
-        /**
-         * @brief Resets the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Reset(T& owner);
-
-        /**
-         * @brief Updates the movement generator.
-         * @param owner Reference to the unit.
-         * @param diff Time difference.
-         * @return True if the update was successful, false otherwise.
-         */
-        bool Update(T& owner, const uint32& diff);
-
-        /**
-         * @brief Informs the unit about the movement.
-         * @param owner Reference to the unit.
-         */
-        void MovementInform(T& owner);
-
-        /**
-         * @brief Gets the type of the movement generator.
-         * @return The type of the movement generator.
-         */
         MovementGeneratorType GetMovementGeneratorType() const override { return POINT_MOTION_TYPE; }
 
-        /**
-         * @brief Gets the destination coordinates.
-         * @param x Reference to the X-coordinate.
-         * @param y Reference to the Y-coordinate.
-         * @param z Reference to the Z-coordinate.
-         * @return True if the destination coordinates were successfully obtained, false otherwise.
-         */
-        bool GetDestination(float& x, float& y, float& z) const { x = i_x; y = i_y; z = i_z; return true; }
-
     protected:
-        uint32 id; ///< ID of the movement.
-        float i_x, i_y, i_z; ///< Coordinates of the destination.
-        bool m_generatePath; ///< Whether to generate a path to the destination.
+        Motion::MoveIntent Intent(Unit& owner, Motion::MoveStatus const& status,
+                                  uint32 diff) override;
+
+        /// The flavour of the leg this generator lays. The one hook the variants need.
+        virtual uint32 LegFlags() const
+        {
+            return m_generatePath ? Motion::MOVE_NONE : Motion::MOVE_STRAIGHT;
+        }
+
+        /// Tell the AI (and the summoner, if any) that the point was reached.
+        void MovementInform(Unit& owner) const;
+
+        uint32 m_id;             ///< Echoed to the AI on arrival.
+        Motion::Vector3 m_dest;  ///< Where we are going.
+        bool m_generatePath;     ///< Route around geometry, or go straight there.
 };
 
 /**
- * @brief AssistanceMovementGenerator is a movement generator that makes a creature move to assist another unit.
+ * @brief A creature running to fetch help. It walks, so the players it is fetching
+ *        have a chance to catch it, and it calls that help when it gets there.
  */
-class AssistanceMovementGenerator
-    : public PointMovementGenerator<Creature>
+class AssistanceMovementGenerator final : public PointMovementGenerator
 {
     public:
-        /**
-         * @brief Constructor for AssistanceMovementGenerator.
-         * @param _x X-coordinate of the destination.
-         * @param _y Y-coordinate of the destination.
-         * @param _z Z-coordinate of the destination.
-         */
-        AssistanceMovementGenerator(float _x, float _y, float _z)
-            : PointMovementGenerator<Creature>(0, _x, _y, _z, true) {}
+        AssistanceMovementGenerator(float x, float y, float z)
+            : PointMovementGenerator(0, x, y, z, true) {}
 
-        /**
-         * @brief Gets the type of the movement generator.
-         * @return The type of the movement generator.
-         */
         MovementGeneratorType GetMovementGeneratorType() const override { return ASSISTANCE_MOTION_TYPE; }
 
-        /**
-         * @brief Initializes the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Initialize(Unit& owner) override;
-
-        /**
-         * @brief Finalizes the movement generator.
-         * @param owner Reference to the unit.
-         */
         void Finalize(Unit& owner) override;
+
+    protected:
+        uint32 LegFlags() const override { return Motion::MOVE_WALK; }
 };
 
 /**
- * @brief EffectMovementGenerator is a movement generator that does almost nothing, just prevents previous movegen from interrupting the current effect.
+ * @brief A straight line through the air, with the flying animation along it.
  */
-class EffectMovementGenerator : public MovementGenerator
+class FlyOrLandMovementGenerator final : public PointMovementGenerator
 {
     public:
-        /**
-         * @brief Constructor for EffectMovementGenerator.
-         * @param Id ID of the effect.
-         */
-        explicit EffectMovementGenerator(uint32 Id) : m_Id(Id) {}
+        /// `liftOff` is not stored: the leg is a straight line through the air either
+        /// way, and whether it is a take-off or a landing is already implied by the
+        /// height of the destination.
+        FlyOrLandMovementGenerator(uint32 id, float x, float y, float z, bool /*liftOff*/)
+            : PointMovementGenerator(id, x, y, z, false) {}
 
-        /**
-         * @brief Initializes the movement generator.
-         * @param owner Reference to the unit.
-         */
+    protected:
+        uint32 LegFlags() const override
+        {
+            return Motion::MOVE_FLY | Motion::MOVE_STRAIGHT;
+        }
+};
+
+/**
+ * @brief Guards a spline that something ELSE launched — a knockback, a jump, a
+ *        scripted effect.
+ *
+ * It has no destination of its own to want, so its intent is the minimal one: hold
+ * while that spline is still playing out, and be done the moment it is not. That is
+ * what stops the generator underneath from interrupting the effect mid-flight.
+ */
+class EffectMovementGenerator final : public IntentMovementGenerator
+{
+    public:
+        explicit EffectMovementGenerator(uint32 id) : m_id(id) {}
+
         void Initialize(Unit&) override {}
-
-        /**
-         * @brief Finalizes the movement generator.
-         * @param owner Reference to the unit.
-         */
+        void Interrupt(Unit&) override {}
+        void Reset(Unit&) override {}
         void Finalize(Unit& owner) override;
 
-        /**
-         * @brief Interrupts the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Interrupt(Unit&) override {}
-
-        /**
-         * @brief Resets the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Reset(Unit&) override {}
-
-        /**
-         * @brief Updates the movement generator.
-         * @param owner Reference to the unit.
-         * @param diff Time difference.
-         * @return True if the update was successful, false otherwise.
-         */
-        bool Update(Unit& owner, const uint32& diff) override;
-
-        /**
-         * @brief Gets the type of the movement generator.
-         * @return The type of the movement generator.
-         */
         MovementGeneratorType GetMovementGeneratorType() const override { return EFFECT_MOTION_TYPE; }
 
-    private:
-        uint32 m_Id; ///< ID of the effect.
-};
-
-/**
- * @brief FlyOrLandMovementGenerator is a movement generator that makes a creature fly or land.
- */
-class FlyOrLandMovementGenerator : public PointMovementGenerator<Creature>
-{
-    public:
-        /**
-         * @brief Constructor for FlyOrLandMovementGenerator.
-         * @param _id ID of the movement.
-         * @param _x X-coordinate of the destination.
-         * @param _y Y-coordinate of the destination.
-         * @param _z Z-coordinate of the destination.
-         * @param liftOff Whether the creature should lift off or land.
-         */
-        FlyOrLandMovementGenerator(uint32 _id, float _x, float _y, float _z, bool liftOff)
-            : PointMovementGenerator<Creature>(_id, _x, _y, _z, false),
-            m_liftOff(liftOff) {}
-
-        /**
-         * @brief Initializes the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Initialize(Unit& owner) override;
+    protected:
+        Motion::MoveIntent Intent(Unit& owner, Motion::MoveStatus const& status,
+                                  uint32 diff) override;
 
     private:
-        bool m_liftOff; ///< Whether the creature should lift off or land.
+        uint32 m_id; ///< Echoed to the AI when the effect's spline ends.
 };
 
 #endif // MANGOS_POINTMOVEMENTGENERATOR_H

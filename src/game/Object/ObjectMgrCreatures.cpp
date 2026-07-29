@@ -24,6 +24,9 @@
 
 
 
+#include <algorithm>
+#include <string>
+#include <vector>
 #include "ObjectMgr.h"
 #include "LivingWorldAnchorPolicy.h"
 #include "MotionGenerators/MotionMaster.h"

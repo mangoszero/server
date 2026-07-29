@@ -78,14 +78,14 @@ void DistractMovementGenerator::Interrupt(Unit& /*owner*/)
  * @param time_diff Time difference.
  * @return True if the update was successful, false otherwise.
  */
-bool DistractMovementGenerator::Update(Unit& /*owner*/, const uint32& time_diff)
+bool DistractMovementGenerator::Update(Unit& /*owner*/, uint32 diff)
 {
-    if (time_diff > m_timer)
+    if (diff > m_timer)
     {
         return false;
     }
 
-    m_timer -= time_diff;
+    m_timer -= diff;
     return true;
 }
 

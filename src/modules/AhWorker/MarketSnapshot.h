@@ -22,7 +22,7 @@
 #ifndef AH_SERVICE_MARKET_SNAPSHOT_H
 #define AH_SERVICE_MARKET_SNAPSHOT_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "AhBotDefines.h"
 
 #include <vector>

@@ -1,0 +1,24 @@
+---
+# Vendored and shared code is not reviewed here, so it is not analysed here.
+#
+# Every path below is a SUBMODULE. Rule zero says they are never modified inside a core:
+# anything they need in order to build against this fork is attached from the outside,
+# in src/shared/Compat. A finding inside one of them therefore has exactly two possible
+# outcomes, and both are bad -- a permanent divergence from upstream, or an ignored
+# warning that trains everyone to ignore the next one. src/realmd and the script
+# libraries are reviewed in their own repositories, where a fix can actually land.
+#
+# The finding that prompted this is the shape to expect. utf8cpp 4.1.1's
+# find_invalid(const char*) calls strlen, which a blanket CWE-126 rule flags as "does
+# not handle strings that are not NUL-terminated". Its whole contract is that the string
+# IS NUL-terminated, and no core calls that overload at all -- every one of them uses
+# the two-iterator form.
+#
+# src/modules/{Bots,AhWorker} are deliberately absent: they are in-tree, they
+# are ours, and they are analysed.
+exclude_paths:
+  - "dep/**"
+  - "src/realmd/**"
+  - "src/modules/SD3/**"
+  - "src/modules/Eluna/**"
+  - "extra/win/**"

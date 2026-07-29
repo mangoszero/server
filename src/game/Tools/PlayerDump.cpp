@@ -48,7 +48,14 @@
  * @see PlayerDumpReader for import functionality
  */
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <map>
+#include <set>
+#include <sstream>
 #include "PlayerDump.h"
 #include "Database/DatabaseEnv.h"
 #include "SQLStorages.h"

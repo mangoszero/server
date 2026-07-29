@@ -22,7 +22,7 @@
 #ifndef AH_WORKER_JOURNAL_H
 #define AH_WORKER_JOURNAL_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 
 #include <string>
 #include <vector>

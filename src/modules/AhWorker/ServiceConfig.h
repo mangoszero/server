@@ -22,7 +22,7 @@
 #ifndef AH_SERVICE_SERVICE_CONFIG_H
 #define AH_SERVICE_SERVICE_CONFIG_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "Config/Config.h"
 #include "AhBotDefines.h"
 

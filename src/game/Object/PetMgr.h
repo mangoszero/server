@@ -25,7 +25,7 @@
 #ifndef MANGOS_H_PETMGR
 #define MANGOS_H_PETMGR
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "Pet.h"  // PetSaveMode enum + MAX_PET_STABLES constant
 
 class Player;

@@ -22,6 +22,13 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "Utilities/MathDefines.h"
+#include <algorithm>
+#include <cstdlib>
+#include <ctime>
+#include <cmath>
+#include <iterator>
+#include "Common/TimeConstants.h"
 #include "Util.h"
 #include "Timer.h"
 
@@ -29,9 +36,24 @@
 #include "RNGen.h"
 #include "Log/Log.h"
 
+// Socket headers for inet_pton/INET_ADDRSTRLEN. These used to arrive by accident,
+// dragged in transitively by the ACE includes buried in Common.h; naming them here
+// is what lets this file compile without it.
+#ifdef _WIN32
+#  include <winsock2.h>
+#  include <ws2tcpip.h>
+#else
+#  include <arpa/inet.h>
+#  include <netinet/in.h>
+#  include <sys/socket.h>
+#  include <unistd.h>          // getpid
+#endif
+
+#include <cstdarg>   // va_start/va_copy/va_end
 #include <iomanip>
+#include <sstream>
 #include <cctype>
-#include <cstdarg>    // va_copy/va_start/va_end are macros; only this header defines them
+#include <cstdio>
 #include <cstring>
 #include <string>
 #include <charconv>   // for std::to_chars
@@ -194,6 +216,7 @@ time_t GetLocalHourTimestamp(time_t time, uint8 hour, bool onlyAfterTime)
     return hourLocal;
 }
 
+
 std::string secsToTimeString(time_t timeInSecs, TimeFormat timeFormat, bool hoursOnly)
 {
     const time_t secs = timeInSecs % MINUTE;
@@ -205,30 +228,24 @@ std::string secsToTimeString(time_t timeInSecs, TimeFormat timeFormat, bool hour
     out.reserve(64); // to avoid reallocations
 
     auto append_number = [&](time_t value, bool pad2 = false)
-    {
-        std::array<char, 16> buf{};
-        auto [ptr, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), value);
-        if (pad2 && (ptr - buf.data()) == 1)  // pad single-digit numbers
-        out.push_back('0');
-        out.append(buf.data(), ptr);
-    };
+        {
+            std::array<char, 16> buf{};
+            auto [ptr, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), value);
+            if (pad2 && (ptr - buf.data()) == 1)  // pad single-digit numbers
+                out.push_back('0');
+            out.append(buf.data(), ptr);
+        };
 
     // --- Days ---
     if (days)
     {
         append_number(days);
         if (timeFormat == TimeFormat::Numeric)
-        {
             out += ':';
-        }
         else if (timeFormat == TimeFormat::ShortText)
-        {
             out += 'd';
-        }
         else
-        {
             out += (days == 1 ? " Day " : " Days ");
-        }
     }
 
     // --- Hours ---
@@ -236,17 +253,11 @@ std::string secsToTimeString(time_t timeInSecs, TimeFormat timeFormat, bool hour
     {
         append_number(hours);
         if (timeFormat == TimeFormat::Numeric)
-        {
             out += ':';
-        }
         else if (timeFormat == TimeFormat::ShortText)
-        {
             out += 'h';
-        }
         else
-        {
             out += (hours == 1 ? " Hour " : " Hours ");
-        }
     }
 
     // --- Minutes ---
@@ -254,21 +265,15 @@ std::string secsToTimeString(time_t timeInSecs, TimeFormat timeFormat, bool hour
     {
         append_number(minutes);
         if (timeFormat == TimeFormat::Numeric)
-        {
             out += ':';
-        }
         else if (timeFormat == TimeFormat::ShortText)
-        {
             out += 'm';
-        }
         else
-        {
             out += (minutes == 1 ? " Minute " : " Minutes ");
-        }
     }
     else if (timeFormat == TimeFormat::Numeric)
     {
-        // add "0:" when hoursOnly requested
+        // add �0:� when hoursOnly requested
         out += "0:";
     }
 
@@ -278,13 +283,9 @@ std::string secsToTimeString(time_t timeInSecs, TimeFormat timeFormat, bool hour
         // Always pad seconds to 2 digits in numeric format
         append_number(secs, timeFormat == TimeFormat::Numeric);
         if (timeFormat == TimeFormat::ShortText)
-        {
             out += 's';
-        }
         else if (timeFormat == TimeFormat::FullText)
-        {
             out += (secs == 1 ? " Second." : " Seconds.");
-        }
     }
     else if (timeFormat == TimeFormat::Numeric)
     {
@@ -293,6 +294,7 @@ std::string secsToTimeString(time_t timeInSecs, TimeFormat timeFormat, bool hour
 
     return out;
 }
+
 
 uint32 TimeStringToSecs(const std::string& timestring)
 {
@@ -339,19 +341,16 @@ std::string TimeToTimestampStr(time_t t)
     std::array<char, 20> buf; // "YYYY-MM-DD_HH-MM-SS" = 19 chars + '\0'
     char* p = buf.data();
 
-    auto append_2d = [&](int v)
-    {
+    auto append_2d = [&](int v) {
         *p++ = char('0' + v / 10);
         *p++ = char('0' + v % 10);
-    };
-
-    auto append_4d = [&](int v)
-    {
+        };
+    auto append_4d = [&](int v) {
         *p++ = char('0' + (v / 1000) % 10);
         *p++ = char('0' + (v / 100) % 10);
         *p++ = char('0' + (v / 10) % 10);
         *p++ = char('0' + v % 10);
-    };
+        };
 
     append_4d(aTm.tm_year + 1900);
     *p++ = '-';
@@ -368,6 +367,24 @@ std::string TimeToTimestampStr(time_t t)
     return std::string(buf.data(), p);
 }
 
+time_t timeBitFieldsToSecs(uint32 packedDate)
+{
+    tm lt;
+    memset(&lt, 0, sizeof(lt));
+
+    lt.tm_min = packedDate & 0x3F;
+    lt.tm_hour = (packedDate >> 6) & 0x1F;
+    lt.tm_wday = (packedDate >> 11) & 7;
+    lt.tm_mday = ((packedDate >> 14) & 0x3F) + 1;
+    lt.tm_mon = (packedDate >> 20) & 0xF;
+    lt.tm_year = ((packedDate >> 24) & 0x1F) + 100;
+    // -1 lets mktime resolve DST for this date; memset had forced 0 (standard
+    // time), which shifted summer dates forward by the DST offset.
+    lt.tm_isdst = -1;
+
+    return time_t(mktime(&lt));
+}
+
 /// Check if the string is a valid ip address representation
 bool IsIPAddress(char const* ipaddress)
 {
@@ -376,13 +393,14 @@ bool IsIPAddress(char const* ipaddress)
         return false;
     }
 
-    // inet_pton is strict about dotted-quad form, unlike the old inet_addr() which
-    // also accepted oddities such as "12.23", "121234" and "0xABCD".
-    in_addr addr;
-    return inet_pton(AF_INET, ipaddress, &addr) == 1;
+    // Let the big boys do it.
+    // Drawback: all valid ip address formats are recognized e.g.: 12.23,121234,0xABCD)
+    // inet_addr's INADDR_NONE sentinel also matches the legitimate broadcast
+    // address 255.255.255.255; inet_pton has no such ambiguity.
+    struct in_addr dummy;
+    return inet_pton(AF_INET, ipaddress, &dummy) == 1;
 }
 
-/// Render an IPv4 address (host byte order) plus port as "a.b.c.d:port".
 std::string GetAddressString(uint32 ip, uint16 port)
 {
     char buf[INET_ADDRSTRLEN + 8];
@@ -394,7 +412,6 @@ std::string GetAddressString(uint32 ip, uint16 port)
     return buf;
 }
 
-/// True when @p addr sits inside the network @p net/@p subnetMask (all host byte order).
 bool IsIPAddrInNetwork(uint32 net, uint32 addr, uint32 subnetMask)
 {
     return (net & subnetMask) == (addr & subnetMask);
@@ -427,7 +444,7 @@ size_t utf8length(std::string& utf8str)
     {
         return utf8::distance(utf8str.c_str(), utf8str.c_str() + utf8str.size());
     }
-    catch (std::exception)
+    catch (const std::exception&)
     {
         utf8str = "";
         return 0;
@@ -451,7 +468,7 @@ void utf8truncate(std::string& utf8str, size_t len)
         char* oend = utf8::utf16to8(wstr.c_str(), wstr.c_str() + wstr.size(), &utf8str[0]);
         utf8str.resize(oend - (&utf8str[0]));               // remove unused tail
     }
-    catch (std::exception)
+    catch (const std::exception&)
     {
         utf8str = "";
     }
@@ -518,7 +535,7 @@ bool Utf8toWStr(char const* utf8str, size_t csize, wchar_t* wstr, size_t& wsize)
         utf8::utf8to16(utf8str, utf8str + csize, wstr);
         wstr[len] = L'\0';
     }
-    catch (std::exception)
+    catch (const std::exception&)
     {
         if (wsize > 0)
         {
@@ -543,7 +560,7 @@ bool Utf8toWStr(const std::string& utf8str, std::wstring& wstr)
             utf8::utf8to16(utf8str.c_str(), utf8str.c_str() + utf8str.size(), &wstr[0]);
         }
     }
-    catch (std::exception)
+    catch (const std::exception&)
     {
         wstr = L"";
         return false;
@@ -563,7 +580,7 @@ bool WStrToUtf8(wchar_t* wstr, size_t size, std::string& utf8str)
         utf8str2.resize(oend - (&utf8str2[0]));             // remove unused tail
         utf8str = utf8str2;
     }
-    catch (std::exception)
+    catch (const std::exception&)
     {
         utf8str = "";
         return false;
@@ -583,7 +600,7 @@ bool WStrToUtf8(std::wstring wstr, std::string& utf8str)
         utf8str2.resize(oend - (&utf8str2[0]));             // remove unused tail
         utf8str = utf8str2;
     }
-    catch (std::exception)
+    catch (const std::exception&)
     {
         utf8str = "";
         return false;
@@ -594,7 +611,6 @@ bool WStrToUtf8(std::wstring wstr, std::string& utf8str)
 
 typedef wchar_t const* const* wstrlist;
 
-#if !defined(CLASSIC)
 std::wstring GetMainPartOfName(std::wstring wname, uint32 declension)
 {
     // supported only Cyrillic cases
@@ -644,7 +660,7 @@ std::wstring GetMainPartOfName(std::wstring wname, uint32 declension)
 
     return wname;
 }
-#endif
+
 
 bool utf8ToConsole(const std::string& utf8str, std::string& conStr)
 {
@@ -678,7 +694,6 @@ bool consoleToUtf8(const std::string& conStr, std::string& utf8str)
     utf8str = conStr;
     return true;
 #endif
-
 }
 
 bool Utf8FitTo(const std::string& str, std::wstring search)
@@ -717,7 +732,6 @@ void vutf8printf(FILE* out, const char* str, va_list* ap)
 #else
     vfprintf(out, str, *ap);
 #endif
-
 }
 
 std::string vutf8format(const char* str, va_list* ap)
@@ -857,7 +871,6 @@ void utf8print(void* /*arg*/, const char* str)
 #else
     sLog.ConsoleEmitRaw(str);
 #endif
-
 }
 
 void utf8printf(FILE* out, const char* str, ...)
@@ -870,7 +883,6 @@ void utf8printf(FILE* out, const char* str, ...)
 
 int return_iCoreNumber()
 {
-
 #if defined(CLASSIC)
     return 0;
 #elif defined(TBC)
@@ -888,7 +900,6 @@ int return_iCoreNumber()
 #else
     return -1;
 #endif
-
 }
 
 /// Print out the core banner
@@ -897,83 +908,83 @@ void print_banner()
     int iCoreNumber = return_iCoreNumber();
     switch (iCoreNumber)
     {
-        case 0: // CLASSIC
-            sLog.outString("<Ctrl-C> to stop.\n"
-                "  __  __      _  _  ___  ___  ___        ____              \n"
-                " |  \\/  |__ _| \\| |/ __|/ _ \\/ __|      /_  /___ _ _ ___   \n"
-                " | |\\/| / _` | .` | (_ | (_) \\__ \\       / // -_) '_/ _ \\ \n"
-                " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/      /___\\___|_| \\___/\n"
-                " Powered By MaNGOS Core\n"
-                "__________________________________________________________\n"
-                "\n"
-                "Website/Forum/Wiki/Issue Tracker: https://www.getmangos.eu\n"
-                "__________________________________________________________\n"
-                "\n");
-            break;
-        case 1: // TBC
-            sLog.outString("<Ctrl-C> to stop.\n"
-                "  __  __      _  _  ___  ___  ___         ___             \n"
-                " |  \\/  |__ _| \\| |/ __|/ _ \\/ __|       / _ \\ ___  ___  \n"
-                " | |\\/| / _` | .` | (_ | (_) \\__ \\      | (_) |   \\/ -_) \n"
-                " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/       \\___/|_||_\\___|\n"
-                " Powered By MaNGOS Core\n"
-                " __________________________________________________________\n"
-                "\n"
-                " Website/Forum/Wiki/Issue Tracker: https://www.getmangos.eu\n"
-                " __________________________________________________________\n"
-                "\n");
-            break;
-        case 2: // WOTLK
-            sLog.outString("<Ctrl-C> to stop.\n"
-                "  __  __      _  _  ___  ___  ___       _____          \n"
-                " |  \\/  |__ _| \\| |/ __|/ _ \\/ __|     |_   _|_ __ _____\n"
-                " | |\\/| / _` | .` | (_ | (_) \\__ \\       | | \\ V  V / _ \\\n"
-                " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/       |_|  \\_/\\_/\\___/ \n"
-                " Powered By MaNGOS Core\n"
-                " __________________________________________________________\n"
-                "\n"
-                " Website/Forum/Wiki/Issue Tracker: https://www.getmangos.eu\n"
-                " __________________________________________________________\n"
-                "\n");
-            break;
-        case 3: // CATA
-            sLog.outString("<Ctrl-C> to stop.\n"
-                "  __  __      _  _  ___  ___  ___   _____ _         \n"
-                " |  \\/  |__ _| \\| |/ __|/ _ \\/ __| |_   _| |_  _ _ ___ ___    \n"
-                " | |\\/| / _` | .` | (_ | (_) \\__ \\   | | | ' \\| '_/ -_) -_)  \n"
-                " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/   |_| |_||_|_| \\___\\___| \n"
-                " Powered By MaNGOS Core\n"
-                " __________________________________________________________\n"
-                "\n"
-                " Website/Forum/Wiki/Issue Tracker: https://www.getmangos.eu\n"
-                " __________________________________________________________\n"
-                "\n");
-            break;
-        case 4: // MOP
-            sLog.outString("<Ctrl-C> to stop.\n"
-                "  __  __      _  _  ___  ___  ___     _____             \n"
-                " |  \\/  |__ _| \\| |/ __|/ _ \\/ __|    | __|__ _  _ _ _  \n"
-                " | |\\/| / _` | .` | (_ | (_) \\__ \\    | _/ _ \\ || | '_|\n"
-                " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/    |_|\\___/\\_,_|_| \n"
-                " Powered By MaNGOS Core\n"
-                " __________________________________________________________\n"
-                "\n"
-                " Website/Forum/Wiki/Issue Tracker: https://www.getmangos.eu\n"
-                " __________________________________________________________\n"
-                "\n");
-            break;
-        default:
-            sLog.outString("<Ctrl-C> to stop.\n"
-                "  __  __      _  _  ___  ___  ___                                \n"
-                " |  \\/  |__ _| \\| |/ __|/ _ \\/ __|     We have a problem !   \n"
-                " | |\\/| / _` | .` | (_ | (_) \\__ \\   Your version of MaNGOS  \n"
-                " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/   could not be detected   \n"
-                " __________________________________________________________\n"
-                "\n"
-                " Website/Forum/Wiki/Issue Tracker: https://www.getmangos.eu\n"
-                " __________________________________________________________\n"
-                "\n");
-            break;
+    case 0: // CLASSIC
+        sLog.outString("<Ctrl-C> to stop.\n"
+            "  __  __      _  _  ___  ___  ___        ____              \n"
+            " |  \\/  |__ _| \\| |/ __|/ _ \\/ __|      /_  /___ _ _ ___   \n"
+            " | |\\/| / _` | .` | (_ | (_) \\__ \\       / // -_) '_/ _ \\ \n"
+            " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/      /___\\___|_| \\___/\n"
+            " Powered By MaNGOS Core\n"
+            "__________________________________________________________\n"
+            "\n"
+            "Website/Forum/Wiki/Issue Tracker: https://www.getmangos.eu\n"
+            "__________________________________________________________\n"
+            "\n");
+        break;
+    case 1: // TBC
+        sLog.outString("<Ctrl-C> to stop.\n"
+            "  __  __      _  _  ___  ___  ___         ___             \n"
+            " |  \\/  |__ _| \\| |/ __|/ _ \\/ __|       / _ \\ ___  ___  \n"
+            " | |\\/| / _` | .` | (_ | (_) \\__ \\      | (_) |   \\/ -_) \n"
+            " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/       \\___/|_||_\\___|\n"
+            " Powered By MaNGOS Core\n"
+            " __________________________________________________________\n"
+            "\n"
+            " Website/Forum/Wiki/Issue Tracker: https://www.getmangos.eu\n"
+            " __________________________________________________________\n"
+            "\n");
+        break;
+    case 2: // WOTLK
+        sLog.outString("<Ctrl-C> to stop.\n"
+            "  __  __      _  _  ___  ___  ___       _____          \n"
+            " |  \\/  |__ _| \\| |/ __|/ _ \\/ __|     |_   _|_ __ _____\n"
+            " | |\\/| / _` | .` | (_ | (_) \\__ \\       | | \\ V  V / _ \\\n"
+            " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/       |_|  \\_/\\_/\\___/ \n"
+            " Powered By MaNGOS Core\n"
+            " __________________________________________________________\n"
+            "\n"
+            " Website/Forum/Wiki/Issue Tracker: https://www.getmangos.eu\n"
+            " __________________________________________________________\n"
+            "\n");
+        break;
+    case 3: // CATA
+        sLog.outString("<Ctrl-C> to stop.\n"
+            "  __  __      _  _  ___  ___  ___   _____ _         \n"
+            " |  \\/  |__ _| \\| |/ __|/ _ \\/ __| |_   _| |_  _ _ ___ ___    \n"
+            " | |\\/| / _` | .` | (_ | (_) \\__ \\   | | | ' \\| '_/ -_) -_)  \n"
+            " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/   |_| |_||_|_| \\___\\___| \n"
+            " Powered By MaNGOS Core\n"
+            " __________________________________________________________\n"
+            "\n"
+            " Website/Forum/Wiki/Issue Tracker: https://www.getmangos.eu\n"
+            " __________________________________________________________\n"
+            "\n");
+        break;
+    case 4: // MOP
+        sLog.outString("<Ctrl-C> to stop.\n"
+            "  __  __      _  _  ___  ___  ___     _____             \n"
+            " |  \\/  |__ _| \\| |/ __|/ _ \\/ __|    | __|__ _  _ _ _  \n"
+            " | |\\/| / _` | .` | (_ | (_) \\__ \\    | _/ _ \\ || | '_|\n"
+            " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/    |_|\\___/\\_,_|_| \n"
+            " Powered By MaNGOS Core\n"
+            " __________________________________________________________\n"
+            "\n"
+            " Website/Forum/Wiki/Issue Tracker: https://www.getmangos.eu\n"
+            " __________________________________________________________\n"
+            "\n");
+        break;
+    default:
+        sLog.outString("<Ctrl-C> to stop.\n"
+            "  __  __      _  _  ___  ___  ___                                \n"
+            " |  \\/  |__ _| \\| |/ __|/ _ \\/ __|     We have a problem !   \n"
+            " | |\\/| / _` | .` | (_ | (_) \\__ \\   Your version of MaNGOS  \n"
+            " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/   could not be detected   \n"
+            " __________________________________________________________\n"
+            "\n"
+            " Website/Forum/Wiki/Issue Tracker: https://www.getmangos.eu\n"
+            " __________________________________________________________\n"
+            "\n");
+        break;
     }
 }
 

@@ -22,7 +22,7 @@
 #ifndef AH_IPC_SOCKET_H
 #define AH_IPC_SOCKET_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 
 #include <cstddef>
 #include <string>

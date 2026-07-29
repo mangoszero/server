@@ -40,7 +40,7 @@
  * Supported value types:
  * - String: Raw string values
  * - Bool: true/false, yes/no, 1/0 (case-insensitive)
- * - Int: 32-bit signed integers
+ * - Int: 32-bit (and 64-bit) signed integers
  * - Float: Floating point values
  *
  * @see Config for the main configuration interface
@@ -265,6 +265,21 @@ int32 Config::GetIntDefault(const char* name, int32 def)
 {
     std::string val;
     return GetValue(name, val) ? atoi(val.c_str()) : def;
+}
+
+/**
+ * @brief Get 64-bit integer configuration value
+ * @param name Key name to look up
+ * @param def Default value if key not found or invalid
+ * @return Configuration value or default
+ *
+ * strtoll, not atoi: the value is 64 bits precisely because it does not fit in
+ * an int, and atoi would truncate every one that matters.
+ */
+int64 Config::GetInt64Default(const char* name, int64 def)
+{
+    std::string val;
+    return GetValue(name, val) ? int64(std::strtoll(val.c_str(), NULL, 10)) : def;
 }
 
 /**

@@ -43,6 +43,10 @@
  * @see SpawnedPoolData for pool state tracking
  */
 
+#include "Utilities/Errors.h"
+#include <sstream>
+#include <map>
+#include <set>
 #include "PoolManager.h"
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"
@@ -52,7 +56,6 @@
 #include "World.h"
 #include "Policies/Singleton.h"
 
-INSTANTIATE_SINGLETON_1(PoolManager);
 
 ////////////////////////////////////////////////////////////
 // template class SpawnedPoolData

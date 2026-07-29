@@ -22,6 +22,9 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <vector>
+#include <list>
+#include "Utilities/MathDefines.h"
 #include "PetAI.h"
 #include "Errors.h"
 #include "Pet.h"
@@ -93,9 +96,9 @@ void PetAI::MoveInLineOfSight(Unit* u)
         u->isInAccessablePlaceFor(m_creature))
     {
         float attackRadius = m_creature->GetAttackDistance(u);
-        if (m_creature->IsWithinDistInMap(u, attackRadius) && m_creature->GetDistanceZ(u) <= CREATURE_Z_ATTACK_RANGE)
+        if (InReach(*m_creature, *u, attackRadius) && m_creature->Where().HeightGapTo(u->Where()) <= CREATURE_Z_ATTACK_RANGE)
         {
-            if (m_creature->IsWithinLOSInMap(u))
+            if (HasLineOfSight(*m_creature, *u))
             {
                 AttackStart(u);
             }
@@ -217,9 +220,9 @@ void PetAI::SelectNextTarget(Unit* owner)
             if (candidate->IsAlive() &&
                 candidate->IsTargetableForAttack() &&
                 candidate->isInAccessablePlaceFor(m_creature) &&
-                m_creature->IsWithinLOSInMap(candidate))
+                HasLineOfSight(*m_creature, *candidate))
             {
-                float dist = m_creature->GetDistance(candidate);
+                float dist = m_creature->Where().DistanceTo(candidate->Where());
                 if (dist < closestDist)
                 {
                     closestDist = dist;
@@ -275,7 +278,7 @@ void PetAI::UpdateAI(const uint32 diff)
             return;
         }
 
-        bool meleeReach = m_creature->CanReachWithMeleeAttack(m_creature->getVictim());
+        bool meleeReach = InMeleeReach(*m_creature, *m_creature->getVictim());
 
         if (m_creature->IsStopped() || meleeReach)
         {
@@ -467,7 +470,7 @@ void PetAI::UpdateAI(const uint32 diff)
             SpellCastTargets targets;
             targets.setUnitTarget(target);
 
-            if (!m_creature->HasInArc(M_PI_F, target))
+            if (!m_creature->Where().HasInArc(target->Where(), M_PI_F))
             {
                 m_creature->SetInFront(target);
                 if (target->GetTypeId() == TYPEID_PLAYER)
@@ -521,7 +524,7 @@ void PetAI::UpdateAI(const uint32 diff)
  */
 bool PetAI::_isVisible(Unit* u) const
 {
-    return m_creature->IsWithinDist(u, sWorld.getConfig(CONFIG_FLOAT_SIGHT_GUARDER)) &&
+    return m_creature->Where().WithinDist(u->Where(), sWorld.getConfig(CONFIG_FLOAT_SIGHT_GUARDER)) &&
         u->IsVisibleForOrDetect(m_creature, m_creature, true);
 }
 
@@ -590,7 +593,7 @@ void PetAI::AttackedBy(Unit* attacker)
 {
     // when attacked, fight back in case 1)no victim already AND 2)not set to passive AND 3)not set to stay, unless can it can reach attacker with melee attack anyway
     if (!m_creature->getVictim() && m_creature->GetCharmInfo() && !m_creature->GetCharmInfo()->HasReactState(REACT_PASSIVE) &&
-        (!m_creature->GetCharmInfo()->HasCommandState(COMMAND_STAY) || m_creature->CanReachWithMeleeAttack(attacker)))
+        (!m_creature->GetCharmInfo()->HasCommandState(COMMAND_STAY) || InMeleeReach(*m_creature, *attacker)))
     {
         AttackStart(attacker);
     }

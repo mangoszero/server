@@ -22,7 +22,7 @@
 #ifndef MANGOSSERVER_CINEMATIC_FLYOVER_ROUTE_H
 #define MANGOSSERVER_CINEMATIC_FLYOVER_ROUTE_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 
 struct CinematicFlyoverKeyframe
 {

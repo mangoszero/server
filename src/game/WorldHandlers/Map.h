@@ -51,7 +51,15 @@
 #ifndef MANGOS_MAP_H
 #define MANGOS_MAP_H
 
-#include "Common.h"
+#include "Utilities/Errors.h"
+#include <ctime>
+#include <vector>
+#include <map>
+#include <set>
+#include <mutex>
+#include <shared_mutex>
+#include <list>
+#include <utility>
 #include "Platform/Define.h"
 #include "DBCStructure.h"
 #include "GridDefines.h"
@@ -63,18 +71,20 @@
 #include "MapRefManager.h"
 #include "ScriptMgr.h"
 #include "CreatureLinkingMgr.h"
-#include "DynamicTree.h"
+#include "DynamicCollision.h"
 #ifdef ENABLE_ELUNA
 #include "LuaValue.h"
 #endif /* ENABLE_ELUNA */
 
 #include <bitset>
+#include <optional>
 
 struct CreatureInfo;
 class Creature;
 #ifdef ENABLE_ELUNA
 class Eluna;
 #endif /* ENABLE_ELUNA */
+class TransportMap;
 class Unit;
 class WorldPacket;
 class InstanceData;
@@ -247,6 +257,13 @@ class Map : public GridRefManager<NGridType>
         bool IsBattleGround() const { return i_mapEntry && i_mapEntry->IsBattleGround(); }
         bool IsContinent() const { return i_mapEntry && i_mapEntry->IsContinent(); }
 
+        /// This map AS A VESSEL, or NULL. Asked of the map itself rather than of its id, so
+        /// the answer comes from what the map IS -- and the caller gets the thing it wanted
+        /// rather than a boolean plus a downcast.
+        virtual TransportMap* AsTransport() { return NULL; }
+        virtual TransportMap const* AsTransport() const { return NULL; }
+
+
         // can't be nullptr for loaded map
         MapPersistentState* GetPersistentState() const { return m_persistentState; }
 
@@ -322,6 +339,21 @@ class Map : public GridRefManager<NGridType>
         // get corresponding TerrainData object for this particular map
         const TerrainInfo* GetTerrain() const { return m_TerrainData; }
 
+        /**
+         * @brief The players OUTSIDE this map who must nonetheless HEAR what happens on it.
+         *
+         * Only a deck map has them, refreshed by the vessel at the top of its tick. This is
+         * a BROADCAST channel, not a visibility one: a spline, an emote, a spell go -- the
+         * things a crew member says when nobody's visibility pass happens to be running.
+         * Who can SEE the deck is decided by each viewer's own sweep, which reaches across
+         * the boundary itself.
+         */
+        std::vector<Player*> const& ExternalObservers() const { return m_externalObservers; }
+        void SetExternalObservers(std::vector<Player*>&& observers)
+        {
+            m_externalObservers = std::move(observers);
+        }
+
         void CreateInstanceData(bool load);
         InstanceData* GetInstanceData() const { return i_data; }
         virtual uint32 GetScriptId() const { return sScriptMgr.GetBoundScriptId(SCRIPTED_MAP, GetId()); }
@@ -331,6 +363,21 @@ class Map : public GridRefManager<NGridType>
         void PlayDirectSoundToMap(uint32 soundId, uint32 zoneId = 0) const;
 
         // Dynamic VMaps
+        /// The floor under (x, y, z), or nothing where the map has none. Core code asks
+        /// this and never GetHeight: an absent floor must not arrive as a number that
+        /// arithmetic will consume, which is the whole reason INVALID_HEIGHT leaked.
+        /// Every surface stacked over (x, y) between zTop and zBottom, static and
+        /// live geometry fused. A scalar height cannot say "there is an open hatch
+        /// here, refuse" rather than "the deck two levels down".
+        /// Vanilla has no phasing, so every body is in the only phase there is.
+        /// The live-geometry interface is shared with the cores that do phase, and
+        /// a named constant says which of the two this is rather than a bare 1.
+        static const uint32 PHASE_ANY = 1;
+
+        world::terrain::Column ColumnAt(float x, float y, float zTop, float zBottom) const;
+
+        std::optional<float> Floor(float x, float y, float z) const;
+        std::optional<float> FloorNear(float x, float y, float z, float maxSearchDist = 4.0f) const;
         float GetHeight(float x, float y, float z) const;
         bool GetHeightInRange(float x, float y, float& z, float maxSearchDist = 4.0f) const;
         bool IsInLineOfSight(float x1, float y1, float z1, float x2, float y2, float z2) const;
@@ -340,6 +387,7 @@ class Map : public GridRefManager<NGridType>
         void InsertGameObjectModel(const GameObjectModel& mdl);
         void RemoveGameObjectModel(const GameObjectModel& mdl);
         bool ContainsGameObjectModel(const GameObjectModel& mdl) const;
+        void RefreshGameObjectModel(GameObjectModel& mdl);
 
         // Get Holder for Creature Linking
         CreatureLinkingHolder* GetCreatureLinkingHolder()
@@ -367,8 +415,6 @@ class Map : public GridRefManager<NGridType>
         bool GetRandomPointInTheAir(float& x, float& y, float& z, float radius);
         bool GetRandomPointUnderWater(float& x, float& y, float& z, float radius, GridMapLiquidData& liquid_status);
 
-        void LoadLocalTransports();
-        std::set<Transport*> const& GetLocalTransports() const { return i_transports; }
 
         struct CellEnvelopeStats
         {
@@ -425,7 +471,6 @@ class Map : public GridRefManager<NGridType>
         void SendRemoveTransports(Player* player);
 
         bool CreatureCellRelocation(Creature* creature, const Cell &new_cell);
-        void PromoteEnvelopeNeighboursToFull(uint32 gridX, uint32 gridY);
         void MaybePromoteEnvelopeGridForPlayer(uint32 gridX, uint32 gridY);
 
         bool loaded(const GridPair&) const;
@@ -434,16 +479,9 @@ class Map : public GridRefManager<NGridType>
         bool EnsureCellEnvelopeLoaded(const Cell& centerCell);
         void UnloadCell(NGridType* grid, uint32 cellX, uint32 cellY);
         void ProcessPendingCellUnloads();
-        void EnsureGridLoadedAtEnter(Cell const&, Player* player = nullptr);
 
         void buildNGridLinkage(NGridType* pNGridType) { pNGridType->link(this); }
 
-        NGridType* getNGrid(uint32 x, uint32 y) const
-        {
-            MANGOS_ASSERT(x < MAX_NUMBER_OF_GRIDS);
-            MANGOS_ASSERT(y < MAX_NUMBER_OF_GRIDS);
-            return i_grids[x][y];
-        }
 
         void VisitNearbyCellsOf(WorldObject* obj,
             TypeContainerVisitor<MaNGOS::ObjectUpdater, GridTypeMapContainer> &gridVisitor,
@@ -459,7 +497,22 @@ class Map : public GridRefManager<NGridType>
         std::set<Object*> i_objectsToClientUpdate;
 
     protected:
+        /// A vessel writes her own Add(Player*): her passengers arrive on a map their client
+        /// has never heard of, so nothing an ordinary map sends on entry applies.
+        void EnsureGridLoadedAtEnter(Cell const&, Player* player = nullptr);
+        void PromoteEnvelopeNeighboursToFull(uint32 gridX, uint32 gridY);
+
+        NGridType* getNGrid(uint32 x, uint32 y) const
+        {
+            MANGOS_ASSERT(x < MAX_NUMBER_OF_GRIDS);
+            MANGOS_ASSERT(y < MAX_NUMBER_OF_GRIDS);
+            return i_grids[x][y];
+        }
+
         MapEntry const* i_mapEntry;
+
+        /// Players off this map who must hear it -- see ExternalObservers().
+        std::vector<Player*> m_externalObservers;
         uint32 i_id;
         uint32 i_InstanceId;
         uint32 m_unloadTimer;
@@ -498,7 +551,6 @@ class Map : public GridRefManager<NGridType>
         std::bitset<TOTAL_NUMBER_OF_CELLS_PER_MAP* TOTAL_NUMBER_OF_CELLS_PER_MAP> marked_cells;
 
         std::set<WorldObject*> i_objectsToRemove;
-        std::set<Transport*> i_transports;
 
         typedef std::multimap<time_t, ScriptAction> ScriptScheduleMap;
         ScriptScheduleMap m_scriptSchedule;
@@ -521,7 +573,7 @@ class Map : public GridRefManager<NGridType>
         CreatureLinkingHolder m_creatureLinkingHolder;
 
         // Dynamic Map tree object
-        DynamicMapTree m_dyn_tree;
+        DynamicCollision m_dyn_tree;
 
         // WeatherSystem
         WeatherSystem* m_weatherSystem;

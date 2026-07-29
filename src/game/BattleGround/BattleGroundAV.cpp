@@ -40,6 +40,7 @@
  * towers, and graveyards competing for resource control and ultimate victory.
  */
 
+#include "Utilities/Errors.h"
 #include "Player.h"
 #include "BattleGround.h"
 #include "BattleGroundAV.h"
@@ -622,7 +623,7 @@ void BattleGroundAV::EventPlayerDestroyedPoint(BG_AV_Nodes node)
 {
     DEBUG_LOG("BattleGroundAV: player destroyed point node %i", node);
 
-    MANGOS_ASSERT(m_Nodes[node].Owner != BG_AV_TEAM_NEUTRAL)
+    MANGOS_ASSERT(m_Nodes[node].Owner != BG_AV_TEAM_NEUTRAL);
     PvpTeamIndex ownerTeamIdx = PvpTeamIndex(m_Nodes[node].Owner);
     Team ownerTeam = ownerTeamIdx == TEAM_INDEX_ALLIANCE ? ALLIANCE : HORDE;
 
@@ -982,8 +983,8 @@ void BattleGroundAV::SendMineWorldStates(uint32 mine)
  */
 WorldSafeLocsEntry const* BattleGroundAV::GetClosestGraveYard(Player* plr)
 {
-    float x = plr->GetPositionX();
-    float y = plr->GetPositionY();
+    float x = plr->Where().X();
+    float y = plr->Where().Y();
     BattleGroundAVTeamIndex teamIdx = GetAVTeamIndexByTeamId(plr->GetTeam());
     WorldSafeLocsEntry const* good_entry = NULL;
     if (GetStatus() == STATUS_IN_PROGRESS)

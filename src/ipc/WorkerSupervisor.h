@@ -22,7 +22,8 @@
 #ifndef AH_WORKER_SUPERVISOR_H
 #define AH_WORKER_SUPERVISOR_H
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <ctime>
 #include "IpcChannel.h"
 #include "IpcMessage.h"
 #include "IpcProcess.h"

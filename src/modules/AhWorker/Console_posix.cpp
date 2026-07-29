@@ -56,9 +56,16 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <sys/prctl.h>
 #include <signal.h>
 #include <unistd.h>
+
+// Parent-death notification is a per-kernel facility, not a POSIX one.
+#if defined(__linux__)
+#  include <sys/prctl.h>
+#elif defined(__FreeBSD__)
+#  include <sys/procctl.h>
+#  include <sys/types.h>
+#endif
 
 /// PF3-B: parent pid latched at guard-install time. The handler self-exits
 /// when the live ppid differs from this value, which detects the real parent
@@ -136,11 +143,21 @@ void Console_InstallParentDeathGuard()
     }
 
     // Ask the kernel to deliver SIGUSR1 to this process when its parent
-    // (mangosd) dies.  This closes the Linux orphan-guard TODO from Task 4.
+    // (mangosd) dies. Same guarantee on both kernels, different spelling; where
+    // neither exists the ppid race-guard below is all there is, so the child is
+    // reaped on its next check rather than immediately.
+#if defined(__linux__)
     if (prctl(PR_SET_PDEATHSIG, SIGUSR1) != 0)
     {
         perror("ah-service: prctl(PR_SET_PDEATHSIG) failed");
     }
+#elif defined(__FreeBSD__)
+    int pdeathsig = SIGUSR1;
+    if (procctl(P_PID, getpid(), PROC_PDEATHSIG_CTL, &pdeathsig) != 0)
+    {
+        perror("ah-service: procctl(PROC_PDEATHSIG_CTL) failed");
+    }
+#endif
 
     // Race guard: if the parent already died between spawn and the prctl call
     // above, the death signal would never arrive. Check explicitly and exit if

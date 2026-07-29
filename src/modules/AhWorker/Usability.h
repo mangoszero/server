@@ -22,7 +22,7 @@
 #ifndef AH_WORKER_USABILITY_H
 #define AH_WORKER_USABILITY_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "BrowseMessages.h"   // PlayerProfile, SkillRank, RepStanding
 
 /// Classic (1.12) item class id for recipes (mangosd ITEM_CLASS_RECIPE == 9).

@@ -18,6 +18,8 @@
 #include <functional>
 #include <set>
 #include <sstream>
+#include <string>
+#include <vector>
 
 namespace MaNGOS
 {
@@ -43,7 +45,7 @@ namespace MaNGOS
         }
 
         bool IsScheduledExitMinute(ScheduledExitSchedule const& schedule,
-            std::tm const& localTime)
+                                   std::tm const& localTime)
         {
             return schedule.enabled &&
                 localTime.tm_wday == int(schedule.dayOfWeek) &&
@@ -51,7 +53,8 @@ namespace MaNGOS
                 localTime.tm_min == int(schedule.minute);
         }
 
-        void MarkScheduledExitHandled(std::tm const& localTime, ScheduledExitState& state)
+        void MarkScheduledExitHandled(std::tm const& localTime,
+                                      ScheduledExitState& state)
         {
             state.hasLastFire = true;
             state.lastFireYear = localTime.tm_year;
@@ -98,7 +101,8 @@ namespace MaNGOS
         return true;
     }
 
-    bool ParseScheduledExitTime(std::string const& text, uint32& hour, uint32& minute)
+    bool ParseScheduledExitTime(std::string const& text, uint32& hour,
+                                uint32& minute)
     {
         std::string trimmed = Trim(text);
         if (trimmed.size() != 5 || trimmed[2] != ':')
@@ -106,14 +110,18 @@ namespace MaNGOS
             return false;
         }
 
-        if (!std::isdigit((unsigned char)trimmed[0]) || !std::isdigit((unsigned char)trimmed[1]) ||
-            !std::isdigit((unsigned char)trimmed[3]) || !std::isdigit((unsigned char)trimmed[4]))
+        if (!std::isdigit((unsigned char)trimmed[0]) ||
+            !std::isdigit((unsigned char)trimmed[1]) ||
+            !std::isdigit((unsigned char)trimmed[3]) ||
+            !std::isdigit((unsigned char)trimmed[4]))
         {
             return false;
         }
 
-        uint32 parsedHour = uint32((trimmed[0] - '0') * 10 + (trimmed[1] - '0'));
-        uint32 parsedMinute = uint32((trimmed[3] - '0') * 10 + (trimmed[4] - '0'));
+        uint32 parsedHour =
+            uint32((trimmed[0] - '0') * 10 + (trimmed[1] - '0'));
+        uint32 parsedMinute =
+            uint32((trimmed[3] - '0') * 10 + (trimmed[4] - '0'));
 
         if (parsedHour > 23 || parsedMinute > 59)
         {
@@ -125,7 +133,8 @@ namespace MaNGOS
         return true;
     }
 
-    bool ParseScheduledExitMode(std::string const& text, ScheduledExitMode& mode)
+    bool ParseScheduledExitMode(std::string const& text,
+                                ScheduledExitMode& mode)
     {
         std::string lowered = ToLower(Trim(text));
         if (lowered == "shutdown")
@@ -149,7 +158,8 @@ namespace MaNGOS
     }
 
     std::vector<uint32> ParseScheduledExitWarningTimes(
-        std::string const& text, uint32 delay, std::vector<std::string>& errors)
+        std::string const& text, uint32 delay,
+        std::vector<std::string>& errors)
     {
         std::vector<uint32> warnings;
         std::set<uint32> seen;
@@ -230,5 +240,4 @@ namespace MaNGOS
         MarkScheduledExitHandled(localTime, state);
         return true;
     }
-
 }

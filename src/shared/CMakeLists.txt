@@ -28,19 +28,19 @@ set(SRC_GRP_AUTH
   Auth/BigNumber.h
   Auth/HMACSHA1.cpp
   Auth/HMACSHA1.h
+  Auth/Md5.h
   Auth/OpenSSLProvider.cpp
   Auth/OpenSSLProvider.h
   Auth/Sha1.cpp
   Auth/Sha1.h
   Auth/WardenKeyGeneration.h
-  Auth/md5.c
-  Auth/md5.h
 )
 source_group("Auth" FILES ${SRC_GRP_AUTH})
 
 set(SRC_GRP_COMMON
-  Common/Common.cpp
-  Common/Common.h
+  Common/Locales.cpp
+  Common/Locales.h
+  Common/TimeConstants.h
   Common/ServerDefines.h
   Common/GitRevision.cpp
   Common/GitRevision.h
@@ -64,7 +64,6 @@ set(SRC_GRP_DATABASE
   Database/Database.cpp
   Database/Database.h
   Database/DatabaseEnv.h
-  Database/DatabaseImpl.h
   Database/DatabaseMysql.cpp
   Database/DatabaseMysql.h
   Database/Field.cpp
@@ -92,7 +91,6 @@ source_group("Dynamic" FILES ${SRC_GRP_DYNAMIC})
 
 set(SRC_GRP_GAMESYSTEM
   GameSystem/Grid.h
-  GameSystem/GridLoader.h
   GameSystem/GridRefManager.h
   GameSystem/GridReference.h
   GameSystem/NGrid.h
@@ -105,6 +103,14 @@ set(SRC_GRP_LOCKQ
   LockedQueue/LockedQueue.h
 )
 source_group("LockedQueue" FILES ${SRC_GRP_LOCKQ})
+
+set(SRC_GRP_CONSOLE
+  Console/ConsoleUI.cpp
+  Console/ConsoleUI.h
+  Console/Terminal.cpp
+  Console/Terminal.h
+)
+source_group("Console" FILES ${SRC_GRP_CONSOLE})
 
 set(SRC_GRP_LOG
   Log/Log.cpp
@@ -120,23 +126,6 @@ set(SRC_GRP_THREAD
   Threading/Threading.h
 )
 source_group("Threading" FILES ${SRC_GRP_THREAD})
-
-# Optional io_uring backend. Off by default: the epoll reactor is the supported Linux
-# default, and liburing is not present on every distro CI builds on. When enabled it
-# defines MANGOS_USE_IO_URING, which is what net/Server.hpp keys the backend choice on.
-option(WITH_IO_URING "Build the io_uring networking backend (Linux only, needs liburing)" OFF)
-set(MANGOS_USE_IO_URING OFF)
-if(WITH_IO_URING AND UNIX AND NOT APPLE)
-  find_library(URING_LIBRARY NAMES uring)
-  find_path(URING_INCLUDE_DIR NAMES liburing.h)
-  if(URING_LIBRARY AND URING_INCLUDE_DIR)
-    set(MANGOS_USE_IO_URING ON)
-    message(STATUS "Networking backend: io_uring (${URING_LIBRARY})")
-  else()
-    message(WARNING "WITH_IO_URING requested but liburing was not found; "
-                    "falling back to the epoll reactor")
-  endif()
-endif()
 
 # Shared networking engine. The backends self-collapse on the platforms they do not
 # serve (IocpServer is #ifdef _WIN32, the reactor is #ifndef _WIN32), so they can all
@@ -198,22 +187,19 @@ source_group("Services" FILES ${SRC_GRP_SVC})
 set(SRC_GRP_UTILITIES
   Utilities/ByteBuffer.cpp
   Utilities/ByteBuffer.h
-  Utilities/ConsoleStyle.cpp
-  Utilities/ConsoleStyle.h
   Utilities/Errors.h
   Utilities/ProgressBar.cpp
+  Utilities/IdList.h
+  Utilities/MathDefines.h
+  Utilities/PackedValues.h
   Utilities/ProgressBar.h
   Utilities/ProgressBarRender.h
-  Utilities/StartupUI.cpp
-  Utilities/StartupUI.h
-  Utilities/StartupUIDemo.cpp
   Utilities/RNGen.h
   Utilities/ScheduledExit.cpp
   Utilities/ScheduledExit.h
   Utilities/Timer.h
   Utilities/Util.cpp
   Utilities/Util.h
-  Utilities/WorldPacket.h
   Utilities/ByteConverter.h
   Utilities/Callback.h
   Utilities/EventProcessor.cpp
@@ -222,7 +208,6 @@ set(SRC_GRP_UTILITIES
   Utilities/LinkedReference/RefManager.h
   Utilities/LinkedReference/Reference.h
   Utilities/TypeList.h
-  Utilities/UnorderedMapSet.h
 )
 source_group("Utilities" FILES ${SRC_GRP_UTILITIES})
 
@@ -230,6 +215,7 @@ set(TGT_INCL
   Auth
   Common
   Config
+  Console
   DataStores
   Database
   Linux
@@ -259,6 +245,7 @@ add_library(shared STATIC
     ${SRC_GRP_DYNAMIC}
     ${SRC_GRP_GAMESYSTEM}
     ${SRC_GRP_LOCKQ}
+    ${SRC_GRP_CONSOLE}
     ${SRC_GRP_LOG}
     ${SRC_GRP_NET}
     ${SRC_GRP_THREAD}

@@ -41,6 +41,10 @@
 
 
 
+#include "Utilities/Errors.h"
+#include <string>
+#include <vector>
+#include <cstdlib>
 #include "Object.h"
 #include "SharedDefines.h"
 #include "WorldPacket.h"
@@ -56,9 +60,9 @@
 #include "Util.h"
 #include "MapManager.h"
 #include "Transports.h"
+#include "TransportMap.h"
 #include "TargetedMovementGenerator.h"
 #include "WaypointMovementGenerator.h"
-#include "VMapFactory.h"
 #include "CellImpl.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
@@ -273,9 +277,29 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
                 ((Unit*)this)->m_movementInfo.RemoveMovementFlag(MOVEFLAG_ONTRANSPORT);
             }
 
-        // fall through to TYPEID_UNIT — unit must be set for UPDATEFLAG_LIVING
+        // fall through to TYPEID_UNIT -- unit must be set for UPDATEFLAG_LIVING
         case TYPEID_UNIT:
             unit = static_cast<Unit const*>(this);
+
+            // A CREATURE has no client to speak for it, so it is derived here, at the
+            // instant of writing, from the one thing that cannot fall out of step: the map
+            // it is on. Its position on a deck map already IS the offset -- nothing is
+            // composed.
+            if (Map* on = unit->GetMap())
+            {
+                if (TransportMap* hull = on->AsTransport())
+                {
+                    if (Transport* vessel = hull->Vessel())
+                    {
+                        MovementInfo& aboard = const_cast<Unit*>(unit)->m_movementInfo;
+                        aboard.AddMovementFlag(MOVEFLAG_ONTRANSPORT);
+                        aboard.SetTransportData(vessel->GetObjectGuid(), unit->Where().X(),
+                                                unit->Where().Y(), unit->Where().Z(),
+                                                unit->Where().Facing(), 0);
+                    }
+                }
+            }
+
             moveflags = unit->m_movementInfo.GetMovementFlags();
             break;
 
@@ -299,12 +323,12 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
 
             ObjectGuid const& targetGuid = unit->GetTargetGuid();
             std::string targetGuidString = targetGuid.IsEmpty() ? "none" : targetGuid.GetString();
-            GridPair gridPair = MaNGOS::ComputeGridPair(unit->GetPositionX(), unit->GetPositionY());
-            CellPair cellPair = MaNGOS::ComputeCellPair(unit->GetPositionX(), unit->GetPositionY());
+            GridPair gridPair = MaNGOS::ComputeGridPair(unit->Where().X(), unit->Where().Y());
+            CellPair cellPair = MaNGOS::ComputeCellPair(unit->Where().X(), unit->Where().Y());
 
             sLog.outError("[LivingWorld] spline-stall %s map=%u inst=%u pos=(%.2f,%.2f,%.2f o=%.2f) grid[%u,%u] cell[%u,%u] active-object=%s moveflags=0x%X movegen=%u in-combat=%s combat-timer=%u victim=%s target=%s",
                           unit->GetGuidStr().c_str(), unit->GetMapId(), unit->GetInstanceId(),
-                          unit->GetPositionX(), unit->GetPositionY(), unit->GetPositionZ(), unit->GetOrientation(),
+                          unit->Where().X(), unit->Where().Y(), unit->Where().Z(), unit->Where().Facing(),
                           gridPair.x_coord, gridPair.y_coord, cellPair.x_coord, cellPair.y_coord,
                           unit->IsActiveObject() ? "yes" : "no", uint32(moveflags),
                           uint32(const_cast<Unit*>(unit)->GetMotionMaster()->GetCurrentMovementGeneratorType()),
@@ -313,7 +337,11 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
             ((Unit*)this)->m_movementInfo.RemoveMovementFlag(MovementFlags(MOVEFLAG_SPLINE_ENABLED | MOVEFLAG_FORWARD));
         }
 
-        *data << unit->m_movementInfo;
+        // A boarded unit has no world position worth sending: the client places it from
+        // the vessel's own interpolated pose and the deck offset. A composed world
+        // coordinate here is a guess the client would have to discard -- and when it does
+        // not, the unit lands wherever the guess pointed.
+        unit->WriteMovementInfo(*data);
         // Unit speeds
         *data << float(unit->GetSpeed(MOVE_WALK));
         *data << float(unit->GetSpeed(MOVE_RUN));
@@ -329,10 +357,10 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
     }
     else if (updateFlags & UPDATEFLAG_HAS_POSITION)
     {
-        *data << ((WorldObject*)this)->GetPositionX();
-        *data << ((WorldObject*)this)->GetPositionY();
-        *data << ((WorldObject*)this)->GetPositionZ();
-        *data << ((WorldObject*)this)->GetOrientation();
+        *data << ((WorldObject*)this)->Where().X();
+        *data << ((WorldObject*)this)->Where().Y();
+        *data << ((WorldObject*)this)->Where().Z();
+        *data << ((WorldObject*)this)->Where().Facing();
     }
 
     if (updateFlags & UPDATEFLAG_HIGHGUID)
@@ -360,7 +388,19 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
     // 0x2
     if (updateFlags & UPDATEFLAG_TRANSPORT)
     {
-        *data << uint32(GameTime::GetGameTimeMS());           // ms time
+        // THE PHASE, not the clock. The client does not take the modulo itself: it wants
+        // how far along the route she is, and that is ours to compute. Hand it a raw wall
+        // clock and the hull stops animating altogether -- a dead ship, with everyone
+        // standing on her frozen too.
+        if (isType(TYPEMASK_GAMEOBJECT)
+            && ((GameObject*)this)->GetGoType() == GAMEOBJECT_TYPE_MO_TRANSPORT)
+        {
+            *data << uint32(((Transport*)this)->GetPathProgress());
+        }
+        else
+        {
+            *data << uint32(GameTime::GetGameTimeMS());       // ms time
+        }
     }
 }
 
@@ -625,7 +665,7 @@ bool Object::LoadValues(const char* data)
     int index;
     for (iter = tokens.begin(), index = 0; index < m_valuesCount; ++iter, ++index)
     {
-        m_uint32Values[index] = atol((*iter).c_str());
+        m_uint32Values[index] = std::strtoul((*iter).c_str(), NULL, 10);
     }
 
     return true;

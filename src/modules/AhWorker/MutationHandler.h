@@ -22,7 +22,8 @@
 #ifndef AH_WORKER_MUTATION_HANDLER_H
 #define AH_WORKER_MUTATION_HANDLER_H
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <ctime>
 #include "AuctionBook.h"
 #include "Journal.h"
 #include "PlayerMutations.h"

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include "GenericShamanStrategy.h"
 #include "MeleeShamanStrategy.h"
 

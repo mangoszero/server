@@ -1,3 +1,4 @@
+#include <list>
 #include "ActionBasket.h"
 
 #pragma once

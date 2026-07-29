@@ -25,6 +25,7 @@
 #include "Auth/HMACSHA1.h"
 #include "BigNumber.h"
 #include "Log/Log.h"
+#include "Utilities/Errors.h"
 
 #include <openssl/core_names.h>
 #include <openssl/params.h>

@@ -1,3 +1,4 @@
+#include <cmath>
 #include "PricingStrategy.h"
 #include "Category.h"
 #include "ItemBag.h"

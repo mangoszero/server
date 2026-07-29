@@ -26,6 +26,8 @@
 #ifndef _WARDENCHECKMGR_H
 #define _WARDENCHECKMGR_H
 
+#include <string>
+#include <list>
 #include <map>
 #include <shared_mutex>
 #include "BigNumber.h"

@@ -22,9 +22,11 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "Utilities/Errors.h"
+#include <sstream>
 #include "Corpse.h"
 #include "Player.h"
-#include "ObjectAccessor.h"
+#include "CorpseManager.h"
 #include "ObjectGuid.h"
 #include "Database/DatabaseEnv.h"
 #include "World.h"
@@ -66,7 +68,7 @@ void Corpse::AddToWorld()
     ///- Register the corpse for guid lookup
     if (!IsInWorld())
     {
-        sObjectAccessor.AddObject(this);
+        sCorpseManager.AddObject(this);
     }
 
     Object::AddToWorld();
@@ -80,7 +82,7 @@ void Corpse::RemoveFromWorld()
     ///- Remove the corpse from the accessor
     if (IsInWorld())
     {
-        sObjectAccessor.RemoveObject(this);
+        sCorpseManager.RemoveObject(this);
     }
 
     Object::RemoveFromWorld();
@@ -110,27 +112,27 @@ bool Corpse::Create(uint32 guidlow, Player* owner)
     MANGOS_ASSERT(owner);
 
     WorldObject::_Create(guidlow, HIGHGUID_CORPSE);
-    Relocate(owner->GetPositionX(), owner->GetPositionY(), owner->GetPositionZ(), owner->GetOrientation());
+    Place().MoveTo(owner->Where().X(), owner->Where().Y(), owner->Where().Z(), owner->Where().Facing());
 
     // we need to assign owner's map for corpse
     // in other way we will get a crash in Corpse::SaveToDB()
     SetMap(owner->GetMap());
 
-    if (!IsPositionValid())
+    if (!IsPlaceable(*this))
     {
         sLog.outError("Corpse (guidlow %d, owner %s) not created. Suggested coordinates isn't valid (X: %f Y: %f)",
-            guidlow, owner->GetName(), owner->GetPositionX(), owner->GetPositionY());
+            guidlow, owner->GetName(), owner->Where().X(), owner->Where().Y());
         return false;
     }
 
     SetObjectScale(DEFAULT_OBJECT_SCALE);
-    SetFloatValue(CORPSE_FIELD_POS_X, GetPositionX());
-    SetFloatValue(CORPSE_FIELD_POS_Y, GetPositionY());
-    SetFloatValue(CORPSE_FIELD_POS_Z, GetPositionZ());
-    SetFloatValue(CORPSE_FIELD_FACING, GetOrientation());
+    SetFloatValue(CORPSE_FIELD_POS_X, Where().X());
+    SetFloatValue(CORPSE_FIELD_POS_Y, Where().Y());
+    SetFloatValue(CORPSE_FIELD_POS_Z, Where().Z());
+    SetFloatValue(CORPSE_FIELD_FACING, Where().Facing());
     SetGuidValue(CORPSE_FIELD_OWNER, owner->GetObjectGuid());
 
-    m_grid = MaNGOS::ComputeGridPair(GetPositionX(), GetPositionY());
+    m_grid = MaNGOS::ComputeGridPair(Where().X(), Where().Y());
 
     return true;
 }
@@ -151,10 +153,10 @@ void Corpse::SaveToDB()
     ss  << "INSERT INTO `corpse` (`guid`,`player`,`position_x`,`position_y`,`position_z`,`orientation`,`map`,`time`,`corpse_type`,`instance`) VALUES ("
         << GetGUIDLow() << ", "
         << GetOwnerGuid().GetCounter() << ", "
-        << GetPositionX() << ", "
-        << GetPositionY() << ", "
-        << GetPositionZ() << ", "
-        << GetOrientation() << ", "
+        << Where().X() << ", "
+        << Where().Y() << ", "
+        << Where().Z() << ", "
+        << Where().Facing() << ", "
         << GetMapId() << ", "
         << uint64(m_time) << ", "
         << uint32(GetType()) << ", "
@@ -294,16 +296,16 @@ bool Corpse::LoadFromDB(uint32 lowguid, Field* fields)
     // place
     SetLocationInstanceId(instanceid);
     SetLocationMapId(mapid);
-    Relocate(positionX, positionY, positionZ, orientation);
+    Place().MoveTo(positionX, positionY, positionZ, orientation);
 
-    if (!IsPositionValid())
+    if (!IsPlaceable(*this))
     {
         sLog.outError("%s Owner %s not created. Suggested coordinates isn't valid (X: %f Y: %f)",
-            GetGuidStr().c_str(), GetOwnerGuid().GetString().c_str(), GetPositionX(), GetPositionY());
+            GetGuidStr().c_str(), GetOwnerGuid().GetString().c_str(), Where().X(), Where().Y());
         return false;
     }
 
-    m_grid = MaNGOS::ComputeGridPair(GetPositionX(), GetPositionY());
+    m_grid = MaNGOS::ComputeGridPair(Where().X(), Where().Y());
 
     return true;
 }
@@ -318,7 +320,7 @@ bool Corpse::LoadFromDB(uint32 lowguid, Field* fields)
  */
 bool Corpse::IsVisibleForInState(Player const* u, WorldObject const* viewPoint, bool inVisibleList) const
 {
-    return IsInWorld() && u->IsInWorld() && IsWithinDistInMap(viewPoint, GetMap()->GetVisibilityDistance() + (inVisibleList ? World::GetVisibleObjectGreyDistance() : 0.0f), false);
+    return IsInWorld() && u->IsInWorld() && InReach(*this, *viewPoint, GetMap()->GetVisibilityDistance() + (inVisibleList ? World::GetVisibleObjectGreyDistance() : 0.0f), false);
 }
 
 /**

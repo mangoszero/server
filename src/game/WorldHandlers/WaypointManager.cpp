@@ -22,6 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <set>
 #include "WaypointManager.h"
 #include "Database/DatabaseEnv.h"
 #include "GridDefines.h"
@@ -31,7 +32,6 @@
 #include "ObjectMgr.h"
 #include "ScriptMgr.h"
 
-INSTANTIATE_SINGLETON_1(WaypointManager);
 
 /**
  * If the emote, spell, model1, or model2 variables are not 0, then the function returns false.
@@ -188,7 +188,9 @@ void WaypointManager::Load()
 
                 if (result1)
                 {
-                    node.z = sTerrainMgr.LoadTerrain(result1->Fetch()[1].GetUInt32())->GetHeightStatic(node.x, node.y, node.z);
+                    const auto wpFloor = sTerrainMgr.LoadTerrain(result1->Fetch()[1].GetUInt32())
+                                            ->StaticFloor(node.x, node.y, node.z);
+                    node.z = wpFloor ? *wpFloor : node.z;
                     delete result1;
                 }
 

@@ -1,3 +1,5 @@
+#include <cmath>
+#include <list>
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "ConserveManaStrategy.h"

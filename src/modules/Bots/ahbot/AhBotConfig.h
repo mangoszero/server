@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <sstream>
+#include <set>
 #include "../../shared/Config/Config.h"
 
 using namespace std;

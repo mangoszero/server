@@ -22,7 +22,7 @@
 #ifndef AH_IPC_RELIABLE_H
 #define AH_IPC_RELIABLE_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "IpcOpcodes.h"
 
 /// [SP-2] True for mutation-class frames that must never be dropped under

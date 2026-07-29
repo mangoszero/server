@@ -37,6 +37,8 @@
  * with other players using the in-game currency.
  */
 
+#include "Common/Locales.h"
+#include <sstream>
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "Opcodes.h"

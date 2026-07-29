@@ -25,7 +25,9 @@
 #ifndef WORLD_PVP_MGR_H
 #define WORLD_PVP_MGR_H
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Common/TimeConstants.h"
+#include <map>
 #include "Timer.h"
 
 /**

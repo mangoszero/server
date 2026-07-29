@@ -87,7 +87,6 @@ void ObjectMgr::LoadGameObjects()
 
     BarGoLink bar(result->GetRowCount());
 
-    uint32 local_transports = 0;
     do
     {
         Field* fields = result->Fetch();
@@ -183,15 +182,9 @@ void ObjectMgr::LoadGameObjects()
             continue;
         }
 
-        if (gInfo->type != GAMEOBJECT_TYPE_TRANSPORT && gameEvent == 0 && GuidPoolId == 0 && EntryPoolId == 0) // if not this is to be managed by GameEvent System or Pool system
+        if (gameEvent == 0 && GuidPoolId == 0 && EntryPoolId == 0) // if not this is to be managed by GameEvent System or Pool system
         {
             AddGameobjectToGrid(guid, &data);
-        }
-
-        if (gInfo->type == GAMEOBJECT_TYPE_TRANSPORT)
-        {
-            m_localTransports.insert(LocalTransportGuidsOnMap::value_type(data.mapid, guid));
-            ++local_transports;
         }
     }
     while (result->NextRow());
@@ -200,7 +193,6 @@ void ObjectMgr::LoadGameObjects()
 
     sLog.outString();
     sLog.outString(">> Loaded %zu gameobjects", mGameObjectDataMap.size());
-    sLog.outString(">>> Loaded %u local transport objects", local_transports);
 }
 
 /**

@@ -24,6 +24,10 @@
 
 #Main Files
 set(SRC_GRP_MAIN
+  AntiFreezeService.cpp
+  AntiFreezeService.h
+  CliService.cpp
+  CliService.h
   MangosdTest.cpp
   MangosdTest.h
   Master.cpp
@@ -31,6 +35,7 @@ set(SRC_GRP_MAIN
   RASession.cpp
   RASession.h
   Service.h
+  AhService.h
   mangosd.cpp
 )
 source_group("Main" FILES ${SRC_GRP_MAIN})
@@ -38,6 +43,7 @@ source_group("Main" FILES ${SRC_GRP_MAIN})
 set(SRC_GRP_SOAP
   SOAP/SoapThread.cpp
   SOAP/SoapThread.h
+  SOAP/SoapService.h
 )
 source_group("SOAP" FILES ${SRC_GRP_SOAP})
 
@@ -72,11 +78,11 @@ target_compile_definitions(mangosd
 target_link_libraries(mangosd
     PRIVATE
         game
+        proto
         ah_ipc
         $<$<BOOL:${SOAP}>:gsoap>
         Threads::Threads
         mangos_openssl
-    PRIVATE
         mangos_openssl_strict
 )
 

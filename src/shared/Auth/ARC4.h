@@ -27,7 +27,7 @@
 #define _AUTH_SARC4_H
 
 #include <openssl/evp.h>
-#include "Common/Common.h"
+#include "Platform/Define.h"
 #include "OpenSSLProvider.h"
 
 /**
@@ -35,11 +35,6 @@
  *
  * ARC4 is a stream cipher that uses a key to generate a keystream.
  * This class provides ARC4 encryption and decryption functionality using OpenSSL.
- *
- * @note RC4 lives in OpenSSL's legacy provider. Loading it is the daemon's
- * job, done once at startup (see OpenSSLProviderManager in mangosd's main());
- * an ARC4 instance does not load it, so constructing one before that point
- * will fail to initialize the cipher.
  */
 class ARC4
 {

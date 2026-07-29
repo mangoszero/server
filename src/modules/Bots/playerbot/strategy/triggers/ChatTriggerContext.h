@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include "ChatCommandTrigger.h"
 
 namespace ai

@@ -25,11 +25,14 @@
 #ifndef MANGOS_H_SQLOPERATIONS
 #define MANGOS_H_SQLOPERATIONS
 
-#include "Common/Common.h"
+#include <utility>
+#include "Platform/Define.h"
+#include "Utilities/Util.h"
+#include <vector>
 
 #include "LockedQueue/LockedQueue.h"
-#include <queue>
 #include <future>
+#include <queue>
 #include "Utilities/Callback.h"
 
 /// ---- BASE ---
@@ -50,19 +53,31 @@ class SqlOperation
          * @brief
          *
          */
-        virtual void OnRemove()
-        {
-            delete this;
-        }
-
+        virtual void OnRemove() { delete this; }
         /**
          * @brief
          *
          * @param conn
          * @return bool
          */
-        virtual bool Execute(SqlConnection* conn) = 0;
+        /**
+         * @brief Run this operation, taking the connection's lock.
+         *
+         * Entry point for a standalone operation (i.e. from SqlDelayThread).
+         */
+        bool Execute(SqlConnection* conn);
 
+        /**
+         * @brief Run this operation with the connection's lock ALREADY held.
+         *
+         * SqlTransaction takes the lock once for the whole transaction and then runs
+         * each queued statement through here. That split is what lets a connection use
+         * a plain mutex: previously the transaction locked the connection and then every
+         * statement inside it locked the same connection again, which only worked because
+         * the mutex was recursive -- and would have deadlocked the first transaction the
+         * moment it stopped being.
+         */
+        virtual bool ExecuteLocked(SqlConnection* conn) = 0;
         /**
          * @brief
          *
@@ -87,24 +102,18 @@ class SqlPlainRequest : public SqlOperation
          * @param sql
          */
         SqlPlainRequest(const char* sql) : m_sql(mangos_strdup(sql)) {}
-
         /**
          * @brief
          *
          */
-        ~SqlPlainRequest()
-        {
-            char* tofree = const_cast<char*>(m_sql);
-            delete[] tofree;
-        }
-
+        ~SqlPlainRequest() { char* tofree = const_cast<char*>(m_sql); delete[] tofree; }
         /**
          * @brief
          *
          * @param conn
          * @return bool
          */
-        bool Execute(SqlConnection* conn) override;
+        bool ExecuteLocked(SqlConnection* conn) override;
 };
 
 /**
@@ -122,7 +131,6 @@ class SqlTransaction : public SqlOperation
          *
          */
         SqlTransaction() {}
-
         /**
          * @brief
          *
@@ -142,48 +150,7 @@ class SqlTransaction : public SqlOperation
          * @param conn
          * @return bool
          */
-        bool Execute(SqlConnection* conn) override;
-};
-
-/**
- * @brief Signalling wrapper that runs a SqlTransaction synchronously and
- *        reports its real result back to a blocked caller.
- *
- * Used by Database::CommitTransactionChecked() to push a transaction through
- * the SqlDelayThread (preserving FIFO order with all other async writes) while
- * the world thread blocks until the worker has durably committed it.
- *
- * The worker (SqlDelayThread::ProcessRequests) runs Execute() then deletes
- * this op. To make the result race-free, Execute() fulfils the caller's
- * std::promise<bool> BEFORE returning (and before the worker deletes us).
- *
- * @note Ownership: this op owns the wrapped SqlTransaction (detached from the
- *       TSS slot) and deletes it. The std::promise is owned by the (blocked)
- *       caller's stack frame and MUST outlive this op - guaranteed because the
- *       caller blocks on the matching std::future until set_value() has run.
- */
-class SqlTransactionResultSignal : public SqlOperation
-{
-    private:
-        SqlTransaction* m_trans;        ///< owned wrapped transaction
-        std::promise<bool>* m_result;   ///< caller-owned result channel
-    public:
-        /**
-         * @brief
-         *
-         * @param trans transaction detached from the TSS slot (this op owns it)
-         * @param result caller-owned promise; outlives this op (caller blocks)
-         */
-        SqlTransactionResultSignal(SqlTransaction* trans, std::promise<bool>* result)
-            : m_trans(trans), m_result(result) {}
-
-        /**
-         * @brief
-         *
-         * @param conn
-         * @return bool
-         */
-        bool Execute(SqlConnection* conn) override;
+        bool ExecuteLocked(SqlConnection* conn) override;
 };
 
 /**
@@ -200,7 +167,6 @@ class SqlPreparedRequest : public SqlOperation
          * @param arg
          */
         SqlPreparedRequest(int nIndex, SqlStmtParameters* arg);
-
         /**
          * @brief
          *
@@ -213,7 +179,7 @@ class SqlPreparedRequest : public SqlOperation
          * @param conn
          * @return bool
          */
-        bool Execute(SqlConnection* conn) override;
+        bool ExecuteLocked(SqlConnection* conn) override;
 
     private:
         const int m_nIndex; /**< TODO */
@@ -225,6 +191,26 @@ class SqlPreparedRequest : public SqlOperation
 class SqlQuery;                                             /// contains a single async query
 class QueryResult;                                          /// the result of one
 class SqlResultQueue;                                       /// queue for thread sync
+/**
+ * @brief A transaction that reports whether it actually committed.
+ *
+ * Owns the transaction detached from the TSS slot; the promise is owned by the caller,
+ * which is parked on the matching future and therefore outlives this operation.
+ */
+class SqlTransactionResultSignal : public SqlOperation
+{
+    private:
+        SqlTransaction* m_trans;        ///< owned wrapped transaction
+        std::promise<bool>* m_result;   ///< caller-owned result channel
+
+    public:
+
+        SqlTransactionResultSignal(SqlTransaction* trans, std::promise<bool>* result)
+            : m_trans(trans), m_result(result) {}
+
+        bool ExecuteLocked(SqlConnection* conn) override;
+};
+
 class SqlQueryHolder;                                       /// groups several async quries
 class SqlQueryHolderEx;                                     /// points to a holder, added to the delay thread
 
@@ -232,7 +218,7 @@ class SqlQueryHolderEx;                                     /// points to a hold
  * @brief
  *
  */
-class SqlResultQueue : public MaNGOS::LockedQueue<MaNGOS::IQueryCallback* >
+class SqlResultQueue : public MaNGOS::LockedQueue<MaNGOS::IQueryCallback*>
 {
     public:
         /**
@@ -240,7 +226,6 @@ class SqlResultQueue : public MaNGOS::LockedQueue<MaNGOS::IQueryCallback* >
          *
          */
         SqlResultQueue() {}
-
         /**
          * @brief
          *
@@ -268,24 +253,18 @@ class SqlQuery : public SqlOperation
          */
         SqlQuery(const char* sql, MaNGOS::IQueryCallback* callback, SqlResultQueue* queue)
             : m_sql(mangos_strdup(sql)), m_callback(callback), m_queue(queue) {}
-
         /**
          * @brief
          *
          */
-        ~SqlQuery()
-        {
-            char* tofree = const_cast<char*>(m_sql);
-            delete[] tofree;
-        }
-
+        ~SqlQuery() { char* tofree = const_cast<char*>(m_sql); delete[] tofree; }
         /**
          * @brief
          *
          * @param conn
          * @return bool
          */
-        bool Execute(SqlConnection* conn) override;
+        bool ExecuteLocked(SqlConnection* conn) override;
 };
 
 /**
@@ -294,8 +273,7 @@ class SqlQuery : public SqlOperation
  */
 class SqlQueryHolder
 {
-    friend class SqlQueryHolderEx;
-
+        friend class SqlQueryHolderEx;
     private:
         /**
          * @brief
@@ -304,19 +282,16 @@ class SqlQueryHolder
         typedef std::pair<const char*, QueryResult*> SqlResultPair;
         std::vector<SqlResultPair> m_queries; /**< TODO */
     public:
-
         /**
          * @brief
          *
          */
         SqlQueryHolder() {}
-
         /**
          * @brief
          *
          */
         ~SqlQueryHolder();
-
         /**
          * @brief
          *
@@ -325,7 +300,6 @@ class SqlQueryHolder
          * @return bool
          */
         bool SetQuery(size_t index, const char* sql);
-
         /**
          * @brief
          *
@@ -334,14 +308,12 @@ class SqlQueryHolder
          * @return bool
          */
         bool SetPQuery(size_t index, const char* format, ...) ATTR_PRINTF(3, 4);
-
         /**
          * @brief
          *
          * @param size
          */
         void SetSize(size_t size);
-
         /**
          * @brief
          *
@@ -349,7 +321,6 @@ class SqlQueryHolder
          * @return QueryResult
          */
         QueryResult* GetResult(size_t index);
-
         /**
          * @brief
          *
@@ -357,7 +328,6 @@ class SqlQueryHolder
          * @param result
          */
         void SetResult(size_t index, QueryResult* result);
-
         /**
          * @brief
          *
@@ -389,13 +359,12 @@ class SqlQueryHolderEx : public SqlOperation
          */
         SqlQueryHolderEx(SqlQueryHolder* holder, MaNGOS::IQueryCallback* callback, SqlResultQueue* queue)
             : m_holder(holder), m_callback(callback), m_queue(queue) {}
-
         /**
          * @brief
          *
          * @param conn
          * @return bool
          */
-        bool Execute(SqlConnection* conn) override;
+        bool ExecuteLocked(SqlConnection* conn) override;
 };
 #endif                                                      //__SQLOPERATIONS_H

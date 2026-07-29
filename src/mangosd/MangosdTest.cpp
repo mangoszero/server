@@ -1,3 +1,5 @@
+#include "Utilities/Errors.h"
+#include <vector>
 #include "MangosdTest.h"
 #include "Log.h"
 #include "Database/DatabaseEnv.h"
@@ -120,7 +122,7 @@ static int RunCommitTest()
 
     // (c) Post-rollback TSS cleanliness: the false-returning rollback path above
     // must still have detached the transaction from the TSS slot. If it left a
-    // residue, this third BeginTransaction() would trip MANGOS_ASSERT(!m_pTrans)
+    // residue, this third BeginTransaction() would trip MANGOS_ASSERT(!m_pTrans);
     // in TransHelper::init(); a clean detach lets a fresh checked commit succeed
     // and land its row.
     CharacterDatabase.BeginTransaction();

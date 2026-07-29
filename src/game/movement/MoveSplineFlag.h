@@ -25,6 +25,7 @@
 #ifndef MANGOSSERVER_MOVESPLINEFLAG_H
 #define MANGOSSERVER_MOVESPLINEFLAG_H
 
+#include <string>
 #include "typedefs.h"
 namespace Movement
 {

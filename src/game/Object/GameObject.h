@@ -51,7 +51,11 @@
 #ifndef MANGOSSERVER_GAMEOBJECT_H
 #define MANGOSSERVER_GAMEOBJECT_H
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Common/TimeConstants.h"
+#include <ctime>
+#include <string>
+#include <vector>
 #include "SharedDefines.h"
 #include "Object.h"
 #include "LootMgr.h"
@@ -598,10 +602,10 @@ enum CapturePointSliderValue
 class Unit;
 class GameObjectModel;
 
-namespace G3D
+namespace Geometry
 {
     class Quat;
-};
+}
 
 struct GameObjectDisplayInfoEntry;
 
@@ -634,9 +638,8 @@ class GameObject : public WorldObject
         bool HasStaticDBSpawnData() const;                  // listed in `gameobject` table and have fixed in DB guid
 
         // rotation methods
-        void GetQuaternion(G3D::Quat& q) const;
-        void SetQuaternion(G3D::Quat const& q);
-        float GetOrientationFromQuat(G3D::Quat const& q);
+        void GetQuaternion(Geometry::Quat& q) const;
+        void SetQuaternion(Geometry::Quat const& q);
 
         void SetDisplayId(uint32 model_id);
 
@@ -718,7 +721,7 @@ class GameObject : public WorldObject
         void SendGameObjectCustomAnim(uint32 animId = 0);
         void SendGameObjectReset();
 
-        float GetObjectBoundingRadius() const override;     // overwrite WorldObject version
+        float ComputeBoundingRadius() const override;     // overwrite WorldObject version
 
         void Use(Unit* user);
 

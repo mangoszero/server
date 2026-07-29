@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ObjectAccessor.h"
+#include "ObjectLookup.h"
 #include "MovementActions.h"
 
 namespace ai

@@ -25,7 +25,8 @@
 #ifndef MANGOS_H_SPELLCOOLDOWNMGR
 #define MANGOS_H_SPELLCOOLDOWNMGR
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <ctime>
 #include <map>
 
 class Player;

@@ -32,10 +32,12 @@
  * - Player state control
  */
 
+#include <string>
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "World.h"
 #include "Mail.h"
+#include "PlayerRegistry.h"
 
 /**********************************************************************
  CommandTable : commandTable
@@ -303,7 +305,7 @@ bool ChatHandler::HandleResetAllCommand(char* args)
     }
 
     CharacterDatabase.PExecute("UPDATE `characters` SET `at_login` = `at_login` | '%u' WHERE (`at_login` & '%u') = '0'", atLogin, atLogin);
-    sObjectAccessor.DoForAllPlayers([&atLogin](Player* plr) { plr->SetAtLoginFlag(atLogin); });
+    sPlayerRegistry.ForEach([&atLogin](Player* plr) { plr->SetAtLoginFlag(atLogin); });
     return true;
 }
 

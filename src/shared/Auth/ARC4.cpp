@@ -38,6 +38,9 @@
 #include "ARC4.h"
 #include "OpenSSLProvider.h"
 #include "Log/Log.h"
+#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
+#include <openssl/provider.h>
+#endif
 
 /**
  * @brief Construct ARC4 cipher with specified key length
@@ -46,26 +49,38 @@
  * Creates an ARC4 cipher context with the specified key length.
  * The key itself is not set in this constructor - use Init() to set it.
  *
- * @note Requires the OpenSSL legacy provider, which the daemon loads once at
- * startup; see the note on the class.
+ * @note On OpenSSL 3.x, this automatically initializes the legacy provider
+ * required for ARC4 support.
  */
 ARC4::ARC4(uint8 len) : m_cipherContext()
 {
+#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
+    // RC4 lives in the legacy provider, so it has to be loaded before EVP_rc4().
+    if (!OpenSSLProviderManager::Instance().IsInitialized())
+    {
+        sLog.outError("ARC4: Failed to initialize OpenSSL providers");
+        return;
+    }
+#endif
+
     if (!m_cipherContext.IsValid())
     {
         sLog.outError("ARC4: Failed to create cipher context");
         return;
     }
 
-    // RC4 is only supplied by the legacy provider, so this is where a daemon
-    // that never loaded it finds out.
+    // Checked, not assumed: a loaded provider does not mean the cipher was fetched.
     if (EVP_EncryptInit_ex(m_cipherContext.Get(), EVP_rc4(), NULL, NULL, NULL) != 1)
     {
         sLog.outError("ARC4: Failed to initialize RC4 - is the OpenSSL legacy provider loaded?");
         return;
     }
 
-    EVP_CIPHER_CTX_set_key_length(m_cipherContext.Get(), len);
+    if (EVP_CIPHER_CTX_set_key_length(m_cipherContext.Get(), len) != 1)
+    {
+        sLog.outError("ARC4: Failed to set the RC4 key length");
+        return;
+    }
 }
 
 /**
@@ -77,33 +92,50 @@ ARC4::ARC4(uint8 len) : m_cipherContext()
  * The cipher is ready to use for encryption/decryption immediately after
  * construction.
  *
- * @note Requires the OpenSSL legacy provider, which the daemon loads once at
- * startup; see the note on the class.
+ * @note On OpenSSL 3.x, this automatically initializes the legacy provider
+ * required for ARC4 support.
  */
 ARC4::ARC4(uint8 *seed, uint8 len) : m_cipherContext()
 {
+#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
+    // RC4 lives in the legacy provider, so it has to be loaded before EVP_rc4().
+    if (!OpenSSLProviderManager::Instance().IsInitialized())
+    {
+        sLog.outError("ARC4: Failed to initialize OpenSSL providers");
+        return;
+    }
+#endif
+
     if (!m_cipherContext.IsValid())
     {
         sLog.outError("ARC4: Failed to create cipher context");
         return;
     }
 
-    // RC4 is only supplied by the legacy provider, so this is where a daemon
-    // that never loaded it finds out.
+    // Checked, not assumed: a loaded provider does not mean the cipher was fetched.
     if (EVP_EncryptInit_ex(m_cipherContext.Get(), EVP_rc4(), NULL, NULL, NULL) != 1)
     {
         sLog.outError("ARC4: Failed to initialize RC4 - is the OpenSSL legacy provider loaded?");
         return;
     }
 
-    EVP_CIPHER_CTX_set_key_length(m_cipherContext.Get(), len);
-    EVP_EncryptInit_ex(m_cipherContext.Get(), NULL, NULL, seed, NULL);
+    if (EVP_CIPHER_CTX_set_key_length(m_cipherContext.Get(), len) != 1)
+    {
+        sLog.outError("ARC4: Failed to set the RC4 key length");
+        return;
+    }
+
+    if (EVP_EncryptInit_ex(m_cipherContext.Get(), NULL, NULL, seed, NULL) != 1)
+    {
+        sLog.outError("ARC4: Failed to seed RC4");
+    }
 }
 
 /**
  * @brief Destructor for ARC4 cipher
  *
- * All cleanup is handled automatically by the OpenSSLCipherContext RAII wrapper.
+ * All cleanup is handled automatically by the RAII wrappers
+ * (OpenSSLProviderManager and OpenSSLCipherContext).
  */
 ARC4::~ARC4()
 {

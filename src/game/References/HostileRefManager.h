@@ -25,7 +25,7 @@
 #ifndef _HOSTILEREFMANAGER
 #define _HOSTILEREFMANAGER
 
-#include "Common.h"
+#include "Platform/Define.h"
 #if !defined(CLASSIC)
 #include "ObjectGuid.h"
 #endif

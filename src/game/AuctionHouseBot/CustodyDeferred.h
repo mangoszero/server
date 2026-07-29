@@ -52,7 +52,7 @@
 #ifndef MANGOS_CUSTODY_DEFERRED_H
 #define MANGOS_CUSTODY_DEFERRED_H
 
-#include "Common.h"                                         // uint8/uint32/uint64 typedefs
+#include "Platform/Define.h"
 
 #include <functional>
 #include <vector>

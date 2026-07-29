@@ -39,7 +39,9 @@
  * @see LFGQueue for matching algorithm
  */
 
-#include "Common.h"
+#include <set>
+#include <string>
+#include "Platform/Define.h"
 #include "WorldPacket.h"
 #include "Opcodes.h"
 #include "Log.h"

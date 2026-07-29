@@ -22,7 +22,7 @@
 #ifndef AH_IPC_PLAYER_MUTATIONS_H
 #define AH_IPC_PLAYER_MUTATIONS_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "Utilities/ByteBuffer.h"
 
 /**

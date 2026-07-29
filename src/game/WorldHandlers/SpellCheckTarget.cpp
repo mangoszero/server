@@ -64,18 +64,17 @@
 #include "Group.h"
 #include "UpdateData.h"
 #include "MapManager.h"
-#include "ObjectAccessor.h"
 #include "CellImpl.h"
 #include "Policies/Singleton.h"
 #include "SharedDefines.h"
 #include "LootMgr.h"
-#include "VMapFactory.h"
 #include "BattleGround/BattleGround.h"
 #include "Util.h"
 #include "Chat.h"
 #include "TemporarySummon.h"
 #include "SQLStorages.h"
 #include "DisableMgr.h"
+#include "Corpse.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -216,7 +215,7 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
                 // fall through
             case SPELL_EFFECT_RESURRECT_NEW:
                 // player far away, maybe his corpse near?
-                if (target != m_caster && !target->IsWithinLOSInMap(m_caster))
+                if (target != m_caster && !HasLineOfSight(*target, *m_caster))
                 {
                     if (!m_targets.getCorpseTargetGuid())
                     {
@@ -234,7 +233,7 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
                         return false;
                     }
 
-                    if (!corpse->IsWithinLOSInMap(m_caster))
+                    if (!HasLineOfSight(*corpse, *m_caster))
                     {
                         return false;
                     }
@@ -249,7 +248,7 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
                 {
                     if (WorldObject* caster = GetCastingObject())
                     {
-                        if (!target->IsWithinLOSInMap(caster))
+                        if (!HasLineOfSight(*target, *caster))
                         {
                             return false;
                         }

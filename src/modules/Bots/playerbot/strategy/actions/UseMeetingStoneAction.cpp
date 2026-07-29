@@ -1,3 +1,5 @@
+#include "Utilities/MathDefines.h"
+#include <cmath>
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "UseMeetingStoneAction.h"

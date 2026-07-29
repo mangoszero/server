@@ -27,6 +27,10 @@
 
 #include "Define.h"
 
+// Included here rather than in GitRevision.cpp on purpose: this header is the
+// one place the generated revision_data.h is meant to be reached through, so
+// that the ~40 translation units that merely want a version string do not each
+// take a dependency on a file the build regenerates.
 #include "revision_data.h"
 
 namespace GitRevision

@@ -1,4 +1,5 @@
 #include "botpch.h"
+#include "ObjectLookup.h"
 #include "../../playerbot.h"
 #include "CcReachTargetValue.h"
 
@@ -11,7 +12,7 @@ Unit* CcReachTargetValue::Get()
         return NULL;
     }
 
-    return sObjectAccessor.GetUnit(*bot, selection);
+    return ObjectLookup::GetUnit(*bot, selection);
 }
 
 void CcReachTargetValue::Set(Unit* unit)

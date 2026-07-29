@@ -24,6 +24,7 @@
 
 
 
+#include "Utilities/MathDefines.h"
 #include "Unit.h"
 #include "Log.h"
 #include "Opcodes.h"
@@ -40,7 +41,6 @@
 #include "Group.h"
 #include "SpellAuras.h"
 #include "MapManager.h"
-#include "ObjectAccessor.h"
 #include "CreatureAI.h"
 #include "TemporarySummon.h"
 #include "Formulas.h"
@@ -53,7 +53,6 @@
 #include "MapPersistentStateMgr.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
-#include "VMapFactory.h"
 #include "MovementGenerator.h"
 #include "movement/MoveSplineInit.h"
 #include "movement/MoveSpline.h"
@@ -83,7 +82,7 @@
  */
 bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, bool detect, bool inVisibleList, bool is3dDistance) const
 {
-    if (!u || !IsInMap(u))
+    if (!u || !Where().ShareFrame(u->Where()))
     {
         return false;
     }
@@ -143,7 +142,7 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
     if (u->IsTaxiFlying())                                  // what see player in flight
     {
         // use object grey distance for all (only see objects any way)
-        if (!IsWithinDistInMap(viewPoint, World::GetMaxVisibleDistanceInFlight() + (inVisibleList ? World::GetVisibleObjectGreyDistance() : 0.0f), is3dDistance))
+        if (!InReach(*this, *viewPoint, World::GetMaxVisibleDistanceInFlight() + (inVisibleList ? World::GetVisibleObjectGreyDistance() : 0.0f), is3dDistance))
         {
             return false;
         }
@@ -159,7 +158,7 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
         }
 
         // Any units far than max visible distance for viewer or not in our map are not visible too
-        if (!IsWithinDistInMap(viewPoint, visibilityDistance + (inVisibleList ? World::GetVisibleUnitGreyDistance() : 0.0f), is3dDistance))
+        if (!InReach(*this, *viewPoint, visibilityDistance + (inVisibleList ? World::GetVisibleUnitGreyDistance() : 0.0f), is3dDistance))
         {
             return false;
         }
@@ -285,7 +284,7 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
     }
 
     // If there is collision rogue is seen regardless of level difference
-    if (IsWithinDist(u, 0.24f))
+    if (Where().WithinDist(u->Where(), 0.24f))
     {
         return true;
     }
@@ -300,7 +299,7 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
     float visibleDistance = (u->GetTypeId() == TYPEID_PLAYER) ? MAX_PLAYER_STEALTH_DETECT_RANGE : ((Creature const*)u)->GetAttackDistance(this);
 
     // Always invisible from back (when stealth detection is on), also filter max distance cases
-    bool IsInFront = viewPoint->IsInFrontInMap(this, visibleDistance);
+    bool IsInFront = InFrontPhased(*viewPoint, *this, visibleDistance, M_PI_F);
     if (!IsInFront)
     {
         return false;
@@ -328,15 +327,17 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
     visibleDistance = visibleDistance > MAX_PLAYER_STEALTH_DETECT_RANGE ? MAX_PLAYER_STEALTH_DETECT_RANGE : visibleDistance;
 
     // recheck new distance
-    if (visibleDistance <= 0 || !IsWithinDist(viewPoint, visibleDistance))
+    if (visibleDistance <= 0 || !Where().WithinDist(viewPoint->Where(), visibleDistance))
     {
         return false;
     }
 
     // Now check is target visible with LoS
     float ox, oy, oz;
-    viewPoint->GetPosition(ox, oy, oz);
-    return IsWithinLOS(ox, oy, oz);
+    ox = viewPoint->Where().X();
+    oy = viewPoint->Where().Y();
+    oz = viewPoint->Where().Z();
+    return HasLineOfSight(*this, Geometry::Vector3(ox, oy, oz));
 }
 
 /**

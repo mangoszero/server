@@ -1775,6 +1775,21 @@ enum CreatureTypeFlags
     CREATURE_TYPEFLAGS_ENGINEERLOOT     = 0x00008000,       // Can be looted by engineer
 };
 
+/**
+ * @brief A CREATURE CARRYING BOTH OF THESE MAY NOT SAIL.
+ *
+ * Set together, they kill every client that can see the creature the moment the transport it
+ * stands on gets under way -- in the client's own render path. Stationary nothing happens: a
+ * transport's attachments are only walked while it moves. BOTH are required; either bit
+ * alone sailed with no complaint.
+ *
+ * 1.12's enum above names nothing past 0x8000, so these are spelled as the raw bits they
+ * are. The pair was proven fatal on 3.3.5a and no vanilla template is known to carry it --
+ * the refusal costs nothing and is here so a template ported in cannot bring the crash with
+ * it. See TransportMap::EnlistCrew.
+ */
+#define CREATURE_TYPEFLAGS_TRANSPORT_FORBIDDEN     0x00500000
+
 enum CreatureEliteType
 {
     CREATURE_ELITE_NORMAL          = 0,

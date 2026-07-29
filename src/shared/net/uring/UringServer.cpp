@@ -26,6 +26,7 @@
 #define _GNU_SOURCE // accept4(), SOCK_CLOEXEC
 #endif
 
+#include <queue>
 #include "net/uring/UringServer.hpp"
 
 #include "net/BindAddress.hpp"
@@ -152,6 +153,9 @@ void UringServer::stop() {
 
 void UringServer::acceptLoop() {
     while (true) {
+        // The peer address is captured here or not at all: IOCP and the epoll reactor
+        // both call setPeerAddress(), and a session without it leaves anything keyed on
+        // the client IP -- logging, bans -- with nothing to work with.
         sockaddr_in peer{};
         socklen_t peerLen = sizeof(peer);
         int cfd = ::accept4(m_listen, reinterpret_cast<sockaddr*>(&peer),
@@ -167,7 +171,6 @@ void UringServer::acceptLoop() {
             ::close(cfd);
             continue;
         }
-
         int one = 1;
         ::setsockopt(cfd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 

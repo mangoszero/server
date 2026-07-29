@@ -33,6 +33,7 @@
  * - Shutdown and restart operations
  */
 
+#include <string>
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "World.h"
@@ -41,6 +42,7 @@
 #include "SystemConfig.h"
 #include "UpdateTime.h"
 #include "revision_data.h"
+#include "CorpseManager.h"
 
 /**
  * @brief Handler for HandleServerInfoCommand command.
@@ -422,7 +424,7 @@ bool ChatHandler::HandleServerLogLevelCommand(char* args)
  */
 bool ChatHandler::HandleServerCorpsesCommand(char* /*args*/)
 {
-    sObjectAccessor.RemoveOldCorpses();
+    sCorpseManager.RemoveOldCorpses();
     return true;
 }
 

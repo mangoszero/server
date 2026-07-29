@@ -1,4 +1,5 @@
 #pragma once
+#include <list>
 #include "Action.h"
 #include "Multiplier.h"
 #include "Trigger.h"

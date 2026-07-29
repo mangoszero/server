@@ -25,7 +25,12 @@
 #ifndef MANGOS_H_BYTEBUFFER
 #define MANGOS_H_BYTEBUFFER
 
-#include "Common/Common.h"
+#include "Platform/Define.h"
+#include <cstring>
+#include <string>
+#include <vector>
+#include <map>
+#include <list>
 #include "Utilities/ByteConverter.h"
 #include "Utilities/Errors.h"
 
@@ -676,7 +681,18 @@ class ByteBuffer
          *
          * @return const uint8
          */
-        const uint8* contents() const { return &_storage[0]; }
+        /**
+         * @brief Pointer to the buffer's bytes.
+         *
+         * Returns nullptr when the buffer is empty. The old form was
+         * `&_storage[0]`, which indexes element zero of a possibly empty vector --
+         * undefined behaviour, and in a debug STL an outright assertion. Plenty of
+         * packets are pure opcodes with no payload at all, so this was reachable,
+         * not theoretical. data() is defined for empty vectors.
+         *
+         * @return const uint8* Buffer bytes, or nullptr if empty.
+         */
+        const uint8* contents() const { return _storage.data(); }
 
         /**
          * @brief

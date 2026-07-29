@@ -25,12 +25,10 @@
 #ifndef MANGOS_GRID_H
 #define MANGOS_GRID_H
 
+#include <unordered_set>
 #include "Platform/Define.h"
 #include "TypeContainer.h"
 #include "TypeContainerVisitor.h"
-
-// forward declaration
-template<class A, class T, class O> class GridLoader;
 
 /**
  * @brief Grid is a logical segment of the game world represented inside MaNGOS.
@@ -44,15 +42,11 @@ template<class A, class T, class O> class GridLoader;
  */
 
 template <typename ACTIVE_OBJECT, typename WORLD_CONTAINER, typename GRID_CONTAINER>
-    class Grid
+class Grid
 {
-    // allows the GridLoader to access its internals
-    template<class A, class T, class O> friend class GridLoader;
-
     public:
 
         template<class SPECIFIC_OBJECT>
-
         /**
          * @brief an object of interested enters the grid
          *
@@ -65,7 +59,6 @@ template <typename ACTIVE_OBJECT, typename WORLD_CONTAINER, typename GRID_CONTAI
         }
 
         template<class SPECIFIC_OBJECT>
-
         /**
          * @brief an object of interested exits the grid
          *
@@ -78,7 +71,6 @@ template <typename ACTIVE_OBJECT, typename WORLD_CONTAINER, typename GRID_CONTAI
         }
 
         template<class SPECIFIC_OBJECT>
-
         /**
          * @brief Inserts a container type object into the grid.
          *
@@ -96,7 +88,6 @@ template <typename ACTIVE_OBJECT, typename WORLD_CONTAINER, typename GRID_CONTAI
         }
 
         template<class SPECIFIC_OBJECT>
-
         /**
          * @brief Removes a container type object from the grid
          *
@@ -114,13 +105,13 @@ template <typename ACTIVE_OBJECT, typename WORLD_CONTAINER, typename GRID_CONTAI
         }
 
         template<class T>
-            void Visit(TypeContainerVisitor<T, GRID_CONTAINER>& visitor)
+        void Visit(TypeContainerVisitor<T, GRID_CONTAINER>& visitor)
         {
             visitor.Visit(i_gridContainer);
         }
 
         template<class T>
-            void Visit(TypeContainerVisitor<T, WORLD_CONTAINER>& visitor)
+        void Visit(TypeContainerVisitor<T, WORLD_CONTAINER>& visitor)
         {
             visitor.Visit(i_worldContainer);
         }
@@ -133,7 +124,7 @@ template <typename ACTIVE_OBJECT, typename WORLD_CONTAINER, typename GRID_CONTAI
     private:
         GRID_CONTAINER  i_gridContainer;
         WORLD_CONTAINER i_worldContainer;
-        std::set<void*> m_activeGridObjects;
+        std::unordered_set<const void*> m_activeGridObjects;
 };
 
 #endif

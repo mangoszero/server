@@ -48,7 +48,7 @@
 #ifndef MANGOS_H_BATTLEGROUNDAV
 #define MANGOS_H_BATTLEGROUNDAV
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "BattleGround.h"
 
 #define BG_AV_MAX_NODE_DISTANCE             25              // distance in which players are still counted in range of a banner (for alliance towers this is calculated from the center of the tower)

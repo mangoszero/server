@@ -44,6 +44,11 @@
  * @see Map for individual map implementation
  */
 
+#include "Utilities/Errors.h"
+#include <cassert>
+#include <functional>
+#include <set>
+#include <mutex>
 #include "MapManager.h"
 #include "MapPersistentStateMgr.h"
 #include "Policies/Singleton.h"
@@ -281,8 +286,17 @@ void MapManager::Update(uint32 diff)
         return;
     }
 
+    // The world's maps, in parallel, each owning its own grid. A vessel's deck is NOT
+    // among them: it belongs to the vessel, which runs it nested inside the tick of the
+    // map it sails, once that map has finished with its own containers. There is no second
+    // pass and no barrier between them, because there are no longer two of anything.
     for (MapMapType::iterator iter=i_maps.begin(); iter != i_maps.end(); ++iter)
     {
+        if (iter->second->AsTransport())
+        {
+            continue;
+        }
+
         if (m_updater.activated())
         {
             m_updater.schedule_update(*iter->second, (uint32)i_timer.GetCurrent());
@@ -298,10 +312,16 @@ void MapManager::Update(uint32 diff)
         m_updater.wait();
     }
 
-    for (TransportSet::iterator iter = m_Transports.begin(); iter != m_Transports.end(); ++iter)
+    // PAST THE BARRIER, WHERE NO MAP IS RUNNING. A vessel that reached the end of one world
+    // map decided so on that map's thread, and could go no further there: arriving writes
+    // into the destination's active list, object store and player list, and the destination
+    // may have been updating on another core at that very moment. Here nothing is.
+    for (TransportSet::iterator i = m_Transports.begin(); i != m_Transports.end(); ++i)
     {
-        WorldObject::UpdateHelper helper((*iter));
-        helper.Update((uint32)i_timer.GetCurrent());
+        if ((*i)->IsCrossing())
+        {
+            (*i)->CompleteCrossing();
+        }
     }
 
     // remove all maps which can be unloaded
@@ -309,6 +329,15 @@ void MapManager::Update(uint32 diff)
     while (iter != i_maps.end())
     {
         Map* pMap = iter->second;
+
+        // A deck outlives every voyage: it is loaded once and never unloaded, because no
+        // player ever "enters" it to keep it awake and its crew have nowhere else to be.
+        if (pMap->AsTransport())
+        {
+            ++iter;
+            continue;
+        }
+
         // check if map can be unloaded
         if (pMap->CanUnload((uint32)i_timer.GetCurrent()))
         {
@@ -352,7 +381,7 @@ bool MapManager::ExistMapAndVMap(uint32 mapid, float x, float y)
     int gx = 63 - p.x_coord;
     int gy = 63 - p.y_coord;
 
-    return GridMap::ExistMap(mapid, gx, gy) && GridMap::ExistVMap(mapid, gx, gy);
+    return TerrainInfo::ExistTile(mapid, gx, gy);
 }
 
 /**
@@ -602,11 +631,6 @@ MapManager::LivingWorldStartupStats MapManager::LoadContinents()
  */
 void MapManager::LoadActiveEntities(Map* m)
 {
-    // Create all local transporters for this map
-    m->LoadLocalTransports();
-
-    uint32 localTransportCount = uint32(m->GetLocalTransports().size());
-
     bool forceLoad = sWorld.isForceLoadMap(m->GetId());
 
     uint32 forceLoadRequests = 0;
@@ -681,7 +705,6 @@ void MapManager::LoadActiveEntities(Map* m)
         // Accumulate to startup totals
         s_livingWorldStats.totalUniqueGrids += uniqueGridCount;
         s_livingWorldStats.totalNewlyLoaded += newlyLoaded;
-        s_livingWorldStats.totalLocalTransports += localTransportCount;
         if (forceLoad)
         {
             ++s_livingWorldStats.forcedMaps;
@@ -690,13 +713,13 @@ void MapManager::LoadActiveEntities(Map* m)
         // Per-map summary (O(1) log volume)
         if (forceLoad)
         {
-            sLog.outString("[LivingWorld] map %u: force-load=ON, creature-rows=%u, ForceLoadGrid-requests=%u, unique-grids=%u, newly-loaded=%u (explicit-locks-set), already-loaded=%u, extra-active-creatures=%u, local-transports=%u",
-                m->GetId(), forceLoadRequests, forceLoadRequests, uniqueGridCount, newlyLoaded, alreadyLoaded, activeCreatureGuids, localTransportCount);
+            sLog.outString("[LivingWorld] map %u: force-load=ON, creature-rows=%u, ForceLoadGrid-requests=%u, unique-grids=%u, newly-loaded=%u (explicit-locks-set), already-loaded=%u, extra-active-creatures=%u",
+                m->GetId(), forceLoadRequests, forceLoadRequests, uniqueGridCount, newlyLoaded, alreadyLoaded, activeCreatureGuids);
         }
         else
         {
-            sLog.outString("[LivingWorld] map %u: force-load=OFF, extra-active-creatures=%u, ForceLoadGrid-requests=%u, unique-grids=%u, newly-loaded=%u (explicit-locks-set), already-loaded=%u, local-transports=%u",
-                m->GetId(), activeCreatureGuids, forceLoadRequests, uniqueGridCount, newlyLoaded, alreadyLoaded, localTransportCount);
+            sLog.outString("[LivingWorld] map %u: force-load=OFF, extra-active-creatures=%u, ForceLoadGrid-requests=%u, unique-grids=%u, newly-loaded=%u (explicit-locks-set), already-loaded=%u",
+                m->GetId(), activeCreatureGuids, forceLoadRequests, uniqueGridCount, newlyLoaded, alreadyLoaded);
         }
     }
 }

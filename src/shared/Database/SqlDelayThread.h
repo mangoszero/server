@@ -38,17 +38,26 @@ class SqlConnection;
  */
 class SqlDelayThread : public MaNGOS::Runnable
 {
-    /**
-     * @brief
-     *
-     */
-    typedef MaNGOS::LockedQueue<SqlOperation*> SqlQueue;
+        /**
+         * @brief
+         *
+         */
+        typedef MaNGOS::LockedQueue<SqlOperation*> SqlQueue;
 
     private:
         SqlQueue m_sqlQueue;                                /**< Queue of SQL statements */
         Database* m_dbEngine;                               /**< Pointer to used Database engine */
         SqlConnection* m_dbConnection;                      /**< Pointer to DB connection */
         volatile bool m_running; /**< TODO */
+
+    public:
+
+        /// True while the loop is running. CommitTransactionChecked() asks before it
+        /// enqueues: a transaction queued onto a stopped thread is never drained, and
+        /// the caller would block on its promise forever.
+        bool IsRunning() const { return m_running; }
+
+    private:
 
         /**
          * @brief process all enqueued requests
@@ -64,7 +73,6 @@ class SqlDelayThread : public MaNGOS::Runnable
          * @param conn
          */
         SqlDelayThread(Database* db, SqlConnection* conn);
-
         /**
          * @brief
          *
@@ -80,24 +88,10 @@ class SqlDelayThread : public MaNGOS::Runnable
         bool Delay(SqlOperation* sql) { m_sqlQueue.add(sql); return true; }
 
         /**
-         * @brief Whether the worker loop is still running (not yet stopped)
-         *
-         * Used by Database::CommitTransactionChecked() to avoid enqueuing a
-         * blocking transaction onto a thread that will never drain it (which
-         * would block the caller forever). m_running is a volatile bool toggled
-         * only by Stop(); this best-effort cross-thread read is sufficient for a
-         * pure shutdown gate (we only ever transition true -> false).
-         *
-         * @return bool true while the thread loop is running
-         */
-        bool IsRunning() const { return m_running; }
-
-        /**
          * @brief Stop event
          *
          */
         virtual void Stop();
-
         /**
          * @brief Main Thread loop
          *

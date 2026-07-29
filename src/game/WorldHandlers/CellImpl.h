@@ -25,7 +25,7 @@
 #ifndef MANGOS_CELLIMPL_H
 #define MANGOS_CELLIMPL_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "Cell.h"
 #include "Map.h"
 #include <cmath>
@@ -57,7 +57,7 @@ inline CellArea Cell::CalculateCellArea(float x, float y, float radius)
 template<class T, class CONTAINER>
     inline void Cell::Visit(const CellPair& standing_cell, TypeContainerVisitor<T, CONTAINER> &visitor, Map& m, const WorldObject& obj, float radius) const
 {
-    Cell::Visit(standing_cell, visitor, m, obj.GetPositionX(), obj.GetPositionY(), radius + obj.GetObjectBoundingRadius());
+    Cell::Visit(standing_cell, visitor, m, obj.Where().X(), obj.Where().Y(), radius + obj.Where().Extent());
 }
 
 template<class T, class CONTAINER>
@@ -181,7 +181,7 @@ template<class T, class CONTAINER>
 template<class T>
     inline void Cell::VisitGridObjects(const WorldObject* center_obj, T& visitor, float radius, bool dont_load)
 {
-    CellPair p(MaNGOS::ComputeCellPair(center_obj->GetPositionX(), center_obj->GetPositionY()));
+    CellPair p(MaNGOS::ComputeCellPair(center_obj->Where().X(), center_obj->Where().Y()));
     Cell cell(p);
     if (dont_load)
     {
@@ -194,7 +194,7 @@ template<class T>
 template<class T>
     inline void Cell::VisitWorldObjects(const WorldObject* center_obj, T& visitor, float radius, bool dont_load)
 {
-    CellPair p(MaNGOS::ComputeCellPair(center_obj->GetPositionX(), center_obj->GetPositionY()));
+    CellPair p(MaNGOS::ComputeCellPair(center_obj->Where().X(), center_obj->Where().Y()));
     Cell cell(p);
     if (dont_load)
     {
@@ -207,7 +207,7 @@ template<class T>
 template<class T>
     inline void Cell::VisitAllObjects(const WorldObject* center_obj, T& visitor, float radius, bool dont_load)
 {
-    CellPair p(MaNGOS::ComputeCellPair(center_obj->GetPositionX(), center_obj->GetPositionY()));
+    CellPair p(MaNGOS::ComputeCellPair(center_obj->Where().X(), center_obj->Where().Y()));
     Cell cell(p);
     if (dont_load)
     {

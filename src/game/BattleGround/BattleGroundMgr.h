@@ -53,7 +53,13 @@
 #ifndef MANGOS_H_BATTLEGROUNDMGR
 #define MANGOS_H_BATTLEGROUNDMGR
 
-#include "Common.h"
+#include <unordered_map>
+#include "Platform/Define.h"
+#include <ctime>
+#include <vector>
+#include <map>
+#include <set>
+#include <list>
 #include "Policies/Singleton.h"
 #include "BattleGround.h"
 #include "Utilities/EventProcessor.h"
@@ -72,17 +78,17 @@ typedef std::list<BattleGround*> BGFreeSlotQueueType;
 /**
  * @brief Map for storing battle master entries.
  */
-typedef UNORDERED_MAP<uint32, BattleGroundTypeId> BattleMastersMap;
+typedef std::unordered_map<uint32, BattleGroundTypeId> BattleMastersMap;
 
 /**
  * @brief Map for storing creature battle event indexes.
  */
-typedef UNORDERED_MAP<uint32, BattleGroundEventIdx> CreatureBattleEventIndexesMap;
+typedef std::unordered_map<uint32, BattleGroundEventIdx> CreatureBattleEventIndexesMap;
 
 /**
  * @brief Map for storing game object battle event indexes.
  */
-typedef UNORDERED_MAP<uint32, BattleGroundEventIdx> GameObjectBattleEventIndexesMap;
+typedef std::unordered_map<uint32, BattleGroundEventIdx> GameObjectBattleEventIndexesMap;
 
 #define COUNT_OF_PLAYERS_TO_AVERAGE_WAIT_TIME 10
 

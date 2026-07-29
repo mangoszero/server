@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
+ * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,38 +26,36 @@
 #define MANGOS_H_SESSIONMAILBOX
 
 #include "LockedQueue/LockedQueue.h"
-#include "Utilities/WorldPacket.h"
+#include "WorldPacket.h"
 
 #include <memory>
 #include <mutex>
 
 class SessionMailbox
 {
-public:
-    SessionMailbox() = default;
-    ~SessionMailbox();
+    public:
+        SessionMailbox() = default;
+        ~SessionMailbox();
 
-    bool Enqueue(std::unique_ptr<WorldPacket> packet);
-    bool Next(WorldPacket*& packet);
+        bool Enqueue(std::unique_ptr<WorldPacket> packet);
+        bool Next(WorldPacket*& packet);
 
-    template<class Checker>
-    bool Next(WorldPacket*& packet, Checker& checker)
-    {
-        std::lock_guard<std::mutex> guard(m_stateLock);
-        if (m_closed)
+        template<class Checker>
+        bool Next(WorldPacket*& packet, Checker& checker)
         {
-            return false;
+            std::lock_guard<std::mutex> guard(m_stateLock);
+            if (m_closed)
+                return false;
+            return m_packets.next(packet, checker);
         }
-        return m_packets.next(packet, checker);
-    }
 
-    void Close();
-    bool IsClosed() const;
+        void Close();
+        bool IsClosed() const;
 
-private:
-    mutable std::mutex m_stateLock;
-    bool m_closed = false;
-    MaNGOS::LockedQueue<WorldPacket*> m_packets;
+    private:
+        mutable std::mutex m_stateLock;
+        bool m_closed = false;
+        MaNGOS::LockedQueue<WorldPacket*> m_packets;
 };
 
 #endif

@@ -25,6 +25,8 @@
 #ifndef MANGOS_H_NPCHANDLER
 #define MANGOS_H_NPCHANDLER
 
+#include <string>
+#include <vector>
 // GCC have alternative #pragma pack(N) syntax and old gcc version not support pack(push,N), also any gcc version not support it at some platform
 #if defined( __GNUC__ )
 #pragma pack(1)

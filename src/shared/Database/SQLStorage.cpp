@@ -37,6 +37,9 @@
  * floats, strings, and special field types for DBC-like data structures.
  */
 
+#include <cstring>
+#include <map>
+#include <cassert>
 #include "SQLStorage.h"
 
 // -----------------------------------  SQLStorageBase  ---------------------------------------- //
@@ -48,8 +51,8 @@
  * The actual initialization of table name and formats is done via
  * the Initialize() method.
  */
-SQLStorageBase::SQLStorageBase()
-    : m_tableName(NULL),
+SQLStorageBase::SQLStorageBase() :
+    m_tableName(NULL),
     m_entry_field(NULL),
     m_src_format(NULL),
     m_dst_format(NULL),
@@ -335,7 +338,6 @@ void SQLStorage::prepareToLoad(uint32 maxRecordId, uint32 recordCount, uint32 re
  * @note Access is O(log n) compared to O(1) for SQLStorage, but memory
  * usage is proportional to actual record count rather than max ID.
  */
-
 /**
  * @brief Load data from the database using hash storage loader
  *
@@ -441,7 +443,6 @@ SQLHashStorage::SQLHashStorage(const char* src_fmt, const char* dst_fmt, const c
  *
  * @note This storage is ideal for relational data where duplicates are expected.
  */
-
 /**
  * @brief Load data from the database using multi-storage loader
  *

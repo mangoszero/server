@@ -32,6 +32,7 @@
  * - Spell effect testing and debugging
  */
 
+#include <string>
 #include "Chat.h"
 #include "Language.h"
 #include "SpellAuras.h"
@@ -189,7 +190,7 @@ bool ChatHandler::HandleCastDistCommand(char* args)
     }
 
     float x, y, z;
-    m_session->GetPlayer()->GetClosePoint(x, y, z, dist);
+    ClosePointNear(*m_session->GetPlayer(), x, y, z, dist);
 
     m_session->GetPlayer()->CastSpell(x, y, z, spell, triggered);
     return true;

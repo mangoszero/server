@@ -22,6 +22,8 @@
 # configure (BUILD_MANGOSD=OFF, BUILD_AH_SERVICE=ON) does not try to build them.
 if(BUILD_MANGOSD AND SCRIPT_LIB_SD3)
     add_subdirectory(SD3)
+    mangos_submodule_compat(mangosscript
+        "${CMAKE_SOURCE_DIR}/src/shared/Compat/sd3")
 endif()
 
 if(BUILD_MANGOSD AND SCRIPT_LIB_ELUNA)

@@ -25,9 +25,11 @@
 #ifndef QUERYRESULT_H
 #define QUERYRESULT_H
 
-#include "Common/Common.h"
+#include "Platform/Define.h"
 #include "Utilities/Errors.h"
 #include "Field.h"
+#include <string>
+#include <vector>
 
 /**
  * @brief Abstract base class for database query results
@@ -45,7 +47,7 @@ class QueryResult
          * @param fieldCount Number of fields per row
          */
         QueryResult(uint64 rowCount, uint32 fieldCount)
-            : mFieldCount(fieldCount), mRowCount(rowCount), mCurrentRow{} {}
+            : mCurrentRow{}, mFieldCount(fieldCount), mRowCount(rowCount) {}
 
         /**
          * @brief Virtual destructor
@@ -76,7 +78,6 @@ class QueryResult
          * @return Field count
          */
         uint32 GetFieldCount() const { return mFieldCount; }
-
         /**
          * @brief Get number of rows in result set
          * @return Row count
@@ -110,44 +111,32 @@ class QueryNamedResult
          * @param names Vector of field names
          */
         explicit QueryNamedResult(QueryResult* query, QueryFieldNames const& names) : mQuery(query), mFieldNames(names) {}
-
         /**
          * @brief Destructor - deletes wrapped QueryResult
          */
-        ~QueryNamedResult()
-        {
-            delete mQuery;
-        }
+        ~QueryNamedResult() { delete mQuery; }
 
         // compatible interface with QueryResult
-
         /**
          * @brief Move to next row
          * @return True if moved to next row, false if no more rows
          */
-        bool NextRow()
-        {
-            return mQuery->NextRow();
-        }
-
+        bool NextRow() { return mQuery->NextRow(); }
         /**
          * @brief Get current row fields
          * @return Pointer to current row field array
          */
         Field* Fetch() const { return mQuery->Fetch(); }
-
         /**
          * @brief Get field count
          * @return Number of fields per row
          */
         uint32 GetFieldCount() const { return mQuery->GetFieldCount(); }
-
         /**
          * @brief Get row count
          * @return Total number of rows
          */
         uint64 GetRowCount() const { return mQuery->GetRowCount(); }
-
         /**
          * @brief Get field by index
          * @param index Field index
@@ -161,7 +150,6 @@ class QueryNamedResult
          * @return Reference to field with given name
          */
         Field const& operator[](const std::string& name) const { return mQuery->Fetch()[GetField_idx(name)]; }
-
         /**
          * @brief Get all field names
          * @return Const reference to field names vector

@@ -24,12 +24,21 @@
 
 #pragma once
 
-// One connection's outbound byte stream, shared by every backend. Producers append
-// bytes from any thread into m_pending; the transport drains m_inflight to the socket
-// and swaps the two once drained, coalescing everything queued between writes into the
-// next single write. m_inflight's storage stays put for the duration of a write, so a
-// proactor may hand the kernel a raw pointer into it; m_off resumes a partial write
-// from where the kernel stopped.
+// One connection's outbound byte stream, shared by every backend. Producers append into
+// m_pending from any thread while the transport drains m_inflight to the socket; the two
+// are swapped once drained.
+//
+// That swap buys both properties this needs. COALESCING: everything queued during one
+// write leaves in the next single write, and both vectors keep their capacity across
+// clear(), so after warm-up the send path allocates nothing -- a world tick emits a great
+// many small packets and a queue-of-buffers would cost an allocation and a syscall each.
+// STABLE STORAGE: a proactor hands the kernel a pointer and collects a completion later,
+// and producers never touch m_inflight, so that memory cannot move under it. m_off then
+// makes a partial write safe by resuming where the kernel stopped rather than dropping
+// the remainder.
+//
+// It lives in the per-connection SendChannel, a shared_ptr the session captures, so the
+// buffers outlive the socket and a parked producer cannot wake into freed memory.
 
 #include "net/FlowControl.hpp"
 

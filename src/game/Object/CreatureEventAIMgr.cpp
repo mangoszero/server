@@ -22,7 +22,12 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Common.h"
+#include <cmath>
+#include <utility>
+#include "Platform/Define.h"
+#include <cstring>
+#include <set>
+#include <algorithm>
 #include "Database/DatabaseEnv.h"
 #include "SQLStorages.h"
 #include "CreatureEventAI.h"
@@ -34,7 +39,6 @@
 #include "SpellMgr.h"
 #include "World.h"
 
-INSTANTIATE_SINGLETON_1(CreatureEventAIMgr);
 
 // -------------------
 

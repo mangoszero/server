@@ -25,22 +25,18 @@
 #ifndef MANGOS_H_REFERENCE
 #define MANGOS_H_REFERENCE
 
+#include <cassert>
 #include "Utilities/LinkedList.h"
 
 //=====================================================
 
 template<class TO, class FROM>
-
-/**
- * @brief
- *
- */
 class Reference : public LinkedListElement
 {
     private:
 
-        TO* iRefTo; /**< TODO */
-        FROM* iRefFrom; /**< TODO */
+        TO* iRefTo;
+        FROM* iRefFrom;
 
     protected:
 
@@ -64,19 +60,11 @@ class Reference : public LinkedListElement
 
     public:
 
-        /**
-         * @brief
-         *
-         */
         Reference()
             : iRefTo(NULL), iRefFrom(NULL)
         {
         }
 
-        /**
-         * @brief
-         *
-         */
         virtual ~Reference() {}
 
         /**
@@ -130,91 +118,24 @@ class Reference : public LinkedListElement
             iRefTo = NULL;
         }
 
-        /**
-         * @brief
-         *
-         * @return bool
-         */
         bool isValid() const                                // Only check the iRefTo
         {
             return iRefTo != NULL;
         }
 
-        /**
-         * @brief
-         *
-         * @return Reference<TO, FROM>
-         */
         Reference<TO, FROM>*       next()       { return((Reference<TO, FROM>*) LinkedListElement::next()); }
-
-        /**
-         * @brief
-         *
-         * @return const Reference<TO, FROM>
-         */
         Reference<TO, FROM> const* next() const { return((Reference<TO, FROM> const*) LinkedListElement::next()); }
-
-        /**
-         * @brief
-         *
-         * @return Reference<TO, FROM>
-         */
         Reference<TO, FROM>*       prev()       { return((Reference<TO, FROM>*) LinkedListElement::prev()); }
-
-        /**
-         * @brief
-         *
-         * @return const Reference<TO, FROM>
-         */
         Reference<TO, FROM> const* prev() const { return((Reference<TO, FROM> const*) LinkedListElement::prev()); }
 
-        /**
-         * @brief
-         *
-         * @return Reference<TO, FROM>
-         */
         Reference<TO, FROM>*       nocheck_next()       { return((Reference<TO, FROM>*) LinkedListElement::nocheck_next()); }
-
-        /**
-         * @brief
-         *
-         * @return const Reference<TO, FROM>
-         */
         Reference<TO, FROM> const* nocheck_next() const { return((Reference<TO, FROM> const*) LinkedListElement::nocheck_next()); }
-
-        /**
-         * @brief
-         *
-         * @return Reference<TO, FROM>
-         */
         Reference<TO, FROM>*       nocheck_prev()       { return((Reference<TO, FROM>*) LinkedListElement::nocheck_prev()); }
-
-        /**
-         * @brief
-         *
-         * @return const Reference<TO, FROM>
-         */
         Reference<TO, FROM> const* nocheck_prev() const { return((Reference<TO, FROM> const*) LinkedListElement::nocheck_prev()); }
 
-        /**
-         * @brief
-         *
-         * @return TO *operator ->
-         */
         TO* operator->() const { return iRefTo; }
-
-        /**
-         * @brief
-         *
-         * @return TO
-         */
         TO* getTarget() const { return iRefTo; }
 
-        /**
-         * @brief
-         *
-         * @return FROM
-         */
         FROM* getSource() const { return iRefFrom; }
 };
 

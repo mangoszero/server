@@ -25,383 +25,167 @@
 #ifndef MANGOS_WAYPOINTMOVEMENTGENERATOR_H
 #define MANGOS_WAYPOINTMOVEMENTGENERATOR_H
 
-/** @page PathMovementGenerator is used to generate movements
- * of waypoints and flight paths.  Each serves the purpose
- * of generate activities so that it generates updated
- * packets for the players.
- */
-
-#include "MovementGenerator.h"
-#include "WaypointManager.h"
 #include "DBCStructure.h"
+#include "IntentMovementGenerator.h"
+#include "WaypointManager.h"
 #include "movement/MoveSplineInitArgs.h"
 
-#include <set>
+#include <sstream>
+#include <vector>
 
-#define FLIGHT_TRAVEL_UPDATE  100
-#define STOP_TIME_FOR_PLAYER  (3 * MINUTE * IN_MILLISECONDS)// 3 Minutes
-
-/**
- * @brief Base class for path movement generators
- *
- * Provides common functionality for path-based movement.
- *
- * @tparam T Type of the unit (Player or Creature)
- * @tparam P Type of the path
- */
-template<class T, class P>
-    class PathMovementBase
-{
-    public:
-        /**
-         * @brief Constructor
-         */
-        PathMovementBase() : i_path(nullptr), i_currentNode(0) {}
-
-        /**
-         * @brief Virtual destructor
-         */
-        virtual ~PathMovementBase() {};
-
-        /**
-         * @brief Load path for the unit
-         * @param unit Reference to the unit
-         */
-        void LoadPath(T&);
-
-        /**
-         * @brief Get current node in the path
-         * @return Current node index
-         */
-        uint32 GetCurrentNode() const { return i_currentNode; }
-
-    protected:
-        P i_path; ///< Path for the movement
-        uint32 i_currentNode; ///< Current node in the path
-};
+/// How long a patroller waits after being force-stopped by a player talking to it.
+#define STOP_TIME_FOR_PLAYER  (3 * MINUTE * IN_MILLISECONDS)
 
 /**
- * @brief Waypoint movement generator for creatures
+ * @brief Patrol: walk a list of waypoints, pausing, emoting and running scripts at the
+ *        ones that say to.
  *
- * Loads a series of waypoints from the database and applies
- * them to the creature's movement generator. The creature will
- * move according to its predefined waypoints.
+ * This is the one movement kind that must dictate the EXACT geometry of its leg rather
+ * than name a destination and let the driver route to it: a smoothed segment welds
+ * several waypoint legs into a single spline so the creature does not visibly stop and
+ * relaunch at every node. It therefore hands the driver its own points on the intent.
  */
-template<class T>
-    class WaypointMovementGenerator;
-
-template<>
-    class WaypointMovementGenerator<Creature>
-        : public MovementGeneratorMedium< Creature, WaypointMovementGenerator<Creature> >,
-    public PathMovementBase<Creature, WaypointPath const*>
+class WaypointMovementGenerator final : public IntentMovementGenerator
 {
     public:
-        /**
-         * @brief Constructor
-         * @param creature Reference to the creature
-         */
-        WaypointMovementGenerator(Creature&) : i_nextMoveTime(0), m_isArrivalDone(false), m_lastReachedWaypoint(0), m_pathId(0), m_PathOrigin(PATH_NO_PATH), m_activeSegmentArrivals(0) {}
+        explicit WaypointMovementGenerator(Creature&) {}
 
-        /**
-         * @brief Destructor
-         */
-        ~WaypointMovementGenerator()
-        {
-            i_path = NULL;
-        }
+        void Initialize(Unit& owner) override;
+        void Finalize(Unit& owner) override;
+        void Interrupt(Unit& owner) override;
+        void Reset(Unit& owner) override;
 
-        /**
-         * @brief Initialize the movement generator
-         * @param u Reference to the creature
-         */
-        void Initialize(Creature& u);
+        MovementGeneratorType GetMovementGeneratorType() const override { return WAYPOINT_MOTION_TYPE; }
 
-        /**
-         * @brief Interrupt the movement generator
-         * @param u Reference to the creature
-         */
-        void Interrupt(Creature&);
+        bool GetResetPosition(Unit& owner, float& x, float& y, float& z, float& o) const override;
 
-        /**
-         * @brief Finalize the movement generator
-         * @param u Reference to the creature
-         */
-        void Finalize(Creature&);
+        /// Load a path and start walking it after `initialDelay` ms.
+        void InitializeWaypointPath(Unit& owner, int32 pathId, WaypointPathOrigin wpSource,
+                                    uint32 initialDelay, uint32 overwriteEntry);
 
-        /**
-         * @brief Reset the movement generator
-         * @param u Reference to the creature
-         */
-        void Reset(Creature& u);
-
-        /**
-         * @brief Update the movement generator
-         * @param u Reference to the creature
-         * @param diff Time difference in milliseconds
-         * @return True if update successful, false otherwise
-         */
-        bool Update(Creature& u, const uint32& diff);
-
-        /**
-         * @brief Initialize waypoint path
-         * @param u Reference to the creature
-         * @param id Path ID
-         * @param wpSource Waypoint path origin
-         * @param initialDelay Initial delay before starting
-         * @param overwriteEntry Entry to overwrite
-         */
-        void InitializeWaypointPath(Creature& u, int32 id, WaypointPathOrigin wpSource, uint32 initialDelay, uint32 overwriteEntry);
-
-        /**
-         * @brief Get movement generator type
-         * @return WAYPOINT_MOTION_TYPE
-         */
-        MovementGeneratorType GetMovementGeneratorType() const { return WAYPOINT_MOTION_TYPE; }
-
-        /**
-         * @brief Get reset position for evade
-         * @param creature Reference to the creature
-         * @param x X-coordinate output
-         * @param y Y-coordinate output
-         * @param z Z-coordinate output
-         * @param o Orientation output
-         * @return True if reset position obtained
-         */
-        bool GetResetPosition(Creature&, float& /*x*/, float& /*y*/, float& /*z*/, float& /*o*/) const;
-
-        /**
-         * @brief Get last reached waypoint
-         * @return Last reached waypoint ID
-         */
         uint32 getLastReachedWaypoint() const { return m_lastReachedWaypoint; }
 
-        /**
-         * @brief Get path information
-         * @param pathId Path ID output
-         * @param wpOrigin Waypoint path origin output
-         */
-        void GetPathInformation(int32& pathId, WaypointPathOrigin& wpOrigin) const { pathId = m_pathId; wpOrigin = m_PathOrigin; }
+        void GetPathInformation(int32& pathId, WaypointPathOrigin& wpOrigin) const
+        {
+            pathId = m_pathId;
+            wpOrigin = m_pathOrigin;
+        }
 
-        /**
-         * @brief Get path information as string
-         * @param oss Output string stream
-         */
         void GetPathInformation(std::ostringstream& oss) const;
 
-        /**
-         * @brief Add time to waypoint pause
-         * @param waitTimeDiff Time difference to add in milliseconds
-         */
+        /// Extend (or cut short) the pause at the current node.
         void AddToWaypointPauseTime(int32 waitTimeDiff);
 
-        /**
-         * @brief Set next waypoint
-         * @param pointId Waypoint ID to set as next
-         * @return True if successful
-         */
+        /// Jump the patrol to a given node; it moves on the next tick.
         bool SetNextWaypoint(uint32 pointId);
 
+    protected:
+        Motion::MoveIntent Intent(Unit& owner, Motion::MoveStatus const& status,
+                                  uint32 diff) override;
+
     private:
-        /**
-         * @brief Load path from database
-         * @param c Reference to the creature
-         * @param id Path ID
-         * @param wpOrigin Waypoint path origin
-         * @param overwriteEntry Entry to overwrite
-         */
-        void LoadPath(Creature& c, int32 id, WaypointPathOrigin wpOrigin, uint32 overwriteEntry);
-
-        /**
-         * @brief Stop movement for specified time
-         * @param time Time to stop in milliseconds
-         */
-        void Stop(int32 time) { i_nextMoveTime.Reset(time); }
-
-        /**
-         * @brief Check if movement is stopped
-         * @param u Reference to the creature
-         * @return True if stopped
-         */
-        bool Stopped(Creature& u);
-
-        /**
-         * @brief Check if creature can move
-         * @param diff Time difference
-         * @param u Reference to the creature
-         * @return True if can move
-         */
-        bool CanMove(int32 diff, Creature& u);
-
-        /**
-         * @brief Called when waypoint is reached
-         * @param creature Reference to the creature
-         */
-        void OnArrived(Creature&);
-
-        /**
-         * @brief Start movement to next waypoint
-         * @param creature Reference to the creature
-         */
-        void StartMove(Creature&);
-
         /// A waypoint reached inside an active smoothed segment.
-        struct ActiveSegmentWaypoint
+        struct SegmentWaypoint
         {
-            uint32 pointId;            ///< Waypoint id in the path
-            size_t pathPointIndex;     ///< Index of its endpoint in the spline path
+            uint32 pointId;        ///< Waypoint id in the path.
+            size_t pathPointIndex; ///< Index of its endpoint within the spline points.
         };
 
-        /**
-         * @brief Whether smoothing is allowed for the current path origin.
-         * @return True for all origins except externally-scripted paths.
-         */
-        bool IsSmoothingEnabled() const;
+        void LoadPath(Creature& creature, int32 pathId, WaypointPathOrigin wpOrigin,
+                      uint32 overwriteEntry);
 
-        /**
-         * @brief Whether a segment may smooth through the given node without stopping.
-         * @param node Waypoint node to test.
-         * @return True if the node has no delay, script or behavior.
-         */
-        bool CanSmoothThrough(WaypointNode const& node) const;
+        /// Advance to the next waypoint and prepare the leg that reaches it. This is the
+        /// old StartMove with the launching taken out: it still advances the node, fires
+        /// the AI informs and applies the node's model change, and it still builds the
+        /// smoothed geometry — but it hands that to the driver as an intent rather than
+        /// pushing a spline itself.
+        Motion::MoveIntent PrepareMove(Creature& creature);
 
-        /// Drops any tracked active smoothed segment.
-        void ClearActiveSegment();
+        /// The intent that walks the leg PrepareMove built.
+        Motion::MoveIntent WalkPreparedLeg() const;
 
-        /**
-         * @brief Records a waypoint reached within the active smoothed segment.
-         * @param pointId Waypoint id in the path.
-         * @param pathPointIndex Index of its endpoint within the spline path.
-         */
-        void AddActiveSegmentWaypoint(uint32 pointId, size_t pathPointIndex);
+        /// Everything that happens on getting to a node: scripts, emotes, AI informs,
+        /// and the pause the node asks for.
+        void OnArrived(Creature& creature);
 
-        /**
-         * @brief Fires arrival handling for any smoothed waypoints the spline has passed.
-         * @param creature Reference to the creature.
-         */
-        void ProcessActiveSegmentProgress(Creature& creature);
+        /// Fire arrival handling for any smoothed waypoints the spline has now passed.
+        void ProcessSegmentProgress(Creature& creature, int32 pathIndex);
 
-        /**
-         * @brief Builds a smoothed multi-waypoint path starting at the given waypoint.
-         * @param creature Reference to the creature.
-         * @param startPoint Iterator to the first waypoint of the segment.
-         * @param pathPoints Output spline points; left empty when smoothing is skipped.
-         */
-        void BuildSmoothPath(Creature& creature, WaypointPath::const_iterator startPoint, Movement::PointsArray& pathPoints);
+        /// Weld as many upcoming legs as will fit into one spline. Leaves m_legPoints
+        /// empty when the segment cannot be smoothed, and the driver then routes a plain
+        /// leg to the next node instead.
+        void BuildSmoothPath(Creature& creature, WaypointPath::const_iterator startPoint);
 
-        TimeTracker i_nextMoveTime; ///< Time tracker for the next move
-        bool m_isArrivalDone; ///< Indicates if the arrival is done
-        uint32 m_lastReachedWaypoint; ///< Last reached waypoint
+        bool Stopped(Unit const& owner) const;
+        bool CanMove(Unit const& owner, uint32 diff);
+        void Stop(int32 time) { m_nextMoveTime.Reset(time); }
 
-        int32 m_pathId; ///< Path ID
-        WaypointPathOrigin m_PathOrigin; ///< Path origin
-        std::vector<ActiveSegmentWaypoint> m_activeSegmentWaypoints; ///< Waypoints in the active smoothed segment
-        size_t m_activeSegmentArrivals; ///< Count already processed via ProcessActiveSegmentProgress
+        void ClearSegment()
+        {
+            m_segment.clear();
+            m_segmentArrivals = 0;
+        }
+
+        WaypointPath const* m_path = nullptr;
+        uint32 m_currentNode = 0;
+        uint32 m_lastReachedWaypoint = 0;
+        int32 m_pathId = 0;
+        WaypointPathOrigin m_pathOrigin = PATH_NO_PATH;
+
+        TimeTracker m_nextMoveTime{0};
+        bool m_isArrivalDone = false;
+
+        std::vector<SegmentWaypoint> m_segment; ///< Waypoints inside the smoothed leg.
+        size_t m_segmentArrivals = 0;           ///< How many of them we have passed.
+
+        /// The leg PrepareMove built. Empty points mean "not smoothed — route to
+        /// m_legEnd instead". The driver holds a pointer to these while the leg is in
+        /// flight, so they must not be rebuilt until the leg ends.
+        Movement::PointsArray m_legPoints;
+        Motion::Vector3 m_legEnd;
+        Motion::Facing m_legFacing;
+        bool m_legWalk = true; ///< Pace of the leg; false only for a DB-flagged runner.
+        bool m_haveLeg = false;
 };
 
 /**
- * @brief Flight path movement generator for players
+ * @brief The player taxi flight.
  *
- * Generates movement of the player along taxi flight paths.
- * Handles ground and activities for the player during flight.
+ * Deliberately NOT on the intent model: it lays one scripted spline through the taxi
+ * nodes and watches the path index. There is nothing to route, nothing to re-path and
+ * nothing to face, so an intent would buy it nothing.
  */
-class FlightPathMovementGenerator
-    : public MovementGeneratorMedium< Player, FlightPathMovementGenerator >,
-    public PathMovementBase<Player, TaxiPathNodeList const*>
+class FlightPathMovementGenerator final : public MovementGenerator
 {
     public:
-        /**
-         * @brief Constructor
-         * @param pathnodes Reference to path nodes
-         * @param startNode Starting node index
-         */
-        explicit FlightPathMovementGenerator(TaxiPathNodeList const& pathnodes, uint32 startNode = 0)
-        {
-            i_path = &pathnodes;
-            i_currentNode = startNode;
-        }
+        explicit FlightPathMovementGenerator(TaxiPathNodeList const& pathnodes,
+                                             uint32 startNode = 0)
+            : m_path(&pathnodes), m_currentNode(startNode) {}
 
-        /**
-         * @brief Initialize the movement generator
-         * @param player Reference to the player
-         */
-        void Initialize(Player&);
+        void Initialize(Unit& owner) override;
+        void Finalize(Unit& owner) override;
+        void Interrupt(Unit& owner) override;
+        void Reset(Unit& owner) override;
+        bool Update(Unit& owner, uint32 diff) override;
 
-        /**
-         * @brief Finalize the movement generator
-         * @param player Reference to the player
-         */
-        void Finalize(Player&);
-
-        /**
-         * @brief Interrupt the movement generator
-         * @param player Reference to the player
-         */
-        void Interrupt(Player&);
-
-        /**
-         * @brief Reset the movement generator
-         * @param player Reference to the player
-         */
-        void Reset(Player&);
-
-        /**
-         * @brief Update the movement generator
-         * @param player Reference to the player
-         * @param diff Time difference in milliseconds
-         * @return True if update successful
-         */
-        bool Update(Player&, const uint32&);
-
-        /**
-         * @brief Get movement generator type
-         * @return FLIGHT_MOTION_TYPE
-         */
         MovementGeneratorType GetMovementGeneratorType() const override { return FLIGHT_MOTION_TYPE; }
 
-        /**
-         * @brief Get the flight path
-         * @return Reference to path nodes
-         */
-        TaxiPathNodeList const& GetPath()
-        {
-            return *i_path;
-        }
+        bool GetResetPosition(Unit& owner, float& x, float& y, float& z, float& o) const override;
 
-        /**
-         * @brief Get node index at map end
-         * @return Node index at map end
-         */
+        TaxiPathNodeList const& GetPath() const { return *m_path; }
+        uint32 GetCurrentNode() const { return m_currentNode; }
+
+        /// Index of the first node on a different map — where this leg of the flight ends.
         uint32 GetPathAtMapEnd() const;
 
-        /**
-         * @brief Check if player has arrived at destination
-         * @return True if arrived
-         */
-        bool HasArrived() const { return (i_currentNode >= i_path->size()); }
+        bool HasArrived() const { return m_currentNode >= m_path->size(); }
 
-        /**
-         * @brief Set current node after teleport
-         */
         void SetCurrentNodeAfterTeleport();
+        void SkipCurrentNode() { ++m_currentNode; }
 
-        /**
-         * @brief Skip current node
-         */
-        void SkipCurrentNode()
-        {
-            ++i_currentNode;
-        }
-
-        /**
-         * @brief Get reset position for evade
-         * @param player Reference to the player
-         * @param x X-coordinate output
-         * @param y Y-coordinate output
-         * @param z Z-coordinate output
-         * @param o Orientation output
-         * @return True if reset position obtained
-         */
-        bool GetResetPosition(Player&, float& /*x*/, float& /*y*/, float& /*z*/, float& /*o*/) const;
+    private:
+        TaxiPathNodeList const* m_path;
+        uint32 m_currentNode;
 };
 
 #endif // MANGOS_WAYPOINTMOVEMENTGENERATOR_H

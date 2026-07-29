@@ -35,6 +35,8 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <chrono>
+#include <thread>
 
 namespace net {
 
@@ -42,23 +44,40 @@ namespace net {
 
 void SendChannel::post(const uint8_t* data, size_t len) {
     std::lock_guard<std::mutex> lock(mu);
-    if (ctx && !closeRequested)
+    if (ctx)
         ctx->enqueue(data, len);
 }
 
+// The session asked to close. Do NOT close the socket here.
+//
+// Closing it discards whatever is still queued, and what is queued at this exact
+// moment is the reason for the disconnect -- the auth rejection, the transfer abort,
+// the kick message. The session sets closed() before calling this, so every completion
+// path already re-checks "closed and drained"; all this has to do is record the intent
+// and kick the drain along.
 void SendChannel::requestClose() {
-    std::lock_guard<std::mutex> lock(mu);
-    if (!ctx || closeRequested)
+    ConnCtx* c = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(mu);
+        closeRequested = true;
+        c = ctx;
+    }
+    if (!c)
+    {
         return;
+    }
 
-    closeRequested = true;
-    if (!ctx->owner->postControl(ctx))
-        ctx->close();
+    // Inside a callback the response has not been queued yet, so the dispatcher makes
+    // this call instead, once it has. Outside one -- a world thread closing an idle
+    // connection -- no completion may ever arrive, so this is the only chance to act.
+    if (!c->dispatching.load(std::memory_order_acquire))
+    {
+        c->closeIfDrained();
+    }
 }
 
 void SendChannel::disarm() {
     std::lock_guard<std::mutex> lock(mu);
-    closeRequested = true;
     ctx = nullptr;
     out.close();  // release any bulk producer parked on backpressure
 }
@@ -66,21 +85,26 @@ void SendChannel::disarm() {
 // ── ConnCtx ───────────────────────────────────────────────────────────────────
 
 bool ConnCtx::postSend(const uint8_t* data, size_t len) {
-    IocpServer* server = owner;
-    if (!server || !server->m_operations.tryBegin())
-        return false;
-
-    ZeroMemory(&sendOv.ov, sizeof(OVERLAPPED));
-    // Safe to hand the kernel a pointer into the SendQueue's in-flight buffer: only
-    // the pending buffer is ever appended to, so this storage cannot move or be
-    // reallocated before the completion arrives.
-    sendOv.wsabuf.buf = reinterpret_cast<char*>(const_cast<uint8_t*>(data));
-    sendOv.wsabuf.len = static_cast<ULONG>(len);
-    addRef();  // the completion of this send will release()
-    int rc = WSASend(sock, &sendOv.wsabuf, 1, nullptr, 0, &sendOv.ov, nullptr);
-    if (rc == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
-        release();  // no completion will arrive for a synchronous failure
-        server->m_operations.complete();
+    bool failed = false;
+    {
+        std::lock_guard<std::mutex> sk(sockMu);   // no concurrent Winsock call on `sock`
+        if (sock == INVALID_SOCKET)
+            return false;                          // closed under us; never addRef'd
+        ZeroMemory(&sendOv.ov, sizeof(OVERLAPPED));
+        // Safe to hand the kernel a pointer into the SendQueue's in-flight buffer: only
+        // the pending buffer is ever appended to, so this storage cannot move or be
+        // reallocated before the completion arrives.
+        sendOv.wsabuf.buf = reinterpret_cast<char*>(const_cast<uint8_t*>(data));
+        sendOv.wsabuf.len = static_cast<ULONG>(len);
+        addRef();  // the completion of this send will release()
+        int rc = WSASend(sock, &sendOv.wsabuf, 1, nullptr, 0, &sendOv.ov, nullptr);
+        if (rc == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING)
+            failed = true;
+    }
+    if (failed) {
+        release();  // no completion for a synchronous failure. Outside sockMu: the last
+                    // release routes through removeAndDelete()->m_connsMu, and stop()
+                    // takes m_connsMu->sockMu, so releasing under sockMu could deadlock.
         return false;
     }
     return true;
@@ -115,10 +139,55 @@ void ConnCtx::onSendComplete(DWORD bytes) {
     startSend();
 }
 
+bool ConnCtx::drained() const {
+    return channel->out.empty();
+}
+
+// Half-closes once the queue is empty. shutdown(SD_SEND) rather than closesocket:
+// the FIN flushes what Winsock still holds and the peer reads the tail, whereas a
+// closesocket on a socket with unsent data is free to reset the connection and throw
+// it away. The recv side stays open so the peer's own FIN still arrives and drives the
+// normal teardown.
+bool ConnCtx::closeIfDrained() {
+    {
+        std::lock_guard<std::mutex> lock(channel->mu);
+        if (!channel->closeRequested)
+        {
+            return false;
+        }
+    }
+    if (!drained())
+    {
+        return false;
+    }
+
+    std::lock_guard<std::mutex> sk(sockMu);
+    if (sock == INVALID_SOCKET || sendShutdown)
+    {
+        return false;
+    }
+    sendShutdown = true;
+    ::shutdown(sock, SD_SEND);
+    return true;
+}
+
 void ConnCtx::close() {
+    std::lock_guard<std::mutex> sk(sockMu);   // serialise with WSARecv/WSASend and other close()s
     if (sock != INVALID_SOCKET) {
         closesocket(sock);
         sock = INVALID_SOCKET;
+    }
+}
+
+void ConnCtx::release() {
+    if (refs.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+        // Last reference: hand off to the owner so the erase-from-m_conns and the delete
+        // happen together under m_connsMu -- a stop() scan holding that lock then only
+        // ever sees live ctxs, and an empty m_conns is genuine I/O quiescence.
+        if (owner)
+            owner->removeAndDelete(this);
+        else
+            delete this;   // never adopted by a server (should not happen; owner set at accept)
     }
 }
 
@@ -128,9 +197,6 @@ IocpServer::~IocpServer() { stop(); }
 
 bool IocpServer::start(uint16_t port, SessionFactory factory,
                        const std::string& bindIp) {
-    if (m_running.load() || !m_operations.startSubmissions())
-        return false;
-
     m_factory = std::move(factory);
 
     // Own one Winsock reference for this listener's lifetime. realmd (and every
@@ -145,17 +211,28 @@ bool IocpServer::start(uint16_t port, SessionFactory factory,
         m_wsaStarted = true;
     }
 
+    // Every failure below has to undo the listen socket and the completion port by
+    // hand: stop() only cleans up once m_running has been set, which happens after
+    // the last of these, so bailing out with a bare `return false` would leak both
+    // for the life of the process.
+    auto fail = [this]() -> bool {
+        if (m_listen != INVALID_SOCKET) { closesocket(m_listen); m_listen = INVALID_SOCKET; }
+        if (m_iocp)                     { CloseHandle(m_iocp);   m_iocp   = nullptr; }
+        if (m_wsaStarted)               { WSACleanup();          m_wsaStarted = false; }
+        return false;
+    };
+
     // Resolve BindIP before touching the socket so an invalid option fails the
     // bind outright instead of silently listening on every interface.
     uint32_t bindAddr = htonl(INADDR_ANY);
-    if (!ResolveBindAddress(bindIp, bindAddr)) return false;
+    if (!ResolveBindAddress(bindIp, bindAddr)) return fail();
 
     m_iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
-    if (!m_iocp) return false;
+    if (!m_iocp) return fail();
 
     m_listen = WSASocketW(AF_INET, SOCK_STREAM, IPPROTO_TCP,
                           nullptr, 0, WSA_FLAG_OVERLAPPED);
-    if (m_listen == INVALID_SOCKET) return false;
+    if (m_listen == INVALID_SOCKET) return fail();
 
     SOCKADDR_IN addr{};
     addr.sin_family      = AF_INET;
@@ -163,13 +240,13 @@ bool IocpServer::start(uint16_t port, SessionFactory factory,
     addr.sin_port        = htons(port);
 
     if (bind(m_listen, reinterpret_cast<SOCKADDR*>(&addr), sizeof(addr)) == SOCKET_ERROR)
-        return false;
+        return fail();
     if (listen(m_listen, SOMAXCONN) == SOCKET_ERROR)
-        return false;
+        return fail();
 
     // Associate listen socket with IOCP (key=0, used only for AcceptEx completions)
     if (!CreateIoCompletionPort(reinterpret_cast<HANDLE>(m_listen), m_iocp, 0, 0))
-        return false;
+        return fail();
 
     // Load AcceptEx extension function
     GUID guidAcceptEx        = WSAID_ACCEPTEX;
@@ -182,7 +259,7 @@ bool IocpServer::start(uint16_t port, SessionFactory factory,
              &guidGetSockaddrs, sizeof(guidGetSockaddrs),
              &m_fnGetSockaddrs, sizeof(m_fnGetSockaddrs), &bytes, nullptr, nullptr);
 
-    if (!m_fnAcceptEx) return false;
+    if (!m_fnAcceptEx) return fail();
 
     m_running = true;
 
@@ -203,50 +280,43 @@ bool IocpServer::start(uint16_t port, SessionFactory factory,
 }
 
 void IocpServer::stop() {
-    if (m_running.load()) {
-        // Close the submission gate while workers are still alive. Every operation
-        // accepted before this point is counted and must produce one completion.
-        m_operations.stopSubmissions();
+    if (m_running.exchange(false)) {
+        // 1. Close the listener FIRST -- under m_listenMu so it never races a worker's
+        //    postAccept()/AcceptEx -- so no further connection is accepted. The pending
+        //    AcceptEx ops complete with an error and are reclaimed by the workers.
+        {
+            std::lock_guard<std::mutex> lk(m_listenMu);
+            if (m_listen != INVALID_SOCKET) { closesocket(m_listen); m_listen = INVALID_SOCKET; }
+        }
 
-        if (m_running.exchange(false)) {
-            // Cancels the outstanding AcceptEx operations. Their completions are
-            // drained by the workers just like ordinary accepts.
-            if (m_listen != INVALID_SOCKET) {
-                closesocket(m_listen);
-                m_listen = INVALID_SOCKET;
-            }
-
-            // Hold a temporary reference while taking each connection through the
-            // normal idempotent teardown. closesocket then completes pending I/O.
-            std::vector<ConnCtx*> connections;
-            {
-                std::lock_guard lock(m_connsMu);
-                connections.reserve(m_conns.size());
-                for (auto* ctx : m_conns) {
-                    ctx->addRef();
-                    connections.push_back(ctx);
-                }
-            }
-            for (auto* ctx : connections) {
-                markDead(ctx);
-                ctx->release();
-            }
-
-            // Do not stop the workers or close the completion port until all kernel
-            // operations have completed and released their ConnCtx references.
-            m_operations.waitForZero();
-
-            for (size_t i = 0; i < m_workers.size(); ++i)
-                PostQueuedCompletionStatus(m_iocp, 0, SHUTDOWN_KEY, nullptr);
-            for (auto& t : m_workers)
-                t.join();
-            m_workers.clear();
-
-            if (m_iocp) {
-                CloseHandle(m_iocp);
-                m_iocp = nullptr;
+        // 2. Close every live connection's socket -- serialised by the ctx's sockMu so it
+        //    never races a worker's WSARecv/WSASend -- which makes its pending ops complete
+        //    with an error. The dequeuing worker runs the normal markDead()+release()
+        //    teardown, and the ctx is erased from m_conns and freed (in release()) only
+        //    once no overlapped op can still complete into its embedded OVERLAPPEDs. Wait
+        //    on m_connsCv until BOTH m_conns is empty AND every pending AcceptEx has
+        //    completed -- true, drained quiescence, not the "erased before drained" pointer
+        //    count the old force-delete relied on -- re-closing any connection that raced
+        //    in before the listener closed. The workers are STILL running here, which is
+        //    what lets the completions drain.
+        {
+            std::unique_lock<std::mutex> lock(m_connsMu);
+            while (!m_conns.empty() ||
+                   m_pendingAccepts.load(std::memory_order_acquire) != 0) {
+                for (auto* c : m_conns)
+                    c->close();  // idempotent; the closesocket is serialised by c->sockMu
+                m_connsCv.wait_for(lock, std::chrono::milliseconds(50));
             }
         }
+
+        // 3. No connection and no accept has a pending overlapped op now; wake the idle
+        //    workers and join them.
+        for (size_t i = 0; i < m_workers.size(); ++i)
+            PostQueuedCompletionStatus(m_iocp, 0, SHUTDOWN_KEY, nullptr);
+        for (auto& t : m_workers) t.join();
+        m_workers.clear();
+
+        if (m_iocp) { CloseHandle(m_iocp); m_iocp = nullptr; }
     }
 
     // Balance the WSAStartup from start(). Guarded so a failed start (which may
@@ -254,33 +324,49 @@ void IocpServer::stop() {
     if (m_wsaStarted) { WSACleanup(); m_wsaStarted = false; }
 }
 
+// Last-reference cleanup, called from ConnCtx::release(). Erase from m_conns under
+// m_connsMu, then delete: a stop() scan holds m_connsMu and touches only ctxs still in the
+// set, and each is erased before it is deleted, so the scan never observes freed memory.
+void IocpServer::removeAndDelete(ConnCtx* ctx) {
+    {
+        std::lock_guard<std::mutex> lock(m_connsMu);
+        m_conns.erase(ctx);
+    }
+    m_connsCv.notify_all();
+    delete ctx;
+}
+
 void IocpServer::postAccept() {
-    if (!m_operations.tryBegin())
+    // Serialise use of the listen socket against stop()'s closesocket(m_listen). Also
+    // gates posting once shutdown has closed the listener: AcceptEx on an INVALID_SOCKET
+    // (or one being reused) must never happen.
+    std::lock_guard<std::mutex> lk(m_listenMu);
+    if (m_listen == INVALID_SOCKET)
         return;
 
     auto* aov = new AcceptOv{};
     aov->clientSock = WSASocketW(AF_INET, SOCK_STREAM, IPPROTO_TCP,
                                  nullptr, 0, WSA_FLAG_OVERLAPPED);
-    if (aov->clientSock == INVALID_SOCKET) {
-        delete aov;
-        m_operations.complete();
-        return;
-    }
+    // A transient socket-creation failure drops this pending-accept slot; the pool is
+    // otherwise kept topped up by the re-post on each accept completion. (Recovering the
+    // last slot under sustained failure would need a timer/backoff -- left as a follow-up.)
+    if (aov->clientSock == INVALID_SOCKET) { delete aov; return; }
 
+    m_pendingAccepts.fetch_add(1, std::memory_order_relaxed);  // balanced in workerThread
     DWORD recvd = 0;
-    BOOL accepted = m_fnAcceptEx(m_listen, aov->clientSock,
-                                 aov->addrbuf, 0,
-                                 sizeof(SOCKADDR_IN) + 16,
-                                 sizeof(SOCKADDR_IN) + 16,
-                                 &recvd, &aov->ov);
-    if (!accepted && WSAGetLastError() != ERROR_IO_PENDING) {
+    BOOL ok = m_fnAcceptEx(m_listen, aov->clientSock,
+                           aov->addrbuf, 0,
+                           sizeof(SOCKADDR_IN) + 16,
+                           sizeof(SOCKADDR_IN) + 16,
+                           &recvd, &aov->ov);
+    // ERROR_IO_PENDING is the normal case: the completion arrives via IOCP when a client
+    // connects. Any other immediate failure produces NO completion, so reclaim the socket,
+    // the AcceptOv, and the pending-accept count here.
+    if (!ok && WSAGetLastError() != ERROR_IO_PENDING) {
+        m_pendingAccepts.fetch_sub(1, std::memory_order_relaxed);
         closesocket(aov->clientSock);
         delete aov;
-        m_operations.complete();
-        return;
     }
-    // A successfully submitted accept completes through IOCP when a client
-    // connects or when shutdown cancels the listener.
 }
 
 void IocpServer::workerThread() {
@@ -293,15 +379,12 @@ void IocpServer::workerThread() {
 
         if (key == SHUTDOWN_KEY) break;
 
-        if (!ov) continue; // timeout or spurious
-
-        // Control completions use the connection's dedicated OVERLAPPED. Identify
-        // them by address before decoding the type tag used by kernel I/O operations.
-        auto* ctx = key == 0 ? nullptr : reinterpret_cast<ConnCtx*>(key);
-        if (ctx && ov == &ctx->closeOv) {
-            handleControl(ctx);
-            ctx->release();
-            m_operations.complete();
+        // No OVERLAPPED means no operation completed. With an INFINITE wait the only
+        // way that happens is the completion port itself going away, and `continue`
+        // would then spin on a dead handle burning a core. The one legitimate
+        // null-OVERLAPPED wake-up is our own shutdown post, caught by the key above.
+        if (!ov) {
+            if (!ok) break;
             continue;
         }
 
@@ -312,50 +395,124 @@ void IocpServer::workerThread() {
 
         if (opType == IoType::Accept) {
             auto* aov = reinterpret_cast<AcceptOv*>(ov);
-            if (ok && m_running.load())
+            if (ok)
                 handleAccept(aov, bytesXfr);
             else
                 closesocket(aov->clientSock);
             delete aov;
-            m_operations.complete();
-            if (m_running) postAccept(); // always maintain PENDING_ACCEPTS
+            // This accept operation is done: drop the pending-accept count and wake a
+            // waiting stop() if it was the last one, then re-arm the pool while running.
+            if (m_pendingAccepts.fetch_sub(1, std::memory_order_acq_rel) == 1)
+                m_connsCv.notify_all();
+            // Keep the accept pool at PENDING_ACCEPTS: replace the slot that just completed
+            // AND recover any slot a previous postAccept() dropped to a transient socket
+            // failure (otherwise a few scattered failures shrink the pool toward zero).
+            // Bounded to PENDING_ACCEPTS attempts so a persistent failure cannot spin.
+            for (int i = 0; m_running &&
+                            i < PENDING_ACCEPTS &&
+                            m_pendingAccepts.load(std::memory_order_relaxed) < PENDING_ACCEPTS;
+                 ++i)
+                postAccept();
             continue;
         }
 
         // Data operation: key == ConnCtx*. Exactly one completion per posted op, so
         // we release() once here no matter which branch runs — that balances the
         // addRef() the post did and is what eventually frees the ctx.
-        if (!ok || bytesXfr == 0)
-            markDead(ctx);                      // closed or error: tear down (idempotent)
-        else if (opType == IoType::Recv)
-            handleRecv(ctx, bytesXfr);
-        else
-            handleSend(ctx, bytesXfr);
+        auto* ctx = reinterpret_cast<ConnCtx*>(key);
+
+        {
+            // Serialise callbacks for THIS connection. IOCP hands completions to any
+            // worker with no per-handle ordering, so a recv-data completion (onData)
+            // and a concurrent send/error completion (which can reach onClose) for the
+            // same ctx must not run on two workers at once. Held only around the
+            // dispatch: markDead()'s release of the "alive" ref cannot free the ctx here
+            // because this completion's own ref is still held, so the free happens at
+            // the release() below -- after the lock is already gone.
+            std::lock_guard<std::mutex> cbLock(ctx->cb);
+            ctx->dispatching.store(true, std::memory_order_release);
+            struct DispatchGuard {
+                ConnCtx* c;
+                ~DispatchGuard() { c->dispatching.store(false, std::memory_order_release); }
+            } dispatchGuard{ctx};
+
+            if (!ok || bytesXfr == 0)
+                markDead(ctx);                  // closed or error: tear down (idempotent)
+            else if (ctx->dead.load(std::memory_order_acquire)) {
+                // A prior completion already tore this ctx down. Drop the payload rather
+                // than deliver onData after onClose (or re-arm a closed socket); the
+                // op-ref is still released below.
+            }
+            else if (opType == IoType::Recv)
+                handleRecv(ctx, bytesXfr);
+            else
+                handleSend(ctx, bytesXfr);
+        }
 
         ctx->release();
-        m_operations.complete();
     }
 }
 
 void IocpServer::handleAccept(AcceptOv* aov, DWORD /*bytes*/) {
-    // Inherit listen socket options (required after AcceptEx)
-    setsockopt(aov->clientSock, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT,
-               reinterpret_cast<char*>(&m_listen), sizeof(m_listen));
-
-    auto* ctx = new ConnCtx(m_factory, this);
-    ctx->sock = aov->clientSock;
-
-    // Associate new socket with IOCP; key = ctx pointer
-    CreateIoCompletionPort(reinterpret_cast<HANDLE>(ctx->sock), m_iocp,
-                           reinterpret_cast<ULONG_PTR>(ctx), 0);
-
+    // Inherit listen socket options (required after AcceptEx). Read m_listen under its
+    // mutex, via a snapshot, so it cannot race stop()'s closesocket(m_listen). If the
+    // listener has already closed we are shutting down -- drop this accepted socket.
+    SOCKET listenSnapshot;
     {
-        std::lock_guard lock(m_connsMu);
-        m_conns.insert(ctx);
+        std::lock_guard<std::mutex> lk(m_listenMu);
+        listenSnapshot = m_listen;
+    }
+    if (listenSnapshot == INVALID_SOCKET) {
+        closesocket(aov->clientSock);
+        return;
+    }
+    setsockopt(aov->clientSock, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT,
+               reinterpret_cast<char*>(&listenSnapshot), sizeof(listenSnapshot));
+
+    auto* ctx  = new ConnCtx(m_factory);
+    ctx->sock  = aov->clientSock;
+    ctx->owner = this;
+    ctx->addRef();  // accept-handler reference: keeps the ctx alive for the whole of this
+                    // function even if a send/error completion for it is dispatched on
+                    // another worker; released at the very end, after the callback section.
+
+    // Associate the accepted socket with the completion port; key = ctx. If this fails,
+    // no completion for the socket can ever arrive, so the ctx would never drain -- tear
+    // it down here (it was never inserted into m_conns) rather than publish it.
+    if (!CreateIoCompletionPort(reinterpret_cast<HANDLE>(ctx->sock), m_iocp,
+                                reinterpret_cast<ULONG_PTR>(ctx), 0)) {
+        ctx->close();
+        ctx->release();   // alive ref
+        ctx->release();   // accept-handler ref -> frees
+        return;
     }
 
-    // Resolve the peer address and hand it to the session before onConnect, so
-    // protocols that key on the client IP (bans, IP locking) have it available.
+    // Adopt the connection ONLY while still running, under m_connsMu so the decision is
+    // atomic against stop()'s scan: either this insert precedes the scan (and stop() then
+    // closes the connection) or, once shutting down, we reject it here rather than strand
+    // a ctx that stop() has already scanned past.
+    bool rejected = false;
+    {
+        std::lock_guard<std::mutex> lock(m_connsMu);
+        if (m_running.load(std::memory_order_acquire))
+            m_conns.insert(ctx);
+        else
+            rejected = true;   // shutting down: do not adopt
+    }
+    if (rejected) {
+        // Tear the rejected connection down OUTSIDE m_connsMu: the accept-handler release
+        // drops the last ref and re-enters removeAndDelete(), which locks m_connsMu -- doing
+        // it under the lock would self-deadlock (the mutex is not recursive) and hang stop().
+        ctx->close();
+        ctx->release();   // alive ref
+        ctx->release();   // accept-handler ref -> frees (m_conns.erase is a no-op; never inserted)
+        return;
+    }
+
+    // Resolve the peer address and hand it to the session before onConnect, so protocols
+    // that key on the client IP (bans, IP locking) have it available. No overlapped op is
+    // posted for this ctx yet, so no completion -- hence no concurrent callback -- can be
+    // in flight until onConnect() below.
     if (m_fnGetSockaddrs) {
         SOCKADDR* localAddr  = nullptr;
         SOCKADDR* remoteAddr = nullptr;
@@ -381,56 +538,54 @@ void IocpServer::handleAccept(AcceptOv* aov, DWORD /*bytes*/) {
     ctx->session->setFlowControl(
         std::shared_ptr<net::FlowControl>(ctx->channel, &ctx->channel->out.gate()));
 
-    // Server-initiated greeting (e.g. world server's SMSG_AUTH_CHALLENGE).
-    auto greeting = ctx->session->onConnect();
-    if (!greeting.empty())
-        ctx->enqueue(greeting.data(), greeting.size());
+    {
+        // From onConnect() on, the session may register with a world loop and the greeting
+        // send posts the first overlapped op -- so a completion (and its onClose) can now
+        // race this handler. Run the callbacks under the same per-ctx lock the worker
+        // dispatch uses, and skip if a teardown already won.
+        std::lock_guard<std::mutex> cbLock(ctx->cb);
+        ctx->dispatching.store(true, std::memory_order_release);
+        if (!ctx->dead.load(std::memory_order_acquire)) {
+            // Server-initiated greeting (e.g. world server's SMSG_AUTH_CHALLENGE).
+            auto greeting = ctx->session->onConnect();
+            if (!greeting.empty())
+                ctx->enqueue(greeting.data(), greeting.size());
 
-    if (closeIfDrained(ctx))
-        return;
+            ctx->dispatching.store(false, std::memory_order_release);
+            ctx->closeIfDrained();
 
-    // Post initial recv.
-    if (!postRecv(ctx))
-        markDead(ctx);
+            if (ctx->session->closed() && ctx->channel->out.empty())
+                markDead(ctx);
+            else if (!postRecv(ctx))
+                markDead(ctx);
+        }
+        ctx->dispatching.store(false, std::memory_order_release);
+    }
+
+    ctx->release();  // drop the accept-handler reference
 }
 
 bool IocpServer::postRecv(ConnCtx* ctx) {
-    if (!m_operations.tryBegin())
-        return false;
-
-    ZeroMemory(&ctx->recvOv.ov, sizeof(OVERLAPPED));
-    ctx->recvOv.wsabuf.buf = ctx->recvOv.buf;
-    ctx->recvOv.wsabuf.len = sizeof(ctx->recvOv.buf);
-    ctx->recvOv.flags      = 0;
-    ctx->addRef();  // the completion of this recv will release()
-    if (WSARecv(ctx->sock, &ctx->recvOv.wsabuf, 1,
-                nullptr, &ctx->recvOv.flags, &ctx->recvOv.ov, nullptr) == SOCKET_ERROR) {
-        if (WSAGetLastError() != WSA_IO_PENDING) {
-            ctx->release();  // synchronous failure: no completion will arrive
-            m_operations.complete();
-            return false;
+    bool failed = false;
+    {
+        std::lock_guard<std::mutex> sk(ctx->sockMu);  // no concurrent Winsock call on `sock`
+        if (ctx->sock == INVALID_SOCKET)
+            return false;                              // closed under us; never addRef'd
+        ZeroMemory(&ctx->recvOv.ov, sizeof(OVERLAPPED));
+        ctx->recvOv.wsabuf.buf = ctx->recvOv.buf;
+        ctx->recvOv.wsabuf.len = sizeof(ctx->recvOv.buf);
+        ctx->recvOv.flags      = 0;
+        ctx->addRef();  // the completion of this recv will release()
+        if (WSARecv(ctx->sock, &ctx->recvOv.wsabuf, 1,
+                    nullptr, &ctx->recvOv.flags, &ctx->recvOv.ov, nullptr) == SOCKET_ERROR
+            && WSAGetLastError() != WSA_IO_PENDING) {
+            failed = true;
         }
     }
-    return true;
-}
-
-bool IocpServer::postControl(ConnCtx* ctx) {
-    bool expected = false;
-    if (!ctx->controlPending.compare_exchange_strong(expected, true))
-        return true;
-
-    if (!m_operations.tryBegin()) {
-        ctx->controlPending.store(false);
-        return false;
-    }
-
-    ZeroMemory(&ctx->closeOv, sizeof(OVERLAPPED));
-    ctx->addRef();
-    if (!PostQueuedCompletionStatus(m_iocp, 0,
-            reinterpret_cast<ULONG_PTR>(ctx), &ctx->closeOv)) {
-        ctx->controlPending.store(false);
-        ctx->release();
-        m_operations.complete();
+    if (failed) {
+        ctx->release();  // synchronous failure: no completion. Released outside sockMu so
+                         // the last release's removeAndDelete()->m_connsMu cannot invert
+                         // against stop()'s m_connsMu->sockMu.
         return false;
     }
     return true;
@@ -443,12 +598,16 @@ void IocpServer::handleRecv(ConnCtx* ctx, DWORD bytes) {
     if (!response.empty())
         ctx->enqueue(response.data(), response.size());
 
+    ctx->closeIfDrained();
+
     // A session that asks to close having just queued its final bytes (an auth
     // rejection, say) must still get them out, so only tear down once the outbound
     // buffer has actually drained. Otherwise keep a recv posted: it guarantees a
     // completion will arrive to carry the teardown even if the peer goes quiet.
-    if (closeIfDrained(ctx))
+    if (ctx->session->closed() && ctx->channel->out.empty()) {
+        markDead(ctx);
         return;
+    }
 
     if (!postRecv(ctx))
         markDead(ctx);
@@ -456,39 +615,12 @@ void IocpServer::handleRecv(ConnCtx* ctx, DWORD bytes) {
 
 void IocpServer::handleSend(ConnCtx* ctx, DWORD bytes) {
     ctx->onSendComplete(bytes);
+    ctx->closeIfDrained();
     // Only tear down once the session's remaining output has actually drained —
     // otherwise a session that closes right after queueing its last packet (e.g. an
     // auth rejection followed by a disconnect) loses those bytes.
-    closeIfDrained(ctx);
-}
-
-void IocpServer::handleControl(ConnCtx* ctx) {
-    ctx->controlPending.store(false);
-    closeIfDrained(ctx);
-}
-
-bool IocpServer::closeIfDrained(ConnCtx* ctx) {
-    bool const sessionClosed = ctx->session && ctx->session->closed();
-    bool shouldClose = false;
-    {
-        std::lock_guard<std::mutex> lock(ctx->channel->mu);
-        if (sessionClosed)
-            ctx->channel->closeRequested = true;
-        shouldClose = ctx->channel->closeRequested && !ctx->channel->sendShutdown &&
-                      ctx->channel->out.empty();
-        if (shouldClose)
-            ctx->channel->sendShutdown = true;
-    }
-
-    if (shouldClose)
-    {
-        // On Winsock, closing an overlapped socket directly can reset the peer even
-        // after the final WSASend completion. Queue the FIN first, then perform the
-        // normal idempotent teardown so clients receive all bytes followed by EOF.
-        shutdown(ctx->sock, SD_SEND);
+    if (ctx->session->closed() && ctx->channel->out.empty())
         markDead(ctx);
-    }
-    return shouldClose;
 }
 
 void IocpServer::markDead(ConnCtx* ctx) {
@@ -507,10 +639,8 @@ void IocpServer::markDead(ConnCtx* ctx) {
         ctx->session->onClose();
 
     ctx->close();  // forces any still-pending recv/send to complete (with error)
-    {
-        std::lock_guard lock(m_connsMu);
-        m_conns.erase(ctx);
-    }
+    // The ctx is removed from m_conns in release()/removeAndDelete when its last ref drops
+    // -- not here -- so an empty m_conns means every overlapped op has actually drained.
     ctx->release();  // drop the initial "alive" reference; frees when ops have drained
 }
 

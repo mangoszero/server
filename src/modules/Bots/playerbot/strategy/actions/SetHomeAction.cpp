@@ -1,3 +1,4 @@
+#include <cmath>
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "SetHomeAction.h"

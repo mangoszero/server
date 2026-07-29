@@ -43,6 +43,9 @@
 
 
 
+#include "Common/Locales.h"
+#include <sstream>
+#include <string>
 #include "Chat.h"
 #include "Log.h"
 #include "World.h"

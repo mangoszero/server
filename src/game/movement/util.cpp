@@ -44,6 +44,7 @@
  * @see Movement namespace for all utilities
  */
 
+#include <string>
 #include "MoveSplineFlag.h"
 #include <math.h>
 

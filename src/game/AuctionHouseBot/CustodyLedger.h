@@ -40,7 +40,7 @@
 #ifndef MANGOS_CUSTODY_LEDGER_H
 #define MANGOS_CUSTODY_LEDGER_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 
 #include <string>
 #include <vector>

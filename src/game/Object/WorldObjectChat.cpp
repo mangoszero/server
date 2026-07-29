@@ -41,6 +41,7 @@
 
 
 
+#include "Utilities/Errors.h"
 #include "Object.h"
 #include "SharedDefines.h"
 #include "WorldPacket.h"
@@ -58,7 +59,6 @@
 #include "Transports.h"
 #include "TargetedMovementGenerator.h"
 #include "WaypointMovementGenerator.h"
-#include "VMapFactory.h"
 #include "CellImpl.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
@@ -68,6 +68,9 @@
 #include "CreatureLinkingMgr.h"
 #include "Chat.h"
 #include "GameTime.h"
+#include "Transports.h"
+#include "TransportMap.h"
+#include "MapManager.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -267,11 +270,11 @@ void WorldObject::MonsterText(MangosStringLocale const* textData, Unit const* ta
         {
             MaNGOS::MonsterChatBuilder say_build(*this, CHAT_MSG_MONSTER_YELL, textData, textData->LanguageId, target);
             MaNGOS::LocalizedPacketDo<MaNGOS::MonsterChatBuilder> say_do(say_build);
-            uint32 zoneid = GetZoneId();
+            uint32 zoneid = GetTerrain()->GetZoneId(Where().X(), Where().Y(), Where().Z());
             Map::PlayerList const& pList = GetMap()->GetPlayers();
             for (Map::PlayerList::const_iterator itr = pList.begin(); itr != pList.end(); ++itr)
             {
-                if (itr->getSource()->GetZoneId() == zoneid)
+                if (itr->getSource()->GetTerrain()->GetZoneId(itr->getSource()->Where().X(), itr->getSource()->Where().Y(), itr->getSource()->Where().Z()) == zoneid)
                 {
                     say_do(itr->getSource());
                 }
@@ -289,10 +292,68 @@ void WorldObject::MonsterText(MangosStringLocale const* textData, Unit const* ta
  */
 void WorldObject::SendMessageToSet(WorldPacket* data, bool /*bToSelf*/) const
 {
-    // if object is in world, map for it already created!
-    if (IsInWorld())
+    if (!IsInWorld())
     {
-        GetMap()->MessageBroadcast(this, data);
+        return;
+    }
+
+    // A boarded unit's audience is EVERYONE ON ITS OWN MAP -- which is the deck, and which
+    // is exactly where the passengers are too. That is the whole point of the vessel being
+    // a map: the ordinary broadcast below already reaches the people standing next to him.
+    GetMap()->MessageBroadcast(this, data);
+
+    // THE RELAY, OUTBOUND. The people ashore are on another map and no cell of theirs will
+    // ever hold this deckhand, so the same packet goes out again to the watchers the vessel
+    // gathered at the top of this tick. Sent immediately: the deck runs INSIDE the tick of
+    // the map it sails, on that map's own thread, so there is nothing to wait for and no
+    // race to avoid. Without this a deckhand walks for his shipmates and stands frozen for
+    // the pier.
+    if (GetMap()->AsTransport())
+    {
+        for (Player* observer : GetMap()->ExternalObservers())
+        {
+            if (observer && observer->GetSession())
+            {
+                observer->GetSession()->SendPacket(data);
+            }
+        }
+
+        return;
+    }
+
+    // THE RELAY, INBOUND, and it is not filtered by anything. Whatever happens on the water
+    // a ship is crossing has to reach the people standing on her: they are on another map,
+    // no cell of theirs will ever hold the thing that moved, and a passenger who is told
+    // nothing watches a harbour full of statues.
+    //
+    // No distance test. The one object that could measure it is the vessel, whose pose is an
+    // estimate we already refuse to trust for anything that decides something -- and being
+    // told about a creature too far away costs a packet, while not being told about one in
+    // front of you costs the illusion that the world is running.
+    MapManager::TransportsByMapType::const_iterator vessels =
+        sMapMgr.m_TransportsByMap.find(GetMapId());
+    if (vessels == sMapMgr.m_TransportsByMap.end())
+    {
+        return;
+    }
+
+    for (Transport* vessel : vessels->second)
+    {
+        TransportMap* hull = vessel->AsMap();
+        if (!hull || vessel->GetMap() != GetMap())
+        {
+            continue;
+        }
+
+        Map::PlayerList const& aboard = hull->GetPlayers();
+        for (Map::PlayerList::const_iterator itr = aboard.begin(); itr != aboard.end(); ++itr)
+        {
+            Player* passenger = itr->getSource();
+            if (passenger && passenger->GetSession())
+            {
+                passenger->GetSession()->SendPacket(data);
+            }
+        }
     }
 }
 

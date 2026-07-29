@@ -20,7 +20,6 @@
 #ifndef TRINITY_DISABLEMGR_H
 #define TRINITY_DISABLEMGR_H
 
-#include "VMapManager2.h"
 
 class Unit;
 
@@ -65,6 +64,17 @@ namespace DisableMgr
     void LoadDisables();
     bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit = NULL, uint8 flags = 0, uint32 data = 0);
     void CheckQuestDisables();
+    // Per-map collision disables from the `disables` table. The bits used to be
+    // declared inside the vmap library and reached from here only because it happened
+    // to be linked; they are a server rule, so they are declared with the rule.
+    enum CollisionDisableFlags
+    {
+        COLLISION_DISABLE_AREAFLAG      = 0x1,
+        COLLISION_DISABLE_HEIGHT        = 0x2,
+        COLLISION_DISABLE_LOS           = 0x4,
+        COLLISION_DISABLE_LIQUIDSTATUS  = 0x8
+    };
+
     bool IsVMAPDisabledFor(uint32 entry, uint8 flags);
     bool IsPathfindingEnabled(uint32 mapId);
 }

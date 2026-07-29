@@ -26,44 +26,29 @@
 #define MANGOS_THREADLOCALSTORE_H
 
 #include <map>
-#include <mutex>
 #include <thread>
 
 namespace MaNGOS
 {
-    /**
-     * @brief One instance of T per thread, per store object.
-     *
-     * Note that a plain `thread_local` will not serve
-     * here: the server runs three Database objects (world, characters, login) and each
-     * needs its own per-thread helper, which a single static thread_local cannot
-     * express — the object identity is part of the key.
-     *
-     * std::map (rather than unordered_map) is deliberate: its references are stable
-     * across inserts, so a T& handed out to one thread stays valid when another thread
-     * later registers itself. Access takes a lock, which is fine for the transaction
-     * bookkeeping this holds — it is not on a per-packet path.
-     */
     template<typename T>
     class ThreadLocalStore
     {
         public:
-
             /// Access the calling thread's instance, creating it on first use.
             T& get()
             {
-                const std::thread::id self = std::this_thread::get_id();
-
-                std::lock_guard<std::mutex> guard(m_mutex);
-                return m_slots[self];
+                // The map lives in THREAD-LOCAL storage and is keyed by store, not the
+                // other way round. That way a slot dies with the thread that made it --
+                // the previous shape was one shared map keyed by std::thread::id, which
+                // never removed anything and so handed a reused id the dead thread's
+                // state. Keying by `this` is what lets the three DatabaseType instances
+                // each keep their own slot without a bare `thread_local T` collapsing
+                // them into one.
+                thread_local std::map<const ThreadLocalStore*, T> slots;
+                return slots[this];
             }
 
             T* operator->() { return &get(); }
-
-        private:
-
-            std::mutex                   m_mutex;
-            std::map<std::thread::id, T> m_slots;
     };
 }
 

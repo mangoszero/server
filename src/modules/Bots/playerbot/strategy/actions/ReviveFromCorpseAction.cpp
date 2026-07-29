@@ -1,4 +1,5 @@
 #include "botpch.h"
+#include "Corpse.h"
 #include "../../playerbot.h"
 #include "ReviveFromCorpseAction.h"
 #include "../../PlayerbotFactory.h"

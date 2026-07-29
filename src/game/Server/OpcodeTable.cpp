@@ -44,6 +44,7 @@
  */
 
 #include "OpcodeTable.h"
+#include "Corpse.h"
 
 /**
  * @brief Define opcode handler

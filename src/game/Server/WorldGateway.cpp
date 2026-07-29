@@ -22,6 +22,8 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "Common/Locales.h"
+#include <mutex>
 #include "WorldGateway.h"
 
 #include "AddonHandler.h"

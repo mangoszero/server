@@ -25,27 +25,47 @@
 #ifndef MANGOSSERVER_ERRORS_H
 #define MANGOSSERVER_ERRORS_H
 
-#include "Common/Common.h"
 #include <cassert>
+#include "Platform/Define.h"
 #include <cstdio>
+#include <cstdlib>
 
-// Normal assert.
+// A failed check is fatal, in every configuration.
+//
+// This used to call assert(), which <cassert> removes when NDEBUG is defined -- and
+// NDEBUG is in every Release build. The macro therefore printed a line and carried on,
+// while its own comment claimed otherwise, and callers like
+// MANGOS_ASSERT(index < m_valuesCount || ...) went on to index out of bounds. abort()
+// cannot be compiled out.
+//
+// do/while(0), because a bare `if (...) { }` lets `if (a) MANGOS_ASSERT(b); else c();`
+// bind the else to the macro's own if. stderr, because stdout belongs to the off-thread
+// console writer and this message must not tear against it.
 #define WPError(CONDITION)                                                   \
-if (!(CONDITION))                                                            \
+do                                                                           \
 {                                                                            \
-    printf("%s:%i: Error: Assertion in %s failed: %s",                       \
-        __FILE__, __LINE__, __FUNCTION__, STRINGIZE(CONDITION));             \
-    assert(STRINGIZE(CONDITION) && 0);                                       \
-}
+    if (!(CONDITION))                                                        \
+    {                                                                        \
+        std::fprintf(stderr,                                                 \
+            "%s:%i: Error: Assertion in %s failed: %s\n",                    \
+            __FILE__, __LINE__, __FUNCTION__, STRINGIZE(CONDITION));         \
+        std::fflush(stderr);                                                 \
+        std::abort();                                                        \
+    }                                                                        \
+} while (0)
 
-// Just warn.
+// Reports and continues.
 #define WPWarning(CONDITION)                                                 \
-if (!(CONDITION))                                                            \
+do                                                                           \
 {                                                                            \
-    printf("%s:%i: Warning: Assertion in %s failed: %s",                     \
-        __FILE__, __LINE__, __FUNCTION__, STRINGIZE(CONDITION));             \
-}
+    if (!(CONDITION))                                                        \
+    {                                                                        \
+        std::fprintf(stderr,                                                 \
+            "%s:%i: Warning: Assertion in %s failed: %s\n",                  \
+            __FILE__, __LINE__, __FUNCTION__, STRINGIZE(CONDITION));         \
+    }                                                                        \
+} while (0)
 
-#define MANGOS_ASSERT WPError // Error even if in release mode.
+#define MANGOS_ASSERT WPError // Fatal in release too -- see above.
 
 #endif

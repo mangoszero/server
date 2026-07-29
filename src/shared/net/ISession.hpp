@@ -24,8 +24,10 @@
 
 #pragma once
 
-// Protocol-agnostic per-connection contract used by every networking backend. The
-// transport owns the socket and byte plumbing; a concrete ISession owns the protocol.
+// Protocol-agnostic per-connection contract used by every backend. The transport owns the
+// sockets and the byte plumbing; a concrete ISession owns the protocol -- which is what
+// lets one transport serve world clients and remote access alike, each supplying its own
+// ISession and factory.
 
 #include <cstddef>
 #include <cstdint>

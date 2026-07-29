@@ -22,7 +22,7 @@
 #ifndef AH_WORKER_AUCTION_BOOK_H
 #define AH_WORKER_AUCTION_BOOK_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "Journal.h"
 
 #include <map>

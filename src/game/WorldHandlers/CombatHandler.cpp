@@ -35,7 +35,7 @@
  * Actual combat calculations (damage, hit/miss) are handled elsewhere.
  */
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "Log.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"

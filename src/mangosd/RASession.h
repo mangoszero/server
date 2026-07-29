@@ -29,9 +29,13 @@
 #ifndef MANGOS_H_RASESSION
 #define MANGOS_H_RASESSION
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Common/ServerDefines.h"
 #include "SharedDefines.h"
 
+#include "Service.h"
+
+#include "Log.h"
 #include "net/Server.hpp"
 
 #include <atomic>
@@ -127,6 +131,42 @@ class RaServer
 
         net::Server m_server;
         bool        m_started;
+};
+
+/**
+ * @brief The remote-administration listener, as a Master service.
+ *
+ * Nothing but lifetime: the listener itself is RaServer, and each accepted
+ * connection becomes an RASession on the shared networking engine -- the same
+ * engine the world port uses, rather than the separate hand-rolled acceptor
+ * this replaced.
+ */
+class RaService : public IService
+{
+    public:
+
+        RaService(uint16_t port, const std::string& bindIp)
+            : m_port(port), m_bindIp(bindIp) {}
+
+        const char* Name() const override { return "remote administration"; }
+
+        void Start() override
+        {
+            if (!m_server.Start(m_port, m_bindIp))
+            {
+                sLog.outError("Remote administration could not bind %s:%u",
+                              m_bindIp.c_str(), unsigned(m_port));
+            }
+        }
+
+        void RequestStop() override { m_server.Stop(); }
+        void Join() override {}
+
+    private:
+
+        RaServer    m_server;
+        uint16_t    m_port;
+        std::string m_bindIp;
 };
 
 #endif

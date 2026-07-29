@@ -22,7 +22,7 @@
 #ifndef AH_SERVICE_BOT_BRAIN_H
 #define AH_SERVICE_BOT_BRAIN_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "AhBotDefines.h"
 #include "ServiceConfig.h"
 #include "ItemPool.h"

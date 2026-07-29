@@ -37,7 +37,7 @@
 #ifndef MANGOS_CUSTODY_SERVICE_H
 #define MANGOS_CUSTODY_SERVICE_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "CustodyDeferred.h"
 #include "CustodyLedger.h"
 

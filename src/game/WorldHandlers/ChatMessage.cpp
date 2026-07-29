@@ -43,6 +43,9 @@
 
 
 
+#include "Utilities/Errors.h"
+#include <string>
+#include "Utilities/Util.h"
 #include "Chat.h"
 #include "Language.h"
 #include "WorldPacket.h"

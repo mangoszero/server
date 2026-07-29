@@ -25,7 +25,8 @@
 #ifndef MANGOSSERVER_CAMERA_H
 #define MANGOSSERVER_CAMERA_H
 
-#include "Common.h"
+#include <set>
+#include <list>
 #include "GridDefines.h"
 
 class ViewPoint;

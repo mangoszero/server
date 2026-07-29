@@ -149,13 +149,6 @@ BindIP                       = "0.0.0.0"
 #        Default: 1 (only save on logout)
 #                 0 (save on every player save)
 #
-#    vmap.enableLOS
-#    vmap.enableHeight
-#        Enable/Disable VMaps support for line of sight and height calculation
-#        You need to extract the VMaps in order to enable those options
-#        Default: 1 (enable)
-#                 0 (disable)
-#
 #    vmap.ignoreSpellIds
 #        These spells are ignored for LoS calculation
 #        List of ids with delimiter ','
@@ -228,8 +221,6 @@ ChangeWeatherInterval             = 600000
 PlayerSave.Interval               = 900000
 PlayerSave.Stats.MinLevel         = 0
 PlayerSave.Stats.SaveOnlyOnLogout = 1
-vmap.enableLOS                    = 1
-vmap.enableHeight                 = 1
 vmap.ignoreSpellIds               = "7720"
 vmap.enableIndoorCheck            = 1
 DetectPosCollision                = 1
@@ -1883,7 +1874,7 @@ SOAP.Port      = 7878
 #        HARD REQUIREMENT: AH.Service.Custody = 1 (the write path rides the
 #        custody escrow ledger). Enabling this with Custody = 0 is unsupported.
 #        The worker's DB account additionally needs INSERT/UPDATE/DELETE on the
-#        `auction` and `ah_worker_journal` tables (see doc/AuctionHouseBot.md);
+#        `auction` and `ah_worker_journal` tables (see extra/doc/AuctionHouseBot.md);
 #        the ah_worker_journal migration MUST be applied first.
 #        Default: 0 (disabled; mangosd owns the book, as today)
 ###############################################################################

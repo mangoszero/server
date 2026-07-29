@@ -24,10 +24,15 @@
 
 #pragma once
 
-// Byte-counted backpressure gate owned by each connection's net::SendQueue. The queue
-// calls onQueued()/onSent() as bytes enter and leave the outbound buffer and onClosed()
-// at teardown; a bulk producer parks in awaitWritable(). The hot path is lock-free
-// unless a producer is actually parked.
+// Byte-counted backpressure gate owned by each connection's net::SendQueue, so all three
+// transports share one implementation of the contract. The queue calls onQueued()/onSent()
+// as bytes enter and leave the outbound buffer and onClosed() once at teardown; a bulk
+// producer parks in awaitWritable().
+//
+// The ceiling is BYTES, not buffers: the queue coalesces packets into one contiguous
+// stream, so a buffer count would measure nothing, and memory is what a producer wants
+// bounded. The hot path is lock-free unless a producer is actually parked -- only a
+// blocked one makes onSent() take the lock to signal it.
 
 #include "net/ISession.hpp"
 

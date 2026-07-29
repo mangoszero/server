@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include "Action.h"
 #include "Event.h"
 #include "../PlayerbotAIAware.h"

@@ -52,7 +52,13 @@
 #ifndef MANGOSSERVER_PET_H
 #define MANGOSSERVER_PET_H
 
-#include "Common.h"
+#include <unordered_map>
+#include "Utilities/Errors.h"
+#include "Platform/Define.h"
+#include "Utilities/MathDefines.h"
+#include <ctime>
+#include <vector>
+#include <map>
 #include "ObjectGuid.h"
 #include "Creature.h"
 #include "Unit.h"
@@ -189,7 +195,7 @@ enum PetNameInvalidReason
     PET_NAME_DECLENSION_DOESNT_MATCH_BASE_NAME              = 16
 };
 
-typedef UNORDERED_MAP<uint32, PetSpell> PetSpellMap;
+typedef std::unordered_map<uint32, PetSpell> PetSpellMap;
 typedef std::map<uint32, uint32> TeachSpellMap;
 typedef std::vector<uint32> AutoSpellList;
 
@@ -355,11 +361,6 @@ class Pet : public Creature
 
         bool    m_removed;                                  // prevent overwrite pet state in DB at next Pet::Update if pet already removed(saved)
 
-        bool HandleTransportFollow(Unit* target, float offset, float angle, bool walking, bool& outMoved) override;
-
-        Transport* GetTransport() const          { return m_transport; }
-        void       SetTransport(Transport* t)    { m_transport = t; }
-        void       UpdateTransport(Player* plOwner);
 
     protected:
         uint32  m_happinessTimer;
@@ -373,8 +374,6 @@ class Pet : public Creature
 
     private:
 
-        bool       m_pendingTransportReboard;               ///< fires PetSpellInitialize + SMSG_MONSTER_MOVE_TRANSPORT on next tick after map re-add
-        Transport* m_transport;                             ///< transport this pet is riding; set/cleared alongside AddPassenger/RemovePassenger
 
         PetModeFlags m_petModeFlags;
 

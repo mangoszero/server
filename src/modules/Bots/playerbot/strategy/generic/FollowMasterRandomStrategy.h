@@ -1,3 +1,4 @@
+#include <list>
 #include "NonCombatStrategy.h"
 #pragma once
 

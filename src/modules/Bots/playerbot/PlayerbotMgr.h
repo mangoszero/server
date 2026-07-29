@@ -1,7 +1,8 @@
 #ifndef _PLAYERBOTMGR_H
 #define _PLAYERBOTMGR_H
 
-#include "Common.h"
+#include <unordered_map>
+#include "Platform/Define.h"
 #include "PlayerbotAIBase.h"
 
 class WorldPacket;
@@ -10,9 +11,9 @@ class Unit;
 class Object;
 class Item;
 
-typedef UNORDERED_MAP<uint64, Player*> PlayerBotMap;
+typedef std::unordered_map<uint64, Player*> PlayerBotMap;
 
-class MANGOS_DLL_SPEC PlayerbotHolder : public PlayerbotAIBase
+class PlayerbotHolder : public PlayerbotAIBase
 {
     public:
         PlayerbotHolder();

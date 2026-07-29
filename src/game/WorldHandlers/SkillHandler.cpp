@@ -37,7 +37,7 @@
  * @note Talent wipes require interaction with a class trainer NPC
  */
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "Opcodes.h"
 #include "Log.h"
 #include "Player.h"

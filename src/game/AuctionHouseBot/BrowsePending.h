@@ -22,7 +22,8 @@
 #ifndef MANGOS_AH_BROWSE_PENDING_H
 #define MANGOS_AH_BROWSE_PENDING_H
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <ctime>
 #include "BrowseMessages.h"
 #include "Utilities/ByteBuffer.h"
 #include <unordered_map>

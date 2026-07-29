@@ -26,7 +26,12 @@
 #include <map>
 
 #include "Policies/Singleton.h"
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Common/TimeConstants.h"
+#include <ctime>
+#include <string>
+#include <set>
+#include <vector>
 
 #ifndef MANGOSSERVER_LFGMGR_H
 #define MANGOSSERVER_LFGMGR_H

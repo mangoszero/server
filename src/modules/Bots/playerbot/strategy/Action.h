@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include "Event.h"
 #include "Value.h"
 #include "AiObject.h"

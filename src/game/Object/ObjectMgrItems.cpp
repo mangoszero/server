@@ -24,6 +24,8 @@
 
 
 
+#include "Common/Locales.h"
+#include <string>
 #include "ObjectMgr.h"
 #include "LivingWorldAnchorPolicy.h"
 #include "MotionGenerators/MotionMaster.h"

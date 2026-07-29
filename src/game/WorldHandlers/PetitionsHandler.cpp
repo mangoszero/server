@@ -38,7 +38,9 @@
  * turned in to create a guild or arena team.
  */
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <string>
+#include <sstream>
 #include "Language.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -50,6 +52,7 @@
 #include "GuildMgr.h"
 #include "GossipDef.h"
 #include "SocialMgr.h"
+#include "PlayerRegistry.h"
 
 // Charters ID in item_template
 #define GUILD_CHARTER               5863
@@ -535,7 +538,7 @@ void WorldSession::HandleOfferPetitionOpcode(WorldPacket& recv_data)
     recv_data >> petitionGuid;                              // petition guid
     recv_data >> playerGuid;                                // player guid
 
-    Player* player = sObjectAccessor.FindPlayer(playerGuid);
+    Player* player = sPlayerRegistry.Find(playerGuid);
     if (!player)
     {
         return;

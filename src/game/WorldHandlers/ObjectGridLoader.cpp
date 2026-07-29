@@ -43,8 +43,9 @@
  * @see ObjectGridRespawnMover for respawn point correction
  */
 
+#include "Utilities/Errors.h"
 #include "ObjectGridLoader.h"
-#include "ObjectAccessor.h"
+#include "CorpseManager.h"
 #include "ObjectMgr.h"
 #include "MapPersistentStateMgr.h"
 #include "Creature.h"
@@ -135,7 +136,9 @@ ObjectGridRespawnMover::Visit(CreatureMapType& m)
         Cell const& cur_cell  = c->GetCurrentCell();
 
         float resp_x, resp_y, resp_z;
-        c->GetRespawnCoord(resp_x, resp_y, resp_z);
+        resp_x = c->Spawn().X();
+    resp_y = c->Spawn().Y();
+    resp_z = c->Spawn().Z();
         CellPair resp_val = MaNGOS::ComputeCellPair(resp_x, resp_y);
         Cell resp_cell(resp_val);
 
@@ -288,7 +291,7 @@ void LoadHelper(CellCorpseSet const& cell_corpses, CellPair& cell, CorpseMapType
 
         uint32 player_lowguid = itr->first;
 
-        Corpse* obj = sObjectAccessor.GetCorpseForPlayerGUID(ObjectGuid(HIGHGUID_PLAYER, player_lowguid));
+        Corpse* obj = sCorpseManager.FindForPlayer(ObjectGuid(HIGHGUID_PLAYER, player_lowguid));
         if (!obj)
         {
             continue;
@@ -386,8 +389,7 @@ void ObjectGridLoader::LoadCell(uint32 cellX, uint32 cellY)
     i_cell.data.Part.cell_x = cellX;
     i_cell.data.Part.cell_y = cellY;
 
-    GridLoaderType loader;
-    loader.Load(i_grid(cellX, cellY), *this);
+    Load(i_grid(cellX, cellY));
 }
 
 /**

@@ -22,7 +22,7 @@
 #ifndef AH_WORKER_BROWSE_HANDLER_H
 #define AH_WORKER_BROWSE_HANDLER_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "BrowseMessages.h"
 #include "ServiceDatabase.h"
 #include "IpcChannel.h"            // IpcClient

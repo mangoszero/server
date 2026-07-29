@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include "GenericMageStrategy.h"
 #include "../generic/NonCombatStrategy.h"
 

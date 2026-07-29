@@ -46,7 +46,10 @@
  * @see LFGHandler for network opcode handling
  */
 
-#include "Common.h"
+#include <set>
+#include "Utilities/Errors.h"
+#include "Platform/Define.h"
+#include "Common/TimeConstants.h"
 #include "ProgressBar.h"
 #include "SharedDefines.h"
 #include "Player.h"

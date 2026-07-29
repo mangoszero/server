@@ -43,6 +43,7 @@
  * it only classifies them for the client's information.
  */
 
+#include <string>
 #include <zlib.h>
 #include "AddonHandler.h"
 #include "Database/DatabaseEnv.h"
@@ -50,7 +51,6 @@
 #include "Log.h"
 #include "Policies/Singleton.h"
 
-INSTANTIATE_SINGLETON_1(AddonHandler);
 
 /**
  * @brief Construct AddonHandler singleton

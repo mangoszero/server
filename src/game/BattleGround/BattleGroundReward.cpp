@@ -38,6 +38,7 @@
 
 
 
+#include <string>
 #include "BattleGround.h"
 #include "Object.h"
 #include "Player.h"

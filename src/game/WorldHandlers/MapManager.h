@@ -25,7 +25,11 @@
 #ifndef MANGOS_MAPMANAGER_H
 #define MANGOS_MAPMANAGER_H
 
-#include "Common.h"
+#include <cmath>
+#include <functional>
+#include "Utilities/MathDefines.h"
+#include <map>
+#include <set>
 #include "Platform/Define.h"
 #include "Policies/Singleton.h"
 #include "Map.h"
@@ -124,21 +128,6 @@ class MapManager : public MaNGOS::Singleton<MapManager>
             return IsValidMapCoord(loc.mapid, loc.coord_x, loc.coord_y, loc.coord_z, loc.orientation);
         }
 
-        // modulos a radian orientation to the range of 0..2PI
-        static float NormalizeOrientation(float o)
-        {
-            // fmod only supports positive numbers. Thus we have
-            // to emulate negative numbers
-            if (o < 0)
-            {
-                float mod = o * -1;
-                mod = fmod(mod, 2.0f * M_PI_F);
-                mod = -mod + 2.0f * M_PI_F;
-                return mod;
-            }
-            return fmod(o, 2.0f * M_PI_F);
-        }
-
         void RemoveAllObjectsInRemoveList();
 
         struct LivingWorldStartupStats
@@ -146,7 +135,6 @@ class MapManager : public MaNGOS::Singleton<MapManager>
             uint32 forcedMaps = 0;
             uint32 totalUniqueGrids = 0;
             uint32 totalNewlyLoaded = 0;
-            uint32 totalLocalTransports = 0;
         };
 
         LivingWorldStartupStats LoadContinents();
@@ -155,8 +143,8 @@ class MapManager : public MaNGOS::Singleton<MapManager>
         typedef std::set<Transport*> TransportSet;
         TransportSet m_Transports;
 
-        typedef std::map<uint32, TransportSet> TransportMap;
-        TransportMap m_TransportsByMap;
+        typedef std::map<uint32, TransportSet> TransportsByMapType;
+        TransportsByMapType m_TransportsByMap;
 
         uint32 GenerateInstanceId()
         {

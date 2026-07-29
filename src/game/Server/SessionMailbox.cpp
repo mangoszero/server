@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
+ * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <memory>
+#include <mutex>
 #include "SessionMailbox.h"
 
 SessionMailbox::~SessionMailbox()
@@ -32,28 +34,23 @@ SessionMailbox::~SessionMailbox()
 bool SessionMailbox::Enqueue(std::unique_ptr<WorldPacket> packet)
 {
     if (!packet)
-    {
         return false;
-    }
 
     std::lock_guard<std::mutex> guard(m_stateLock);
     if (m_closed)
-    {
         return false;
-    }
 
-    WorldPacket* const accepted = packet.get();
+    WorldPacket* accepted = packet.get();
     m_packets.add(accepted);
-    return packet.release() == accepted;
+    (void)packet.release();
+    return true;
 }
 
 bool SessionMailbox::Next(WorldPacket*& packet)
 {
     std::lock_guard<std::mutex> guard(m_stateLock);
     if (m_closed)
-    {
         return false;
-    }
     return m_packets.next(packet);
 }
 
@@ -62,17 +59,13 @@ void SessionMailbox::Close()
     {
         std::lock_guard<std::mutex> guard(m_stateLock);
         if (m_closed)
-        {
             return;
-        }
         m_closed = true;
     }
 
     WorldPacket* packet = nullptr;
     while (m_packets.next(packet))
-    {
         delete packet;
-    }
 }
 
 bool SessionMailbox::IsClosed() const

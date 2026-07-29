@@ -70,7 +70,7 @@
 #ifndef MANGOS_H_BATTLEGROUNDAB
 #define MANGOS_H_BATTLEGROUNDAB
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "BattleGround.h"
 
 /**

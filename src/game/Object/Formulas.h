@@ -25,6 +25,7 @@
 #ifndef MANGOS_FORMULAS_H
 #define MANGOS_FORMULAS_H
 
+#include <cmath>
 #include "World.h"
 
 struct HonorScores

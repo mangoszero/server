@@ -25,7 +25,10 @@
 #ifndef SQLSTORAGE_H
 #define SQLSTORAGE_H
 
-#include "Common/Common.h"
+#include <unordered_map>
+#include <utility>
+#include "Platform/Define.h"
+#include <map>
 #include "Database/DatabaseEnv.h"
 #include "DataStores/DBCFileLoader.h"
 
@@ -35,7 +38,7 @@
  */
 class SQLStorageBase
 {
-    template<class DerivedLoader, class StorageClass> friend class SQLStorageLoaderBase;
+        template<class DerivedLoader, class StorageClass> friend class SQLStorageLoaderBase;
 
     public:
         /**
@@ -44,7 +47,6 @@ class SQLStorageBase
          * @return const char
          */
         char const* GetTableName() const { return m_tableName; }
-
         /**
          * @brief
          *
@@ -59,14 +61,12 @@ class SQLStorageBase
          * @return FieldFormat
          */
         FieldFormat GetDstFormat(uint32 idx) const { return (FieldFormat)m_dst_format[idx]; }
-
         /**
          * @brief
          *
          * @return const char
          */
         const char* GetDstFormat() const { return m_dst_format; }
-
         /**
          * @brief
          *
@@ -74,7 +74,6 @@ class SQLStorageBase
          * @return FieldFormat
          */
         FieldFormat GetSrcFormat(uint32 idx) const { return (FieldFormat)m_src_format[idx]; }
-
         /**
          * @brief
          *
@@ -88,7 +87,6 @@ class SQLStorageBase
          * @return uint32
          */
         uint32 GetMaxEntry() const { return m_maxEntry; }
-
         /**
          * @brief
          *
@@ -97,14 +95,13 @@ class SQLStorageBase
         uint32 GetRecordCount() const { return m_recordCount; }
 
         template<typename T>
-
         /**
          * @brief
          *
          */
         class SQLSIterator
         {
-            friend class SQLStorageBase;
+                friend class SQLStorageBase;
 
             public:
                 /**
@@ -118,25 +115,19 @@ class SQLStorageBase
                  * @brief
                  *
                  */
-                void operator ++()
-                {
-                    pointer += recordSize;
-                }
-
+                void operator ++() { pointer += recordSize; }
                 /**
                  * @brief
                  *
                  * @return const T *operator
                  */
                 T const* operator *() const { return getValue(); }
-
                 /**
                  * @brief
                  *
                  * @return const T *operator ->
                  */
                 T const* operator ->() const { return getValue(); }
-
                 /**
                  * @brief
                  *
@@ -144,7 +135,6 @@ class SQLStorageBase
                  * @return bool operator
                  */
                 bool operator <(const SQLSIterator& r) const { return pointer < r.pointer; }
-
                 /**
                  * @brief
                  *
@@ -165,7 +155,6 @@ class SQLStorageBase
         };
 
         template<typename T>
-
         /**
          * @brief
          *
@@ -173,7 +162,6 @@ class SQLStorageBase
          */
         SQLSIterator<T> getDataBegin() const { return SQLSIterator<T>(m_data, m_recordSize); }
         template<typename T>
-
         /**
          * @brief
          *
@@ -187,15 +175,11 @@ class SQLStorageBase
          *
          */
         SQLStorageBase();
-
         /**
          * @brief
          *
          */
-        virtual ~SQLStorageBase()
-        {
-            Free();
-        }
+        virtual ~SQLStorageBase() { Free(); }
 
         /**
          * @brief
@@ -213,14 +197,12 @@ class SQLStorageBase
          * @return uint32
          */
         uint32 GetDstFieldCount() const { return m_dstFieldCount; }
-
         /**
          * @brief
          *
          * @return uint32
          */
         uint32 GetSrcFieldCount() const { return m_srcFieldCount; }
-
         /**
          * @brief
          *
@@ -236,7 +218,6 @@ class SQLStorageBase
          * @param recordSize
          */
         virtual void prepareToLoad(uint32 maxRecordId, uint32 recordCount, uint32 recordSize);
-
         /**
          * @brief
          *
@@ -244,7 +225,6 @@ class SQLStorageBase
          * @param record
          */
         virtual void JustCreatedRecord(uint32 recordId, char* record) = 0;
-
         /**
          * @brief
          *
@@ -283,7 +263,7 @@ class SQLStorageBase
  */
 class SQLStorage : public SQLStorageBase
 {
-    template<class DerivedLoader, class StorageClass> friend class SQLStorageLoaderBase;
+        template<class DerivedLoader, class StorageClass> friend class SQLStorageLoaderBase;
 
     public:
         /**
@@ -309,13 +289,9 @@ class SQLStorage : public SQLStorageBase
          * @brief
          *
          */
-        ~SQLStorage()
-        {
-            Free();
-        }
+        ~SQLStorage() { Free(); }
 
         template<class T>
-
         /**
          * @brief
          *
@@ -354,7 +330,6 @@ class SQLStorage : public SQLStorageBase
          * @param recordSize
          */
         void prepareToLoad(uint32 maxRecordId, uint32 recordCount, uint32 recordSize) override;
-
         /**
          * @brief
          *
@@ -382,7 +357,7 @@ class SQLStorage : public SQLStorageBase
  */
 class SQLHashStorage : public SQLStorageBase
 {
-    template<class DerivedLoader, class StorageClass> friend class SQLStorageLoaderBase;
+        template<class DerivedLoader, class StorageClass> friend class SQLStorageLoaderBase;
 
     public:
         /**
@@ -393,7 +368,6 @@ class SQLHashStorage : public SQLStorageBase
          * @param sqlname
          */
         SQLHashStorage(const char* fmt, const char* _entry_field, const char* sqlname);
-
         /**
          * @brief
          *
@@ -408,13 +382,9 @@ class SQLHashStorage : public SQLStorageBase
          * @brief
          *
          */
-        ~SQLHashStorage()
-        {
-            Free();
-        }
+        ~SQLHashStorage() { Free(); }
 
         template<class T>
-
         /**
          * @brief
          *
@@ -453,7 +423,6 @@ class SQLHashStorage : public SQLStorageBase
          * @param recordSize
          */
         void prepareToLoad(uint32 maxRecordId, uint32 recordCount, uint32 recordSize) override;
-
         /**
          * @brief
          *
@@ -476,7 +445,7 @@ class SQLHashStorage : public SQLStorageBase
          * @brief
          *
          */
-        typedef UNORDERED_MAP < uint32 /*recordId*/, char* /*record*/ > RecordMap;
+        typedef std::unordered_map < uint32 /*recordId*/, char* /*record*/ > RecordMap;
         RecordMap m_indexMap; /**< TODO */
 };
 
@@ -486,9 +455,9 @@ class SQLHashStorage : public SQLStorageBase
  */
 class SQLMultiStorage : public SQLStorageBase
 {
-    template<class DerivedLoader, class StorageClass> friend class SQLStorageLoaderBase;
-    template<typename T> friend class SQLMultiSIterator;
-    template<typename T> friend class SQLMSIteratorBounds;
+        template<class DerivedLoader, class StorageClass> friend class SQLStorageLoaderBase;
+        template<typename T> friend class SQLMultiSIterator;
+        template<typename T> friend class SQLMSIteratorBounds;
 
     private:
         /**
@@ -506,7 +475,6 @@ class SQLMultiStorage : public SQLStorageBase
          * @param sqlname
          */
         SQLMultiStorage(const char* fmt, const char* _entry_field, const char* sqlname);
-
         /**
          * @brief
          *
@@ -521,24 +489,20 @@ class SQLMultiStorage : public SQLStorageBase
          * @brief
          *
          */
-        ~SQLMultiStorage()
-        {
-            Free();
-        }
+        ~SQLMultiStorage() { Free(); }
 
         // forward declaration
         template<typename T> class SQLMSIteratorBounds;
 
         template<typename T>
-
         /**
          * @brief
          *
          */
         class SQLMultiSIterator
         {
-            friend class SQLMultiStorage;
-            friend class SQLMSIteratorBounds<T>;
+                friend class SQLMultiStorage;
+                friend class SQLMSIteratorBounds<T>;
 
             public:
                 /**
@@ -547,7 +511,6 @@ class SQLMultiStorage : public SQLStorageBase
                  * @return const T
                  */
                 T const* getValue() const { return reinterpret_cast<T const*>(citerator->second); }
-
                 /**
                  * @brief
                  *
@@ -559,25 +522,19 @@ class SQLMultiStorage : public SQLStorageBase
                  * @brief
                  *
                  */
-                void operator ++()
-                {
-                    ++citerator;
-                }
-
+                void operator ++() { ++citerator; }
                 /**
                  * @brief
                  *
                  * @return const T *operator
                  */
                 T const* operator *() const { return getValue(); }
-
                 /**
                  * @brief
                  *
                  * @return const T *operator ->
                  */
                 T const* operator ->() const { return getValue(); }
-
                 /**
                  * @brief
                  *
@@ -585,7 +542,6 @@ class SQLMultiStorage : public SQLStorageBase
                  * @return bool operator
                  */
                 bool operator !=(const SQLMultiSIterator& r) const { return citerator != r.citerator; }
-
                 /**
                  * @brief
                  *
@@ -605,14 +561,13 @@ class SQLMultiStorage : public SQLStorageBase
         };
 
         template<typename T>
-
         /**
          * @brief
          *
          */
         class SQLMSIteratorBounds
         {
-            friend class SQLMultiStorage;
+                friend class SQLMultiStorage;
 
             public:
                 const SQLMultiSIterator<T> first; /**< TODO */
@@ -629,7 +584,6 @@ class SQLMultiStorage : public SQLStorageBase
         };
 
         template<typename T>
-
         /**
          * @brief
          *
@@ -660,7 +614,6 @@ class SQLMultiStorage : public SQLStorageBase
          * @param recordSize
          */
         void prepareToLoad(uint32 maxRecordId, uint32 recordCount, uint32 recordSize) override;
-
         /**
          * @brief
          *
@@ -683,7 +636,6 @@ class SQLMultiStorage : public SQLStorageBase
 };
 
 template <class DerivedLoader, class StorageClass>
-
 /**
  * @brief
  *
@@ -700,7 +652,6 @@ class SQLStorageLoaderBase
         void Load(StorageClass& storage, bool error_at_empty = true);
 
         template<class S, class D>
-
         /**
          * @brief
          *
@@ -710,7 +661,6 @@ class SQLStorageLoaderBase
          */
         void convert(uint32 field_pos, S src, D& dst);
         template<class S>
-
         /**
          * @brief
          *
@@ -720,7 +670,6 @@ class SQLStorageLoaderBase
          */
         void convert_to_str(uint32 field_pos, S src, char*& dst);
         template<class D>
-
         /**
          * @brief
          *
@@ -729,7 +678,6 @@ class SQLStorageLoaderBase
          * @param dst
          */
         void convert_from_str(uint32 field_pos, char const* src, D& dst);
-
         /**
          * @brief
          *
@@ -739,7 +687,6 @@ class SQLStorageLoaderBase
          */
         void convert_str_to_str(uint32 field_pos, char const* src, char*& dst);
         template<class S, class D>
-
         /**
          * @brief
          *
@@ -748,7 +695,6 @@ class SQLStorageLoaderBase
          * @param dst
          */
         void default_fill(uint32 field_pos, S src, D& dst);
-
         /**
          * @brief
          *
@@ -759,7 +705,6 @@ class SQLStorageLoaderBase
         void default_fill_to_str(uint32 field_pos, char const* src, char*& dst);
 
         template<class D>
-
         /**
          * @brief trap, no body
          *
@@ -768,7 +713,6 @@ class SQLStorageLoaderBase
          * @param dst
          */
         void convert_from_str(uint32 field_pos, char* src, D& dst);
-
         /**
          * @brief
          *
@@ -780,7 +724,6 @@ class SQLStorageLoaderBase
 
     private:
         template<class V>
-
         /**
          * @brief
          *
@@ -791,7 +734,6 @@ class SQLStorageLoaderBase
          * @param offset
          */
         void storeValue(V value, StorageClass& store, char* record, uint32 field_pos, uint32& offset);
-
         /**
          * @brief
          *

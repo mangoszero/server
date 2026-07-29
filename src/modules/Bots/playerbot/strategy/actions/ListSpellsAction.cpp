@@ -1,3 +1,5 @@
+#include <sstream>
+#include <string>
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "ListSpellsAction.h"

@@ -22,9 +22,12 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <string>
+#include "Common/ServerDefines.h"
 #include "SoapThread.h"
 
 #include "AccountMgr.h"
+#include "DatabaseEnv.h"
 #include "Log.h"
 #include "World.h"
 
@@ -35,6 +38,11 @@
  */
 void SoapThread(const std::string& host, uint16 port)
 {
+    // Commands are forwarded to the world thread, but the per-request auth
+    // checks (GetId/CheckPassword/GetSecurity) query LoginDatabase right here,
+    // on this thread.
+    DbThreadGuard dbThread(&LoginDatabase);
+
     struct soap soap;
     soap_init(&soap);
     soap_set_imode(&soap, SOAP_C_UTFSTRING);
@@ -47,8 +55,13 @@ void SoapThread(const std::string& host, uint16 port)
 
     if (!soap_valid_socket(soap_bind(&soap, host.c_str(), port, 100)))
     {
-        sLog.outError("SoapThread: couldn't bind to %s:%d", host.c_str(), port);
-        exit(-1);
+        // Losing the SOAP port is not a reason to take the world down with us: the world
+        // is already running, and exiting from this thread would strand it mid-tick with
+        // players connected. Report and leave; the rest of the server carries on without
+        // remote SOAP, exactly as the RA listener does when its own bind fails.
+        sLog.outError("SoapThread: couldn't bind to %s:%d, SOAP disabled", host.c_str(), port);
+        soap_done(&soap);
+        return;
     }
 
     sLog.outString("SoapThread: Bound to http://%s:%d", host.c_str(), port);

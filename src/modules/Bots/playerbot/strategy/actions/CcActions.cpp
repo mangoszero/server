@@ -1,4 +1,5 @@
 #include "botpch.h"
+#include "ObjectLookup.h"
 #include "../../playerbot.h"
 #include "CcActions.h"
 
@@ -69,7 +70,7 @@ bool CastCcOnMyTargetAction::isUseful()
         Player* master = GetMaster();
         if (master)
         {
-            Unit* target = sObjectAccessor.GetUnit(*bot, master->GetSelectionGuid());
+            Unit* target = ObjectLookup::GetUnit(*bot, master->GetSelectionGuid());
             ObjectGuid currentGuid = target ? target->GetObjectGuid() : ObjectGuid();
             ObjectGuid ccGuid = m_ccTargetGuid;
 
@@ -91,7 +92,7 @@ bool CastCcOnMyTargetAction::isUseful()
         return false;
     }
 
-    Unit* target = sObjectAccessor.GetUnit(*bot, master->GetSelectionGuid());
+    Unit* target = ObjectLookup::GetUnit(*bot, master->GetSelectionGuid());
     if (!target || !target->IsAlive())
     {
         return false;
@@ -113,7 +114,7 @@ NextAction** CastCcOnMyTargetAction::getPrerequisites()
         return NULL;
     }
 
-    Unit* target = sObjectAccessor.GetUnit(*bot, master->GetSelectionGuid());
+    Unit* target = ObjectLookup::GetUnit(*bot, master->GetSelectionGuid());
     if (!target)
     {
         return NULL;
@@ -139,7 +140,7 @@ bool CastCcOnMyTargetAction::Execute(Event event)
         return false;
     }
 
-    Unit* target = sObjectAccessor.GetUnit(*bot, master->GetSelectionGuid());
+    Unit* target = ObjectLookup::GetUnit(*bot, master->GetSelectionGuid());
     if (!target)
     {
         ai->TellMaster("You have no target");

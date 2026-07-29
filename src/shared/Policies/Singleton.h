@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
+ * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,8 +41,15 @@ namespace MaNGOS
      *     #define sWorld MaNGOS::Singleton<World>::Instance()
      * @endcode
      *
-     * A function-local static is initialised exactly once, thread-safely, with no
-     * mutex of our own.
+     * @note This replaces a hand-rolled double-checked lock over a threading-model
+     * policy. That version was unsound: it read a plain @c T* outside the lock, so a
+     * thread could observe a non-null pointer to a still-constructing object. Making
+     * the mutex recursive (as two of the singletons did) made it worse rather than
+     * better — had a constructor ever re-entered Instance(), the inner call would
+     * have re-acquired the lock, still seen a null pointer, and built a *second*
+     * instance for the outer call to overwrite. A function-local static has none of
+     * these problems, needs no mutex, and diagnoses recursive initialisation instead
+     * of quietly corrupting.
      */
     template<typename T>
     class Singleton
@@ -71,14 +78,5 @@ namespace MaNGOS
             ~Singleton() = default;
     };
 }
-
-// Compatibility shims. The Meyers singleton above needs no explicit template
-// instantiation, so these former INSTANTIATE_SINGLETON_* macros expand to nothing.
-// They are kept only so the historical `INSTANTIATE_SINGLETON_1(Foo);` lines dotted
-// through the .cpp files still compile; new code should not use them.
-#define INSTANTIATE_SINGLETON_1(TYPE)
-#define INSTANTIATE_SINGLETON_2(TYPE, THREADINGMODEL)
-#define INSTANTIATE_SINGLETON_3(TYPE, THREADINGMODEL, CREATIONPOLICY)
-#define INSTANTIATE_SINGLETON_4(TYPE, THREADINGMODEL, CREATIONPOLICY, OBJECTLIFETIME)
 
 #endif

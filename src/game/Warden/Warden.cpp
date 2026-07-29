@@ -43,7 +43,11 @@
  * @see WardenMac for macOS-specific implementation
  */
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Common/TimeConstants.h"
+#include <cstring>
+#include <string>
+#include <sstream>
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "Log.h"
@@ -488,9 +492,9 @@ void Warden::LogPositiveToDB(WardenCheck* check)
     {
         stmt.addUInt64(pl->GetObjectGuid().GetRawValue());
         stmt.addUInt32(pl->GetMapId());
-        stmt.addFloat(pl->GetPositionX());
-        stmt.addFloat(pl->GetPositionY());
-        stmt.addFloat(pl->GetPositionZ());
+        stmt.addFloat(pl->Where().X());
+        stmt.addFloat(pl->Where().Y());
+        stmt.addFloat(pl->Where().Z());
     }
     else
     {

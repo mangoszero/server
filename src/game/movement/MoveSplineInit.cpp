@@ -69,7 +69,7 @@ namespace Movement
     {
         MoveSpline& move_spline = *unit.movespline;
 
-        Vector3 real_position(unit.GetPositionX(), unit.GetPositionY(), unit.GetPositionZ());
+        Vector3 real_position(unit.Where().X(), unit.Where().Y(), unit.Where().Z());
         // there is a big chance that current position is unknown if current state is not finalized, need compute it
         // this also allows calculate spline position and update map position in much greater intervals
         if (!move_spline.Finalized())
@@ -131,7 +131,7 @@ namespace Movement
             return;
         }
 
-        Location real_position(unit.GetPositionX(), unit.GetPositionY(), unit.GetPositionZ(), unit.GetOrientation());
+        Location real_position(unit.Where().X(), unit.Where().Y(), unit.Where().Z(), unit.Where().Facing());
 
         // there is a big chance that current position is unknown if current state is not finalized, need compute it
         // this also allows calculate spline position and update map position in much greater intervals
@@ -189,7 +189,7 @@ namespace Movement
      */
     void MoveSplineInit::SetFacing(float angle)
     {
-        args.facing.angle = G3D::wrap(angle, 0.f, (float)G3D::twoPi());
+        args.facing.angle = Geometry::wrap(angle, 0.f, (float)Geometry::twoPi());
         args.flags.EnableFacingAngle();
     }
 }

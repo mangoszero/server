@@ -1,7 +1,7 @@
 #ifndef _RandomPlayerbotFactory_H
 #define _RandomPlayerbotFactory_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "PlayerbotAIBase.h"
 
 class WorldPacket;

@@ -1,4 +1,12 @@
+#include "Utilities/MathDefines.h"
+#include <cmath>
+#include <optional>
+#include <algorithm>
+#include <string>
+#include <vector>
+#include <list>
 #include "botpch.h"
+#include "TransportMap.h"
 #include "../../playerbot.h"
 #include "../values/LastMovementValue.h"
 #include "MovementActions.h"
@@ -231,10 +239,21 @@ bool MovementAction::IsMovingAllowed()
 
 bool MovementAction::FollowOnTransport(Unit* target, Player* master)
 {
-    float distanceToMaster = bot->GetDistance(master);
-    bool outOfRange = distanceToMaster > sPlayerbotAIConfig.sightDistance;
+    Transport* vessel = master->GetTransport();
+    TransportMap* deck = vessel ? vessel->AsMap() : NULL;
+    if (!deck)
+    {
+        return false;
+    }
+
+    // The master is aboard, so his coordinates are the vessel's own and the bot's are
+    // the world's. Measuring between the two frames answers "infinitely far" by design,
+    // so the question asked here is the bot's distance to the VESSEL -- the only thing
+    // in this picture allowed a world position at all, and only an estimate of one,
+    // which is why the vessel's own slack is added rather than pretended away.
     uint32 currentTime = time(0);
-    if (outOfRange)
+    const float reach = sPlayerbotAIConfig.sightDistance + vessel->NodeSlack();
+    if (!bot->Where().WithinDist(vessel->Where(), reach))
     {
         bot->m_movementInfo.RemoveMovementFlag(MOVEFLAG_ONTRANSPORT);
         transportBoardingDelayTime = 0;
@@ -261,92 +280,69 @@ bool MovementAction::FollowOnTransport(Unit* target, Player* master)
     // Determine if we should complete boarding now
     if (isApproaching && approachTimedOut)
     {
-        Transport* transport = master->GetTransport();
-        MotionMaster &mm = *bot->GetMotionMaster();
-        // Complete boarding - snap to master and attach to transport
+        MotionMaster& mm = *bot->GetMotionMaster();
         transportBoardingDelayTime = 0;
         bot->clearUnitState(UNIT_STAT_IGNORE_PATHFINDING);
         mm.Clear();
         bot->movespline->_Interrupt();
-        bot->NearTeleportTo(
-            master->GetPositionX() + offsetX,
-            master->GetPositionY() + offsetY,
-            master->GetPositionZ(), bot->GetOrientation());
-        bot->SetTransport(transport);
-        transport->AddPassenger(bot);
 
-        bot->m_movementInfo.SetTransportData(
-            transport->GetObjectGuid(),
-            master->m_movementInfo.GetTransportPos()->x + offsetX,
-            master->m_movementInfo.GetTransportPos()->y + offsetY,
-            master->m_movementInfo.GetTransportPos()->z,
-            bot->GetOrientation(),
-            getMSTime()
-            );
-        bot->m_movementInfo.AddMovementFlag(MOVEFLAG_ONTRANSPORT);
+        // Embark moves him onto the vessel's map, and from there the deck IS his map:
+        // the spot beside the master is chosen in the vessel's own frame, and no world
+        // position is composed for either of them. The transport fields on the wire are
+        // the update path's business, not this one's.
+        deck->Embark(bot);
+        bot->SetTransport(vessel);
+        bot->Place().MoveTo(master->Where().X() + offsetX,
+                            master->Where().Y() + offsetY,
+                            master->Where().Z(), bot->Where().Facing());
 
-        WorldPacket data(MSG_MOVE_HEARTBEAT, 64);
-        data << bot->GetPackGUID();
-        bot->m_movementInfo.Write(data);
-        bot->SendMessageToSet(&data, false);
         AI_VALUE(LastMovement&, "last movement").Set(target);
-        if(bot->GetPet())
-        {
-            bot->GetPet()->UpdateTransport(bot);
-        }
         return true;
-
     }
 
-    if (distanceToMaster <= sPlayerbotAIConfig.sightDistance)
+    // Not aboard yet: he still walks in the world, so the target is the vessel, not the
+    // master -- a deck coordinate would send him to the middle of the map.
+    if (!isApproaching)
     {
-        bot->m_movementInfo.AddMovementFlag(MOVEFLAG_ONTRANSPORT);
-        // Walk toward master in a straight line, ignoring map geometry
-        if(!isApproaching) // set the timeout
-        {
-            transportBoardingDelayTime = currentTime;
-        }
-        Movement::MoveSplineInit init(*bot);
-        init.MoveTo(master->GetPositionX() + offsetX,
-                    master->GetPositionY() + offsetY,
-                    master->GetPositionZ());
-        init.SetWalk(false);
-        init.Launch();
-        AI_VALUE(LastMovement&, "last movement").Set(target);
-        return true;
+        transportBoardingDelayTime = currentTime;
     }
-    return false;
+    Movement::MoveSplineInit init(*bot);
+    init.MoveTo(vessel->Where().X(), vessel->Where().Y(), vessel->Where().Z());
+    init.SetWalk(false);
+    init.Launch();
+    AI_VALUE(LastMovement&, "last movement").Set(target);
+    return true;
 }
 
 bool MovementAction::FollowOffTransport(Unit* target, Player* master)
 {
     Transport* transport = master->GetTransport();
     Transport* botTransport = bot->GetTransport();
-    if(!transport || transport != botTransport) // master has left the transport
+    if (!transport || transport != botTransport) // master has left the transport
     {
-        ObjectGuid botGuid = bot->GetObjectGuid();
-        uint32 currentTime = time(0);
-        // Delay elapsed or master too far - disembark now
+        TransportMap* deck = botTransport ? botTransport->AsMap() : NULL;
+        if (!deck)
+        {
+            return true;
+        }
+
         transportBoardingDelayTime = 0;
         bot->TradeCancel(false);
-        botTransport->RemovePassenger(bot);
+
+        // The master is ashore, so HIS position is a world one and is the right place to
+        // put the bot down. Disembark is what moves him off the hull's map; nothing else
+        // may, and no offset is composed from the deck he is leaving.
+        deck->Disembark(bot, master->Where().X(), master->Where().Y(),
+                        master->Where().Z(), bot->Where().Facing());
+        bot->SetTransport(NULL);
         bot->m_movementInfo.ClearTransportData();
         bot->m_movementInfo.RemoveMovementFlag(MOVEFLAG_ONTRANSPORT);
-        bot->TeleportTo(master->GetMapId(),
-            master->GetPositionX(),
-            master->GetPositionY(),
-            master->GetPositionZ(),
-            bot->GetOrientation(),
-            TELE_TO_NOT_LEAVE_COMBAT | TELE_TO_NOT_UNSUMMON_PET);
+
         WorldPacket data(MSG_MOVE_HEARTBEAT, 64);
         data << bot->GetPackGUID();
         bot->m_movementInfo.Write(data);
         bot->SendMessageToSetInRange(&data, DEFAULT_VISIBILITY_DISTANCE, false);
         AI_VALUE(LastMovement&, "last movement").Set(target);
-        if(bot->GetPet())
-        {
-            bot->GetPet()->UpdateTransport(master);
-        }
     }
     else
     {
@@ -911,15 +907,15 @@ bool SwimToSurfaceAction::Execute(Event event)
     float y = bot->GetPositionY();
     float z = bot->GetPositionZ();
 
-    float waterLevel = bot->GetMap()->GetTerrain()->GetWaterLevel(x, y, z);
-    if (waterLevel <= -500.0f)
+    std::optional<float> waterLevel = bot->GetMap()->GetTerrain()->GetWaterLevel(x, y, z);
+    if (!waterLevel)
     {
         return false;
     }
 
     MotionMaster &mm = *bot->GetMotionMaster();
     mm.Clear();
-    mm.MovePoint(bot->GetMapId(), x, y, waterLevel, true);
+    mm.MovePoint(bot->GetMapId(), x, y, *waterLevel, true);
     ai->SetNextCheckDelay(sPlayerbotAIConfig.globalCoolDown);
     return true;
 }

@@ -43,6 +43,8 @@
  * @see WorldUpdateTime for server-wide tracking
  */
 
+#include <algorithm>
+#include <string>
 #include "UpdateTime.h"
 
 #include "Timer.h"

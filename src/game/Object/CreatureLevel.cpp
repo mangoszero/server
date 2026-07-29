@@ -24,6 +24,7 @@
 
 
 
+#include <algorithm>
 #include "Creature.h"
 #include "World.h"
 #include "ObjectMgr.h"

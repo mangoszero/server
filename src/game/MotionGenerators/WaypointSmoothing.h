@@ -1,7 +1,7 @@
 #ifndef MANGOS_WAYPOINTSMOOTHING_H
 #define MANGOS_WAYPOINTSMOOTHING_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 
 /**
  * @brief Safety ceiling on how many waypoints a single smoothed spline may span.

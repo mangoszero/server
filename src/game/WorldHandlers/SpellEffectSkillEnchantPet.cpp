@@ -24,7 +24,17 @@
 
 
 
-#include "Common.h"
+#include <iterator>
+#include <random>
+#include <utility>
+#include "Common/ServerDefines.h"
+#include "Platform/Define.h"
+#include "Common/TimeConstants.h"
+#include <string>
+#include <list>
+#include <algorithm>
+#include "Utilities/MathDefines.h"
+#include <ctime>
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
 #include "Opcodes.h"
@@ -41,7 +51,6 @@
 #include "Group.h"
 #include "UpdateData.h"
 #include "MapManager.h"
-#include "ObjectAccessor.h"
 #include "SharedDefines.h"
 #include "Pet.h"
 #include "GameObject.h"
@@ -54,7 +63,6 @@
 #include "BattleGround/BattleGroundWS.h"
 #include "Language.h"
 #include "SocialMgr.h"
-#include "VMapFactory.h"
 #include "Util.h"
 #include "TemporarySummon.h"
 #include "ScriptMgr.h"
@@ -62,7 +70,7 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
-#include "G3D/Vector3.h"
+#include "Geometry/Vector3.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -317,10 +325,10 @@ void Spell::EffectDistract(SpellEffectIndex /*eff_idx*/)
         return;
     }
 
-    float angle = unitTarget->GetAngle(m_targets.m_destX, m_targets.m_destY);
+    float angle = unitTarget->Where().BearingTo(Geometry::Vector2(m_targets.m_destX, m_targets.m_destY));
     unitTarget->SetFacingTo(angle);
     unitTarget->clearUnitState(UNIT_STAT_MOVING);
-    unitTarget->SetOrientation(angle);
+    unitTarget->Place().Face(angle);
 
     if (unitTarget->GetTypeId() == TYPEID_UNIT)
     {
@@ -421,10 +429,10 @@ void Spell::EffectTeleUnitsFaceCaster(SpellEffectIndex eff_idx)
     else
     {
         float dis = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[eff_idx]));
-        m_caster->GetClosePoint(fx, fy, fz, unitTarget->GetObjectBoundingRadius(), dis);
+        ClosePointNear(*m_caster, fx, fy, fz, unitTarget->Where().Extent(), dis);
     }
 
-    unitTarget->NearTeleportTo(fx, fy, fz, m_caster->GetOrientation() + M_PI_F, unitTarget == m_caster);
+    unitTarget->NearTeleportTo(fx, fy, fz, m_caster->Where().Facing() + M_PI_F, unitTarget == m_caster);
 }
 
 /**
@@ -705,9 +713,9 @@ void Spell::EffectSummonPet(SpellEffectIndex eff_idx)
             OldSummon->GetMap()->Remove((Creature*)OldSummon, false);
 
             float px, py, pz;
-            m_caster->GetClosePoint(px, py, pz, OldSummon->GetObjectBoundingRadius());
+            ClosePointNear(*m_caster, px, py, pz, OldSummon->Where().Extent());
 
-            OldSummon->Relocate(px, py, pz, OldSummon->GetOrientation());
+            OldSummon->Place().MoveTo(px, py, pz, OldSummon->Where().Facing());
             m_caster->GetMap()->Add((Creature*)OldSummon);
 
             if (m_caster->GetTypeId() == TYPEID_PLAYER && OldSummon->isControlled())
@@ -769,7 +777,7 @@ void Spell::EffectSummonPet(SpellEffectIndex eff_idx)
         return;
     }
 
-    CreatureCreatePos pos(m_caster, m_caster->GetOrientation());
+    CreatureCreatePos pos(m_caster, m_caster->Where().Facing());
 
     Map* map = m_caster->GetMap();
     uint32 pet_number = sObjectMgr.GeneratePetNumber();
@@ -779,7 +787,7 @@ void Spell::EffectSummonPet(SpellEffectIndex eff_idx)
         return;
     }
 
-    NewSummon->SetRespawnCoord(pos);
+    NewSummon->SetSpawn(pos);
 
     uint32 petlevel = std::max(m_caster->getLevel() + m_spellInfo->EffectAmplitude[eff_idx], 1.0f);
     NewSummon->setPetType(SUMMON_PET);

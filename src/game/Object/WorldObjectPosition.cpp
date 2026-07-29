@@ -58,7 +58,6 @@
 #include "Transports.h"
 #include "TargetedMovementGenerator.h"
 #include "WaypointMovementGenerator.h"
-#include "VMapFactory.h"
 #include "CellImpl.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
@@ -68,6 +67,8 @@
 #include "CreatureLinkingMgr.h"
 #include "Chat.h"
 #include "GameTime.h"
+#include "Transports.h"
+#include "TransportMap.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -118,100 +119,6 @@ void WorldObject::_Create(uint32 guidlow, HighGuid guidhigh)
 }
 
 /**
- * @brief Relocate world object
- * @param x X coordinate
- * @param y Y coordinate
- * @param z Z coordinate
- * @param orientation Orientation
- *
- * Moves the object to a new position and orientation.
- * Updates movement info for units.
- */
-void WorldObject::Relocate(float x, float y, float z, float orientation)
-{
-    m_position.x = x;
-    m_position.y = y;
-    m_position.z = z;
-    m_position.o = MapManager::NormalizeOrientation(orientation);
-
-    if (isType(TYPEMASK_UNIT))
-    {
-        ((Unit*)this)->m_movementInfo.ChangePosition(x, y, z, orientation);
-    }
-}
-
-/**
- * @brief Relocate world object (position only)
- * @param x X coordinate
- * @param y Y coordinate
- * @param z Z coordinate
- *
- * Moves the object to a new position without changing orientation.
- * Updates movement info for units.
- */
-void WorldObject::Relocate(float x, float y, float z)
-{
-    m_position.x = x;
-    m_position.y = y;
-    m_position.z = z;
-
-    if (isType(TYPEMASK_UNIT))
-    {
-        ((Unit*)this)->m_movementInfo.ChangePosition(x, y, z, GetOrientation());
-    }
-}
-
-/**
- * @brief Set orientation
- * @param orientation New orientation
- *
- * Sets the object's orientation and updates movement info for units.
- */
-void WorldObject::SetOrientation(float orientation)
-{
-    m_position.o = MapManager::NormalizeOrientation(orientation);
-
-    if (isType(TYPEMASK_UNIT))
-    {
-        ((Unit*)this)->m_movementInfo.ChangeOrientation(orientation);
-    }
-}
-
-/**
- * @brief Get zone ID
- * @return Zone ID
- *
- * Returns the zone ID based on the object's position.
- */
-uint32 WorldObject::GetZoneId() const
-{
-    return GetMap()->GetTerrain()->GetZoneId(m_position.x, m_position.y, m_position.z);
-}
-
-/**
- * @brief Get area ID
- * @return Area ID
- *
- * Returns the area ID based on the object's position.
- */
-uint32 WorldObject::GetAreaId() const
-{
-    return GetMap()->GetTerrain()->GetAreaId(m_position.x, m_position.y, m_position.z);
-}
-
-/**
- * @brief Get zone and area IDs
- * @param zoneid Output zone ID
- * @param areaid Output area ID
- *
- * Returns both zone and area IDs based on the object's position.
- */
-void WorldObject::GetZoneAndAreaId(uint32& zoneid, uint32& areaid) const
-{
-    GetMap()->GetTerrain()->GetZoneAndAreaId(zoneid, areaid, m_position.x, m_position.y, m_position.z);
-}
-
-/**
  * @brief Get instance data
  * @return Instance data pointer
  *
@@ -223,641 +130,303 @@ InstanceData* WorldObject::GetInstanceData() const
 }
 
 /**
- * @brief Get distance to another object
- * @param obj Target object
- * @return Distance between objects
+ * @brief A random ground point around a centre, in this object's own frame.
  *
- * Calculates the 3D distance between this object and another,
- * accounting for bounding radii.
+ * The roll is injected rather than drawn here, so the pick stays pinnable in a test.
  */
-float WorldObject::GetDistance(const WorldObject* obj) const
+Geometry::Vector3 RandomGroundPointNear(WorldObject const& obj, Geometry::Vector3 const& centre,
+                                        float distance, float minDist, float const* ori)
 {
-    float dx = GetPositionX() - obj->GetPositionX();
-    float dy = GetPositionY() - obj->GetPositionY();
-    float dz = GetPositionZ() - obj->GetPositionZ();
-    float sizefactor = GetObjectBoundingRadius() + obj->GetObjectBoundingRadius();
-    float dist = sqrt((dx * dx) + (dy * dy) + (dz * dz)) - sizefactor;
-    return (dist > 0 ? dist : 0);
-}
-
-/**
- * @brief Get 2D distance to point
- * @param x X coordinate
- * @param y Y coordinate
- * @return 2D distance to point
- *
- * Calculates the 2D distance between this object and a point,
- * accounting for bounding radius.
- */
-float WorldObject::GetDistance2d(float x, float y) const
-{
-    float dx = GetPositionX() - x;
-    float dy = GetPositionY() - y;
-    float sizefactor = GetObjectBoundingRadius();
-    float dist = sqrt((dx * dx) + (dy * dy)) - sizefactor;
-    return (dist > 0 ? dist : 0);
-}
-
-/**
- * @brief Get 3D distance to point
- * @param x X coordinate
- * @param y Y coordinate
- * @param z Z coordinate
- * @return 3D distance to point
- *
- * Calculates the 3D distance between this object and a point,
- * accounting for bounding radius.
- */
-float WorldObject::GetDistance(float x, float y, float z) const
-{
-    float dx = GetPositionX() - x;
-    float dy = GetPositionY() - y;
-    float dz = GetPositionZ() - z;
-    float sizefactor = GetObjectBoundingRadius();
-    float dist = sqrt((dx * dx) + (dy * dy) + (dz * dz)) - sizefactor;
-    return (dist > 0 ? dist : 0);
-}
-
-/**
- * @brief Get 2D distance to another object
- * @param obj Target object
- * @return 2D distance to object
- *
- * Calculates the 2D distance between this object and another,
- * accounting for bounding radii.
- */
-float WorldObject::GetDistance2d(const WorldObject* obj) const
-{
-    float dx = GetPositionX() - obj->GetPositionX();
-    float dy = GetPositionY() - obj->GetPositionY();
-    float sizefactor = GetObjectBoundingRadius() + obj->GetObjectBoundingRadius();
-    float dist = sqrt((dx * dx) + (dy * dy)) - sizefactor;
-    return (dist > 0 ? dist : 0);
-}
-
-/**
- * @brief Get vertical distance to another object
- * @param obj Target object
- * @return Vertical distance to object
- *
- * Calculates the vertical (Z-axis) distance between this object
- * and another, accounting for bounding radii.
- */
-float WorldObject::GetDistanceZ(const WorldObject* obj) const
-{
-    float dz = fabs(GetPositionZ() - obj->GetPositionZ());
-    float sizefactor = GetObjectBoundingRadius() + obj->GetObjectBoundingRadius();
-    float dist = dz - sizefactor;
-    return (dist > 0 ? dist : 0);
-}
-
-/**
- * @brief Check if within 3D distance of point
- * @param x X coordinate
- * @param y Y coordinate
- * @param z Z coordinate
- * @param dist2compare Distance to compare against
- * @return True if within distance
- *
- * Checks if this object is within the specified 3D distance
- * of the given point.
- */
-bool WorldObject::IsWithinDist3d(float x, float y, float z, float dist2compare) const
-{
-    float dx = GetPositionX() - x;
-    float dy = GetPositionY() - y;
-    float dz = GetPositionZ() - z;
-    float distsq = dx * dx + dy * dy + dz * dz;
-
-    float sizefactor = GetObjectBoundingRadius();
-    float maxdist = dist2compare + sizefactor;
-
-    return distsq < maxdist * maxdist;
-}
-
-/**
- * @brief Check if within 2D distance of point
- * @param x X coordinate
- * @param y Y coordinate
- * @param dist2compare Distance to compare against
- * @return True if within distance
- *
- * Checks if this object is within the specified 2D distance
- * of the given point.
- */
-bool WorldObject::IsWithinDist2d(float x, float y, float dist2compare) const
-{
-    float dx = GetPositionX() - x;
-    float dy = GetPositionY() - y;
-    float distsq = dx * dx + dy * dy;
-
-    float sizefactor = GetObjectBoundingRadius();
-    float maxdist = dist2compare + sizefactor;
-
-    return distsq < maxdist * maxdist;
-}
-
-/**
- * @brief Internal check if within distance of object
- * @param obj Target object
- * @param dist2compare Distance to compare against
- * @param is3D If true, check 3D distance; if false, check 2D
- * @return True if within distance
- *
- * Internal helper for distance checking with optional 3D.
- */
-bool WorldObject::_IsWithinDist(WorldObject const* obj, float dist2compare, bool is3D) const
-{
-    float dx = GetPositionX() - obj->GetPositionX();
-    float dy = GetPositionY() - obj->GetPositionY();
-    float distsq = dx * dx + dy * dy;
-    if (is3D)
+    if (distance == 0.0f)
     {
-        float dz = GetPositionZ() - obj->GetPositionZ();
-        distsq += dz * dz;
+        return centre;
     }
-    float sizefactor = GetObjectBoundingRadius() + obj->GetObjectBoundingRadius();
-    float maxdist = dist2compare + sizefactor;
 
-    return distsq < maxdist * maxdist;
+    const float angle = ori ? *ori : (rand_norm_f() * Geometry::Placement::TwoPi());
+
+    Geometry::Placement around;
+    around.EnterFrame(obj.Where().CurrentFrame(), centre, angle);
+
+    Geometry::Vector3 point = around.RandomPointAround(minDist, distance, angle, rand_norm_f());
+    MaNGOS::NormalizeMapCoord(point.x);
+    MaNGOS::NormalizeMapCoord(point.y);
+    DropToGround(obj, point.x, point.y, point.z);
+    return point;
 }
 
 /**
- * @brief Check if within line of sight in map
- * @param obj Target object
- * @return True if within line of sight
+ * @brief Put z on the floor under (x, y), if there is one.
  *
- * Checks if this object has line of sight to the target object
- * within the same map.
+ * Nothing happens where the map has no floor to offer: an absent answer is absent, not a
+ * sentinel height that arithmetic will happily consume.
  */
-bool WorldObject::IsWithinLOSInMap(const WorldObject* obj) const
+void DropToGround(WorldObject const& obj, float x, float y, float& z)
 {
-    if (!IsInMap(obj))
+    if (auto floor = obj.GetMap()->Floor(x, y, z))
+    {
+        z = *floor + 0.05f;                                 // just to be sure that we are not a few pixel under the surface
+    }
+}
+
+/**
+ * @brief Hold z between the floor and the highest surface this object may occupy.
+ */
+void ClampToAllowedZ(WorldObject const& obj, float x, float y, float& z, Map* atMap /*=NULL*/)
+{
+    if (!atMap)
+    {
+        atMap = obj.GetMap();
+    }
+
+    const auto floor = atMap->Floor(x, y, z);
+    if (!floor)
+    {
+        return;
+    }
+
+    // Anything that is not a unit has no say in the matter: it sits on the floor.
+    const bool isUnit = obj.GetTypeId() == TYPEID_UNIT || obj.GetTypeId() == TYPEID_PLAYER;
+    if (!isUnit)
+    {
+        z = *floor;
+        return;
+    }
+
+    const Unit& unit = static_cast<const Unit&>(obj);
+    if (unit.CanFly())
+    {
+        if (z < *floor)
+        {
+            z = *floor;
+        }
+        return;
+    }
+
+    // Held between the floor and the highest surface this unit may occupy: the water it
+    // can swim in, or the floor itself when it cannot.
+    float ceiling = *floor;
+    if (unit.CanSwim())
+    {
+        ceiling = atMap->GetTerrain()->GetWaterOrGroundLevel(
+                      x, y, z, NULL, !unit.HasAuraType(SPELL_AURA_WATER_WALK));
+    }
+
+    if (z > ceiling)
+    {
+        z = ceiling;
+    }
+    else if (z < *floor)
+    {
+        z = *floor;
+    }
+}
+
+// ---- not geometry, so neither the object's nor the component's --------------
+//
+// World membership is game state; line of sight and a map's coordinate bounds are the
+// terrain engine's. Each of these asks the placement for the geometry and contributes
+// only the part the placement must never know about.
+
+/**
+ * @brief The frame both objects can be answered for, if one exists.
+ *
+ * Vanilla has no vehicle seats and no vessel-as-map, so every placement is anchored to a
+ * map instance and a shared frame is simply the same map. The seam is here rather than
+ * inlined at the call sites so that carrying the transport rework across changes this
+ * function and nothing else.
+ */
+static bool InCommonFrame(WorldObject const& a, WorldObject const& b,
+                          Geometry::Placement& outA, Geometry::Placement& outB)
+{
+    // THE FRAME IS THE AUTHORITY, not the passenger registry. Two things on the same deck
+    // map already speak the same coordinates whether or not either was ever boarded -- a
+    // creature summoned straight onto a deck is exactly that, and asking the roster about
+    // it answers no while the geometry answers yes.
+    if (a.Where().ShareFrame(b.Where()))
+    {
+        outA = a.Where();
+        outB = b.Where();
+        return true;
+    }
+
+    TransportMap* va = a.GetMap() ? a.GetMap()->AsTransport() : NULL;
+    TransportMap* vb = b.GetMap() ? b.GetMap()->AsTransport() : NULL;
+
+    if (!va && !vb)
+    {
+        outA = a.Where();
+        outB = b.Where();
+        return true;
+    }
+
+    if (va != vb)
     {
         return false;
     }
-    float ox, oy, oz;
-    obj->GetPosition(ox, oy, oz);
-    return(IsWithinLOS(ox, oy, oz));
+
+    const auto la = va->PositionOf(a);
+    const auto lb = va->PositionOf(b);
+    if (!la || !lb)
+    {
+        return false;
+    }
+
+    outA = *la;
+    outB = *lb;
+    return true;
 }
 
 /**
- * @brief Check if within line of sight to point
- * @param ox Target X coordinate
- * @param oy Target Y coordinate
- * @param oz Target Z coordinate
- * @return True if within line of sight
+ * @brief CAN A REACH B AT ALL -- the question every melee swing, spell, threat entry and
+ *        aggro check is really asking.
  *
- * Checks if this object has line of sight to the specified point.
+ * It demands a COMMON FRAME. This is NOT the question "can B see A": seeing a crow
+ * overhead is not being able to hit it. For that, ask CanBeSeen.
  */
-bool WorldObject::IsWithinLOS(float ox, float oy, float oz) const
+bool CanInteract(WorldObject const& a, WorldObject const& b)
 {
-    float x, y, z;
-    GetPosition(x, y, z);
-    return GetMap()->IsInLineOfSight(x, y, z + 2.0f, ox, oy, oz + 2.0f);
+    Geometry::Placement pa, pb;
+    return a.IsInWorld() && b.IsInWorld() &&
+           InCommonFrame(a, b, pa, pb) && pa.ShareFrame(pb);
 }
 
 /**
- * @brief Compare distance order to two objects
- * @param obj1 First object
- * @param obj2 Second object
- * @param is3D If true, use 3D distance; if false, use 2D
- * @return True if obj1 is closer than obj2
+ * @brief CAN B BE SHOWN A -- a wider question, and a cheaper one.
  *
- * Compares distances to two objects to determine which is closer.
+ * Wider than reach because a thing may be drawn without being touchable. In this core the
+ * two coincide, since nothing here is measured in a frame it cannot also be reached in;
+ * they are kept apart all the same, because every caller means one or the other and the
+ * distinction is what the transport rework needs already drawn.
  */
-bool WorldObject::GetDistanceOrder(WorldObject const* obj1, WorldObject const* obj2, bool is3D /* = true */) const
+bool CanBeSeen(WorldObject const& seen, WorldObject const& viewer)
 {
-    float dx1 = GetPositionX() - obj1->GetPositionX();
-    float dy1 = GetPositionY() - obj1->GetPositionY();
-    float distsq1 = dx1 * dx1 + dy1 * dy1;
-    if (is3D)
+    if (!seen.IsInWorld() || !viewer.IsInWorld())
     {
-        float dz1 = GetPositionZ() - obj1->GetPositionZ();
-        distsq1 += dz1 * dz1;
+        return false;
     }
 
-    float dx2 = GetPositionX() - obj2->GetPositionX();
-    float dy2 = GetPositionY() - obj2->GetPositionY();
-    float distsq2 = dx2 * dx2 + dy2 * dy2;
-    if (is3D)
-    {
-        float dz2 = GetPositionZ() - obj2->GetPositionZ();
-        distsq2 += dz2 * dz2;
-    }
-
-    return distsq1 < distsq2;
-}
-
-/**
- * @brief Check if within range of object
- * @param obj Target object
- * @param minRange Minimum distance
- * @param maxRange Maximum distance
- * @param is3D If true, use 3D distance; if false, use 2D
- * @return True if within range
- *
- * Checks if this object is within the specified distance range
- * of the target object.
- */
-bool WorldObject::IsInRange(WorldObject const* obj, float minRange, float maxRange, bool is3D /* = true */) const
-{
-    float dx = GetPositionX() - obj->GetPositionX();
-    float dy = GetPositionY() - obj->GetPositionY();
-    float distsq = dx * dx + dy * dy;
-    if (is3D)
-    {
-        float dz = GetPositionZ() - obj->GetPositionZ();
-        distsq += dz * dz;
-    }
-
-    float sizefactor = GetObjectBoundingRadius() + obj->GetObjectBoundingRadius();
-
-    // check only for real range
-    if (minRange > 0.0f)
-    {
-        float mindist = minRange + sizefactor;
-        if (distsq < mindist * mindist)
-        {
-            return false;
-        }
-    }
-
-    float maxdist = maxRange + sizefactor;
-    return distsq < maxdist * maxdist;
-}
-
-/**
- * @brief Check if within 2D range of point
- * @param x X coordinate
- * @param y Y coordinate
- * @param minRange Minimum distance
- * @param maxRange Maximum distance
- * @return True if within range
- *
- * Checks if this object is within the specified 2D distance range
- * of the target point.
- */
-bool WorldObject::IsInRange2d(float x, float y, float minRange, float maxRange) const
-{
-    float dx = GetPositionX() - x;
-    float dy = GetPositionY() - y;
-    float distsq = dx * dx + dy * dy;
-
-    float sizefactor = GetObjectBoundingRadius();
-
-    // check only for real range
-    if (minRange > 0.0f)
-    {
-        float mindist = minRange + sizefactor;
-        if (distsq < mindist * mindist)
-        {
-            return false;
-        }
-    }
-
-    float maxdist = maxRange + sizefactor;
-    return distsq < maxdist * maxdist;
-}
-
-/**
- * @brief Check if within 3D range of point
- * @param x X coordinate
- * @param y Y coordinate
- * @param z Z coordinate
- * @param minRange Minimum distance
- * @param maxRange Maximum distance
- * @return True if within range
- *
- * Checks if this object is within the specified 3D distance range
- * of the target point.
- */
-bool WorldObject::IsInRange3d(float x, float y, float z, float minRange, float maxRange) const
-{
-    float dx = GetPositionX() - x;
-    float dy = GetPositionY() - y;
-    float dz = GetPositionZ() - z;
-    float distsq = dx * dx + dy * dy + dz * dz;
-
-    float sizefactor = GetObjectBoundingRadius();
-
-    // check only for real range
-    if (minRange > 0.0f)
-    {
-        float mindist = minRange + sizefactor;
-        if (distsq < mindist * mindist)
-        {
-            return false;
-        }
-    }
-
-    float maxdist = maxRange + sizefactor;
-    return distsq < maxdist * maxdist;
-}
-
-/**
- * @brief Get angle to object
- * @param obj Target object
- * @return Angle in radians (0 to 2*PI)
- *
- * Returns the angle from this object to the target object.
- */
-float WorldObject::GetAngle(const WorldObject* obj) const
-{
-    if (!obj)
-    {
-        return 0.0f;
-    }
-
-    // Rework the assert, when more cases where such a call can happen have been fixed
-    // MANGOS_ASSERT(obj != this || PrintEntryError("GetAngle (for self)"));
-    if (obj == this)
-    {
-        sLog.outError("INVALID CALL for GetAngle for %s", obj->GetGuidStr().c_str());
-        return 0.0f;
-    }
-    return GetAngle(obj->GetPositionX(), obj->GetPositionY());
-}
-
-/**
- * @brief Get angle to point
- * @param x X coordinate
- * @param y Y coordinate
- * @return Angle in radians (0 to 2*PI)
- *
- * Returns the angle from this object to the specified point.
- */
-float WorldObject::GetAngle(const float x, const float y) const
-{
-    float dx = x - GetPositionX();
-    float dy = y - GetPositionY();
-
-    float ang = atan2(dy, dx);                              // returns value between -Pi..Pi
-    ang = (ang >= 0) ? ang : 2 * M_PI_F + ang;
-    return ang;
-}
-
-/**
- * @brief Check if object is within arc
- * @param arcangle Arc angle in radians
- * @param obj Target object
- * @return True if object is within arc
- *
- * Checks if the target object is within the specified arc
- * in front of this object.
- */
-bool WorldObject::HasInArc(const float arcangle, const WorldObject* obj) const
-{
-    // always have self in arc
-    if (obj == this)
+    if (seen.Where().ShareFrame(viewer.Where()))
     {
         return true;
     }
 
-    float arc = arcangle;
-
-    // move arc to range 0.. 2*pi
-    arc = MapManager::NormalizeOrientation(arc);
-
-    float angle = GetAngle(obj);
-    angle -= m_position.o;
-
-    // move angle to range -pi ... +pi
-    angle = MapManager::NormalizeOrientation(angle);
-    if (angle > M_PI_F)
+    if (Transport* aboard = Transport::VesselOf(seen))
     {
-        angle -= 2.0f * M_PI_F;
-    }
-
-    float lborder =  -1 * (arc / 2.0f);                     // in range -pi..0
-    float rborder = (arc / 2.0f);                           // in range 0..pi
-    return ((angle >= lborder) && (angle <= rborder));
-}
-
-/**
- * @brief Check if target is in front in same map
- * @param target Target object
- * @param distance Maximum distance
- * @param arc Arc angle in radians
- * @return True if target is in front
- *
- * Checks if the target is in front of this object within
- * the specified distance and arc, in the same map.
- */
-bool WorldObject::IsInFrontInMap(WorldObject const* target, float distance,  float arc) const
-{
-    return IsWithinDistInMap(target, distance) && HasInArc(arc, target);
-}
-
-/**
- * @brief Check if target is in back in same map
- * @param target Target object
- * @param distance Maximum distance
- * @param arc Arc angle in radians
- * @return True if target is in back
- *
- * Checks if the target is behind this object within
- * the specified distance and arc, in the same map.
- */
-bool WorldObject::IsInBackInMap(WorldObject const* target, float distance, float arc) const
-{
-    return IsWithinDistInMap(target, distance) && !HasInArc(2 * M_PI_F - arc, target);
-}
-
-/**
- * @brief Check if target is in front
- * @param target Target object
- * @param distance Maximum distance
- * @param arc Arc angle in radians
- * @return True if target is in front
- *
- * Checks if the target is in front of this object within
- * the specified distance and arc.
- */
-bool WorldObject::IsInFront(WorldObject const* target, float distance,  float arc) const
-{
-    return IsWithinDist(target, distance) && HasInArc(arc, target);
-}
-
-/**
- * @brief Check if target is in back
- * @param target Target object
- * @param distance Maximum distance
- * @param arc Arc angle in radians
- * @return True if target is in back
- *
- * Checks if the target is behind this object within
- * the specified distance and arc.
- */
-bool WorldObject::IsInBack(WorldObject const* target, float distance, float arc) const
-{
-    return IsWithinDist(target, distance) && !HasInArc(2 * M_PI_F - arc, target);
-}
-
-/**
- * @brief Get random point near position
- * @param x Center X coordinate
- * @param y Center Y coordinate
- * @param z Center Z coordinate
- * @param distance Maximum distance from center
- * @param rand_x Output random X coordinate
- * @param rand_y Output random Y coordinate
- * @param rand_z Output random Z coordinate
- * @param minDist Minimum distance from center
- * @param ori Optional orientation to use instead of random
- *
- * Generates a random point within the specified distance
- * of the center position.
- */
-void WorldObject::GetRandomPoint(float x, float y, float z, float distance, float& rand_x, float& rand_y, float& rand_z, float minDist /*=0.0f*/, float const* ori /*=NULL*/) const
-{
-    if (distance == 0)
-    {
-        rand_x = x;
-        rand_y = y;
-        rand_z = z;
-        return;
-    }
-
-    // angle to face `obj` to `this`
-    float angle;
-    if (!ori)
-    {
-        angle = rand_norm_f() * 2 * M_PI_F;
-    }
-    else
-    {
-        angle = *ori;
-    }
-
-    float new_dist;
-    if (minDist == 0.0f)
-    {
-        new_dist = rand_norm_f() * distance;
-    }
-    else
-    {
-        new_dist = minDist + rand_norm_f() * (distance - minDist);
-    }
-
-    rand_x = x + new_dist * cos(angle);
-    rand_y = y + new_dist * sin(angle);
-    rand_z = z;
-
-    MaNGOS::NormalizeMapCoord(rand_x);
-    MaNGOS::NormalizeMapCoord(rand_y);
-    UpdateGroundPositionZ(rand_x, rand_y, rand_z);          // update to LOS height if available
-}
-
-/**
- * @brief Update ground position Z
- * @param x X coordinate
- * @param y Y coordinate
- * @param z Z-coordinate to update
- *
- * Updates the Z-coordinate to the ground height at the
- * specified position.
- */
-void WorldObject::UpdateGroundPositionZ(float x, float y, float& z) const
-{
-    float new_z = GetMap()->GetHeight(x, y, z);
-    if (new_z > INVALID_HEIGHT)
-    {
-        z = new_z + 0.05f;                                   // just to be sure that we are not a few pixel under the surface
-    }
-}
-
-/**
- * @brief Update allowed position Z
- * @param x X coordinate
- * @param y Y coordinate
- * @param z Z-coordinate to update
- * @param atMap Map to use for height calculation (optional)
- *
- * Updates the Z-coordinate to a valid height based on the
- * object's movement capabilities (flying, swimming, etc.).
- */
-void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z, Map* atMap /*=NULL*/) const
-{
-    if (!atMap)
-    {
-        atMap = GetMap();
-    }
-
-    switch (GetTypeId())
-    {
-        case TYPEID_UNIT:
+        if (aboard->GetMap() == viewer.GetMap() || aboard == &viewer)
         {
-            // non fly unit don't must be in air
-            // non swim unit must be at ground (mostly speedup, because it don't must be in water and water level check less fast
-            if (!((Creature const*)this)->CanFly())
-            {
-                bool canSwim = ((Creature const*)this)->CanSwim() && ((Creature const*)this)->IsInWater();
-                float ground_z = z;
-                float max_z = canSwim
-                    ? atMap->GetTerrain()->GetWaterOrGroundLevel(x, y, z, &ground_z, !((Unit const*)this)->HasAuraType(SPELL_AURA_WATER_WALK))
-                    : ((ground_z = atMap->GetHeight(x, y, z)));
-                if (max_z > INVALID_HEIGHT)
-                {
-                    if (z > max_z)
-                    {
-                        z = max_z;
-                    }
-                    else if (z < ground_z)
-                    {
-                        z = ground_z;
-                    }
-                }
-            }
-            else
-            {
-                float ground_z = atMap->GetHeight(x, y, z);
-                if (z < ground_z)
-                {
-                    z = ground_z;
-                }
-            }
-            break;
-        }
-        case TYPEID_PLAYER:
-        {
-            // for server controlled moves player work same as creature (but it can always swim)
-            {
-                float ground_z = z;
-                float max_z = atMap->GetTerrain()->GetWaterOrGroundLevel(x, y, z, &ground_z, !((Unit const*)this)->HasAuraType(SPELL_AURA_WATER_WALK));
-                if (max_z > INVALID_HEIGHT)
-                {
-                    if (z > max_z)
-                    {
-                        z = max_z;
-                    }
-                    else if (z < ground_z)
-                    {
-                        z = ground_z;
-                    }
-                }
-            }
-            break;
-        }
-        default:
-        {
-            float ground_z = atMap->GetHeight(x, y, z);
-            if (ground_z > INVALID_HEIGHT)
-            {
-                z = ground_z;
-            }
-            break;
+            return true;
         }
     }
+
+    if (Transport* watching = Transport::VesselOf(viewer))
+    {
+        if (watching->GetMap() == seen.GetMap() || watching == &seen)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
-/**
- * @brief Check if position is valid
- * @return True if position is valid
- *
- * Checks if the object's current position is valid.
- */
-bool WorldObject::IsPositionValid() const
+/// The object a proximity question must be asked from. A passenger has no pose the shore
+/// can measure against, so the vessel answers for him -- and its hull radius is added as
+/// slack, because he may stand anywhere on it.
+static WorldObject const& ProximityAnchor(WorldObject const& obj, float& slack)
 {
-    return MaNGOS::IsValidMapCoord(m_position.x, m_position.y, m_position.z, m_position.o);
+    TransportMap* hull = obj.GetMap() ? obj.GetMap()->AsTransport() : NULL;
+    Transport* vessel = hull ? hull->Vessel() : NULL;
+
+    if (vessel)
+    {
+        slack += hull->HullRadius();
+        return *vessel;
+    }
+    return obj;
+}
+
+bool SeenWithin(WorldObject const& seen, WorldObject const& viewer, float dist, bool is3D)
+{
+    if (!CanBeSeen(seen, viewer))
+    {
+        return false;
+    }
+
+    // Same frame -- the world's, or one deck's. Exact, so measure it and be done.
+    if (seen.Where().ShareFrame(viewer.Where()))
+    {
+        return seen.Where().WithinDist(viewer.Where(), dist, is3D);
+    }
+
+    // Across a vessel's boundary. Whatever is aboard answers with its hull.
+    float slack = 0.0f;
+    WorldObject const& a = ProximityAnchor(seen, slack);
+    WorldObject const& b = ProximityAnchor(viewer, slack);
+
+    // One of them IS the anchor: he is standing on the very thing he is looking at.
+    if (&a == &b)
+    {
+        return true;
+    }
+
+    return a.Where().WithinDist(b.Where(), dist + slack, is3D);
+}
+
+bool InReach(WorldObject const& a, WorldObject const& b, float dist, bool is3D)
+{
+    Geometry::Placement pa, pb;
+    return CanInteract(a, b) && InCommonFrame(a, b, pa, pb) &&
+           pa.WithinDist(pb, dist, is3D);
+}
+
+bool InFrontPhased(WorldObject const& a, WorldObject const& b, float dist, float arc)
+{
+    Geometry::Placement pa, pb;
+    return CanInteract(a, b) && InCommonFrame(a, b, pa, pb) &&
+           pa.IsInFront(pb, dist, arc);
+}
+
+bool InBackPhased(WorldObject const& a, WorldObject const& b, float dist, float arc)
+{
+    Geometry::Placement pa, pb;
+    return CanInteract(a, b) && InCommonFrame(a, b, pa, pb) &&
+           pa.IsInBack(pb, dist, arc);
+}
+
+bool HasLineOfSight(WorldObject const& a, Geometry::Vector3 const& point)
+{
+    // The two-yard lift is eye height: a sight line is cast between heads, not feet.
+    return a.GetMap()->IsInLineOfSight(a.Where().X(), a.Where().Y(), a.Where().Z() + 2.0f,
+                                       point.x, point.y, point.z + 2.0f);
+}
+
+bool HasLineOfSight(WorldObject const& a, WorldObject const& b)
+{
+    if (!CanInteract(a, b))
+    {
+        return false;
+    }
+
+    // Aboard, the sight line is cast through the HULL's own geometry, on the ship's own map,
+    // in the coordinates both passengers already speak.
+    if (TransportMap* hull = a.GetMap() ? a.GetMap()->AsTransport() : NULL)
+    {
+        Geometry::Placement pa, pb;
+        if (!InCommonFrame(a, b, pa, pb))
+        {
+            return false;
+        }
+        return !hull->IsBlocked(
+            Geometry::Vector3(pa.X(), pa.Y(), pa.Z() + 2.0f),
+            Geometry::Vector3(pb.X(), pb.Y(), pb.Z() + 2.0f));
+    }
+
+    return HasLineOfSight(a, b.Where().Pos());
+}
+
+bool IsPlaceable(WorldObject const& obj)
+{
+    return obj.Where().IsFinite() &&
+           MaNGOS::IsValidMapCoord(obj.Where().X(), obj.Where().Y(),
+                                   obj.Where().Z(), obj.Where().Facing());
 }

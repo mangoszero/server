@@ -25,14 +25,17 @@
 #ifndef MANGOS_H_GUILDMGR
 #define MANGOS_H_GUILDMGR
 
-#include "Common.h"
+#include <unordered_map>
+#include "Platform/Define.h"
+#include <string>
+#include <mutex>
 
 class Guild;
 class ObjectGuid;
 
 class GuildMgr
 {
-    typedef UNORDERED_MAP<uint32, Guild*> GuildMap;
+    typedef std::unordered_map<uint32, Guild*> GuildMap;
 
     GuildMap m_GuildMap;
 

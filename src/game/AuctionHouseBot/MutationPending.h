@@ -22,7 +22,8 @@
 #ifndef MANGOS_AH_MUTATION_PENDING_H
 #define MANGOS_AH_MUTATION_PENDING_H
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <ctime>
 #include <unordered_map>
 #include <string>
 #include <vector>

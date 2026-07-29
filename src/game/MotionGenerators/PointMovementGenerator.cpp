@@ -25,256 +25,167 @@
 #include "PointMovementGenerator.h"
 #include "Creature.h"
 #include "CreatureAI.h"
+#include "MotionFrame.h"
 #include "TemporarySummon.h"
 #include "World.h"
-#include "movement/MoveSplineInit.h"
 #include "movement/MoveSpline.h"
 
-//----- Point Movement Generator
-
-template<class T>
-
-/**
- * @brief Initializes movement toward the configured point destination.
- *
- * @param unit The unit using the movement generator.
- */
-void PointMovementGenerator<T>::Initialize(T& unit)
+void PointMovementGenerator::Initialize(Unit& owner)
 {
-    if (unit.hasUnitState(UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_NOT_MOVE))
+    if (owner.hasUnitState(UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_NOT_MOVE))
     {
         return;
     }
 
-    unit.StopMoving();
+    owner.StopMoving();
+    owner.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
 
-    unit.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
-    Movement::MoveSplineInit init(unit);
-    init.MoveTo(i_x, i_y, i_z, m_generatePath);
-    init.Launch();
+    // The leg itself is laid on the first tick, by the driver.
+    ResetLeg();
 }
 
-template<class T>
-
-/**
- * @brief Finalizes point movement and notifies listeners if the spline completed.
- *
- * @param unit The unit using the movement generator.
- */
-void PointMovementGenerator<T>::Finalize(T& unit)
+void PointMovementGenerator::Reset(Unit& owner)
 {
-    unit.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+    Initialize(owner);
+}
 
-    if (unit.movespline->Finalized())
+void PointMovementGenerator::Interrupt(Unit& owner)
+{
+    owner.InterruptMoving();
+    owner.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+    ResetLeg();
+}
+
+void PointMovementGenerator::Finalize(Unit& owner)
+{
+    owner.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+
+    // Only a leg that ran to completion counts as reaching the point; one cut short by
+    // an interrupt does not.
+    if (owner.movespline->Finalized())
     {
-        MovementInform(unit);
+        MovementInform(owner);
     }
 }
 
-template<class T>
-
-/**
- * @brief Interrupts point movement and clears roaming movement flags.
- *
- * @param unit The unit using the movement generator.
- */
-void PointMovementGenerator<T>::Interrupt(T& unit)
+void PointMovementGenerator::MovementInform(Unit& owner) const
 {
-    unit.InterruptMoving();
-    unit.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
-}
-
-template<class T>
-
-/**
- * @brief Resets point movement state without relaunching the path.
- *
- * @param unit The unit using the movement generator.
- */
-void PointMovementGenerator<T>::Reset(T& unit)
-{
-    unit.StopMoving();
-    unit.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
-}
-
-template<class T>
-
-/**
- * @brief Updates point movement and relaunches the spline if needed.
- *
- * @param unit The unit using the movement generator.
- * @param diff The elapsed update time in milliseconds.
- * @return true while the generator remains active; otherwise false.
- */
-bool PointMovementGenerator<T>::Update(T& unit, const uint32& /*diff*/)
-{
-    if (unit.hasUnitState(UNIT_STAT_CAN_NOT_MOVE))
+    if (owner.GetTypeId() != TYPEID_UNIT)
     {
-        unit.clearUnitState(UNIT_STAT_ROAMING_MOVE);
-        return true;
+        return;
     }
 
-    if (!unit.hasUnitState(UNIT_STAT_ROAMING_MOVE) && unit.movespline->Finalized())
+    Creature& creature = static_cast<Creature&>(owner);
+
+    if (creature.AI())
     {
-        Initialize(unit);
+        creature.AI()->MovementInform(POINT_MOTION_TYPE, m_id);
     }
 
-    return !unit.movespline->Finalized();
-}
-
-template<>
-
-/**
- * @brief Handles point-movement completion for players.
- *
- * @param player The player that reached the destination.
- */
-void PointMovementGenerator<Player>::MovementInform(Player&)
-{
-}
-
-template <>
-
-/**
- * @brief Notifies creature AI and summon logic when point movement completes.
- *
- * @param unit The creature that reached the destination.
- */
-void PointMovementGenerator<Creature>::MovementInform(Creature& unit)
-{
-    if (unit.AI())
+    if (!creature.IsTemporarySummon())
     {
-        unit.AI()->MovementInform(POINT_MOTION_TYPE, id);
+        return;
     }
 
-    if (unit.IsTemporarySummon())
+    const ObjectGuid summonerGuid = static_cast<TemporarySummon&>(creature).GetSummonerGuid();
+    if (!summonerGuid.IsCreature())
     {
-        TemporarySummon* pSummon = (TemporarySummon*)(&unit);
-        if (pSummon->GetSummonerGuid().IsCreature())
+        return;
+    }
+
+    if (Creature* summoner = creature.GetMap()->GetCreature(summonerGuid))
+    {
+        if (summoner->AI())
         {
-            if (Creature* pSummoner = unit.GetMap()->GetCreature(pSummon->GetSummonerGuid()))
-            {
-                if (pSummoner->AI())
-                {
-                    pSummoner->AI()->SummonedMovementInform(&unit, POINT_MOTION_TYPE, id);
-                }
-            }
+            summoner->AI()->SummonedMovementInform(&creature, POINT_MOTION_TYPE, m_id);
         }
     }
 }
 
-// Explicit template instantiations
-template void PointMovementGenerator<Player>::Initialize(Player&);
-template void PointMovementGenerator<Creature>::Initialize(Creature&);
-template void PointMovementGenerator<Player>::Finalize(Player&);
-template void PointMovementGenerator<Creature>::Finalize(Creature&);
-template void PointMovementGenerator<Player>::Interrupt(Player&);
-template void PointMovementGenerator<Creature>::Interrupt(Creature&);
-template void PointMovementGenerator<Player>::Reset(Player&);
-template void PointMovementGenerator<Creature>::Reset(Creature&);
-template bool PointMovementGenerator<Player>::Update(Player&, const uint32& diff);
-template bool PointMovementGenerator<Creature>::Update(Creature&, const uint32& diff);
-
-/**
- * @brief Initializes the AssistanceMovementGenerator.
- * @param unit Reference to the unit.
- */
-void AssistanceMovementGenerator::Initialize(Unit& unit)
+Motion::MoveIntent PointMovementGenerator::Intent(Unit& owner,
+                                                  Motion::MoveStatus const& status,
+                                                  uint32 /*diff*/)
 {
-    if (unit.hasUnitState(UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_NOT_MOVE))
+    if (owner.hasUnitState(UNIT_STAT_CAN_NOT_MOVE))
+    {
+        owner.clearUnitState(UNIT_STAT_ROAMING_MOVE);
+        return Motion::MoveIntent::Hold();
+    }
+
+    // Arrived, or there was no way to get there at all: either way this one-shot is
+    // over and the generator beneath it takes back over. Finalize fires the AI inform.
+    if (status.arrived || status.blocked)
+    {
+        return Motion::MoveIntent::Done();
+    }
+
+    owner.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+
+    // m_dest arrived from a script, an AI or a spell effect, and those speak WORLD
+    // coordinates — they always will, since that is the only kind the database and the
+    // script API have. Read straight as a goal it would be taken for a deck offset by a
+    // boarded unit. Converted here, not in the constructor, because the conversion must
+    // survive a Reset() and must be re-done if the frame beneath us ever changes.
+    //
+    // FromWorld is the identity in the world frame, so this costs nothing for everyone
+    // who is not standing on a boat.
+    const Motion::Vector3 goal = Motion::FrameFor(owner).FromWorld(owner, m_dest);
+
+    return Motion::MoveIntent::Move(goal, LegFlags());
+}
+
+void AssistanceMovementGenerator::Finalize(Unit& owner)
+{
+    owner.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+
+    Creature& creature = static_cast<Creature&>(owner);
+    creature.SetNoCallAssistance(false);
+    creature.CallAssistance();
+
+    if (creature.IsAlive())
+    {
+        creature.GetMotionMaster()->MoveSeekAssistanceDistract(
+            sWorld.getConfig(CONFIG_UINT32_CREATURE_FAMILY_ASSISTANCE_DELAY));
+    }
+}
+
+Motion::MoveIntent EffectMovementGenerator::Intent(Unit& /*owner*/,
+                                                   Motion::MoveStatus const& status,
+                                                   uint32 /*diff*/)
+{
+    // Note this is `traveling`, not `arrived`: the spline was launched by the effect,
+    // not by us, so if it was never running at all we must pop immediately rather than
+    // wait for an arrival edge that will never come.
+    return status.traveling ? Motion::MoveIntent::Hold() : Motion::MoveIntent::Done();
+}
+
+void EffectMovementGenerator::Finalize(Unit& owner)
+{
+    if (owner.GetTypeId() != TYPEID_UNIT)
     {
         return;
     }
 
-    if (!unit.IsStopped())
+    Creature& creature = static_cast<Creature&>(owner);
+
+    if (creature.AI() && owner.movespline->Finalized())
     {
-        unit.StopMoving();
+        creature.AI()->MovementInform(EFFECT_MOTION_TYPE, m_id);
     }
 
-    unit.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
-    Movement::MoveSplineInit init(unit);
-    init.MoveTo(i_x, i_y, i_z, m_generatePath);
-    // Slow down the mob that is running for assistance
-    // TODO: There are different speeds for the different mobs, isn't there?
-    // That should probably be taken into account here
-    init.SetWalk(true);
-    init.Launch();
-}
-
-/**
- * @brief Finalizes the AssistanceMovementGenerator.
- * @param unit Reference to the unit.
- */
-void AssistanceMovementGenerator::Finalize(Unit& unit)
-{
-    unit.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
-
-    ((Creature*)&unit)->SetNoCallAssistance(false);
-    ((Creature*)&unit)->CallAssistance();
-    if (unit.IsAlive())
-    {
-        unit.GetMotionMaster()->MoveSeekAssistanceDistract(sWorld.getConfig(CONFIG_UINT32_CREATURE_FAMILY_ASSISTANCE_DELAY));
-    }
-}
-
-/**
- * @brief Updates the EffectMovementGenerator.
- * @param unit Reference to the unit.
- * @param diff Time difference.
- * @return True if the update was successful, false otherwise.
- */
-bool EffectMovementGenerator::Update(Unit& unit, const uint32&)
-{
-    return !unit.movespline->Finalized();
-}
-
-/**
- * @brief Finalizes the EffectMovementGenerator.
- * @param unit Reference to the unit.
- */
-void EffectMovementGenerator::Finalize(Unit& unit)
-{
-    if (unit.GetTypeId() != TYPEID_UNIT)
+    // Restore the previous movement, since we have no proper state system for it.
+    if (!owner.IsAlive() ||
+        owner.hasUnitState(UNIT_STAT_CONFUSED | UNIT_STAT_FLEEING | UNIT_STAT_NO_COMBAT_MOVEMENT))
     {
         return;
     }
 
-    if (((Creature&)unit).AI() && unit.movespline->Finalized())
+    if (Unit* victim = owner.getVictim())
     {
-        ((Creature&)unit).AI()->MovementInform(EFFECT_MOTION_TYPE, m_Id);
+        owner.GetMotionMaster()->MoveChase(victim);
     }
-    // Need restore previous movement since we have no proper states system
-    if (unit.IsAlive() && !unit.hasUnitState(UNIT_STAT_CONFUSED | UNIT_STAT_FLEEING | UNIT_STAT_NO_COMBAT_MOVEMENT))
+    else
     {
-        if (Unit* victim = unit.getVictim())
-        {
-            unit.GetMotionMaster()->MoveChase(victim);
-        }
-        else
-        {
-            unit.GetMotionMaster()->Initialize();
-        }
+        owner.GetMotionMaster()->Initialize();
     }
-}
-
-/**
- * @brief Initializes the FlyOrLandMovementGenerator.
- * @param unit Reference to the unit.
- */
-void FlyOrLandMovementGenerator::Initialize(Unit& unit)
-{
-    if (unit.hasUnitState(UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_NOT_MOVE))
-    {
-        return;
-    }
-
-    unit.StopMoving();
-
-    float x, y, z;
-    GetDestination(x, y, z);
-    unit.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
-    Movement::MoveSplineInit init(unit);
-    init.SetFly();
-    init.MoveTo(x, y, z, false);
-    init.Launch();
 }

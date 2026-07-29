@@ -25,13 +25,14 @@
 #ifndef SQLSTORAGE_IMPL_H
 #define SQLSTORAGE_IMPL_H
 
+#include <cstring>
+#include <cassert>
 #include "Utilities/ProgressBar.h"
 #include "Log/Log.h"
 #include "DataStores/DBCFileLoader.h"
 
 template<class DerivedLoader, class StorageClass>
-    template<class S, class D>
-
+template<class S, class D>
 /**
  * @brief S source-type, D destination-type
  *
@@ -45,18 +46,16 @@ void SQLStorageLoaderBase<DerivedLoader, StorageClass>::convert(uint32 /*field_p
     if (((unsigned) &dst) % sizeof(D))
     {
         //The address is not aligned. Use memcpy to avoid ARM unaligned trap
-        D converted(src);
-        memcpy((void*) &dst, (void*) &converted, sizeof(D));
+       D converted(src);
+       memcpy((void*) &dst, (void*) &converted, sizeof(D));
     }
     else
 #endif
-    {
-        dst = D(src);
-    }
+
+    dst = D(src);
 }
 
 template<class DerivedLoader, class StorageClass>
-
 /**
  * @brief
  *
@@ -80,8 +79,7 @@ void SQLStorageLoaderBase<DerivedLoader, StorageClass>::convert_str_to_str(uint3
 }
 
 template<class DerivedLoader, class StorageClass>
-    template<class S>
-
+template<class S>
 /**
  * @brief S source-type
  *
@@ -96,8 +94,7 @@ void SQLStorageLoaderBase<DerivedLoader, StorageClass>::convert_to_str(uint32 /*
 }
 
 template<class DerivedLoader, class StorageClass>
-    template<class D>
-
+template<class D>
 /**
  * @brief D destination-type
  *
@@ -110,20 +107,18 @@ void SQLStorageLoaderBase<DerivedLoader, StorageClass>::convert_from_str(uint32 
 #if defined(__arm__)
     if (((unsigned) &dst) % sizeof(D))
     {
-        //The address is not aligned. Use memcpy to avoid ARM unaligned trap
-        D converted(0);
-        memcpy((void*) &dst, (void*) &converted, sizeof(D));
+       //The address is not aligned. Use memcpy to avoid ARM unaligned trap
+       D converted(0);
+       memcpy((void*) &dst, (void*) &converted, sizeof(D));
     }
     else
 #endif
-    {
-        dst = 0;
-    }
+
+    dst = 0;
 }
 
 template<class DerivedLoader, class StorageClass>
-    template<class S, class D>
-
+template<class S, class D>
 /**
  * @brief S source-type, D destination-type
  *
@@ -136,19 +131,17 @@ void SQLStorageLoaderBase<DerivedLoader, StorageClass>::default_fill(uint32 /*fi
 #if defined(__arm__)
     if (((unsigned) &dst) % sizeof(D))
     {
-        //The address is not aligned. Use memcpy to avoid ARM unaligned trap
-        D converted(src);
-        memcpy((void*) &dst, (void*) &converted, sizeof(D));
+       //The address is not aligned. Use memcpy to avoid ARM unaligned trap
+       D converted(src);
+       memcpy((void*) &dst, (void*) &converted, sizeof(D));
     }
     else
 #endif
-    {
-        dst = D(src);
-    }
+
+    dst = D(src);
 }
 
 template<class DerivedLoader, class StorageClass>
-
 /**
  * @brief
  *
@@ -163,8 +156,7 @@ void SQLStorageLoaderBase<DerivedLoader, StorageClass>::default_fill_to_str(uint
 }
 
 template<class DerivedLoader, class StorageClass>
-    template<class V>
-
+template<class V>
 /**
  * @brief V value-type
  *
@@ -222,7 +214,6 @@ void SQLStorageLoaderBase<DerivedLoader, StorageClass>::storeValue(V value, Stor
 }
 
 template<class DerivedLoader, class StorageClass>
-
 /**
  * @brief
  *
@@ -272,7 +263,6 @@ void SQLStorageLoaderBase<DerivedLoader, StorageClass>::storeValue(char const* v
 }
 
 template<class DerivedLoader, class StorageClass>
-
 /**
  * @brief
  *

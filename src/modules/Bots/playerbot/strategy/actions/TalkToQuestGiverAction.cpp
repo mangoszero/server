@@ -1,3 +1,4 @@
+#include <sstream>
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "TalkToQuestGiverAction.h"

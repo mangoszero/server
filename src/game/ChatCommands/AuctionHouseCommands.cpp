@@ -32,6 +32,7 @@
  * - Auction manipulation for administrative purposes
  */
 
+#include "Utilities/Errors.h"
 #include "Chat.h"
 #include "Language.h"
 #include "ObjectMgr.h"

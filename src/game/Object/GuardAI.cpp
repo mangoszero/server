@@ -64,7 +64,7 @@ GuardAI::GuardAI(Creature* c) : CreatureAI(c), i_state(STATE_NORMAL), i_tracker(
 void GuardAI::MoveInLineOfSight(Unit* u)
 {
     // Ignore Z for flying creatures
-    if (!m_creature->CanFly() && m_creature->GetDistanceZ(u) > CREATURE_Z_ATTACK_RANGE)
+    if (!m_creature->CanFly() && m_creature->Where().HeightGapTo(u->Where()) > CREATURE_Z_ATTACK_RANGE)
     {
         return;
     }
@@ -74,7 +74,7 @@ void GuardAI::MoveInLineOfSight(Unit* u)
         u->isInAccessablePlaceFor(m_creature))
     {
         float attackRadius = m_creature->GetAttackDistance(u);
-        if (m_creature->IsWithinDistInMap(u, attackRadius))
+        if (InReach(*m_creature, *u, attackRadius))
         {
             // Need add code to let guard support player
             AttackStart(u);
@@ -175,7 +175,7 @@ void GuardAI::UpdateAI(const uint32 diff)
  */
 bool GuardAI::IsVisible(Unit* pl) const
 {
-    return m_creature->IsWithinDist(pl, sWorld.getConfig(CONFIG_FLOAT_SIGHT_GUARDER)) &&
+    return m_creature->Where().WithinDist(pl->Where(), sWorld.getConfig(CONFIG_FLOAT_SIGHT_GUARDER)) &&
         pl->IsVisibleForOrDetect(m_creature, m_creature, true);
 }
 

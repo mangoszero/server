@@ -29,7 +29,7 @@
 #ifndef MANGOS_PROTO_OPCODES_H
 #define MANGOS_PROTO_OPCODES_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 
 /**
  * This is a list of Opcodes that are known for the client/server communication, it is used

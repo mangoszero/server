@@ -17,7 +17,8 @@ int strcmpi(std::string s1, std::string s2);
 #include "LootMgr.h"
 #include "GossipDef.h"
 #include "Chat.h"
-#include "Common.h"
+#include <string>
+#include <vector>
 #include "World.h"
 #include "SpellMgr.h"
 #include "ObjectMgr.h"

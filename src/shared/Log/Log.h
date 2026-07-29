@@ -25,17 +25,16 @@
 #ifndef MANGOSSERVER_LOG_H
 #define MANGOSSERVER_LOG_H
 
-#include "Common/Common.h"
-#include "Policies/Singleton.h"
-
-#include <cstdio>
-#include <mutex>
+#include "Threading/Threading.h"
+#include "Platform/Define.h"
 #include <string>
-#include <cstdarg>
+#include "Policies/Singleton.h"
 
 class Config;
 class ByteBuffer;
 class ConsoleLogWriter;
+#include <mutex>
+
 namespace MaNGOS { class Thread; }
 
 /**
@@ -66,7 +65,7 @@ enum LogFilters
     LOG_FILTER_TRANSPORT_MOVES    = 0x000001,               //  0 any related to transport moves
     LOG_FILTER_CREATURE_MOVES     = 0x000002,               //  1 creature move by cells
     LOG_FILTER_VISIBILITY_CHANGES = 0x000004,               //  2 update visibility for diff objects and players
-    // reserved for future version
+    LOG_FILTER_ACHIEVEMENT_UPDATES = 0x000008,              //  3 achievement update broadcasts
     LOG_FILTER_WEATHER            = 0x000010,               //  4 weather changes
     LOG_FILTER_PLAYER_STATS       = 0x000020,               //  5 player save data
     LOG_FILTER_SQL_TEXT           = 0x000040,               //  6 raw SQL text send to DB engine
@@ -82,12 +81,13 @@ enum LogFilters
     LOG_FILTER_PATHFINDING        = 0x010000,               // 16 Pathfinding
     LOG_FILTER_MAP_LOADING        = 0x020000,               // 17 Map loading/unloading (MAP, VMAPS, MMAP)
     LOG_FILTER_EVENT_AI_DEV       = 0x040000,               // 18 Event AI actions
-    LOG_FILTER_CELL_ENVELOPE      = 0x080000,               // 19 LivingWorld B-Cell envelope load/accrete trace
-    LOG_FILTER_GRID_ADD           = 0x100000,               // 20 object added to a grid cell ("X enters grid[x,y]") - high-volume, mostly creatures
-    LOG_FILTER_DB_SCRIPTS         = 0x200000,               // 21 db_scripts command processing trace (execution, not errors)
+    LOG_FILTER_CALENDAR           = 0x080000,               // 19 Calendar
+    LOG_FILTER_CELL_ENVELOPE      = 0x100000,               // 20 LivingWorld B-Cell envelope load/accrete trace
+    LOG_FILTER_GRID_ADD           = 0x200000,               // 21 object added to a grid cell ("X enters grid[x,y]") - high-volume, mostly creatures
+    LOG_FILTER_DB_SCRIPTS         = 0x400000,               // 22 db_scripts command processing trace (execution, not errors)
 };
 
-#define LOG_FILTER_COUNT            22
+#define LOG_FILTER_COUNT            23
 
 /**
  * @brief Configuration data for individual log filters
@@ -133,6 +133,19 @@ enum Color
 const int Color_count = int(WHITE) + 1; /**< Total number of available colors **/
 
 /**
+ * @brief Severity of a line, and the index into the configured colour table
+ */
+enum LogType
+{
+    LogNormal = 0,
+    LogDetails,
+    LogDebug,
+    LogError
+};
+
+const int LogType_count = int(LogError) + 1; /**< Size of the colour table */
+
+/**
  * @brief One formatted console line handed to the off-thread writer
  *
  * Producers format text (time prefix + body, WITHOUT the trailing newline) and
@@ -143,11 +156,12 @@ struct ConsoleLogRecord
 {
     std::string text; /**< Formatted line WITHOUT the trailing newline; the writer appends '\n' after ResetColor */
     Color color; /**< Color to apply when applyColor is set */
+    LogType type; /**< Severity, kept alongside the colour so the full-screen console can theme independently of the configured palette */
     bool applyColor; /**< Whether to wrap the write in SetColor/ResetColor */
     bool toStdout; /**< true => stdout, false => stderr */
     bool isRaw; /**< Raw passthrough: write text verbatim with NO color and NO appended newline (used for progress-bar redraws, which carry their own '\r'/'\n' and must not be reformatted) */
 
-    ConsoleLogRecord() : color(WHITE), applyColor(false), toStdout(true), isRaw(false) {}
+    ConsoleLogRecord() : color(WHITE), type(LogNormal), applyColor(false), toStdout(true), isRaw(false) {}
 };
 
 /**
@@ -167,31 +181,29 @@ struct ConsoleLogRecord
  */
 class Log : public MaNGOS::Singleton<Log>
 {
-    friend class MaNGOS::Singleton<Log>;
+        friend class MaNGOS::Singleton<Log>;
+        /**
+         * @brief Constructs the Log singleton instance
+         *
+         * Initializes all log file handles and filter settings.
+         */
+        Log();
 
-    /**
-     * @brief Constructs the Log singleton instance
-     *
-     * Initializes all log file handles and filter settings.
-     */
-    Log();
-
-    /**
-     * @brief Destructs the Log instance and closes all open files
-     *
-     * Ensures all log files are properly closed and file handles are cleaned up.
-     */
-    ~Log()
-    {
-        CloseLogFiles();
-    }
+        /**
+         * @brief Destructs the Log instance and closes all open files
+         *
+         * Ensures all log files are properly closed and file handles are cleaned up.
+         */
+        ~Log()
+        {
+            CloseLogFiles();
+        }
     public:
         /**
          * @brief
          *
          */
         void Initialize();
-
         /**
          * @brief
          *
@@ -206,88 +218,75 @@ class Log : public MaNGOS::Singleton<Log>
          * @param str...
          */
         void outCommand(uint32 account, const char* str, ...) ATTR_PRINTF(3, 4);
-
         /**
          * @brief any log level
          *
          */
         void outString();
-
         /**
          * @brief any log level
          *
          * @param str...
          */
         void outString(const char* str, ...)      ATTR_PRINTF(2, 3);
-
         /**
          * @brief any log level
          *
          * @param err...
          */
         void outError(const char* err, ...)       ATTR_PRINTF(2, 3);
-
         /**
          * @brief log level >= 1
          *
          * @param str...
          */
         void outBasic(const char* str, ...)       ATTR_PRINTF(2, 3);
-
         /**
          * @brief log level >= 2
          *
          * @param str...
          */
         void outDetail(const char* str, ...)      ATTR_PRINTF(2, 3);
-
         /**
          * @brief log level >= 3
          *
          * @param str...
          */
         void outDebug(const char* str, ...)       ATTR_PRINTF(2, 3);
-
         /**
          * @brief any log level
          *
          */
         void outErrorDb();
-
         /**
          * @brief any log level
          *
          * @param str...
          */
         void outErrorDb(const char* str, ...)     ATTR_PRINTF(2, 3);
-
         /**
          * @brief any log level
          *
          * @param str...
          */
         void outChar(const char* str, ...)        ATTR_PRINTF(2, 3);
-
         /**
          * @brief any log level
          *
          * @param str...
          */
         void outErrorEluna();
-
         /**
          * @brief any log level
          *
          * @param str...
          */
         void outErrorEluna(const char* str, ...)        ATTR_PRINTF(2, 3);
-
         /**
          * @brief any log level
          *
          */
         void outErrorEventAI();
-
         /**
          * @brief any log level
          *
@@ -300,7 +299,6 @@ class Log : public MaNGOS::Singleton<Log>
          *
          */
         void outErrorScriptLib();
-
         /**
          * @brief any log level
          *
@@ -311,6 +309,9 @@ class Log : public MaNGOS::Singleton<Log>
         /**
          * @brief any log level
          *
+         * Called from WorldGateway::Deliver (incoming) and WorldSession::SendPacket
+         * (outgoing) -- see IsPacketLoggingEnabled()'s comment below.
+         *
          * @param socket
          * @param opcode
          * @param opcodeName
@@ -318,7 +319,6 @@ class Log : public MaNGOS::Singleton<Log>
          * @param incoming
          */
         void outWorldPacketDump(uint32 socket, uint32 opcode, char const* opcodeName, ByteBuffer const* packet, bool incoming);
-
         /**
          * @brief any log level
          *
@@ -328,48 +328,41 @@ class Log : public MaNGOS::Singleton<Log>
          * @param name
          */
         void outCharDump(const char* str, uint32 account_id, uint32 guid, const char* name);
-
         /**
          * @brief
          *
          * @param str...
          */
         void outRALog(const char* str, ...)       ATTR_PRINTF(2, 3);
-
         /**
-         * @brief any log level
-         *
-         */
+        * @brief any log level
+        *
+        */
         void outWarden();
-
         /**
-         * @brief any log level
-         *
-         * @param str...
-         */
+        * @brief any log level
+        *
+        * @param str...
+        */
         void outWarden(const char* str, ...)      ATTR_PRINTF(2, 3);
-
         /**
          * @brief
          *
          * @return uint32
          */
         uint32 GetLogLevel() const { return m_logLevel; }
-
         /**
          * @brief
          *
          * @param Level
          */
         void SetLogLevel(char* Level);
-
         /**
          * @brief
          *
          * @param Level
          */
         void SetLogFileLevel(char* Level);
-
         /**
          * @brief
          *
@@ -377,34 +370,29 @@ class Log : public MaNGOS::Singleton<Log>
          * @param color
          */
         static void SetColor(bool stdout_stream, Color color);
-
         /**
          * @brief
          *
          * @param stdout_stream
          */
         static void ResetColor(bool stdout_stream);
-
         /**
          * @brief
          *
          */
         void outTime();
-
         /**
          * @brief
          *
          * @param file
          */
         static void outTimestamp(FILE* file);
-
         /**
          * @brief
          *
          * @return std::string
          */
         static std::string GetTimestampStr();
-
         /**
          * @brief
          *
@@ -412,7 +400,6 @@ class Log : public MaNGOS::Singleton<Log>
          * @return bool
          */
         bool HasLogFilter(uint32 filter) const { return m_logFilter & filter; }
-
         /**
          * @brief
          *
@@ -420,7 +407,6 @@ class Log : public MaNGOS::Singleton<Log>
          * @param on
          */
         void SetLogFilter(LogFilters filter, bool on) { if (on) { m_logFilter |= filter; } else { m_logFilter &= ~filter; } }
-
         /**
          * @brief
          *
@@ -428,7 +414,6 @@ class Log : public MaNGOS::Singleton<Log>
          * @return bool
          */
         bool HasLogLevelOrHigher(LogLevel loglvl) const { return m_logLevel >= loglvl || (m_logFileLevel >= loglvl && logfile); }
-
         /**
          * @brief Flush buffered file log output to the OS. Called periodically
          *        from the world tick and once at shutdown. The file sinks are
@@ -479,49 +464,14 @@ class Log : public MaNGOS::Singleton<Log>
         void ConsoleEmitRaw(const std::string& bytes);
 
         /**
-         * @brief Console-side line filter, applied to a formatted log line before
-         *        it reaches the console. Returning true consumes the line: the
-         *        console does not show it, the file log still records it.
-         *
-         * The startup UI installs one for the duration of world initialization so
-         * it can fold the ">> Loaded N rows" result lines into the step they
-         * belong to, and drop the blank spacer lines that would break an in-place
-         * repaint. It is uninstalled once the world is up, so no runtime log line
-         * pays for it. Never applied to errors, which must always be visible.
-         *
-         * @param text the formatted line (no trailing newline), never NULL
-         * @return true to suppress the line on the console
-         */
-        typedef bool (*ConsoleLineFilter)(const char* text);
-
-        /**
-         * @brief Install (or, with NULL, remove) the console line filter.
-         */
-        void SetConsoleLineFilter(ConsoleLineFilter filter) { m_consoleFilter = filter; }
-
-        /**
-         * @brief Record whether the console cursor is parked mid-line.
-         *
-         * Set by whoever writes bytes that do not end in a newline -- a progress
-         * bar redraw or a startup-UI line that will be repainted in place. The
-         * console writer consults it before emitting an ordinary log line and, if
-         * the line is dirty, wipes it first (see ClearConsoleLine) so the log line
-         * cannot land on top of the half-drawn one.
-         */
-        static void MarkConsoleLineDirty(bool dirty);
-
-        /**
-         * @brief Return the cursor to a clean column 0, erasing whatever the
-         *        in-place line had drawn there, and clear the dirty flag. No-op
-         *        when the line is not dirty.
-         */
-        static void ClearConsoleLine(FILE* out);
-
-        /**
          * @brief Whether world packet logging is active. Gated by the
          *        PacketLoggingEnabled config flag at startup: worldLogfile is
          *        only opened when the flag is set, so this is the single source
          *        of truth and is off by default even on legacy configs.
+         *
+         *        Hooked into WorldGateway::Deliver (incoming) and
+         *        WorldSession::SendPacket (outgoing) -- not into proto, which
+         *        must stay game-agnostic and does not resolve opcode names.
          * @return bool
          */
         bool IsPacketLoggingEnabled() const { return worldLogfile != NULL; }
@@ -532,7 +482,6 @@ class Log : public MaNGOS::Singleton<Log>
          * @return bool
          */
         bool IsOutCharDump() const { return m_charLog_Dump; }
-
         /**
          * @brief
          *
@@ -564,7 +513,6 @@ class Log : public MaNGOS::Singleton<Log>
          * @return FILE
          */
         FILE* openLogFile(char const* configFileName, char const* configTimeStampFlag, char const* mode);
-
         /**
          * @brief
          *
@@ -587,12 +535,12 @@ class Log : public MaNGOS::Singleton<Log>
          *        color and whether color applies.
          *
          * @param toStdout true => stdout, false => stderr
-         * @param color
+         * @param type severity; selects the colour from m_colors
          * @param applyColor
          * @param fmt
          * @param ap
          */
-        void ConsoleEmit(bool toStdout, Color color, bool applyColor, const char* fmt, va_list* ap);
+        void ConsoleEmit(bool toStdout, LogType type, bool applyColor, const char* fmt, va_list* ap);
 
         /// Emit a blank console line (time prefix + newline) via the writer / fallback.
         void ConsoleEmitBlank(bool toStdout);
@@ -624,7 +572,6 @@ class Log : public MaNGOS::Singleton<Log>
         ConsoleLogWriter* m_consoleBody; /**< Off-thread console writer Runnable (owned via thread refcount) */
         MaNGOS::Thread* m_consoleThread; /**< Thread driving m_consoleBody; deleting it drops the Runnable refcount */
         bool m_consoleAsync; /**< When true, console emits route to the writer thread; otherwise synchronous fallback */
-        ConsoleLineFilter m_consoleFilter; /**< Optional console-side line filter (startup UI); NULL once the world is up */
 
         LogLevel m_logLevel; /**< log/console control */
         LogLevel m_logFileLevel; /**< TODO */
@@ -649,76 +596,76 @@ class Log : public MaNGOS::Singleton<Log>
 
 #define sLog MaNGOS::Singleton<Log>::Instance()
 
-#define BASIC_LOG(...)                              \
-do                                                  \
-{                                                   \
-    if (sLog.HasLogLevelOrHigher(LOG_LVL_BASIC))    \
-    {                                               \
-        sLog.outBasic(__VA_ARGS__);                 \
-    }                                               \
-} while (0)
+#define BASIC_LOG(...)                                  \
+    do                                                  \
+    {                                                   \
+        if (sLog.HasLogLevelOrHigher(LOG_LVL_BASIC))    \
+        {                                               \
+            sLog.outBasic(__VA_ARGS__);                 \
+        }                                               \
+    } while(0)
 
-#define BASIC_FILTER_LOG(F,...)                     \
-do                                                  \
-{                                                   \
-    if (sLog.HasLogLevelOrHigher(LOG_LVL_BASIC) && !sLog.HasLogFilter(F)) \
-    {                                               \
-        sLog.outBasic(__VA_ARGS__);                 \
-    }                                               \
-} while (0)
+#define BASIC_FILTER_LOG(F,...)                         \
+    do                                                  \
+    {                                                   \
+        if (sLog.HasLogLevelOrHigher(LOG_LVL_BASIC) && !sLog.HasLogFilter(F)) \
+        {                                               \
+            sLog.outBasic(__VA_ARGS__);                 \
+        }                                               \
+    } while(0)
 
-#define DETAIL_LOG(...)                             \
-do                                                  \
-{                                                   \
-    if (sLog.HasLogLevelOrHigher(LOG_LVL_DETAIL))   \
-    {                                               \
-        sLog.outDetail(__VA_ARGS__);                \
-    }                                               \
-}                                                   \
-while (0)
+#define DETAIL_LOG(...)                                 \
+    do                                                  \
+    {                                                   \
+        if (sLog.HasLogLevelOrHigher(LOG_LVL_DETAIL))   \
+        {                                               \
+            sLog.outDetail(__VA_ARGS__);                \
+        }                                               \
+    }                                                   \
+    while(0)
 
-#define DETAIL_FILTER_LOG(F,...)                    \
-do                                                  \
-{                                                   \
-    if (sLog.HasLogLevelOrHigher(LOG_LVL_DETAIL) && !sLog.HasLogFilter(F)) \
-    {                                               \
-        sLog.outDetail(__VA_ARGS__);                \
-    }                                               \
-}                                                   \
-while (0)
+#define DETAIL_FILTER_LOG(F,...)                        \
+    do                                                  \
+    {                                                   \
+        if (sLog.HasLogLevelOrHigher(LOG_LVL_DETAIL) && !sLog.HasLogFilter(F)) \
+        {                                               \
+            sLog.outDetail(__VA_ARGS__);                \
+        }                                               \
+    }                                                   \
+    while(0)
 
-#define DEBUG_LOG(...)                              \
-do                                                  \
-{                                                   \
-    if (sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG))    \
-    {                                               \
-        sLog.outDebug(__VA_ARGS__);                 \
-    }                                               \
-}                                                   \
-while (0)
+#define DEBUG_LOG(...)                                  \
+    do                                                  \
+    {                                                   \
+        if (sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG))    \
+        {                                               \
+            sLog.outDebug(__VA_ARGS__);                 \
+        }                                               \
+    }                                                   \
+    while(0)
 
-#define DEBUG_FILTER_LOG(F,...)                     \
-do                                                  \
-{                                                   \
-    if (sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG) && !sLog.HasLogFilter(F)) \
-    {                                               \
-        sLog.outDebug(__VA_ARGS__);                 \
-    }                                               \
-}                                                   \
-while (0)
+#define DEBUG_FILTER_LOG(F,...)                         \
+    do                                                  \
+    {                                                   \
+        if (sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG) && !sLog.HasLogFilter(F)) \
+        {                                               \
+            sLog.outDebug(__VA_ARGS__);                 \
+        }                                               \
+    }                                                   \
+    while(0)
 
-#define ERROR_DB_FILTER_LOG(F,...)                  \
-do                                                  \
-{                                                   \
-    if (!sLog.HasLogFilter(F))                      \
-    {                                               \
-        sLog.outErrorDb(__VA_ARGS__);               \
-    }                                               \
-}                                                   \
-while (0)
+#define ERROR_DB_FILTER_LOG(F,...)                      \
+    do                                                  \
+    {                                                   \
+        if (!sLog.HasLogFilter(F))                      \
+        {                                               \
+            sLog.outErrorDb(__VA_ARGS__);               \
+        }                                               \
+    }                                                   \
+    while(0)
 
 #define ERROR_DB_STRICT_LOG(...) \
-ERROR_DB_FILTER_LOG(LOG_FILTER_DB_STRICTED_CHECK, __VA_ARGS__)
+    ERROR_DB_FILTER_LOG(LOG_FILTER_DB_STRICTED_CHECK, __VA_ARGS__)
 
 /**
  * @brief primary for script library
@@ -726,35 +673,30 @@ ERROR_DB_FILTER_LOG(LOG_FILTER_DB_STRICTED_CHECK, __VA_ARGS__)
  * @param str...
  */
 void  outstring_log(const char* str, ...) ATTR_PRINTF(1, 2);
-
 /**
  * @brief
  *
  * @param str...
  */
 void  detail_log(const char* str, ...) ATTR_PRINTF(1, 2);
-
 /**
  * @brief
  *
  * @param str...
  */
 void  debug_log(const char* str, ...) ATTR_PRINTF(1, 2);
-
 /**
  * @brief
  *
  * @param str...
  */
 void  error_log(const char* str, ...) ATTR_PRINTF(1, 2);
-
 /**
  * @brief
  *
  * @param str...
  */
 void  error_db_log(const char* str, ...) ATTR_PRINTF(1, 2);
-
 /**
  * @brief
  *
@@ -762,7 +704,6 @@ void  error_db_log(const char* str, ...) ATTR_PRINTF(1, 2);
  * @param libName
  */
 void  setScriptLibraryErrorFile(char const* fname, char const* libName);
-
 /**
  * @brief
  *

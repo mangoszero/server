@@ -43,6 +43,9 @@
  * @see MailHandler for network opcode handling
  */
 
+#include "Utilities/Errors.h"
+#include <string>
+#include <vector>
 #include "Mail.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"

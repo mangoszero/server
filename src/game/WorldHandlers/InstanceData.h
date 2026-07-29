@@ -25,7 +25,7 @@
 #ifndef MANGOS_INSTANCE_DATA_H
 #define MANGOS_INSTANCE_DATA_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "LootMgr.h"
 #include "ObjectGuid.h"
 

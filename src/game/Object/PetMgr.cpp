@@ -68,12 +68,6 @@ void PetMgr::UnsummonTemporaryIfAny()
         m_temporaryUnsummonedPetNumber = pet->GetCharmInfo()->GetPetNumber();
     }
 
-    if (Transport* petTransport = pet->GetTransport())
-    {
-        petTransport->RemovePassenger(pet);
-        pet->SetTransport(nullptr);
-    }
-
     pet->Unsummon(PET_SAVE_AS_CURRENT, m_owner);
 }
 

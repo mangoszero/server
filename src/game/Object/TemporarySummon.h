@@ -26,7 +26,7 @@
 #define MANGOSSERVER_TEMPSUMMON_H
 
 #include "Creature.h"
-#include "ObjectAccessor.h"
+#include "ObjectLookup.h"
 
 class TemporarySummon : public Creature
 {
@@ -40,7 +40,7 @@ class TemporarySummon : public Creature
         void SaveToDB() override;
         void RemoveFromWorld() override;
         ObjectGuid const& GetSummonerGuid() const { return m_summoner ; }
-        Unit* GetSummoner() const { return sObjectAccessor.GetUnit(*this, m_summoner); }
+        Unit* GetSummoner() const { return ObjectLookup::GetUnit(*this, m_summoner); }
     private:
         TempSpawnType m_type;
         uint32 m_timer;

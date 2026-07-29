@@ -39,7 +39,13 @@
  * appearance customization, and starting location setup.
  */
 
-#include "Common.h"
+#include "Database/SqlOperations.h"
+#include "Common/ServerDefines.h"
+#include "Platform/Define.h"
+#include <string>
+#include <memory>
+#include "Common/Locales.h"
+#include <ctime>
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
 #include "SharedDefines.h"
@@ -53,10 +59,8 @@
 #include "Guild.h"
 #include "GuildMgr.h"
 #include "UpdateMask.h"
-#include "Auth/md5.h"
-#include "ObjectAccessor.h"
+#include "CorpseManager.h"
 #include "Group.h"
-#include "Database/DatabaseImpl.h"
 #include "PlayerDump.h"
 #include "SocialMgr.h"
 #include "Util.h"
@@ -72,6 +76,7 @@
 #ifdef ENABLE_PLAYERBOTS
 #include "playerbot.h"
 #include "PlayerbotAIConfig.h"
+#include "PlayerRegistry.h"
 #endif
 
 // config option SkipCinematics supported values
@@ -287,7 +292,10 @@ void PlayerbotHolder::AddPlayerBot(uint64 playerGuid, uint32 masterAccountId)
         delete holder;                                      // delete all unprocessed queries
         return;
     }
-    CharacterDatabase.DelayQueryHolder(&chrHandler, &CharacterHandler::HandlePlayerBotLoginCallback, holder);
+    CharacterDatabase.DelayQueryHolder([](QueryResult* result, SqlQueryHolder* h)
+                                       {
+                                           chrHandler.HandlePlayerBotLoginCallback(result, h);
+                                       }, holder);
 }
 #endif
 
@@ -333,7 +341,11 @@ void WorldSession::HandleCharEnum(QueryResult* result)
 void WorldSession::HandleCharEnumOpcode(WorldPacket & /*recv_data*/)
 {
     /// get all the data necessary for loading all characters (along with their pets) on the account
-    CharacterDatabase.AsyncPQuery(&chrHandler, &CharacterHandler::HandleCharEnumCallback, GetAccountId(),
+    uint32 accountId = GetAccountId();
+    CharacterDatabase.AsyncPQuery([accountId](QueryResult* result)
+                                  {
+                                      chrHandler.HandleCharEnumCallback(result, accountId);
+                                  },
         //                        0                    1                    2                    3                     4                      5                           6                            7
             "SELECT `characters`.`guid`, `characters`.`name`, `characters`.`race`, `characters`.`class`, `characters`.`gender`, `characters`.`playerBytes`, `characters`.`playerBytes2`, `characters`.`level`, "
         //                 8                    9                   10                         11                         12                           13                      14
@@ -657,7 +669,10 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recv_data)
         return;
     }
 
-    CharacterDatabase.DelayQueryHolder(&chrHandler, &CharacterHandler::HandlePlayerLoginCallback, holder);
+    CharacterDatabase.DelayQueryHolder([](QueryResult* result, SqlQueryHolder* h)
+                                       {
+                                           chrHandler.HandlePlayerLoginCallback(result, h);
+                                       }, holder);
 }
 
 /**
@@ -697,10 +712,10 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     WorldPacket data(SMSG_LOGIN_VERIFY_WORLD, 20);
     data << pCurrChar->GetMapId();
-    data << pCurrChar->GetPositionX();
-    data << pCurrChar->GetPositionY();
-    data << pCurrChar->GetPositionZ();
-    data << pCurrChar->GetOrientation();
+    data << pCurrChar->Where().X();
+    data << pCurrChar->Where().Y();
+    data << pCurrChar->Where().Z();
+    data << pCurrChar->Where().Facing();
     SendPacket(&data);
 
     data.Initialize(SMSG_ACCOUNT_DATA_TIMES, 128);
@@ -835,7 +850,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     }
 
     /* This code is run if we can not add the player to the map for some reason */
-    if (lockStatus != AREA_LOCKSTATUS_OK || !pCurrChar->GetMap()->Add(pCurrChar))
+    if (lockStatus != AREA_LOCKSTATUS_OK || !pCurrChar->BoardingMap()->Add(pCurrChar))
     {
         /* Attempt to find an areatrigger to teleport the player for us */
         AreaTrigger const* at = sObjectMgr.GetGoBackTrigger(pCurrChar->GetMapId());
@@ -845,13 +860,13 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         }
 
         /* We couldn't find an areatrigger to teleport, so just move the player back to their home bind */
-        if (!at || lockStatus != AREA_LOCKSTATUS_OK || !pCurrChar->TeleportTo(at->target_mapId, at->target_X, at->target_Y, at->target_Z, pCurrChar->GetOrientation()))
+        if (!at || lockStatus != AREA_LOCKSTATUS_OK || !pCurrChar->TeleportTo(at->target_mapId, at->target_X, at->target_Y, at->target_Z, pCurrChar->Where().Facing()))
         {
             pCurrChar->TeleportToHomebind();
         }
     }
 
-    sObjectAccessor.AddObject(pCurrChar);
+    sPlayerRegistry.Add(pCurrChar);
     DEBUG_LOG("Player %s added to map %i", pCurrChar->GetName(), pCurrChar->GetMapId());
 
     /* send the player's social lists */

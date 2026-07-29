@@ -24,6 +24,8 @@
 
 
 
+#include <unordered_map>
+#include "Utilities/Errors.h"
 #include "SpellMgr.h"
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
@@ -37,7 +39,7 @@
 #include "Unit.h"
 #include "World.h"
 
-typedef UNORDERED_MAP<uint32, uint32> AbilitySpellPrevMap;
+typedef std::unordered_map<uint32, uint32> AbilitySpellPrevMap;
 
 /**
  * @brief Recursively builds spell chain links from ability rank data.

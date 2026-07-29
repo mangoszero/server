@@ -32,6 +32,7 @@
 // and Linux falls back to the epoll reactor.
 #ifdef MANGOS_USE_IO_URING
 
+#include <queue>
 #include "net/ISession.hpp"
 #include "net/SendQueue.hpp"
 
