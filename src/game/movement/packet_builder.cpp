@@ -45,6 +45,7 @@
  * @see SMSG_MONSTER_MOVE for the opcode
  */
 
+#include "Utilities/Errors.h"
 #include "packet_builder.h"
 #include "MoveSpline.h"
 #include "WorldPacket.h"

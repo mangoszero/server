@@ -1,3 +1,4 @@
+#include <list>
 #include "CombatStrategy.h"
 #include "../generic/CombatStrategy.h"
 #pragma once

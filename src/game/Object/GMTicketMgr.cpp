@@ -22,7 +22,10 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <cstring>
+#include <ctime>
+#include <string>
 #include "Database/DatabaseEnv.h"
 #include "SQLStorages.h"
 #include "GMTicketMgr.h"
@@ -32,7 +35,6 @@
 #include "Policies/Singleton.h"
 #include "Player.h"
 
-INSTANTIATE_SINGLETON_1(GMTicketMgr);
 
 /**
  * @brief Stores GM survey answers from a received packet.

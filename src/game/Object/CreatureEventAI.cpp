@@ -22,7 +22,12 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Common.h"
+#include "Utilities/Util.h"
+#include "Utilities/Errors.h"
+#include "Platform/Define.h"
+#include "Utilities/MathDefines.h"
+#include <cstdlib>
+#include <list>
 #include "CreatureEventAI.h"
 #include "CreatureEventAIMgr.h"
 #include "ObjectMgr.h"
@@ -34,6 +39,7 @@
 #include "InstanceData.h"
 #include "Chat.h"
 #include "Language.h"
+#include "Corpse.h"
 
 /**
  * @brief Updates the repeat timer for an EventAI event.
@@ -330,13 +336,13 @@ bool CreatureEventAI::ProcessEvent(CreatureEventAIHolder& pHolder, Unit* pAction
             pHolder.UpdateRepeatTimer(m_creature, event.spell_hit.repeatMin, event.spell_hit.repeatMax);
             break;
         case EVENT_T_RANGE:
-            if (!m_creature->IsInCombat() || !m_creature->getVictim() || !m_creature->IsInMap(m_creature->getVictim()))
+            if (!m_creature->IsInCombat() || !m_creature->getVictim() || !m_creature->Where().ShareFrame(m_creature->getVictim()->Where()))
             {
                 return false;
             }
 
             // DISCUSS TODO - Likely replace IsInRange check with CombatReach checks (as used rather for such checks)
-            if (!m_creature->IsInRange(m_creature->getVictim(), (float)event.range.minDist, (float)event.range.maxDist))
+            if (!m_creature->Where().WithinRange(m_creature->getVictim()->Where(), (float)event.range.minDist, (float)event.range.maxDist))
             {
                 return false;
             }
@@ -557,7 +563,13 @@ bool CreatureEventAI::ProcessEvent(CreatureEventAIHolder& pHolder, Unit* pAction
         case EVENT_T_RECEIVE_AI_EVENT:
             break;
         case EVENT_T_REACHED_WAYPOINT:
-            if (!m_creature->IsNearWaypoint(m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), event.reached_waypoint.positionX, event.reached_waypoint.positionY, event.reached_waypoint.positionZ, event.reached_waypoint.distance, event.reached_waypoint.distance, event.reached_waypoint.distance))
+            if (!m_creature->Where().WithinBox(
+                    Geometry::Vector3(event.reached_waypoint.positionX,
+                                      event.reached_waypoint.positionY,
+                                      event.reached_waypoint.positionZ),
+                    Geometry::Vector3(event.reached_waypoint.distance,
+                                      event.reached_waypoint.distance,
+                                      event.reached_waypoint.distance)))
             {
                 return false;
             }
@@ -1254,7 +1266,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
                     m_creature->GetMotionMaster()->MoveIdle();
                     break;
                 case RANDOM_MOTION_TYPE:
-                    m_creature->GetMotionMaster()->MoveRandomAroundPoint(m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), float(action.changeMovement.wanderDistance));
+                    m_creature->GetMotionMaster()->MoveRandomAroundPoint(m_creature->Where().X(), m_creature->Where().Y(), m_creature->Where().Z(), float(action.changeMovement.wanderDistance));
                     break;
                 case WAYPOINT_MOTION_TYPE:
                     m_creature->GetMotionMaster()->MoveWaypoint();
@@ -1642,7 +1654,7 @@ void CreatureEventAI::MoveInLineOfSight(Unit* who)
                     ((!itr->Event.ooc_los.noHostile) && m_creature->IsHostileTo(who)))
                 {
                     // if range is ok and we are actually in LOS
-                    if (m_creature->IsWithinDistInMap(who, fMaxAllowedRange) && m_creature->IsWithinLOSInMap(who))
+                    if (InReach(*m_creature, *who, fMaxAllowedRange) && HasLineOfSight(*m_creature, *who))
                     {
                         ProcessEvent(*itr, who);
                     }
@@ -1659,13 +1671,13 @@ void CreatureEventAI::MoveInLineOfSight(Unit* who)
     if (m_creature->CanInitiateAttack() && who->IsTargetableForAttack() &&
         m_creature->IsHostileTo(who) && who->isInAccessablePlaceFor(m_creature))
     {
-        if (!m_creature->CanFly() && m_creature->GetDistanceZ(who) > CREATURE_Z_ATTACK_RANGE)
+        if (!m_creature->CanFly() && m_creature->Where().HeightGapTo(who->Where()) > CREATURE_Z_ATTACK_RANGE)
         {
             return;
         }
 
         float attackRadius = m_creature->GetAttackDistance(who);
-        if (m_creature->IsWithinDistInMap(who, attackRadius) && m_creature->IsWithinLOSInMap(who))
+        if (InReach(*m_creature, *who, attackRadius) && HasLineOfSight(*m_creature, *who))
         {
             if (!m_creature->getVictim())
             {
@@ -1781,7 +1793,7 @@ void CreatureEventAI::UpdateAI(const uint32 diff)
  */
 bool CreatureEventAI::IsVisible(Unit* pl) const
 {
-    return m_creature->IsWithinDist(pl, sWorld.getConfig(CONFIG_FLOAT_SIGHT_MONSTER)) &&
+    return m_creature->Where().WithinDist(pl->Where(), sWorld.getConfig(CONFIG_FLOAT_SIGHT_MONSTER)) &&
         pl->IsVisibleForOrDetect(m_creature, m_creature, true);
 }
 
@@ -2098,7 +2110,7 @@ bool CreatureEventAI::SpawnedEventConditionsCheck(CreatureEventAI_Event const& e
         {
             // zone ID check
             uint32 zone, area;
-            m_creature->GetZoneAndAreaId(zone, area);
+            m_creature->GetTerrain()->GetZoneAndAreaId(zone, area, m_creature->Where().X(), m_creature->Where().Y(), m_creature->Where().Z());
             return zone == event.spawned.conditionValue1 || area == event.spawned.conditionValue1;
         }
         default:

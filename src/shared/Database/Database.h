@@ -25,14 +25,17 @@
 #ifndef DATABASE_H
 #define DATABASE_H
 
+#include <unordered_map>
+#include <functional>
+#include <vector>
+#include <string>
 #include "Threading/Threading.h"
-#include "Threading/ThreadLocalStore.h"
-#include "Utilities/UnorderedMapSet.h"
 #include "Database/SqlDelayThread.h"
-#include "SqlPreparedStatement.h"
+#include "Threading/ThreadLocalStore.h"
 
 #include <atomic>
 #include <mutex>
+#include "SqlPreparedStatement.h"
 
 class SqlTransaction;
 class SqlResultQueue;
@@ -95,7 +98,6 @@ class SqlConnection
          * @return QueryResult pointer containing result data, NULL if error
          */
         virtual QueryResult* Query(const char* sql) = 0;
-
         /**
          * @brief
          *
@@ -127,30 +129,19 @@ class SqlConnection
          *
          * @return bool
          */
-        virtual bool BeginTransaction()
-        {
-            return true;
-        }
-
+        virtual bool BeginTransaction() { return true; }
         /**
          * @brief
          *
          * @return bool
          */
-        virtual bool CommitTransaction()
-        {
-            return true;
-        }
-
+        virtual bool CommitTransaction() { return true; }
         /**
          * @brief can't rollback without transaction support
          *
          * @return bool
          */
-        virtual bool RollbackTransaction()
-        {
-            return true;
-        }
+        virtual bool RollbackTransaction() { return true; }
 
         /**
          * @brief methods to work with prepared statements
@@ -174,15 +165,11 @@ class SqlConnection
                  * @param conn
                  */
                 Lock(SqlConnection* conn) : m_pConn(conn) { m_pConn->m_mutex.lock(); }
-
                 /**
                  * @brief
                  *
                  */
-                ~Lock()
-                {
-                    m_pConn->m_mutex.unlock();
-                }
+                ~Lock() { m_pConn->m_mutex.unlock(); }
 
                 /**
                  * @brief
@@ -200,10 +187,7 @@ class SqlConnection
          *
          * @return Database
          */
-        Database& DB()
-        {
-            return m_db;
-        }
+        Database& DB() { return m_db; }
 
     protected:
         /**
@@ -220,7 +204,6 @@ class SqlConnection
          * @return SqlPreparedStatement
          */
         virtual SqlPreparedStatement* CreateStatement(const std::string& fmt);
-
         /**
          * @brief allocate prepared statement and return statement ID
          *
@@ -238,12 +221,13 @@ class SqlConnection
         void FreePreparedStatements();
 
     private:
-        /**
-         * @brief
-         *
-         */
-        typedef std::recursive_mutex LOCK_TYPE;
-        LOCK_TYPE m_mutex; /**< TODO */
+        // A plain mutex, not a recursive one. SqlTransaction takes this lock once for
+        // the whole BEGIN..COMMIT and runs each queued statement through
+        // ExecuteLocked(), so nothing re-enters it. It used to be recursive because
+        // every statement locked the connection again on its way through Execute();
+        // making it recursive once more would hide that design error rather than fix it.
+        typedef std::mutex LOCK_TYPE;
+        LOCK_TYPE m_mutex;
 
         /**
          * @brief
@@ -274,13 +258,11 @@ class Database
          * @return bool
          */
         virtual bool Initialize(const char* infoString, int nConns = 1);
-
         /**
          * @brief start worker thread for async DB request execution
          *
          */
         virtual void InitDelayThread();
-
         /**
          * @brief stop worker thread
          *
@@ -318,7 +300,6 @@ class Database
          * @return QueryResult
          */
         QueryResult* PQuery(const char* format, ...) ATTR_PRINTF(2, 3);
-
         /**
          * @brief
          *
@@ -352,234 +333,29 @@ class Database
          */
         bool DirectPExecute(const char* format, ...) ATTR_PRINTF(2, 3);
 
-        /// Async queries and query holders, implemented in DatabaseImpl.h
 
         // Query / member
-        template<class Class>
+        /// Async queries and query holders (Database.cpp). The callback runs
+        /// on whichever thread later calls ProcessResultQueue() (typically
+        /// the thread that issued the query), not the worker thread that ran
+        /// the SQL -- bind whatever object/state it needs into the lambda.
 
-        /**
-         * @brief
-         *
-         * @param object
-         * @param )
-         * @param sql
-         * @return bool
-         */
-        bool AsyncQuery(Class* object, void (Class::*method)(QueryResult*), const char* sql);
-        template<class Class, typename ParamType1>
+        /// Runs sql on a worker thread and invokes callback(result) once done.
+        bool AsyncQuery(std::function<void(QueryResult*)> callback, const char* sql);
 
-        /**
-         * @brief
-         *
-         * @param object
-         * @param
-         * @param ParamType1)
-         * @param param1
-         * @param sql
-         * @return bool
-         */
-        bool AsyncQuery(Class* object, void (Class::*method)(QueryResult*, ParamType1), ParamType1 param1, const char* sql);
-        template<class Class, typename ParamType1, typename ParamType2>
+        /// printf-style AsyncQuery(): the query text is formatted immediately
+        /// (on the calling thread), only execution is deferred.
+        bool AsyncPQuery(std::function<void(QueryResult*)> callback, const char* format, ...) ATTR_PRINTF(3, 4);
 
-        /**
-         * @brief
-         *
-         * @param object
-         * @param
-         * @param ParamType1
-         * @param ParamType2)
-         * @param param1
-         * @param param2
-         * @param sql
-         * @return bool
-         */
-        bool AsyncQuery(Class* object, void (Class::*method)(QueryResult*, ParamType1, ParamType2), ParamType1 param1, ParamType2 param2, const char* sql);
-        template<class Class, typename ParamType1, typename ParamType2, typename ParamType3>
+        /// Runs every query already staged in holder on a worker thread, then
+        /// invokes callback(nullptr, holder) once all of them complete --
+        /// results are retrieved from the holder itself (SqlQueryHolder::GetResult()).
+        bool DelayQueryHolder(std::function<void(QueryResult*, SqlQueryHolder*)> callback, SqlQueryHolder* holder);
 
-        /**
-         * @brief
-         *
-         * @param object
-         * @param
-         * @param ParamType1
-         * @param ParamType2
-         * @param ParamType3)
-         * @param param1
-         * @param param2
-         * @param param3
-         * @param sql
-         * @return bool
-         */
-        bool AsyncQuery(Class* object, void (Class::*method)(QueryResult*, ParamType1, ParamType2, ParamType3), ParamType1 param1, ParamType2 param2, ParamType3 param3, const char* sql);
+
         // Query / static
-        template<typename ParamType1>
-
-        /**
-         * @brief
-         *
-         * @param
-         * @param ParamType1)
-         * @param param1
-         * @param sql
-         * @return bool
-         */
-        bool AsyncQuery(void (*method)(QueryResult*, ParamType1), ParamType1 param1, const char* sql);
-        template<typename ParamType1, typename ParamType2>
-
-        /**
-         * @brief
-         *
-         * @param
-         * @param ParamType1
-         * @param ParamType2)
-         * @param param1
-         * @param param2
-         * @param sql
-         * @return bool
-         */
-        bool AsyncQuery(void (*method)(QueryResult*, ParamType1, ParamType2), ParamType1 param1, ParamType2 param2, const char* sql);
-        template<typename ParamType1, typename ParamType2, typename ParamType3>
-
-        /**
-         * @brief
-         *
-         * @param
-         * @param ParamType1
-         * @param ParamType2
-         * @param ParamType3)
-         * @param param1
-         * @param param2
-         * @param param3
-         * @param sql
-         * @return bool
-         */
-        bool AsyncQuery(void (*method)(QueryResult*, ParamType1, ParamType2, ParamType3), ParamType1 param1, ParamType2 param2, ParamType3 param3, const char* sql);
         // PQuery / member
-        template<class Class>
-
-        /**
-         * @brief
-         *
-         * @param object
-         * @param )
-         * @param format...
-         * @return bool
-         */
-        bool AsyncPQuery(Class* object, void (Class::*method)(QueryResult*), const char* format, ...) ATTR_PRINTF(4, 5);
-        template<class Class, typename ParamType1>
-
-        /**
-         * @brief
-         *
-         * @param object
-         * @param
-         * @param ParamType1)
-         * @param param1
-         * @param format...
-         * @return bool
-         */
-        bool AsyncPQuery(Class* object, void (Class::*method)(QueryResult*, ParamType1), ParamType1 param1, const char* format, ...) ATTR_PRINTF(5, 6);
-        template<class Class, typename ParamType1, typename ParamType2>
-
-        /**
-         * @brief
-         *
-         * @param object
-         * @param
-         * @param ParamType1
-         * @param ParamType2)
-         * @param param1
-         * @param param2
-         * @param format...
-         * @return bool
-         */
-        bool AsyncPQuery(Class* object, void (Class::*method)(QueryResult*, ParamType1, ParamType2), ParamType1 param1, ParamType2 param2, const char* format, ...) ATTR_PRINTF(6, 7);
-        template<class Class, typename ParamType1, typename ParamType2, typename ParamType3>
-
-        /**
-         * @brief
-         *
-         * @param object
-         * @param
-         * @param ParamType1
-         * @param ParamType2
-         * @param ParamType3)
-         * @param param1
-         * @param param2
-         * @param param3
-         * @param format...
-         * @return bool
-         */
-        bool AsyncPQuery(Class* object, void (Class::*method)(QueryResult*, ParamType1, ParamType2, ParamType3), ParamType1 param1, ParamType2 param2, ParamType3 param3, const char* format, ...) ATTR_PRINTF(7, 8);
         // PQuery / static
-        template<typename ParamType1>
-
-        /**
-         * @brief
-         *
-         * @param
-         * @param ParamType1)
-         * @param param1
-         * @param format...
-         * @return bool
-         */
-        bool AsyncPQuery(void (*method)(QueryResult*, ParamType1), ParamType1 param1, const char* format, ...) ATTR_PRINTF(4, 5);
-        template<typename ParamType1, typename ParamType2>
-
-        /**
-         * @brief
-         *
-         * @param
-         * @param ParamType1
-         * @param ParamType2)
-         * @param param1
-         * @param param2
-         * @param format...
-         * @return bool
-         */
-        bool AsyncPQuery(void (*method)(QueryResult*, ParamType1, ParamType2), ParamType1 param1, ParamType2 param2, const char* format, ...) ATTR_PRINTF(5, 6);
-        template<typename ParamType1, typename ParamType2, typename ParamType3>
-
-        /**
-         * @brief
-         *
-         * @param
-         * @param ParamType1
-         * @param ParamType2
-         * @param ParamType3)
-         * @param param1
-         * @param param2
-         * @param param3
-         * @param format...
-         * @return bool
-         */
-        bool AsyncPQuery(void (*method)(QueryResult*, ParamType1, ParamType2, ParamType3), ParamType1 param1, ParamType2 param2, ParamType3 param3, const char* format, ...) ATTR_PRINTF(6, 7);
-        template<class Class>
-
-        /**
-         * @brief
-         *
-         * @param object
-         * @param
-         * @param )
-         * @param holder
-         * @return bool
-         */
-        bool DelayQueryHolder(Class* object, void (Class::*method)(QueryResult*, SqlQueryHolder*), SqlQueryHolder* holder);
-        template<class Class, typename ParamType1>
-
-        /**
-         * @brief
-         *
-         * @param object
-         * @param
-         * @param
-         * @param ParamType1)
-         * @param holder
-         * @param param1
-         * @return bool
-         */
-        bool DelayQueryHolder(Class* object, void (Class::*method)(QueryResult*, SqlQueryHolder*, ParamType1), SqlQueryHolder* holder, ParamType1 param1);
 
         /**
          * @brief
@@ -588,7 +364,6 @@ class Database
          * @return bool
          */
         bool Execute(const char* sql);
-
         /**
          * @brief
          *
@@ -611,21 +386,18 @@ class Database
          * @return bool
          */
         bool BeginTransaction();
-
         /**
          * @brief
          *
          * @return bool
          */
         bool CommitTransaction();
-
         /**
          * @brief
          *
          * @return bool
          */
         bool RollbackTransaction();
-
         /**
          * @brief for sync transaction execution
          *
@@ -634,25 +406,17 @@ class Database
         bool CommitTransactionDirect();
 
         /**
-         * @brief synchronous, durable, checked commit of the current transaction
+         * @brief Commit through the delay thread and block for the REAL result.
          *
-         * Unlike CommitTransaction() (which detaches the transaction to the
-         * delay thread and returns true immediately, before it is durable) and
-         * CommitTransactionDirect() (which runs synchronously but discards the
-         * real result and is unsafe on the world thread while async is enabled),
-         * this:
-         *   - returns the REAL SqlTransaction::Execute() result, and
-         *   - when async is enabled, FIFO-queues the transaction through the
-         *     delay thread and blocks the calling thread until it has durably
-         *     committed (so it never races the delay thread on m_pAsyncConn).
-         * Clears m_TransStorage like the other commit paths.
+         * CommitTransaction() reports only that the transaction was queued;
+         * CommitTransactionDirect() runs it but discards the result. Use this where the
+         * answer matters -- anything moving items or money.
          *
-         * @return true if the transaction committed, false on rollback/failure
+         * @return bool whether the transaction actually committed
          */
         bool CommitTransactionChecked();
 
         // PREPARED STATEMENT API
-
         /**
          * @brief allocate index for prepared statement with SQL request 'fmt'
          *
@@ -661,7 +425,6 @@ class Database
          * @return SqlStatement
          */
         SqlStatement CreateStatement(SqlStatementID& index, const char* fmt);
-
         /**
          * @brief get prepared statement format string
          *
@@ -689,7 +452,6 @@ class Database
          *
          */
         virtual void ThreadStart();
-
         /**
          * @brief must be called before finish thread run (one time for thread using one from existing Database objects)
          *
@@ -703,22 +465,18 @@ class Database
         void ProcessResultQueue();
 
         /**
-         * @brief Function to check that the database version matches expected core version
-         *
-         * @param DatabaseTypes
-         * @return bool
-         */
+        * @brief Function to check that the database version matches expected core version
+        *
+        * @param DatabaseTypes
+        * @return bool
+        */
         bool CheckDatabaseVersion(DatabaseTypes database);
-
         /**
          * @brief
          *
          * @return uint32
          */
-        uint32 GetPingIntervall()
-        {
-            return m_pingIntervallms;
-        }
+        uint32 GetPingIntervall() { return m_pingIntervallms; }
 
         /**
          * @brief function to ping database connections
@@ -734,18 +492,15 @@ class Database
          * NO ASYNC TRANSACTIONS DURING SERVER STARTUP - ONLY DURING RUNTIME!!!
          *
          */
-        void AllowAsyncTransactions()
-        {
-            m_bAllowAsyncTransactions = true;
-        }
+        void AllowAsyncTransactions() { m_bAllowAsyncTransactions = true; }
 
     protected:
         /**
          * @brief
          *
          */
-        Database()
-            : m_TransStorage(NULL),m_nQueryConnPoolSize(1), m_pAsyncConn(NULL), m_pResultQueue(NULL),
+        Database() :
+            m_TransStorage(NULL),m_nQueryConnPoolSize(1), m_pAsyncConn(NULL), m_pResultQueue(NULL),
             m_threadBody(NULL), m_delayThread(NULL), m_bAllowAsyncTransactions(false),
             m_iStmtIndex(-1), m_logSQL(false), m_pingIntervallms(0)
         {
@@ -764,7 +519,6 @@ class Database
          * @return SqlConnection
          */
         virtual SqlConnection* CreateConnection() = 0;
-
         /**
          * @brief factory method to create SqlDelayThread objects
          *
@@ -784,7 +538,6 @@ class Database
                  *
                  */
                 TransHelper() : m_pTrans(NULL) {}
-
                 /**
                  * @brief
                  *
@@ -797,7 +550,6 @@ class Database
                  * @return SqlTransaction
                  */
                 SqlTransaction* init();
-
                 /**
                  * @brief gets pointer on current transaction object. Returns NULL if transaction was not initiated
                  *
@@ -814,7 +566,6 @@ class Database
                  * @return SqlTransaction
                  */
                 SqlTransaction* detach();
-
                 /**
                  * @brief destroyes SqlTransaction allocated by init() function
                  *
@@ -833,14 +584,12 @@ class Database
         Database::DBTransHelperTSS *m_TransStorage; /**< TODO */
 
         ///< DB connections
-
         /**
          * @brief round-robin connection selection
          *
          * @return SqlConnection
          */
         SqlConnection* getQueryConnection();
-
         /**
          * @brief for now return one single connection for async requests
          *
@@ -850,7 +599,6 @@ class Database
 
         friend class SqlStatement;
         // PREPARED STATEMENT API
-
         /**
          * @brief query function for prepared statements
          *
@@ -859,7 +607,6 @@ class Database
          * @return bool
          */
         bool ExecuteStmt(const SqlStatementID& id, SqlStmtParameters* params);
-
         /**
          * @brief
          *
@@ -890,13 +637,11 @@ class Database
         bool m_bAllowAsyncTransactions;                     /**< flag which specifies if async transactions are enabled */
 
         // PREPARED STATEMENT REGISTRY
-
         /**
          * @brief
          *
          */
         typedef std::mutex LOCK_TYPE;
-
         /**
          * @brief
          *
@@ -909,7 +654,7 @@ class Database
          * @brief
          *
          */
-        typedef UNORDERED_MAP<std::string, int> PreparedStmtRegistry;
+        typedef std::unordered_map<std::string, int> PreparedStmtRegistry;
         PreparedStmtRegistry m_stmtRegistry;                ///< /**< TODO */
 
         int m_iStmtIndex; /**< TODO */
@@ -921,25 +666,47 @@ class Database
         uint32 m_pingIntervallms; /**< TODO */
 };
 
+/**
+ * @brief RAII pairing of ThreadStart() and ThreadEnd() for a worker thread.
+ *
+ * The MySQL client library keeps per-thread state, and every thread that issues
+ * a query on a connection it did not create itself must register with it first
+ * and release that state on the way out. Database declares ThreadStart()/
+ * ThreadEnd() as that contract and DatabaseMysql implements them; a thread that
+ * skips them corrupts or leaks the library's thread-local data, which surfaces
+ * far from the cause and only under load.
+ *
+ * Use this rather than calling the pair by hand: it survives early returns and
+ * exceptions, and it keeps the backend-specific call behind the interface. A
+ * null database is tolerated, so the guard can sit in a thread body that may run
+ * without one.
+ */
 class DbThreadGuard
 {
     public:
-        explicit DbThreadGuard(Database* database) : m_database(database)
+
+        explicit DbThreadGuard(Database* db) : m_db(db)
         {
-            if (m_database)
-                m_database->ThreadStart();
+            if (m_db)
+            {
+                m_db->ThreadStart();
+            }
         }
 
         ~DbThreadGuard()
         {
-            if (m_database)
-                m_database->ThreadEnd();
+            if (m_db)
+            {
+                m_db->ThreadEnd();
+            }
         }
 
-        DbThreadGuard(DbThreadGuard const&) = delete;
-        DbThreadGuard& operator=(DbThreadGuard const&) = delete;
+        DbThreadGuard(const DbThreadGuard&) = delete;
+        DbThreadGuard& operator=(const DbThreadGuard&) = delete;
 
     private:
-        Database* m_database;
+
+        Database* m_db;
 };
+
 #endif

@@ -24,7 +24,9 @@
 
 #include "CustodyLedger.h"
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <string>
+#include <vector>
 #include "Database/DatabaseEnv.h"
 
 /// Column order used by SELECT queries (matches the struct field order for

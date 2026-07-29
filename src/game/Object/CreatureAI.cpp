@@ -22,6 +22,9 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "Utilities/Errors.h"
+#include <list>
+#include "Utilities/MathDefines.h"
 #include "CreatureAI.h"
 #include "Creature.h"
 #include "DBCStores.h"
@@ -115,7 +118,7 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, 
         }
     }
 
-    if (!m_creature->IsWithinLOSInMap(pTarget))
+    if (!HasLineOfSight(*m_creature, *pTarget))
     {
         return CAST_FAIL_NO_LOS;
     }
@@ -125,7 +128,7 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, 
         if (pTarget != m_creature)
         {
             // pTarget is out of range of this spell (also done by Spell::CheckCast())
-            float fDistance = m_creature->GetCombatDistance(pTarget, pSpell->RangeIndex == SPELL_RANGE_IDX_COMBAT);
+            float fDistance = CombatDistanceBetween(*m_creature, *pTarget, pSpell->RangeIndex == SPELL_RANGE_IDX_COMBAT);
 
             if (fDistance > pSpellRange->RangeMax)
             {
@@ -168,7 +171,7 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
 
     if (uiSpell == 53 || uiSpell == 2589 || uiSpell == 7159 || uiSpell == 15657) // All Backstab variants
     {
-        if (pTarget && pTarget->HasInArc(M_PI_F, pCaster))
+        if (pTarget && pTarget->Where().HasInArc(pCaster->Where(), M_PI_F))
         {
             return CAST_FAIL_OTHER;
         }
@@ -530,7 +533,7 @@ void CreatureAI::SetChase(bool chase)
         else if (creatureMotion->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
         {
             m_creature->StopMoving();
-            if (!m_creature->CanReachWithMeleeAttack(m_creature->getVictim()))
+            if (!InMeleeReach(*m_creature, *m_creature->getVictim()))
             {
                 m_meleeAttack = false;
                 m_creature->SendMeleeAttackStop(m_creature->getVictim());

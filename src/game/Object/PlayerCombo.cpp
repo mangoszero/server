@@ -46,7 +46,7 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "ObjectMgr.h"
-#include "ObjectAccessor.h"
+#include "ObjectLookup.h"
 #include "CreatureAI.h"
 #include "Formulas.h"
 #include "Group.h"
@@ -62,7 +62,6 @@
 #include "OutdoorPvP/OutdoorPvP.h"
 #include "Chat.h"
 #include "revision_data.h"
-#include "Database/DatabaseImpl.h"
 #include "Spell.h"
 #include "ScriptMgr.h"
 #include "SocialMgr.h"
@@ -104,7 +103,7 @@ void Player::AddComboPoints(Unit* target, int8 count)
     {
         if (m_comboTargetGuid)
         {
-            if (Unit* target2 = sObjectAccessor.GetUnit(*this, m_comboTargetGuid))
+            if (Unit* target2 = ObjectLookup::GetUnit(*this, m_comboTargetGuid))
             {
                 target2->RemoveComboPointHolder(GetGUIDLow());
             }
@@ -145,7 +144,7 @@ void Player::ClearComboPoints()
 
     SetComboPoints();
 
-    if (Unit* target = sObjectAccessor.GetUnit(*this, m_comboTargetGuid))
+    if (Unit* target = ObjectLookup::GetUnit(*this, m_comboTargetGuid))
     {
         target->RemoveComboPointHolder(GetGUIDLow());
     }

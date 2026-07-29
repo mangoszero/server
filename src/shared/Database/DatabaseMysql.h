@@ -27,9 +27,10 @@
 #ifndef MANGOS_H_DATABASEMYSQL
 #define MANGOS_H_DATABASEMYSQL
 
-//#include "Common.h"
+#include <string>
 #include "Database.h"
 #include "Policies/Singleton.h"
+#include <mutex>
 #include <mysql.h>
 
 #ifdef WIN32
@@ -52,7 +53,6 @@ class MySqlPreparedStatement : public SqlPreparedStatement
          * @param mysql MySQL connection handle
          */
         MySqlPreparedStatement(const std::string& fmt, SqlConnection& conn, MYSQL* mysql);
-
         /**
          * @brief Destructor - cleans up MySQL resources
          */
@@ -119,7 +119,6 @@ class MySQLConnection : public SqlConnection
          * @param db Database reference
          */
         MySQLConnection(Database& db) : SqlConnection(db), mMysql(NULL) {}
-
         /**
          * @brief Destructor - closes MySQL connection
          */
@@ -139,14 +138,12 @@ class MySQLConnection : public SqlConnection
          * @return QueryResult pointer or NULL on error
          */
         QueryResult* Query(const char* sql) override;
-
         /**
          * @brief Execute SELECT query with named field access
          * @param sql SQL query string
          * @return QueryNamedResult pointer or NULL on error
          */
         QueryNamedResult* QueryNamed(const char* sql) override;
-
         /**
          * @brief Execute non-SELECT query (INSERT, UPDATE, DELETE)
          * @param sql SQL query string
@@ -168,13 +165,11 @@ class MySQLConnection : public SqlConnection
          * @return True on success, false on failure
          */
         bool BeginTransaction() override;
-
         /**
          * @brief Commit the current transaction
          * @return True on success, false on failure
          */
         bool CommitTransaction() override;
-
         /**
          * @brief Rollback the current transaction
          * @return True on success, false on failure
@@ -196,7 +191,6 @@ class MySQLConnection : public SqlConnection
          * @return True on success, false on failure
          */
         bool _TransactionCmd(const char* sql);
-
         /**
          * @brief Internal query execution
          * @param sql SQL query string
@@ -225,7 +219,6 @@ class DatabaseMysql : public Database
          * @brief Constructor
          */
         DatabaseMysql();
-
         /**
          * @brief Destructor
          */
@@ -236,7 +229,6 @@ class DatabaseMysql : public Database
          * Must be called before first query in thread
          */
         void ThreadStart() override;
-
         /**
          * @brief Cleanup MySQL library for current thread
          * Must be called before thread termination

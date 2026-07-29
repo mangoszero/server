@@ -40,6 +40,7 @@
  * and item attachments.
  */
 
+#include <string>
 #include "Mail.h"
 #include "Language.h"
 #include "Log.h"

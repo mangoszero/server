@@ -25,6 +25,7 @@
 #ifndef MANGOS_PATH_FINDER_H
 #define MANGOS_PATH_FINDER_H
 
+#include <algorithm>
 #include "DetourNavMesh.h"
 #include "DetourNavMeshQuery.h"
 
@@ -73,6 +74,10 @@ class PathFinder
          * @param owner Pointer to the unit that owns this PathFinder.
          */
         PathFinder(Unit const* owner);
+
+        /// Route on a map the mover is not filed under. A vessel's deck is its own map,
+        /// and a boarded unit walks that navmesh while the world still holds its guid.
+        PathFinder(Unit const* owner, uint32 mapId);
 
         /**
          * @brief Destructor for PathFinder.

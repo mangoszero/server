@@ -22,11 +22,23 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <cstdint>
+#include "Common/Locales.h"
+#include <cstring>
+#include <cassert>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
 
 #include "DBCFileLoader.h"
+
+
+// Ceilings for the two sizes AutoProduceData takes from file content. Both are far above
+// anything a real client ships -- the largest DBC here is a few megabytes -- and exist so
+// a corrupt file fails the load instead of sizing an allocation.
+static const uint64 MAX_DBC_INDEX       = 16u * 1024u * 1024u;
+static const uint64 MAX_DBC_TABLE_BYTES = 512u * 1024u * 1024u;
 
 DBCFileLoader::DBCFileLoader()
 {
@@ -36,59 +48,76 @@ DBCFileLoader::DBCFileLoader()
 
 bool DBCFileLoader::Load(const char* filename, const char* fmt)
 {
-    uint32 header;
-    delete[] data;
-
     FILE* f = fopen(filename, "rb");
     if (!f)
     {
         return false;
     }
 
-    if (fread(&header, 4, 1, f) != 1)                       // Number of records
+    fseek(f, 0, SEEK_END);
+    const long length = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    if (length <= 0)
     {
         fclose(f);
         return false;
     }
 
+    // Not `bytes(size_t(length))`: that is a function declaration, not a vector.
+    std::vector<unsigned char> bytes(static_cast<size_t>(length));
+    const size_t got = fread(bytes.data(), 1, bytes.size(), f);
+    fclose(f);
+    if (got != bytes.size())
+    {
+        return false;
+    }
+
+    return LoadFromMemory(bytes.data(), bytes.size(), fmt);
+}
+
+// The offline baker reads its DBCs out of the client MPQs, where there is no file to
+// open. Sharing this path with Load keeps the baker's column layout identical to the
+// server's -- one parser, one set of format strings, nothing to drift.
+bool DBCFileLoader::LoadFromMemory(const void* bytes, size_t size, const char* fmt)
+{
+    delete[] data;
+    data = NULL;
+    delete[] fieldsOffset;
+    fieldsOffset = NULL;
+
+    if (!bytes || size < 20)
+    {
+        return false;
+    }
+
+    const unsigned char* p = static_cast<const unsigned char*>(bytes);
+    uint32 header;
+    memcpy(&header, p, 4);
     EndianConvert(header);
     if (header != 0x43424457)                               //'WDBC'
     {
-        fclose(f);
         return false;
     }
 
-    if (fread(&recordCount, 4, 1, f) != 1)                  // Number of records
-    {
-        fclose(f);
-        return false;
-    }
-
+    memcpy(&recordCount, p + 4, 4);
     EndianConvert(recordCount);
-
-    if (fread(&fieldCount, 4, 1, f) != 1)                   // Number of fields
-    {
-        fclose(f);
-        return false;
-    }
-
+    memcpy(&fieldCount, p + 8, 4);
     EndianConvert(fieldCount);
-
-    if (fread(&recordSize, 4, 1, f) != 1)                   // Size of a record
-    {
-        fclose(f);
-        return false;
-    }
-
+    memcpy(&recordSize, p + 12, 4);
     EndianConvert(recordSize);
+    memcpy(&stringSize, p + 16, 4);
+    EndianConvert(stringSize);
 
-    if (fread(&stringSize, 4, 1, f) != 1)                   // String size
+    if (!fieldCount || strlen(fmt) < fieldCount)
     {
-        fclose(f);
         return false;
     }
 
-    EndianConvert(stringSize);
+    const uint64 payload = uint64(recordSize) * recordCount + stringSize;
+    if (payload + 20 > size)
+    {
+        return false;
+    }
 
     fieldsOffset = new uint32[fieldCount];
     fieldsOffset[0] = 0;
@@ -105,16 +134,9 @@ bool DBCFileLoader::Load(const char* filename, const char* fmt)
         }
     }
 
-    data = new unsigned char[recordSize * recordCount + stringSize];
+    data = new unsigned char[size_t(payload)];
     stringTable = data + recordSize * recordCount;
-
-    if (fread(data, recordSize * recordCount + stringSize, 1, f) != 1)
-    {
-        fclose(f);
-        return false;
-    }
-
-    fclose(f);
+    memcpy(data, p + 20, size_t(payload));
     return true;
 }
 
@@ -179,16 +201,16 @@ uint32 DBCFileLoader::GetFormatRecordSize(const char* format, int32* index_pos)
 
 char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**& indexTable)
 {
-    /**
-     * format STRING, NA, FLOAT,NA,INT <=>
-     * struct{
-     *     char* field0,
-     *     float field1,
-     *     int field2
-     * } entry;
-     *
-     * this func will generate  entry[rows] data;
-     */
+    /*
+    format STRING, NA, FLOAT,NA,INT <=>
+    struct{
+    char* field0,
+    float field1,
+    int field2
+    }entry;
+
+    this func will generate  entry[rows] data;
+    */
 
     typedef char* ptr;
     if (strlen(format) != fieldCount)
@@ -213,10 +235,18 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**
             }
         }
 
+        // maxi comes from record CONTENT, so it is whatever the file says. Refuse a
+        // wrapped or absurd count rather than allocating from it: ++maxi on 0xFFFFFFFF
+        // is 0, which would allocate nothing and then be written through by every row.
+        if (maxi == 0xFFFFFFFFu || uint64(maxi) + 1 > MAX_DBC_INDEX)
+        {
+            return NULL;
+        }
+
         ++maxi;
         records = maxi;
         indexTable = new ptr[maxi];
-        memset(indexTable, 0, maxi * sizeof(ptr));
+        memset(indexTable, 0, size_t(maxi) * sizeof(ptr));
     }
     else
     {
@@ -224,7 +254,18 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**
         indexTable = new ptr[recordCount];
     }
 
-    char* dataTable = new char[recordCount * recordsize];
+    // In 64 bits, so a large record count times a wide format cannot wrap. The header
+    // check bounded recordCount against the FILE's record size; recordsize here is the
+    // FORMAT's, and the two need not agree.
+    const uint64 tableBytes = uint64(recordCount) * recordsize;
+    if (tableBytes > MAX_DBC_TABLE_BYTES)
+    {
+        delete[] indexTable;
+        indexTable = NULL;
+        return NULL;
+    }
+
+    char* dataTable = new char[size_t(tableBytes)];
 
     uint32 offset = 0;
 

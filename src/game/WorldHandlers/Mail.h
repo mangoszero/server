@@ -40,7 +40,10 @@
 #ifndef MANGOS_MAIL_H
 #define MANGOS_MAIL_H
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <ctime>
+#include <string>
+#include <vector>
 #include "ObjectGuid.h"
 #include <map>
 

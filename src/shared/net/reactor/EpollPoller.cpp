@@ -48,7 +48,13 @@ bool EpollPoller::init() {
     if (m_epfd < 0) return false;
 
     m_eventfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-    if (m_eventfd < 0) return false;
+    if (m_eventfd < 0) {
+        // Nobody calls shutdown() on a poller that failed to init, so release the
+        // epoll fd here rather than leaking it for the life of the process.
+        ::close(m_epfd);
+        m_epfd = -1;
+        return false;
+    }
 
     // Register the wakeup eventfd, tagged with `this` so wait() can tell it apart
     // from connection fds.

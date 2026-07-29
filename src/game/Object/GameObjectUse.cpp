@@ -24,6 +24,10 @@
 
 
 
+#include <cmath>
+#include "Utilities/Errors.h"
+#include <sstream>
+#include "Utilities/MathDefines.h"
 #include "GameObject.h"
 #include "QuestDef.h"
 #include "ObjectMgr.h"
@@ -47,11 +51,11 @@
 #include "OutdoorPvP/OutdoorPvP.h"
 #include "Util.h"
 #include "ScriptMgr.h"
-#include "vmap/GameObjectModel.h"
+#include "GameObjectModel.h"
 #include "CreatureAISelector.h"
 #include "SQLStorages.h"
 #include "GameObjectAI.h"
-#include "G3D/Quat.h"
+#include "Geometry/Quat.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -240,26 +244,26 @@ void GameObject::Use(Unit* user)
             {
                 float lowestDist = DEFAULT_VISIBILITY_DISTANCE;
 
-                float x_lowest = GetPositionX();
-                float y_lowest = GetPositionY();
+                float x_lowest = Where().X();
+                float y_lowest = Where().Y();
 
                 // the object orientation + 1/2 pi
                 // every slot will be on that straight line
-                float orthogonalOrientation = GetOrientation() + M_PI_F * 0.5f;
+                float orthogonalOrientation = Where().Facing() + M_PI_F * 0.5f;
                 // find nearest slot
                 for (uint32 i = 0; i < info->chair.slots; ++i)
                 {
                     // the distance between this slot and the center of the go - imagine a 1D space
                     float relativeDistance = (info->size * i) - (info->size * (info->chair.slots - 1) / 2.0f);
 
-                    float x_i = GetPositionX() + relativeDistance * cos(orthogonalOrientation);
-                    float y_i = GetPositionY() + relativeDistance * sin(orthogonalOrientation);
+                    float x_i = Where().X() + relativeDistance * cos(orthogonalOrientation);
+                    float y_i = Where().Y() + relativeDistance * sin(orthogonalOrientation);
 
                     // calculate the distance between the player and this slot
-                    float thisDistance = player->GetDistance2d(x_i, y_i);
+                    float thisDistance = player->Where().DistanceTo(Geometry::Vector2(x_i, y_i));
 
                     /* debug code. It will spawn a npc on each slot to visualize them.
-                    Creature* helper = player->SummonCreature(14496, x_i, y_i, GetPositionZ(), GetOrientation(), TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 10000);
+                    Creature* helper = player->SummonCreature(14496, x_i, y_i, Where().Z(), Where().Facing(), TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 10000);
                     std::ostringstream output;
                     output << i << ": thisDist: " << thisDistance;
                     helper->MonsterSay(output.str().c_str(), LANG_UNIVERSAL);
@@ -272,12 +276,12 @@ void GameObject::Use(Unit* user)
                         y_lowest = y_i;
                     }
                 }
-                player->TeleportTo(GetMapId(), x_lowest, y_lowest, GetPositionZ(), GetOrientation(), TELE_TO_NOT_LEAVE_TRANSPORT | TELE_TO_NOT_LEAVE_COMBAT | TELE_TO_NOT_UNSUMMON_PET);
+                player->TeleportTo(GetMapId(), x_lowest, y_lowest, Where().Z(), Where().Facing(), TELE_TO_NOT_LEAVE_TRANSPORT | TELE_TO_NOT_LEAVE_COMBAT | TELE_TO_NOT_UNSUMMON_PET);
             }
             else
             {
                 // fallback, will always work
-                player->TeleportTo(GetMapId(), GetPositionX(), GetPositionY(), GetPositionZ(), GetOrientation(), TELE_TO_NOT_LEAVE_TRANSPORT | TELE_TO_NOT_LEAVE_COMBAT | TELE_TO_NOT_UNSUMMON_PET);
+                player->TeleportTo(GetMapId(), Where().X(), Where().Y(), Where().Z(), Where().Facing(), TELE_TO_NOT_LEAVE_TRANSPORT | TELE_TO_NOT_LEAVE_COMBAT | TELE_TO_NOT_UNSUMMON_PET);
             }
             player->SetStandState(UNIT_STAND_STATE_SIT_LOW_CHAIR + info->chair.height);
             return;
@@ -424,7 +428,7 @@ void GameObject::Use(Unit* user)
                     // 3) chance is linear dependence from (base_zone_skill-skill)
 
                     uint32 zone, subzone;
-                    GetZoneAndAreaId(zone, subzone);
+                    GetTerrain()->GetZoneAndAreaId(zone, subzone, Where().X(), Where().Y(), Where().Z());
 
                     int32 zone_skill = sObjectMgr.GetFishingBaseSkillLevel(subzone);
                     if (!zone_skill)

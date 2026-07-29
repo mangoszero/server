@@ -22,6 +22,15 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "Common/Locales.h"
+#include "Utilities/Errors.h"
+#include <algorithm>
+#include <sstream>
+#include <memory>
+#include <string>
+#include <vector>
+#include <map>
+#include <set>
 #include "ObjectMgr.h"
 #include "AuctionHouseBot/AhBotSystemOwner.h"
 #include "LivingWorldAnchorPolicy.h"
@@ -58,8 +67,10 @@
 #include "ItemEnchantmentMgr.h"
 #include <limits>
 #include <cstdarg>
+#include "PlayerRegistry.h"
+#include "CorpseManager.h"
+#include "Corpse.h"
 
-INSTANTIATE_SINGLETON_1(ObjectMgr);
 
 /**
  * @brief Normalizes a player name to the server's canonical casing.
@@ -1059,7 +1070,7 @@ GameObjectInfo const* ObjectMgr::GetGameObjectInfo(uint32 id) { return sGOStorag
  * @param name The player name.
  * @return The matching player, or null if not found.
  */
-Player* ObjectMgr::GetPlayer(const char* name) { return sObjectAccessor.FindPlayerByName(name); }
+Player* ObjectMgr::GetPlayer(const char* name) { return sPlayerRegistry.FindByName(name); }
 
 /**
  * @brief Finds a player by GUID.
@@ -1068,7 +1079,7 @@ Player* ObjectMgr::GetPlayer(const char* name) { return sObjectAccessor.FindPlay
  * @param inWorld true to restrict the search to players currently in world.
  * @return The matching player, or null if not found.
  */
-Player* ObjectMgr::GetPlayer(ObjectGuid guid, bool inWorld /*=true*/) { return sObjectAccessor.FindPlayer(guid, inWorld); }
+Player* ObjectMgr::GetPlayer(ObjectGuid guid, bool inWorld /*=true*/) { return sPlayerRegistry.Find(guid, inWorld); }
 
 /**
  * @brief Gets static creature template data by entry id.
@@ -2077,7 +2088,7 @@ void ObjectMgr::LoadCorpses()
             continue;
         }
 
-        sObjectAccessor.AddCorpse(corpse);
+        sCorpseManager.Add(corpse);
 
         ++count;
     }
@@ -2600,7 +2611,7 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
         {
             uint32 zone, area;
             WorldObject const* searcher = source ? source : player;
-            searcher->GetZoneAndAreaId(zone, area);
+            searcher->GetTerrain()->GetZoneAndAreaId(zone, area, searcher->Where().X(), searcher->Where().Y(), searcher->Where().Z());
             return (zone == m_value1 || area == m_value1) == (m_value2 == 0);
         }
         case CONDITION_REPUTATION_RANK_MIN:
@@ -2644,7 +2655,7 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
         case CONDITION_AREA_FLAG:
         {
             WorldObject const* searcher = source ? source : player;
-            if (AreaTableEntry const* pAreaEntry = GetAreaEntryByAreaID(searcher->GetAreaId()))
+            if (AreaTableEntry const* pAreaEntry = GetAreaEntryByAreaID(searcher->GetTerrain()->GetAreaId(searcher->Where().X(), searcher->Where().Y(), searcher->Where().Z())))
             {
                 if ((!m_value1 || (pAreaEntry->Flags & m_value1)) && (!m_value2 || !(pAreaEntry->Flags & m_value2)))
                 {
@@ -2835,7 +2846,7 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
             switch (m_value1)
             {
                 case 0:                                     // Player dead or out of range
-                    return !player || !player->IsAlive() || (m_value2 && source && !source->IsWithinDistInMap(player, m_value2));
+                    return !player || !player->IsAlive() || (m_value2 && source && !InReach(*source, *player, m_value2));
                 case 1:                                     // All players in Group dead or out of range
                     if (!player)
                     {
@@ -2846,7 +2857,7 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
                         for (GroupReference const* itr = grp->GetFirstMember(); itr != NULL; itr = itr->next())
                         {
                             Player const* pl = itr->getSource();
-                            if (pl && pl->IsAlive() && !pl->isGameMaster() && (!m_value2 || !source || source->IsWithinDistInMap(pl, m_value2)))
+                            if (pl && pl->IsAlive() && !pl->isGameMaster() && (!m_value2 || !source || InReach(*source, *pl, m_value2)))
                             {
                                 return false;
                             }
@@ -2855,13 +2866,13 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
                     }
                     else
                     {
-                        return !player->IsAlive() || (m_value2 && source && !source->IsWithinDistInMap(player, m_value2));
+                        return !player->IsAlive() || (m_value2 && source && !InReach(*source, *player, m_value2));
                     }
                 case 2:                                     // All players in instance dead or out of range
                     for (Map::PlayerList::const_iterator itr = map->GetPlayers().begin(); itr != map->GetPlayers().end(); ++itr)
                     {
                         Player const* plr = itr->getSource();
-                        if (plr && plr->IsAlive() && !plr->isGameMaster() && (!m_value2 || !source || source->IsWithinDistInMap(plr, m_value2)))
+                        if (plr && plr->IsAlive() && !plr->isGameMaster() && (!m_value2 || !source || InReach(*source, *plr, m_value2)))
                         {
                             return false;
                         }
@@ -3836,7 +3847,7 @@ bool FindCreatureData::operator()(CreatureDataPair const& dataPair)
         return false;
     }
 
-    float new_dist = i_player->GetDistance2d(dataPair.second.posX, dataPair.second.posY);
+    float new_dist = i_player->Where().DistanceTo(Geometry::Vector2(dataPair.second.posX, dataPair.second.posY));
 
     if (!i_mapData || new_dist < i_mapDist)
     {
@@ -3911,7 +3922,7 @@ bool FindGOData::operator()(GameObjectDataPair const& dataPair)
         return false;
     }
 
-    float new_dist = i_player->GetDistance2d(dataPair.second.posX, dataPair.second.posY);
+    float new_dist = i_player->Where().DistanceTo(Geometry::Vector2(dataPair.second.posX, dataPair.second.posY));
 
     if (!i_mapData || new_dist < i_mapDist)
     {
@@ -3977,7 +3988,7 @@ bool DoDisplayText(WorldObject* source, int32 entry, Unit const* target /*=NULL*
     {
         if (data->Type == CHAT_TYPE_ZONE_YELL)
         {
-            source->GetMap()->PlayDirectSoundToMap(data->SoundId, source->GetZoneId());
+            source->GetMap()->PlayDirectSoundToMap(data->SoundId, source->GetTerrain()->GetZoneId(source->Where().X(), source->Where().Y(), source->Where().Z()));
         }
         else if (data->Type == CHAT_TYPE_WHISPER || data->Type == CHAT_TYPE_BOSS_WHISPER)
         {

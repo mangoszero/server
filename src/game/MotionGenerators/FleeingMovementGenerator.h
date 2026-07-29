@@ -25,120 +25,66 @@
 #ifndef MANGOS_FLEEINGMOVEMENTGENERATOR_H
 #define MANGOS_FLEEINGMOVEMENTGENERATOR_H
 
-#include "MovementGenerator.h"
+#include "IntentMovementGenerator.h"
 #include "ObjectGuid.h"
 
+#include <optional>
+
 /**
- * @brief FleeingMovementGenerator is a movement generator that makes a unit flee from a specified target.
+ * @brief Panic: bolt away from a fear source in short bursts, pausing a beat between them.
+ *
+ * Unlike wander, a flee leg REFUSES the router's straight-line fallback
+ * (MOVE_REQUIRE_PATH): a panicking unit that cannot actually get somewhere must pick a
+ * different somewhere, not bolt through a wall.
  */
-template<class T>
-    class FleeingMovementGenerator
-        : public MovementGeneratorMedium< T, FleeingMovementGenerator<T> >
+class FleeingMovementGenerator : public IntentMovementGenerator
 {
     public:
-        /**
-         * @brief Constructor for FleeingMovementGenerator.
-         * @param fright The GUID of the target to flee from.
-         */
-        FleeingMovementGenerator(ObjectGuid fright) : i_frightGuid(fright), i_nextCheckTime(0) {}
+        explicit FleeingMovementGenerator(ObjectGuid fright) : m_frightGuid(fright) {}
 
-        /**
-         * @brief Initializes the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Initialize(T& owner);
+        void Initialize(Unit& owner) override;
+        void Finalize(Unit& owner) override;
+        void Interrupt(Unit& owner) override;
+        void Reset(Unit& owner) override;
 
-        /**
-         * @brief Finalizes the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Finalize(T& owner);
-
-        /**
-         * @brief Interrupts the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Interrupt(T& owner);
-
-        /**
-         * @brief Resets the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Reset(T& owner);
-
-        /**
-         * @brief Updates the movement generator.
-         * @param owner Reference to the unit.
-         * @param diff Time difference.
-         * @return True if the update was successful, false otherwise.
-         */
-        bool Update(T& owner, const uint32& diff);
-
-        /**
-         * @brief Gets the type of the movement generator.
-         * @return The type of the movement generator.
-         */
         MovementGeneratorType GetMovementGeneratorType() const override { return FLEEING_MOTION_TYPE; }
 
+    protected:
+        Motion::MoveIntent Intent(Unit& owner, Motion::MoveStatus const& status,
+                                  uint32 diff) override;
+
+        /// Somewhere to bolt to, away from the fear source. Nothing when the bearing it
+        /// picked has no ground under it.
+        std::optional<Motion::Vector3> PickFleePoint(Unit& owner) const;
+
     private:
-        /**
-         * @brief Sets the target location for the unit to flee to.
-         * @param owner Reference to the unit.
-         */
-        void _setTargetLocation(T& owner);
+        ObjectGuid m_frightGuid;      ///< What the unit is running from.
 
-        /**
-         * @brief Gets a point for the unit to flee to.
-         * @param owner Reference to the unit.
-         * @param x Reference to the x-coordinate.
-         * @param y Reference to the y-coordinate.
-         * @param z Reference to the z-coordinate.
-         * @return True if the point was successfully obtained, false otherwise.
-         */
-        bool _getPoint(T& owner, float& x, float& y, float& z);
-
-        ObjectGuid i_frightGuid; ///< The GUID of the target to flee from.
-        TimeTracker i_nextCheckTime; ///< Time tracker for the next check.
+        TimeTracker m_restTime{0};    ///< Time left standing before the next bolt.
+        Motion::Vector3 m_fleePoint;  ///< Where the current bolt is heading.
+        bool m_haveFleePoint = false; ///< False before the first point has been picked.
 };
 
 /**
- * @brief TimedFleeingMovementGenerator is a movement generator that makes a unit flee from a specified target for a specified time.
+ * @brief Fleeing that gives up after a fixed time and re-engages, rather than running
+ *        until the aura that caused it is removed.
  */
-class TimedFleeingMovementGenerator
-    : public FleeingMovementGenerator<Creature>
+class TimedFleeingMovementGenerator final : public FleeingMovementGenerator
 {
     public:
-        /**
-         * @brief Constructor for TimedFleeingMovementGenerator.
-         * @param fright The GUID of the target to flee from.
-         * @param time The total time to flee.
-         */
         TimedFleeingMovementGenerator(ObjectGuid fright, uint32 time)
-            : FleeingMovementGenerator<Creature>(fright),
-            i_totalFleeTime(time) {}
+            : FleeingMovementGenerator(fright), m_totalFleeTime(time) {}
 
-        /**
-         * @brief Gets the type of the movement generator.
-         * @return The type of the movement generator.
-         */
         MovementGeneratorType GetMovementGeneratorType() const override { return TIMED_FLEEING_MOTION_TYPE; }
 
-        /**
-         * @brief Updates the movement generator.
-         * @param owner Reference to the unit.
-         * @param diff Time difference.
-         * @return True if the update was successful, false otherwise.
-         */
-        bool Update(Unit& owner, const uint32& diff) override;
-
-        /**
-         * @brief Finalizes the movement generator.
-         * @param owner Reference to the unit.
-         */
         void Finalize(Unit& owner) override;
 
+    protected:
+        Motion::MoveIntent Intent(Unit& owner, Motion::MoveStatus const& status,
+                                  uint32 diff) override;
+
     private:
-        TimeTracker i_totalFleeTime; ///< Total time to flee.
+        TimeTracker m_totalFleeTime; ///< How long the panic lasts.
 };
 
 #endif // MANGOS_FLEEINGMOVEMENTGENERATOR_H

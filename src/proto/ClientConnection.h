@@ -25,6 +25,7 @@
 #ifndef MANGOS_PROTO_CLIENTCONNECTION_H
 #define MANGOS_PROTO_CLIENTCONNECTION_H
 
+#include <vector>
 #include "Auth/AuthCrypt.h"
 #include "IClientLink.h"
 #include "IWorldGateway.h"

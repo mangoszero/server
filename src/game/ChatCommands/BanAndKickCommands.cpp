@@ -33,6 +33,7 @@
  * - Ban management utilities
  */
 
+#include <string>
 #include "Chat.h"
 #include "Language.h"
 #include "World.h"

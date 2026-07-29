@@ -22,170 +22,130 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Creature.h"
+#include <algorithm>
 #include "RandomMovementGenerator.h"
-#include "Map.h"
+#include "Creature.h"
+#include "MotionFrame.h"
 #include "Util.h"
-#include "movement/MoveSplineInit.h"
-#include "movement/MoveSpline.h"
 
-/**
- * @brief Constructor for RandomMovementGenerator with specified coordinates and radius.
- * @param x X-coordinate of the center.
- * @param y Y-coordinate of the center.
- * @param z Z-coordinate of the center.
- * @param radius Radius within which the unit will move.
- * @param verticalZ Vertical offset for the movement.
- */
-template<>
-    RandomMovementGenerator<Creature>::RandomMovementGenerator(float x, float y, float z, float radius, float verticalZ)
-        : i_nextMoveTime(0), i_x(x), i_y(y), i_z(z), i_radius(radius), i_verticalZ(verticalZ)
+namespace
 {
-    if (radius < 0.1f)
+    /// Percent chance the creature does not pause at all between hops, so a wandering
+    /// mob occasionally strings two legs together instead of always resting.
+    constexpr int CHANCE_NO_BREAK = 30;
+
+    /// A leash radius below this is meaningless and would make every hop degenerate.
+    constexpr float MIN_WANDER_RADIUS = 0.1f;
+
+    constexpr uint32 REST_AFTER_HOP_MIN = 3000;
+    constexpr uint32 REST_AFTER_HOP_MAX = 10000;
+
+    /// Retry delay after a hop that could not be routed, or a point that could not be
+    /// found. Short enough to look alive, long enough not to hammer the router.
+    constexpr uint32 RETRY_DELAY = 50;
+}
+
+RandomMovementGenerator::RandomMovementGenerator(float x, float y, float z, float radius)
+    : m_centre(x, y, z), m_radius(radius)
+{
+    if (m_radius < MIN_WANDER_RADIUS)
     {
-        DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "RandomMovementGenerator<Creature> constructor: wrong value for spawn distance. Set to 0.1f");
-        i_radius = 0.1f;
+        DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "RandomMovementGenerator: wrong value for spawn distance. Set to %f", MIN_WANDER_RADIUS);
+        m_radius = MIN_WANDER_RADIUS;
     }
 }
 
-/**
- * @brief Constructor for RandomMovementGenerator with a creature reference.
- * @param creature Reference to the creature.
- */
-template<>
-    RandomMovementGenerator<Creature>::RandomMovementGenerator(const Creature& creature)
+RandomMovementGenerator::RandomMovementGenerator(Creature const& creature)
 {
-    float respX, respY, respZ, respO, wander_distance;
-    creature.GetRespawnCoord(respX, respY, respZ, &respO, &wander_distance);
-    i_nextMoveTime = TimeTracker(0);
-    i_x = respX;
-    i_y = respY;
-    i_z = respZ;
-    i_radius = wander_distance;
-    i_verticalZ = 0.0f;
+    float x, y, z, o, wanderDistance;
+    x = creature.Spawn().X();
+    y = creature.Spawn().Y();
+    z = creature.Spawn().Z();
+    o = creature.Spawn().Facing();
+    wanderDistance = creature.GetRespawnRadius();
+
+    m_centre = Motion::Vector3(x, y, z);
+    m_radius = std::max(wanderDistance, MIN_WANDER_RADIUS);
 }
 
-template<>
-
-/**
- * @brief Chooses and starts movement toward a new random reachable location.
- *
- * @param creature The creature using the movement generator.
- */
-void RandomMovementGenerator<Creature>::_setRandomLocation(Creature& creature)
+void RandomMovementGenerator::Initialize(Unit& owner)
 {
-    float destX = i_x;
-    float destY = i_y;
-    float destZ = i_z;
+    // _MOVE is set once a hop is actually picked.
+    owner.addUnitState(UNIT_STAT_ROAMING);
 
-    creature.addUnitState(UNIT_STAT_ROAMING_MOVE);
-
-    // Check if new random position is assigned, GetReachableRandomPosition may fail
-    if (creature.GetMap()->GetReachableRandomPosition(&creature, destX, destY, destZ, i_radius))
-    {
-        Movement::MoveSplineInit init(creature);
-        init.MoveTo(destX, destY, destZ, true);
-        init.SetWalk(true);
-        init.Launch();
-        if (roll_chance_i(MOVEMENT_RANDOM_MMGEN_CHANCE_NO_BREAK))
-        {
-            i_nextMoveTime.Reset(50);
-        }
-        else
-        {
-            i_nextMoveTime.Reset(urand(3000, 10000));       // Keep a short wait time
-        }
-    }
-    else
-    {
-        i_nextMoveTime.Reset(50);                           // Retry later
-    }
-    return;
+    m_restTime.Reset(0);
+    m_haveHop = false;
+    ResetLeg();
 }
 
-template<>
-
-/**
- * @brief Initializes random roaming movement for a creature.
- *
- * @param creature The creature using the movement generator.
- */
-void RandomMovementGenerator<Creature>::Initialize(Creature& creature)
+void RandomMovementGenerator::Reset(Unit& owner)
 {
-    creature.addUnitState(UNIT_STAT_ROAMING);               // _MOVE set in _setRandomLocation
+    Initialize(owner);
+}
 
-    if (!creature.IsAlive() || creature.hasUnitState(UNIT_STAT_NOT_MOVE))
+void RandomMovementGenerator::Interrupt(Unit& owner)
+{
+    owner.InterruptMoving();
+    Finalize(owner);
+    m_haveHop = false;
+    ResetLeg();
+}
+
+void RandomMovementGenerator::Finalize(Unit& owner)
+{
+    owner.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+    static_cast<Creature&>(owner).SetWalk(!owner.hasUnitState(UNIT_STAT_RUNNING_STATE), false);
+}
+
+Motion::MoveIntent RandomMovementGenerator::Intent(Unit& owner,
+                                                   Motion::MoveStatus const& status,
+                                                   uint32 diff)
+{
+    if (!owner.IsAlive() || owner.hasUnitState(UNIT_STAT_NOT_MOVE))
     {
-        return;
+        m_restTime.Reset(0);
+        owner.clearUnitState(UNIT_STAT_ROAMING_MOVE);
+        return Motion::MoveIntent::Hold();
     }
 
-    _setRandomLocation(creature);
-}
-
-template<>
-
-/**
- * @brief Resets random roaming by reinitializing the creature movement.
- *
- * @param creature The creature using the movement generator.
- */
-void RandomMovementGenerator<Creature>::Reset(Creature& creature)
-{
-    Initialize(creature);
-}
-
-template<>
-
-/**
- * @brief Interrupts random roaming and restores the creature walk state.
- *
- * @param creature The creature using the movement generator.
- */
-void RandomMovementGenerator<Creature>::Interrupt(Creature& creature)
-{
-    creature.InterruptMoving();
-    creature.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
-    creature.SetWalk(!creature.hasUnitState(UNIT_STAT_RUNNING_STATE), false);
-}
-
-template<>
-
-/**
- * @brief Finalizes random roaming and clears roaming movement flags.
- *
- * @param creature The creature using the movement generator.
- */
-void RandomMovementGenerator<Creature>::Finalize(Creature& creature)
-{
-    creature.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
-    creature.SetWalk(!creature.hasUnitState(UNIT_STAT_RUNNING_STATE), false);
-}
-
-template<>
-
-/**
- * @brief Updates random roaming and starts a new move when the wait timer expires.
- *
- * @param creature The creature using the movement generator.
- * @param diff The elapsed update time in milliseconds.
- * @return true if the generator remains active; otherwise false.
- */
-bool RandomMovementGenerator<Creature>::Update(Creature& creature, const uint32& diff)
-{
-    if (creature.hasUnitState(UNIT_STAT_NOT_MOVE))
+    // The point we picked turned out to be unreachable: try somewhere else shortly,
+    // rather than hammering the router every tick.
+    if (status.blocked)
     {
-        i_nextMoveTime.Reset(0);  // Expire the timer
-        creature.clearUnitState(UNIT_STAT_ROAMING_MOVE);
-        return true;
+        m_haveHop = false;
+        m_restTime.Reset(RETRY_DELAY);
     }
 
-    if (creature.movespline->Finalized())
+    // Mid-hop: re-state the same goal, which the driver recognises as the leg it is
+    // already walking and leaves alone.
+    if (status.traveling && m_haveHop)
     {
-        i_nextMoveTime.Update(diff);
-        if (i_nextMoveTime.Passed())
-        {
-            _setRandomLocation(creature);
-        }
+        return Motion::MoveIntent::Move(m_hop, Motion::MOVE_WALK);
     }
-    return true;
+
+    // Standing: run down the rest timer.
+    m_restTime.Update(diff);
+    if (!m_restTime.Passed())
+    {
+        return Motion::MoveIntent::Hold();
+    }
+
+    const auto hop = Motion::FrameFor(owner).RandomPoint(owner, m_centre, m_radius);
+    if (!hop)
+    {
+        m_restTime.Reset(RETRY_DELAY);
+        return Motion::MoveIntent::Hold();
+    }
+
+    owner.addUnitState(UNIT_STAT_ROAMING_MOVE);
+    m_hop = *hop;
+    m_haveHop = true;
+
+    // The rest that follows THIS hop is decided now: the timer only runs while the
+    // creature is standing, so it starts counting the moment the leg ends.
+    m_restTime.Reset(roll_chance_i(CHANCE_NO_BREAK)
+        ? RETRY_DELAY
+        : urand(REST_AFTER_HOP_MIN, REST_AFTER_HOP_MAX));
+
+    return Motion::MoveIntent::Move(m_hop, Motion::MOVE_WALK);
 }

@@ -22,7 +22,7 @@
 #ifndef AH_SERVICE_ITEM_POOL_H
 #define AH_SERVICE_ITEM_POOL_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "AhBotDefines.h"
 #include "ServiceConfig.h"
 #include "ServiceDatabase.h"

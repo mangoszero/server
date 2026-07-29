@@ -24,6 +24,8 @@
 
 
 
+#include <sstream>
+#include <string>
 #include "Item.h"
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"

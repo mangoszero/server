@@ -1,3 +1,4 @@
+#include <list>
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "LootNonCombatStrategy.h"

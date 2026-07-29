@@ -46,14 +46,11 @@
 
 #define COMPILER_MICROSOFT  0
 #define COMPILER_GNU        1
-#define COMPILER_BORLAND    2
 #define COMPILER_INTEL      3
 #define COMPILER_CLANG      4
 
 #ifdef _MSC_VER
 #  define COMPILER COMPILER_MICROSOFT
-#elif defined( __BORLANDC__ )
-#  define COMPILER COMPILER_BORLAND
 #elif defined( __INTEL_COMPILER )
 #  define COMPILER COMPILER_INTEL
 #elif defined(__clang__)
@@ -63,7 +60,5 @@
 #else
 #  pragma error "FATAL ERROR: Unknown compiler."
 #endif
-
-#define COMPILER_HAS_CPP11_SUPPORT 1
 
 #endif

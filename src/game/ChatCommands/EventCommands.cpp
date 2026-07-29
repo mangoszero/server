@@ -33,6 +33,7 @@
  * - Holiday and seasonal event management
  */
 
+#include <string>
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "GameEventMgr.h"

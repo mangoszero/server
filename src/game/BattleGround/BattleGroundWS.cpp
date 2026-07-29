@@ -472,7 +472,7 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player* source, GameObject* target
     }
 
     // Alliance flag on ground(not in base) (returned or picked up again from ground!)
-    if (GetFlagState(ALLIANCE) == BG_WS_FLAG_STATE_ON_GROUND && source->IsWithinDistInMap(target_obj, 10))
+    if (GetFlagState(ALLIANCE) == BG_WS_FLAG_STATE_ON_GROUND && InReach(*source, *target_obj, 10))
     {
         if (source->GetTeam() == ALLIANCE)
         {
@@ -500,7 +500,7 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player* source, GameObject* target
     }
 
     // Horde flag on ground(not in base) (returned or picked up again)
-    if (GetFlagState(HORDE) == BG_WS_FLAG_STATE_ON_GROUND && source->IsWithinDistInMap(target_obj, 10))
+    if (GetFlagState(HORDE) == BG_WS_FLAG_STATE_ON_GROUND && InReach(*source, *target_obj, 10))
     {
         if (source->GetTeam() == HORDE)
         {

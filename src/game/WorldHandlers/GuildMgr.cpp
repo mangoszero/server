@@ -39,6 +39,7 @@
  * @see GuildMgr for the manager singleton interface
  */
 
+#include <string>
 #include "GuildMgr.h"
 #include "Guild.h"
 #include "Log.h"
@@ -48,7 +49,6 @@
 #include "ProgressBar.h"
 #include "World.h"
 
-INSTANTIATE_SINGLETON_1(GuildMgr);
 
 /**
  * @brief Construct GuildMgr singleton

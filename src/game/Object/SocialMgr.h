@@ -25,6 +25,8 @@
 #ifndef MANGOS_H_MANGOS_SOCIALMGR
 #define MANGOS_H_MANGOS_SOCIALMGR
 
+#include <string>
+#include <map>
 #include "Database/DatabaseEnv.h"
 #include "ObjectGuid.h"
 

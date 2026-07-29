@@ -22,6 +22,8 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <utility>
+#include <vector>
 #include "PacketCodec.h"
 
 #include <algorithm>
@@ -29,144 +31,159 @@
 
 namespace proto
 {
-PacketCodec::PacketCodec(HeaderDecryptor decryptor)
-    : m_decryptor(std::move(decryptor))
-{
-}
-
-DecodeStatus PacketCodec::Feed(uint8 const* data, std::size_t len,
-    std::vector<WorldPacket>& out)
-{
-    if (!data && len != 0)
+    PacketCodec::PacketCodec(HeaderDecryptor decryptor)
+        : m_decryptor(std::move(decryptor)),
+          m_headerFill(0),
+          m_haveHeader(false),
+          m_opcode(0),
+          m_payloadNeeded(0)
     {
-        return DecodeStatus::Malformed;
+        std::memset(m_header, 0, sizeof(m_header));
     }
 
-    std::size_t offset = 0;
-    bool producedPacket = false;
-    while (offset < len)
+    DecodeStatus PacketCodec::Feed(const uint8* data, size_t len,
+                                   std::vector<WorldPacket>& out)
     {
-        std::size_t consumed = 0;
-        DecodeStatus const status = FeedOne(data + offset, len - offset, consumed, out);
-        offset += consumed;
-
-        if (status == DecodeStatus::Malformed)
+        if (data == NULL || len == 0)
         {
-            return status;
+            return DecodeStatus::Ok;
         }
-        if (status == DecodeStatus::Ready)
+
+        size_t offset = 0;
+
+        while (offset < len)
         {
-            producedPacket = true;
-        }
-        if (consumed == 0 || status == DecodeStatus::NeedMore)
-        {
-            break;
-        }
-    }
-
-    return producedPacket ? DecodeStatus::Ready : DecodeStatus::NeedMore;
-}
-
-DecodeStatus PacketCodec::FeedOne(uint8 const* data, std::size_t len,
-    std::size_t& consumed, std::vector<WorldPacket>& out)
-{
-    consumed = 0;
-    if (!data && len != 0)
-    {
-        return DecodeStatus::Malformed;
-    }
-
-    while (consumed < len)
-    {
-        if (!m_haveHeader)
-        {
-            std::size_t const wanted = CLIENT_HEADER_SIZE - m_headerFill;
-            std::size_t const taken = std::min(wanted, len - consumed);
-            std::memcpy(m_header + m_headerFill, data + consumed, taken);
-            m_headerFill += taken;
-            consumed += taken;
-
-            if (m_headerFill < CLIENT_HEADER_SIZE)
+            // ---- Phase 1: collect and decode the fixed-size header -------------
+            if (!m_haveHeader)
             {
-                return DecodeStatus::NeedMore;
+                const size_t want = CLIENT_HEADER_SIZE - m_headerFill;
+                const size_t take = std::min(want, len - offset);
+
+                std::memcpy(m_header + m_headerFill, data + offset, take);
+                m_headerFill += take;
+                offset       += take;
+
+                if (m_headerFill < CLIENT_HEADER_SIZE)
+                {
+                    return DecodeStatus::Ok; // header still incomplete
+                }
+
+                // Decrypt exactly once, now that all six bytes are in hand. Doing
+                // it per-fragment would corrupt the stream cipher's keystream.
+                if (m_decryptor)
+                {
+                    m_decryptor(m_header, CLIENT_HEADER_SIZE);
+                }
+
+                // Read the fields out byte by byte rather than casting the buffer
+                // to a packed struct: the size is big-endian and the opcode little-
+                // endian, so a struct needs a byte-swap dance anyway, and the cast
+                // itself is an aliasing violation on a char buffer.
+                const uint32 size = (uint32(m_header[0]) << 8) | uint32(m_header[1]);
+                const uint32 cmd  =  uint32(m_header[2])
+                                  | (uint32(m_header[3]) << 8)
+                                  | (uint32(m_header[4]) << 16)
+                                  | (uint32(m_header[5]) << 24);
+
+                // `size` counts the four opcode bytes, so anything below that is
+                // impossible and would underflow the payload length below.
+                if (size < 4 || size > MAX_CLIENT_PACKET_SIZE
+                    || cmd > MAX_CLIENT_PACKET_SIZE)
+                {
+                    return DecodeStatus::Malformed;
+                }
+
+                m_opcode        = uint16(cmd);
+                m_payloadNeeded = size - 4;
+                m_haveHeader    = true;
+
+                m_payload.clear();
+                m_payload.reserve(m_payloadNeeded);
             }
 
-            if (m_decryptor)
+            // ---- Phase 2: collect the payload ---------------------------------
+            if (m_payloadNeeded > 0)
             {
-                m_decryptor(m_header, CLIENT_HEADER_SIZE);
+                const size_t take = std::min(size_t(m_payloadNeeded), len - offset);
+                if (take == 0)
+                {
+                    return DecodeStatus::Ok; // need more bytes
+                }
+
+                m_payload.insert(m_payload.end(), data + offset, data + offset + take);
+                offset          += take;
+                m_payloadNeeded -= uint32(take);
+
+                if (m_payloadNeeded > 0)
+                {
+                    return DecodeStatus::Ok; // payload still incomplete
+                }
             }
 
-            uint32 const wireSize = (uint32(m_header[0]) << 8) | uint32(m_header[1]);
-            uint32 const opcode = uint32(m_header[2])
-                | (uint32(m_header[3]) << 8)
-                | (uint32(m_header[4]) << 16)
-                | (uint32(m_header[5]) << 24);
-
-            if (wireSize < 4 || wireSize > MAX_CLIENT_PACKET_SIZE
-                || opcode > MAX_CLIENT_PACKET_SIZE)
+            // ---- Phase 3: emit and reset for the next packet ------------------
+            WorldPacket packet(m_opcode, m_payload.size());
+            if (!m_payload.empty())
             {
-                return DecodeStatus::Malformed;
+                packet.append(m_payload.data(), m_payload.size());
             }
+            out.push_back(std::move(packet));
 
-            m_opcode = uint16(opcode);
-            m_payloadNeeded = wireSize - 4;
-            m_haveHeader = true;
+            m_haveHeader = false;
+            m_headerFill = 0;
             m_payload.clear();
-            m_payload.reserve(m_payloadNeeded);
         }
 
-        if (m_payloadNeeded != 0)
-        {
-            std::size_t const taken =
-                std::min<std::size_t>(m_payloadNeeded, len - consumed);
-            m_payload.insert(m_payload.end(), data + consumed, data + consumed + taken);
-            consumed += taken;
-            m_payloadNeeded -= uint32(taken);
-
-            if (m_payloadNeeded != 0)
-            {
-                return DecodeStatus::NeedMore;
-            }
-        }
-
-        WorldPacket packet(m_opcode, m_payload.size());
-        if (!m_payload.empty())
-        {
-            packet.append(m_payload.data(), m_payload.size());
-        }
-        out.push_back(packet);
-
-        m_haveHeader = false;
-        m_headerFill = 0;
-        m_payload.clear();
-        return DecodeStatus::Ready;
+        return DecodeStatus::Ok;
     }
 
-    return DecodeStatus::NeedMore;
-}
-
-std::vector<uint8> PacketCodec::Encode(WorldPacket const& packet,
-    HeaderEncryptor const& encryptor)
-{
-    uint16 const wireSize = uint16(packet.size() + 2);
-    uint16 const opcode = packet.GetOpcode();
-    uint8 header[SERVER_HEADER_SIZE] = {
-        uint8(wireSize >> 8), uint8(wireSize),
-        uint8(opcode), uint8(opcode >> 8)
-    };
-
-    if (encryptor)
+    std::vector<uint8> PacketCodec::Encode(const WorldPacket& packet,
+                                           const HeaderEncryptor& encryptor)
     {
-        encryptor(header, SERVER_HEADER_SIZE);
-    }
+        // The size field counts the two opcode bytes along with the payload.
+        const uint32 size = uint32(packet.size()) + 2;
 
-    std::vector<uint8> wire;
-    wire.reserve(SERVER_HEADER_SIZE + packet.size());
-    wire.insert(wire.end(), header, header + SERVER_HEADER_SIZE);
-    if (!packet.empty())
-    {
-        wire.insert(wire.end(), packet.contents(), packet.contents() + packet.size());
+        // THE SERVER HEADER IS EXPANSION-SPECIFIC. The three-byte size, marked by
+        // 0x80 in the first byte, arrives in WotLK. A 1.12 or 2.4.3 client reads a
+        // fixed four-byte header, so meeting a five-byte one desynchronises the
+        // stream permanently -- it is not a packet it can skip.
+#if defined(CLASSIC) || defined(TBC)
+        const bool large = false;
+        (void)large;
+#else
+        const bool large = size > 0x7FFF;
+#endif
+
+        uint8  header[5];
+        size_t headerLen = 0;
+
+        if (large)
+        {
+            header[headerLen++] = uint8(0x80 | ((size >> 16) & 0xFF));
+        }
+        header[headerLen++] = uint8((size >> 8) & 0xFF);
+        header[headerLen++] = uint8(size & 0xFF);
+
+        const uint16 opcode = uint16(packet.GetOpcode());
+        header[headerLen++] = uint8(opcode & 0xFF);
+        header[headerLen++] = uint8((opcode >> 8) & 0xFF);
+
+        if (encryptor)
+        {
+            encryptor(header, headerLen);
+        }
+
+        std::vector<uint8> wire;
+        wire.reserve(headerLen + packet.size());
+        wire.insert(wire.end(), header, header + headerLen);
+
+        // contents() is only safe on a non-empty buffer; many packets are pure
+        // opcodes with no payload at all.
+        if (!packet.empty())
+        {
+            wire.insert(wire.end(), packet.contents(),
+                        packet.contents() + packet.size());
+        }
+
+        return wire;
     }
-    return wire;
-}
 }

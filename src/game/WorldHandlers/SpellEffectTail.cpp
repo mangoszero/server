@@ -24,7 +24,13 @@
 
 
 
-#include "Common.h"
+#include <random>
+#include <utility>
+#include "Platform/Define.h"
+#include "Common/TimeConstants.h"
+#include "Utilities/MathDefines.h"
+#include <vector>
+#include <list>
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
 #include "Opcodes.h"
@@ -41,7 +47,6 @@
 #include "Group.h"
 #include "UpdateData.h"
 #include "MapManager.h"
-#include "ObjectAccessor.h"
 #include "SharedDefines.h"
 #include "Pet.h"
 #include "GameObject.h"
@@ -54,7 +59,6 @@
 #include "BattleGround/BattleGroundWS.h"
 #include "Language.h"
 #include "SocialMgr.h"
-#include "VMapFactory.h"
 #include "Util.h"
 #include "TemporarySummon.h"
 #include "ScriptMgr.h"
@@ -62,7 +66,7 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
-#include "G3D/Vector3.h"
+#include "Geometry/Vector3.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -147,7 +151,7 @@ void Spell::EffectSummonDeadPet(SpellEffectIndex /*eff_idx*/)
     if (hadPet)
     {
         float px, py, pz;
-        _player->GetClosePoint(px, py, pz, pet->GetObjectBoundingRadius(), _player->GetObjectBoundingRadius());
+        ClosePointNear(*_player, px, py, pz, pet->Where().Extent(), _player->Where().Extent());
         pet->NearTeleportTo(px, py, pz, PET_FOLLOW_ANGLE);
     }
 
@@ -294,7 +298,7 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
     else if (m_spellInfo->EffectRadiusIndex[eff_idx] && m_spellInfo->Speed == 0)
     {
         float dis = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[eff_idx]));
-        m_caster->GetClosePoint(fx, fy, fz, DEFAULT_WORLD_OBJECT_SIZE, dis);
+        ClosePointNear(*m_caster, fx, fy, fz, DEFAULT_WORLD_OBJECT_SIZE, dis);
     }
     else
     {
@@ -307,12 +311,14 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
         if (goinfo->type == GAMEOBJECT_TYPE_FISHINGNODE)
         {
             // calculate angle variation for roughly equal dimensions of target area
-            float max_angle = (max_dis - min_dis) / (max_dis + m_caster->GetObjectBoundingRadius());
+            float max_angle = (max_dis - min_dis) / (max_dis + m_caster->Where().Extent());
             float angle_offset = max_angle * (rand_norm_f() - 0.5f);
-            m_caster->GetNearPoint2D(fx, fy, dis + m_caster->GetObjectBoundingRadius(), m_caster->GetOrientation() + angle_offset);
+            const Geometry::Vector3 near_ = PointNear(*m_caster, dis + m_caster->Where().Extent(), m_caster->Where().Facing() + angle_offset);
+            fx = near_.x;
+            fy = near_.y;
 
             GridMapLiquidData liqData;
-            if (!m_caster->GetMap()->GetTerrain()->IsInWater(fx, fy, m_caster->GetPositionZ() + 1.f, &liqData))
+            if (!m_caster->GetMap()->GetTerrain()->IsInWater(fx, fy, m_caster->Where().Z() + 1.f, &liqData))
             {
                 SendCastResult(SPELL_FAILED_NOT_FISHABLE);
                 SendChannelUpdate(0);
@@ -321,7 +327,7 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
 
             fz = liqData.level;
             // finally, check LoS
-            if (!m_caster->IsWithinLOS(fx, fy, fz))
+            if (!HasLineOfSight(*m_caster, Geometry::Vector3(fx, fy, fz)))
             {
                 SendCastResult(SPELL_FAILED_LINE_OF_SIGHT);
                 SendChannelUpdate(0);
@@ -330,7 +336,7 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
         }
         else
         {
-            m_caster->GetClosePoint(fx, fy, fz, DEFAULT_WORLD_OBJECT_SIZE, dis);
+            ClosePointNear(*m_caster, fx, fy, fz, DEFAULT_WORLD_OBJECT_SIZE, dis);
         }
     }
 
@@ -339,13 +345,15 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
     // if gameobject is summoning object, it should be spawned right on caster's position
     if (goinfo->type == GAMEOBJECT_TYPE_SUMMONING_RITUAL)
     {
-        m_caster->GetPosition(fx, fy, fz);
+        fx = m_caster->Where().X();
+        fy = m_caster->Where().Y();
+        fz = m_caster->Where().Z();
     }
 
     GameObject* pGameObj = new GameObject;
 
     if (!pGameObj->Create(cMap->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT), name_id, cMap,
-        fx, fy, fz, m_caster->GetOrientation()))
+        fx, fy, fz, m_caster->Where().Facing()))
     {
         delete pGameObj;
         return;
@@ -486,8 +494,8 @@ void Spell::EffectBind(SpellEffectIndex eff_idx)
 
     uint32 area_id;
     WorldLocation loc;
-    player->GetPosition(loc);
-    area_id = player->GetAreaId();
+    loc = WorldLocation(player->GetMapId(), player->Where().X(), player->Where().Y(), player->Where().Z(), player->Where().Facing());
+    area_id = player->GetTerrain()->GetAreaId(player->Where().X(), player->Where().Y(), player->Where().Z());
 
     player->SetHomebindToLocation(loc, area_id);
 

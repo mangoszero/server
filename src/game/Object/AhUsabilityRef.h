@@ -22,7 +22,7 @@
 #ifndef MANGOS_AH_USABILITY_REF_H
 #define MANGOS_AH_USABILITY_REF_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 
 /// Self-contained usability verdict. Deliberately NOT the game InventoryResult
 /// enum: this header is compiled standalone into the Task-8 difftest, which must

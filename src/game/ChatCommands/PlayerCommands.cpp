@@ -33,11 +33,17 @@
  * - Character customization
  */
 
+#include "Common/Locales.h"
+#include <sstream>
+#include <string>
+#include <list>
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "World.h"
 #include "AccountMgr.h"
 #include "SQLStorages.h"
+#include "PlayerRegistry.h"
+#include "CorpseManager.h"
 
 /**
  * @brief Handler for HandleCharacterEraseCommand command.
@@ -625,7 +631,7 @@ bool ChatHandler::HandleReviveCommand(char* args)
     }
     else // will resurrected at login without corpse
     {
-        sObjectAccessor.ConvertCorpseForPlayer(target_guid);
+        sCorpseManager.ConvertCorpseForPlayer(target_guid);
     }
 
     return true;
@@ -705,7 +711,7 @@ bool ChatHandler::HandleLinkGraveCommand(char* args)
 
     Player* player = m_session->GetPlayer();
 
-    uint32 zoneId = player->GetZoneId();
+    uint32 zoneId = player->GetTerrain()->GetZoneId(player->Where().X(), player->Where().Y(), player->Where().Z());
 
     AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(zoneId);
     if (!areaEntry || areaEntry->ParentAreaID != 0)
@@ -862,7 +868,7 @@ bool ChatHandler::HandleSaveCommand(char* /*args*/)
  */
 bool ChatHandler::HandleSaveAllCommand(char* /*args*/)
 {
-    sObjectAccessor.SaveAllPlayers();
+    sPlayerRegistry.SaveAll();
     SendSysMessage(LANG_PLAYERS_SAVED);
     return true;
 }

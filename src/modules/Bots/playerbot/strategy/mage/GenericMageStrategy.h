@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include "../Strategy.h"
 #include "../generic/RangedCombatStrategy.h"
 

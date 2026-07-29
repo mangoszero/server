@@ -32,6 +32,7 @@
  * - Misc administrative operations
  */
 
+#include <string>
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "World.h"

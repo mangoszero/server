@@ -25,85 +25,45 @@
 #ifndef MANGOS_RANDOMMOTIONGENERATOR_H
 #define MANGOS_RANDOMMOTIONGENERATOR_H
 
-#include "MovementGenerator.h"
+#include "IntentMovementGenerator.h"
 
-// Define chance for creature to not stop after reaching a waypoint
-#define MOVEMENT_RANDOM_MMGEN_CHANCE_NO_BREAK 30
+class Creature;
 
 /**
- * @brief RandomMovementGenerator is a movement generator that makes a unit move randomly within a specified radius.
- * @tparam T Type of the unit (Player or Creature).
+ * @brief Leashed wander: hop to a random reachable point within a radius of a fixed
+ *        centre, rest a beat, repeat.
+ *
+ * The whole generator is that rhythm and nothing else. Picking the point is a question
+ * for the mover's frame (world terrain today, a transport deck later); routing and
+ * launching the leg is the driver's.
  */
-template<class T>
-    class RandomMovementGenerator
-        : public MovementGeneratorMedium< T, RandomMovementGenerator<T> >
+class RandomMovementGenerator final : public IntentMovementGenerator
 {
     public:
-        /**
-         * @brief Constructor for RandomMovementGenerator.
-         * @param creature Reference to the creature.
-         */
-        explicit RandomMovementGenerator(const Creature& creature);
+        /// Wander around the creature's own respawn point, at its DB wander distance.
+        explicit RandomMovementGenerator(Creature const& creature);
 
-        /**
-         * @brief Constructor for RandomMovementGenerator with specified coordinates and radius.
-         * @param x X-coordinate of the center.
-         * @param y Y-coordinate of the center.
-         * @param z Z-coordinate of the center.
-         * @param radius Radius within which the unit will move.
-         * @param verticalZ Vertical offset for the movement.
-         */
-        explicit RandomMovementGenerator(float x, float y, float z, float radius, float verticalZ = 0.0f);
+        /// Wander around an explicit centre.
+        RandomMovementGenerator(float x, float y, float z, float radius);
 
-        /**
-         * @brief Sets a random location for the unit to move to.
-         * @param owner Reference to the unit.
-         */
-        void _setRandomLocation(T& owner);
+        void Initialize(Unit& owner) override;
+        void Finalize(Unit& owner) override;
+        void Interrupt(Unit& owner) override;
+        void Reset(Unit& owner) override;
 
-        /**
-         * @brief Initializes the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Initialize(T& owner);
-
-        /**
-         * @brief Finalizes the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Finalize(T& owner);
-
-        /**
-         * @brief Interrupts the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Interrupt(T& owner);
-
-        /**
-         * @brief Resets the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Reset(T& owner);
-
-        /**
-         * @brief Updates the movement generator.
-         * @param owner Reference to the unit.
-         * @param diff Time difference.
-         * @return True if the update was successful, false otherwise.
-         */
-        bool Update(T& owner, const uint32& diff);
-
-        /**
-         * @brief Gets the type of the movement generator.
-         * @return The type of the movement generator.
-         */
         MovementGeneratorType GetMovementGeneratorType() const override { return RANDOM_MOTION_TYPE; }
 
+    protected:
+        Motion::MoveIntent Intent(Unit& owner, Motion::MoveStatus const& status,
+                                  uint32 diff) override;
+
     private:
-        TimeTracker i_nextMoveTime; ///< Time tracker for the next move.
-        float i_x, i_y, i_z; ///< Coordinates of the center.
-        float i_radius; ///< Radius within which the unit will move.
-        float i_verticalZ; ///< Vertical offset for the movement.
+        Motion::Vector3 m_centre;    ///< What the wander is leashed to.
+        float m_radius;              ///< How far from it the creature may stray.
+
+        TimeTracker m_restTime{0};   ///< Time left standing before the next hop.
+        Motion::Vector3 m_hop;       ///< Where the current hop is heading.
+        bool m_haveHop = false;      ///< False before the first point has been picked.
 };
 
 #endif // MANGOS_RANDOMMOTIONGENERATOR_H

@@ -22,6 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <string>
 #include "WorldNetwork.h"
 
 #include "ClientConnection.h"

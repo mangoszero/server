@@ -1,7 +1,10 @@
 #ifndef _RandomPlayerbotMgr_H
 #define _RandomPlayerbotMgr_H
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <string>
+#include <map>
+#include <utility>
 #include "PlayerbotAIBase.h"
 #include "PlayerbotMgr.h"
 #include "LFGMgr.h"

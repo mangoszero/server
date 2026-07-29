@@ -38,7 +38,7 @@
 #include "TargetedMovementGenerator.h"
 #include "MovementGenerator.h"
 #include "FollowerReference.h"
-#include "G3D/Vector3.h"
+#include "Geometry/Vector3.h"
 
 /**
  * @brief Handler for HandleDeMorphCommand command.
@@ -313,11 +313,11 @@ bool ChatHandler::HandleMovegensCommand(char* /*args*/)
                 Unit* target;
                 if (unit->GetTypeId() == TYPEID_PLAYER)
                 {
-                    target = static_cast<ChaseMovementGenerator<Player> const*>(*itr)->GetTarget();
+                    target = static_cast<ChaseMovementGenerator const*>(*itr)->GetTarget();
                 }
                 else
                 {
-                    target = static_cast<ChaseMovementGenerator<Creature> const*>(*itr)->GetTarget();
+                    target = static_cast<ChaseMovementGenerator const*>(*itr)->GetTarget();
                 }
 
                 if (!target)
@@ -339,11 +339,11 @@ bool ChatHandler::HandleMovegensCommand(char* /*args*/)
                 Unit* target;
                 if (unit->GetTypeId() == TYPEID_PLAYER)
                 {
-                    target = static_cast<FollowMovementGenerator<Player> const*>(*itr)->GetTarget();
+                    target = static_cast<FollowMovementGenerator const*>(*itr)->GetTarget();
                 }
                 else
                 {
-                    target = static_cast<FollowMovementGenerator<Creature> const*>(*itr)->GetTarget();
+                    target = static_cast<FollowMovementGenerator const*>(*itr)->GetTarget();
                 }
 
                 if (!target)

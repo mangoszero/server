@@ -20,7 +20,8 @@
  */
 
 #include "BotBrain.h"
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Common/TimeConstants.h"
 #include "Utilities/Util.h"
 #include "Log/Log.h"
 

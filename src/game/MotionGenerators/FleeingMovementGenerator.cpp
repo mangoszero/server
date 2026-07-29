@@ -22,301 +22,201 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "Utilities/MathDefines.h"
+#include "FleeingMovementGenerator.h"
 #include "Creature.h"
 #include "CreatureAI.h"
-#include "FleeingMovementGenerator.h"
-#include "ObjectAccessor.h"
-#include "movement/MoveSplineInit.h"
-#include "movement/MoveSpline.h"
-#include "PathFinder.h"
+#include "MotionFrame.h"
+#include "ObjectLookup.h"
+#include "Util.h"
+#include <cmath>
 
-#define MIN_QUIET_DISTANCE 28.0f
-#define MAX_QUIET_DISTANCE 43.0f
-
-template<class T>
-
-/**
- * @brief Chooses and launches a new fleeing destination for the owner.
- *
- * @param owner The unit using the movement generator.
- */
-void FleeingMovementGenerator<T>::_setTargetLocation(T& owner)
+namespace
 {
-    // Ignore if the unit is in a state where it cannot react or move, except for fleeing
-    if (owner.hasUnitState((UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_NOT_MOVE) & ~UNIT_STAT_FLEEING))
-    {
-        return;
-    }
+    /// The band a panicking unit tries to put between itself and the fear source.
+    constexpr float MIN_QUIET_DISTANCE = 28.0f;
+    constexpr float MAX_QUIET_DISTANCE = 43.0f;
 
-    float x, y, z;
-    if (!_getPoint(owner, x, y, z))
-    {
-        // Random point not found, recheck later
-        i_nextCheckTime.Reset(50);
-        return;
-    }
+    /// A flee leg is capped: a panicking unit bolts, it does not embark on a journey.
+    constexpr float FLEE_PATH_LENGTH_LIMIT = 30.0f;
 
-    owner.addUnitState(UNIT_STAT_FLEEING_MOVE);
+    constexpr uint32 REST_AFTER_BOLT_MIN = 800;
+    constexpr uint32 REST_AFTER_BOLT_MAX = 1500;
 
-    PathFinder path(&owner);
-    path.setPathLengthLimit(30.0f);
-    path.calculate(x, y, z);
-    if (path.getPathType() & PATHFIND_NOPATH)
-    {
-        // Path not found, recheck later
-        i_nextCheckTime.Reset(50);
-        return;
-    }
-
-    Movement::MoveSplineInit init(owner);
-    init.MovebyPath(path.getPath());
-    init.SetWalk(false);
-    int32 traveltime = init.Launch();
-    i_nextCheckTime.Reset(traveltime + urand(800, 1500));
+    /// Retry delay after a bolt that could not be routed or placed.
+    constexpr uint32 RETRY_DELAY = 50;
 }
 
-template<class T>
-
-/**
- * @brief Computes a suitable flee point away from the frightening source.
- *
- * @param owner The unit using the movement generator.
- * @param x Receives the destination X coordinate.
- * @param y Receives the destination Y coordinate.
- * @param z Receives the destination Z coordinate.
- * @return true if a valid flee point was found; otherwise false.
- */
-bool FleeingMovementGenerator<T>::_getPoint(T& owner, float& x, float& y, float& z)
+std::optional<Motion::Vector3> FleeingMovementGenerator::PickFleePoint(Unit& owner) const
 {
-    float dist_from_caster, angle_to_caster;
-    if (Unit* fright = sObjectAccessor.GetUnit(owner, i_frightGuid))
+    Motion::IMotionFrame const& frame = Motion::FrameFor(owner);
+
+    float distFromCaster = 0.0f;
+    float angleToCaster = frand(0, 2 * M_PI_F);
+
+    if (Unit const* fright = ObjectLookup::GetUnit(owner, m_frightGuid))
     {
-        dist_from_caster = fright->GetDistance(&owner);
-        if (dist_from_caster > 0.2f)
+        // The DISTANCE needs no correction: a rigid transform preserves lengths, so how
+        // far away the fear source is reads the same in either frame. The BEARING does —
+        // the deck is rotated under us — so it is taken between frame positions.
+        distFromCaster = fright->Where().DistanceTo(owner.Where());
+        if (distFromCaster > 0.2f)
         {
-            angle_to_caster = fright->GetAngle(&owner);
+            angleToCaster = Motion::AngleBetween(frame.ObjectPosition(owner, *fright),
+                                                 frame.MoverPosition(owner));
         }
-        else
-        {
-            angle_to_caster = frand(0, 2 * M_PI_F);
-        }
-    }
-    else
-    {
-        dist_from_caster = 0.0f;
-        angle_to_caster = frand(0, 2 * M_PI_F);
     }
 
     float dist, angle;
-    if (dist_from_caster < MIN_QUIET_DISTANCE)
+    if (distFromCaster < MIN_QUIET_DISTANCE)
     {
-        dist = frand(0.4f, 1.3f) * (MIN_QUIET_DISTANCE - dist_from_caster);
-        angle = angle_to_caster + frand(-M_PI_F / 8, M_PI_F / 8);
+        // Too close: bolt more or less straight away from it.
+        dist = frand(0.4f, 1.3f) * (MIN_QUIET_DISTANCE - distFromCaster);
+        angle = angleToCaster + frand(-M_PI_F / 8, M_PI_F / 8);
     }
-    else if (dist_from_caster > MAX_QUIET_DISTANCE)
+    else if (distFromCaster > MAX_QUIET_DISTANCE)
     {
+        // Further than the panic band: drift back toward it.
         dist = frand(0.4f, 1.0f) * (MAX_QUIET_DISTANCE - MIN_QUIET_DISTANCE);
-        angle = -angle_to_caster + frand(-M_PI_F / 4, M_PI_F / 4);
+        angle = -angleToCaster + frand(-M_PI_F / 4, M_PI_F / 4);
     }
-    else    // We are inside quiet range
+    else
     {
+        // Inside the band: mill about in any direction.
         dist = frand(0.6f, 1.2f) * (MAX_QUIET_DISTANCE - MIN_QUIET_DISTANCE);
         angle = frand(0, 2 * M_PI_F);
     }
 
-    float curr_x = 0.0, curr_y = 0.0, curr_z = 0.0;
-    owner.GetPosition(curr_x, curr_y, curr_z);
+    const Motion::Vector3 from = frame.MoverPosition(owner);
 
-    x = curr_x + dist * cos(angle);
-    y = curr_y + dist * sin(angle);
-    z = curr_z + 0.5f;
+    const Motion::Vector3 guess(from.x + dist * cos(angle),
+                                from.y + dist * sin(angle),
+                                from.z + 0.5f);
 
-    // Try to fix z
-    if (!owner.GetMap()->GetHeightInRange(x, y, z))
-    {
-        return false;
-    }
-
-    if (owner.GetTypeId() == TYPEID_PLAYER)
-    {
-        // Check any collision
-        float testZ = z + 0.5f; // Needed to avoid some false positive hit detection of terrain or passable little object
-        if (owner.GetMap()->GetHitPosition(curr_x, curr_y, curr_z + 0.5f, x, y, testZ, -0.1f))
-        {
-            z = testZ;
-            if (!owner.GetMap()->GetHeightInRange(x, y, z))
-            {
-                return false;
-            }
-        }
-    }
-
-    return true;
+    // The frame drops the guess onto whatever it considers ground and, for a player,
+    // pulls it back to the first obstruction on the way there.
+    return frame.GroundPoint(owner, from, guess);
 }
 
-template<class T>
-
-/**
- * @brief Initializes fleeing movement and clears creature targets when needed.
- *
- * @param owner The unit using the movement generator.
- */
-void FleeingMovementGenerator<T>::Initialize(T& owner)
+void FleeingMovementGenerator::Initialize(Unit& owner)
 {
     owner.addUnitState(UNIT_STAT_FLEEING | UNIT_STAT_FLEEING_MOVE);
     owner.StopMoving();
 
     if (owner.GetTypeId() == TYPEID_UNIT)
     {
-        ((Creature&) owner).SetWalk(false, false);
+        static_cast<Creature&>(owner).SetWalk(false, false);
         owner.SetTargetGuid(ObjectGuid());
     }
 
-    _setTargetLocation(owner);
+    m_restTime.Reset(0);
+    m_haveFleePoint = false;
+    ResetLeg();
 }
 
-template<>
-
-/**
- * @brief Finalizes fleeing movement for a player.
- *
- * @param owner The player using the movement generator.
- */
-void FleeingMovementGenerator<Player>::Finalize(Player& owner)
-{
-    owner.clearUnitState(UNIT_STAT_FLEEING | UNIT_STAT_FLEEING_MOVE);
-    owner.StopMoving();
-}
-
-template<>
-
-/**
- * @brief Finalizes fleeing movement for a creature and restores walk state.
- *
- * @param owner The creature using the movement generator.
- */
-void FleeingMovementGenerator<Creature>::Finalize(Creature& owner)
-{
-    owner.SetWalk(!owner.hasUnitState(UNIT_STAT_RUNNING_STATE), false);
-    owner.clearUnitState(UNIT_STAT_FLEEING | UNIT_STAT_FLEEING_MOVE);
-}
-
-template<class T>
-
-/**
- * @brief Interrupts fleeing movement while keeping the flee state active.
- *
- * @param owner The unit using the movement generator.
- */
-void FleeingMovementGenerator<T>::Interrupt(T& owner)
-{
-    owner.InterruptMoving();
-    // Flee state still applied while movegen disabled
-    owner.clearUnitState(UNIT_STAT_FLEEING_MOVE);
-}
-
-template<class T>
-
-/**
- * @brief Resets fleeing movement by reinitializing the generator.
- *
- * @param owner The unit using the movement generator.
- */
-void FleeingMovementGenerator<T>::Reset(T& owner)
+void FleeingMovementGenerator::Reset(Unit& owner)
 {
     Initialize(owner);
 }
 
-template<class T>
+void FleeingMovementGenerator::Interrupt(Unit& owner)
+{
+    owner.InterruptMoving();
+    // The flee state itself outlives the generator being suspended.
+    owner.clearUnitState(UNIT_STAT_FLEEING_MOVE);
+    m_haveFleePoint = false;
+    ResetLeg();
+}
 
-/**
- * @brief Updates fleeing movement and picks a new path when the timer expires.
- *
- * @param owner The unit using the movement generator.
- * @param time_diff The elapsed update time in milliseconds.
- * @return true while the generator remains active; otherwise false.
- */
-bool FleeingMovementGenerator<T>::Update(T& owner, const uint32& time_diff)
+void FleeingMovementGenerator::Finalize(Unit& owner)
+{
+    if (owner.GetTypeId() == TYPEID_UNIT)
+    {
+        static_cast<Creature&>(owner).SetWalk(!owner.hasUnitState(UNIT_STAT_RUNNING_STATE), false);
+    }
+    else
+    {
+        owner.StopMoving();
+    }
+
+    owner.clearUnitState(UNIT_STAT_FLEEING | UNIT_STAT_FLEEING_MOVE);
+}
+
+Motion::MoveIntent FleeingMovementGenerator::Intent(Unit& owner,
+                                                    Motion::MoveStatus const& status,
+                                                    uint32 diff)
 {
     if (!owner.IsAlive())
     {
-        return false;
+        return Motion::MoveIntent::Done();
     }
 
-    // Ignore if the unit is in a state where it cannot react or move, except for fleeing
+    // Ignore while any OTHER no-reaction or no-move state applies.
     if (owner.hasUnitState((UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_NOT_MOVE) & ~UNIT_STAT_FLEEING))
     {
         owner.clearUnitState(UNIT_STAT_FLEEING_MOVE);
-        return true;
+        return Motion::MoveIntent::Hold();
     }
 
-    i_nextCheckTime.Update(time_diff);
-    if (i_nextCheckTime.Passed() && owner.movespline->Finalized())
+    // Nowhere to run THAT way: pick a different bearing in a moment.
+    if (status.blocked)
     {
-        _setTargetLocation(owner);
+        m_haveFleePoint = false;
+        m_restTime.Reset(RETRY_DELAY);
     }
 
-    return true;
+    if (status.traveling && m_haveFleePoint)
+    {
+        return Motion::MoveIntent::Move(m_fleePoint, Motion::MOVE_REQUIRE_PATH);
+    }
+
+    // Standing: catch a breath before the next bolt.
+    m_restTime.Update(diff);
+    if (!m_restTime.Passed())
+    {
+        return Motion::MoveIntent::Hold();
+    }
+
+    const auto point = PickFleePoint(owner);
+    if (!point)
+    {
+        m_restTime.Reset(RETRY_DELAY);
+        return Motion::MoveIntent::Hold();
+    }
+
+    owner.addUnitState(UNIT_STAT_FLEEING_MOVE);
+    m_fleePoint = *point;
+    m_haveFleePoint = true;
+    m_restTime.Reset(urand(REST_AFTER_BOLT_MIN, REST_AFTER_BOLT_MAX));
+
+    return Motion::MoveIntent::Move(m_fleePoint, Motion::MOVE_REQUIRE_PATH)
+        .WithinLength(FLEE_PATH_LENGTH_LIMIT);
 }
 
-// Template instantiations for Player and Creature
-template void FleeingMovementGenerator<Player>::Initialize(Player&);
-template void FleeingMovementGenerator<Creature>::Initialize(Creature&);
-template bool FleeingMovementGenerator<Player>::_getPoint(Player&, float&, float&, float&);
-template bool FleeingMovementGenerator<Creature>::_getPoint(Creature&, float&, float&, float&);
-template void FleeingMovementGenerator<Player>::_setTargetLocation(Player&);
-template void FleeingMovementGenerator<Creature>::_setTargetLocation(Creature&);
-template void FleeingMovementGenerator<Player>::Interrupt(Player&);
-template void FleeingMovementGenerator<Creature>::Interrupt(Creature&);
-template void FleeingMovementGenerator<Player>::Reset(Player&);
-template void FleeingMovementGenerator<Creature>::Reset(Creature&);
-template bool FleeingMovementGenerator<Player>::Update(Player&, const uint32&);
-template bool FleeingMovementGenerator<Creature>::Update(Creature&, const uint32&);
+Motion::MoveIntent TimedFleeingMovementGenerator::Intent(Unit& owner,
+                                                         Motion::MoveStatus const& status,
+                                                         uint32 diff)
+{
+    m_totalFleeTime.Update(diff);
+    if (m_totalFleeTime.Passed())
+    {
+        return Motion::MoveIntent::Done();
+    }
 
-/**
- * @brief Finalizes the TimedFleeingMovementGenerator.
- * @param owner Reference to the unit.
- */
+    return FleeingMovementGenerator::Intent(owner, status, diff);
+}
+
 void TimedFleeingMovementGenerator::Finalize(Unit& owner)
 {
     owner.clearUnitState(UNIT_STAT_FLEEING | UNIT_STAT_FLEEING_MOVE);
+
+    // The panic is over: go back to whatever it was that frightened us.
     if (Unit* victim = owner.getVictim())
     {
         if (owner.IsAlive())
         {
             owner.AttackStop(true);
-            ((Creature*)&owner)->AI()->AttackStart(victim);
+            static_cast<Creature&>(owner).AI()->AttackStart(victim);
         }
     }
-}
-
-/**
- * @brief Updates the TimedFleeingMovementGenerator.
- * @param owner Reference to the unit.
- * @param time_diff Time difference.
- * @return True if the update was successful, false otherwise.
- */
-bool TimedFleeingMovementGenerator::Update(Unit& owner, const uint32& time_diff)
-{
-    if (!owner.IsAlive())
-    {
-        return false;
-    }
-
-    // Ignore if the unit is in a state where it cannot react or move, except for fleeing
-    if (owner.hasUnitState((UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_NOT_MOVE) & ~UNIT_STAT_FLEEING))
-    {
-        owner.clearUnitState(UNIT_STAT_FLEEING_MOVE);
-        return true;
-    }
-
-    i_totalFleeTime.Update(time_diff);
-    if (i_totalFleeTime.Passed())
-    {
-        return false;
-    }
-
-    // This calls the grandparent Update method hidden by FleeingMovementGenerator::Update(Creature &, const uint32 &) version
-    // This is done instead of casting Unit& to Creature& and calling the parent method, so we can use Unit directly
-    return MovementGeneratorMedium< Creature, FleeingMovementGenerator<Creature> >::Update(owner, time_diff);
 }

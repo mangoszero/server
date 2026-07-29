@@ -1,3 +1,6 @@
+#include <string>
+#include <vector>
+#include <set>
 #include "../botpch.h"
 #include "PlayerbotAIConfig.h"
 #include "playerbot.h"
@@ -7,7 +10,6 @@
 
 using namespace std;
 
-INSTANTIATE_SINGLETON_1(PlayerbotAIConfig);
 
 /**
  * @brief Constructor for PlayerbotAIConfig.

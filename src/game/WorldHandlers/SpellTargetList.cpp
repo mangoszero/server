@@ -45,6 +45,7 @@
 
 
 
+#include <cmath>
 #include "Spell.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
@@ -64,12 +65,11 @@
 #include "Group.h"
 #include "UpdateData.h"
 #include "MapManager.h"
-#include "ObjectAccessor.h"
+#include "ObjectLookup.h"
 #include "CellImpl.h"
 #include "Policies/Singleton.h"
 #include "SharedDefines.h"
 #include "LootMgr.h"
-#include "VMapFactory.h"
 #include "BattleGround/BattleGround.h"
 #include "Util.h"
 #include "Chat.h"
@@ -165,7 +165,7 @@ void Spell::FillTargetMap()
                             {
                                 if (m_caster->GetTypeId() == TYPEID_PLAYER)
                                 {
-                                    if (Unit* target = sObjectAccessor.Instance().GetUnit(*m_caster, ((Player*)m_caster)->GetSelectionGuid()))
+                                    if (Unit* target = ObjectLookup::GetUnit(*m_caster, ((Player*)m_caster)->GetSelectionGuid()))
                                     {
                                         if (!m_caster->IsFriendlyTo(target))
                                         {
@@ -186,7 +186,7 @@ void Spell::FillTargetMap()
                         case TARGET_AREAEFFECT_INSTANT:     // use B case that not dependent from from A in fact
                             if ((m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION) == 0)
                             {
-                                m_targets.setDestination(m_caster->GetPositionX(), m_caster->GetPositionY(), m_caster->GetPositionZ());
+                                m_targets.setDestination(m_caster->Where().X(), m_caster->Where().Y(), m_caster->Where().Z());
                             }
                             SetTargetMap(SpellEffectIndex(i), m_spellInfo->ImplicitTargetB[i], tmpUnitLists[i /*==effToIndex[i]*/]);
                             break;
@@ -216,7 +216,7 @@ void Spell::FillTargetMap()
                             {
                                 if (WorldObject* castObject = GetCastingObject())
                                 {
-                                    m_targets.setDestination(castObject->GetPositionX(), castObject->GetPositionY(), castObject->GetPositionZ());
+                                    m_targets.setDestination(castObject->Where().X(), castObject->Where().Y(), castObject->Where().Z());
                                 }
                             }
                             SetTargetMap(SpellEffectIndex(i), m_spellInfo->ImplicitTargetB[i], tmpUnitLists[i /*==effToIndex[i]*/]);
@@ -559,16 +559,16 @@ void Spell::AddUnitTarget(Unit* pVictim, SpellEffectIndex effIndex)
         {
             if (m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION)
             {
-                dist = affectiveObject->GetDistance(m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ);
+                dist = affectiveObject->Where().DistanceTo(Geometry::Vector3(m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ));
             }
             else                                            // Must have Source Target
             {
-                dist = affectiveObject->GetDistance(m_targets.m_srcX, m_targets.m_srcY, m_targets.m_srcZ);
+                dist = affectiveObject->Where().DistanceTo(Geometry::Vector3(m_targets.m_srcX, m_targets.m_srcY, m_targets.m_srcZ));
             }
         }
         else                                                // normal unit target, take distance
         {
-            dist = affectiveObject->GetDistance(pVictim->GetPositionX(), pVictim->GetPositionY(), pVictim->GetPositionZ());
+            dist = affectiveObject->Where().DistanceTo(Geometry::Vector3(pVictim->Where().X(), pVictim->Where().Y(), pVictim->Where().Z()));
         }
 
         if (dist < 5.0f)
@@ -619,7 +619,7 @@ void Spell::AddUnitTarget(Unit* pVictim, SpellEffectIndex effIndex)
  */
 void Spell::AddUnitTarget(ObjectGuid unitGuid, SpellEffectIndex effIndex)
 {
-    if (Unit* unit = m_caster->GetObjectGuid() == unitGuid ? m_caster : sObjectAccessor.GetUnit(*m_caster, unitGuid))
+    if (Unit* unit = m_caster->GetObjectGuid() == unitGuid ? m_caster : ObjectLookup::GetUnit(*m_caster, unitGuid))
     {
         AddUnitTarget(unit, effIndex);
     }
@@ -665,7 +665,7 @@ void Spell::AddGOTarget(GameObject* pVictim, SpellEffectIndex effIndex)
     if (speed > 0.0f && affectiveObject && pVictim != affectiveObject)
     {
         // calculate spell incoming interval
-        float dist = affectiveObject->GetDistance(pVictim->GetPositionX(), pVictim->GetPositionY(), pVictim->GetPositionZ());
+        float dist = affectiveObject->Where().DistanceTo(Geometry::Vector3(pVictim->Where().X(), pVictim->Where().Y(), pVictim->Where().Z()));
         if (dist < 5.0f)
         {
             dist = 5.0f;

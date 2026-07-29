@@ -29,7 +29,14 @@
 #ifndef MANGOS_H_WORLDSESSION
 #define MANGOS_H_WORLDSESSION
 
-#include "Common.h"
+#include "Common/ServerDefines.h"
+#include "Platform/Define.h"
+#include "Common/Locales.h"
+#include <ctime>
+#include <string>
+#include <vector>
+#include <list>
+#include "SessionProtocolPolicy.h"
 #include "Auth/BigNumber.h"
 #include "SharedDefines.h"
 #include "ObjectGuid.h"
@@ -931,9 +938,7 @@ class WorldSession
         TutorialDataState m_tutorialState;
         uint32 m_clientTimeDelay;
         ObjectGuid m_npcWatchLastGuid;
-        std::chrono::steady_clock::time_point m_lastPingTime;
-        bool m_hasPinged;
-        uint32 m_overSpeedPings;
+        SessionPingTracker m_pingTracker;
 };
 #endif
 /// @}

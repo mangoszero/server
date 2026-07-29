@@ -32,6 +32,7 @@
  * - Target area of effect selection
  */
 
+#include <string>
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "Player.h"

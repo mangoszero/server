@@ -25,16 +25,18 @@
 #ifndef _WHEATYEXCEPTIONREPORT_
 #define _WHEATYEXCEPTIONREPORT_
 
+// <dbghelp.h> is not self-contained: it is built on the Windows base types and will not
+// parse unless <windows.h> has been seen first.
+#include <windows.h>
 #include <dbghelp.h>
 
-#ifndef countof
-#if _MSC_VER < 1400
-#   define countof(array)   (sizeof(array) / sizeof(array[0]))
-#else
-#   include <stdlib.h>
-#   define countof  _countof
-#endif                                                      // _MSC_VER < 1400
-#endif                                                      // countof
+// countof comes from Platform/Define.h as a constexpr function template. This
+// header used to define it as a macro (guarded on _MSC_VER < 1400, i.e. Visual
+// Studio 2005), and a macro wins over any declaration that follows it -- so in
+// any translation unit that reached this header first, the expansion landed in
+// the middle of Define.h's template and broke the parse. The compiler it was
+// written for predates the minimum this tree supports by twenty years.
+#include "Platform/Define.h"
 
 enum BasicType                                              // Stolen from CVCONST.H in the DIA 2.0 SDK
 {
@@ -60,38 +62,38 @@ enum BasicType                                              // Stolen from CVCON
 
 const char* const rgBaseType[] =
 {
-        " <user defined> ",                                     // btNoType = 0,
-        " void ",                                               // btVoid = 1,
-        " char* ",                                              // btChar = 2,
-        " wchar_t* ",                                           // btWChar = 3,
-        " signed char ",
-        " unsigned char ",
-        " int ",                                                // btInt = 6,
-        " unsigned int ",                                       // btUInt = 7,
-        " float ",                                              // btFloat = 8,
-        " <BCD> ",                                              // btBCD = 9,
-        " bool ",                                               // btBool = 10,
-        " short ",
-        " unsigned short ",
-        " long ",                                               // btLong = 13,
-        " unsigned long ",                                      // btULong = 14,
-        " __int8 ",
-        " __int16 ",
-        " __int32 ",
-        " __int64 ",
-        " __int128 ",
-        " unsigned __int8 ",
-        " unsigned __int16 ",
-        " unsigned __int32 ",
-        " unsigned __int64 ",
-        " unsigned __int128 ",
-        " <currency> ",                                         // btCurrency = 25,
-        " <date> ",                                             // btDate = 26,
-        " VARIANT ",                                            // btVariant = 27,
-        " <complex> ",                                          // btComplex = 28,
-        " <bit> ",                                              // btBit = 29,
-        " BSTR ",                                               // btBSTR = 30,
-        " HRESULT "                                             // btHresult = 31
+    " <user defined> ",                                     // btNoType = 0,
+    " void ",                                               // btVoid = 1,
+    " char* ",                                              // btChar = 2,
+    " wchar_t* ",                                           // btWChar = 3,
+    " signed char ",
+    " unsigned char ",
+    " int ",                                                // btInt = 6,
+    " unsigned int ",                                       // btUInt = 7,
+    " float ",                                              // btFloat = 8,
+    " <BCD> ",                                              // btBCD = 9,
+    " bool ",                                               // btBool = 10,
+    " short ",
+    " unsigned short ",
+    " long ",                                               // btLong = 13,
+    " unsigned long ",                                      // btULong = 14,
+    " __int8 ",
+    " __int16 ",
+    " __int32 ",
+    " __int64 ",
+    " __int128 ",
+    " unsigned __int8 ",
+    " unsigned __int16 ",
+    " unsigned __int32 ",
+    " unsigned __int64 ",
+    " unsigned __int128 ",
+    " <currency> ",                                         // btCurrency = 25,
+    " <date> ",                                             // btDate = 26,
+    " VARIANT ",                                            // btVariant = 27,
+    " <complex> ",                                          // btComplex = 28,
+    " <bit> ",                                              // btBit = 29,
+    " BSTR ",                                               // btBSTR = 30,
+    " HRESULT "                                             // btHresult = 31
 };
 
 class WheatyExceptionReport
@@ -116,7 +118,7 @@ class WheatyExceptionReport
         // Helper functions
         static LPTSTR GetExceptionString(DWORD dwCode);
         static BOOL GetLogicalAddress(PVOID addr, PTSTR szModule, DWORD len,
-            DWORD& section, DWORD_PTR& offset);
+                                      DWORD& section, DWORD_PTR& offset);
 
         static void WriteStackDetails(PCONTEXT pContext, bool bWriteVariables, HANDLE pThreadHandle);
 

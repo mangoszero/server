@@ -25,7 +25,9 @@
 #ifndef MANGOS_GRIDDEFINES_H
 #define MANGOS_GRIDDEFINES_H
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Common/TimeConstants.h"
+#include <algorithm>
 #include "GameSystem/NGrid.h"
 #include <cmath>
 

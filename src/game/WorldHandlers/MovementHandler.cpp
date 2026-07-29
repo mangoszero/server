@@ -52,7 +52,9 @@
  * authoritative position to prevent cheating.
  */
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Common/TimeConstants.h"
+#include <ctime>
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "OpcodeTable.h"
@@ -60,6 +62,8 @@
 #include "Player.h"
 #include "MapManager.h"
 #include "Transports.h"
+#include "TransportMap.h"
+#include <cmath>
 #include "BattleGround/BattleGround.h"
 #include "WaypointMovementGenerator.h"
 #include "MapPersistentStateMgr.h"
@@ -90,8 +94,9 @@ void WorldSession::HandleMoveWorldportAckOpcode()
     }
 
     // get start teleport coordinates (will used later in fail case)
-    WorldLocation old_loc;
-    GetPlayer()->GetPosition(old_loc);
+    WorldLocation old_loc(GetPlayer()->GetMapId(),
+                          GetPlayer()->Where().X(), GetPlayer()->Where().Y(),
+                          GetPlayer()->Where().Z(), GetPlayer()->Where().Facing());
 
     // get the teleport destination
     WorldLocation& loc = GetPlayer()->GetTeleportDest();
@@ -158,12 +163,22 @@ void WorldSession::HandleMoveWorldportAckOpcode()
     }
 
     GetPlayer()->SetMap(map);
-    GetPlayer()->Relocate(loc.coord_x, loc.coord_y, loc.coord_z, loc.orientation);
+    GetPlayer()->Place().MoveTo(loc.coord_x, loc.coord_y, loc.coord_z, loc.orientation);
+
+    // The client threw away every object it had when it left the old map, so the set of
+    // "things he already has" is now a lie in the one direction that hurts: anything still
+    // listed here will be skipped by UpdateVisibilityOf and never sent again. That
+    // includes the vessel he is standing on, which exists on both sides of the seam and so
+    // keeps its guid across it.
+    GetPlayer()->m_clientGUIDs.clear();
 
     GetPlayer()->SendInitialPacketsBeforeAddToMap();
     // the CanEnter checks are done in TeleporTo but conditions may change
     // while the player is in transit, for example the map may get full
-    if (!GetPlayer()->GetMap()->Add(GetPlayer()))
+    // Aboard, this is HER map, not the one just named in SMSG_NEW_WORLD -- see
+    // Player::BoardingMap. The client is loading the world map she sails and never learns
+    // the other one exists.
+    if (!GetPlayer()->BoardingMap()->Add(GetPlayer()))
     {
         // if player wasn't added to map, reset his map pointer!
         GetPlayer()->ResetMap();
@@ -283,14 +298,14 @@ void WorldSession::HandleMoveTeleportAckOpcode(WorldPacket& recv_data)
 
     plMover->SetSemaphoreTeleportNear(false);
 
-    uint32 old_zone = plMover->GetZoneId();
+    uint32 old_zone = plMover->GetTerrain()->GetZoneId(plMover->Where().X(), plMover->Where().Y(), plMover->Where().Z());
 
     WorldLocation const& dest = plMover->GetTeleportDest();
 
     plMover->SetPosition(dest.coord_x, dest.coord_y, dest.coord_z, dest.orientation, true);
 
     uint32 newzone, newarea;
-    plMover->GetZoneAndAreaId(newzone, newarea);
+    plMover->GetTerrain()->GetZoneAndAreaId(newzone, newarea, plMover->Where().X(), plMover->Where().Y(), plMover->Where().Z());
     plMover->UpdateZone(newzone, newarea);
 
     // new zone
@@ -362,31 +377,6 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
     data << mover->GetPackGUID();             // write guid
     movementInfo.Write(data);                               // write data
     mover->SendMessageToSetExcept(&data, _player);
-    // Fix for seeing movement by fellow transport passengers
-    if (plMover && plMover->GetTransport())
-    {
-        Transport* transport = plMover->GetTransport();
-        float visibilityDist = mover->GetMap()->GetVisibilityDistance();
-        for (UnitSet::const_iterator itr = transport->GetPassengers().begin(); itr != transport->GetPassengers().end(); ++itr)
-        {
-            if (*itr == mover || (*itr)->GetTypeId() != TYPEID_PLAYER)
-            {
-                continue;
-            }
-            Player* passenger = static_cast<Player*>(*itr);
-            if (passenger == _player)
-            {
-                continue;
-            }
-            if (!mover->IsWithinDist(passenger, visibilityDist, false))
-            {
-                if (WorldSession* session = passenger->GetSession())
-                {
-                    session->SendPacket(&data);
-                }
-            }
-        }
-    }
 }
 
 /**
@@ -740,34 +730,57 @@ void WorldSession::HandleMoverRelocation(MovementInfo& movementInfo)
                     if ((*iter)->GetObjectGuid() == movementInfo.GetTransportGuid())
                     {
                         plMover->m_transport = (*iter);
-                        (*iter)->AddPassenger(plMover);
-                        break;
-                    }
-                }
-                // also check local transports (lifts/elevators) which are per-map only
-                if (!plMover->m_transport)
-                {
-                    for (Transport* lt : plMover->GetMap()->GetLocalTransports())
-                    {
-                        if (lt->GetObjectGuid() == movementInfo.GetTransportGuid())
+
+                        // He walked aboard, so his client already has the vessel and is
+                        // rendering the map she sails; moving him onto her own map is safe
+                        // at once. Nothing tells the client -- it never learns that id.
+                        if (TransportMap* hull = (*iter)->AsMap())
                         {
-                            plMover->m_transport = lt;
-                            lt->AddPassenger(plMover);
-                            break;
+                            hull->Embark(plMover);
                         }
+                        break;
                     }
                 }
             }
         }
         else if (plMover->m_transport)               // if we were on a transport, leave
         {
-            plMover->m_transport->RemovePassenger(plMover);
+            // He walked ashore, and his own client just told us where: that world point is
+            // better than anything we could derive from a hull whose pose we only estimate.
+            //
+            // BUT ONLY IF IT IS NEXT TO THE SHIP. Nobody steps off a vessel onto another
+            // continent, and the number in this field is not always his: while he is aboard
+            // we tell him his world position is (0, 0, 0), and he echoes it straight back.
+            // Drop the flag for one packet -- the client does, on arrival, before it has
+            // resolved the hull -- and that zero is read as a destination. (0, 0, 0) on map
+            // 0 is the middle of Lordamere Lake, which is exactly where people landed.
+            if (TransportMap* hull = plMover->m_transport->AsMap())
+            {
+                Transport* vessel = plMover->m_transport;
+
+                const float reach = hull->HullRadius() + vessel->NodeSlack() +
+                                    DECK_EDGE_MARGIN;
+
+                const bool ashore = vessel->Where().WithinDist(
+                    Geometry::Vector3(movementInfo.GetPos()->x, movementInfo.GetPos()->y,
+                                      movementInfo.GetPos()->z), reach);
+
+                if (ashore)
+                {
+                    hull->Disembark(plMover, movementInfo.GetPos()->x,
+                                    movementInfo.GetPos()->y, movementInfo.GetPos()->z,
+                                    movementInfo.GetPos()->o);
+                }
+                else
+                {
+                    // Not a step ashore at all. Put him down on the ship's own coarse pose:
+                    // wrong by a hull's length at worst, instead of by a continent.
+                    hull->Disembark(plMover, vessel->Where().X(), vessel->Where().Y(),
+                                    vessel->Where().Z(), vessel->Where().Facing());
+                }
+            }
             plMover->m_transport = NULL;
             movementInfo.ClearTransportData();
-            if (plMover->GetPet())
-            {
-                plMover->GetPet()->UpdateTransport(plMover);
-            }
         }
 
         if (movementInfo.HasMovementFlag(MOVEFLAG_SWIMMING) != plMover->IsInWater())
@@ -776,8 +789,25 @@ void WorldSession::HandleMoverRelocation(MovementInfo& movementInfo)
             plMover->SetInWater(!plMover->IsInWater() || plMover->GetMap()->GetTerrain()->IsUnderWater(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z));
         }
 
-        plMover->SetPosition(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z, movementInfo.GetPos()->o);
+        // Aboard, the deck offset IS his position: it is what the client computed against
+        // the hull it is drawing, and the world pair in the same packet describes a place
+        // on a map he is no longer filed under. Ashore, the two are the same packet field.
+        if (plMover->m_transport && plMover->GetMap()->AsTransport())
+        {
+            const Position* offset = movementInfo.GetTransportPos();
+            plMover->SetPosition(offset->x, offset->y, offset->z, offset->o);
+        }
+        else
+        {
+            plMover->SetPosition(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z, movementInfo.GetPos()->o);
+        }
         plMover->m_movementInfo = movementInfo;
+
+        // Event-driven, straight off this packet: it carries the whole transport state, and
+        // the pet is linked to the player, so mirror it onto his minions -- put them on a
+        // type-11 lift he has stepped onto, keep them at his heel as it rises, take them off
+        // when he leaves. No polling; the pet moves exactly when its master reports moving.
+        plMover->UpdateLiftMinions();
 
         /* Movement should cancel looting */
         if (ObjectGuid lootGUID = plMover->GetLootGuid())

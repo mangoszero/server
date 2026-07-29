@@ -196,13 +196,13 @@ bool OutdoorPvPSI::HandleDropFlag(Player* player, uint32 spellId)
     switch (player->GetTeam())
     {
         case ALLIANCE:
-            if (player->IsWithinDist3d(silithusFlagDropLocations[0].x, silithusFlagDropLocations[0].y, silithusFlagDropLocations[0].z, 5.0f))
+            if (player->Where().WithinDist(Geometry::Vector3(silithusFlagDropLocations[0].x, silithusFlagDropLocations[0].y, silithusFlagDropLocations[0].z), 5.0f))
             {
                 return false;
             }
             break;
         case HORDE:
-            if (player->IsWithinDist3d(silithusFlagDropLocations[1].x, silithusFlagDropLocations[1].y, silithusFlagDropLocations[1].z, 5.0f))
+            if (player->Where().WithinDist(Geometry::Vector3(silithusFlagDropLocations[1].x, silithusFlagDropLocations[1].y, silithusFlagDropLocations[1].z), 5.0f))
             {
                 return false;
             }

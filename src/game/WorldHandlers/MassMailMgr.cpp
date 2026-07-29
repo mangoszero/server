@@ -47,15 +47,14 @@
  * @see MailDraft for the mail content template
  */
 
+#include <sstream>
 #include "MassMailMgr.h"
 #include "Policies/Singleton.h"
 #include "Database/DatabaseEnv.h"
-#include "Database/DatabaseImpl.h"
 #include "SharedDefines.h"
 #include "World.h"
 #include "ObjectMgr.h"
 
-INSTANTIATE_SINGLETON_1(MassMailMgr);
 
 /**
  * @brief Add mass mail task filtered by race mask
@@ -137,7 +136,10 @@ struct MassMailerQueryHandler
  */
 void MassMailMgr::AddMassMailTask(MailDraft* mailProto, const MailSender &sender, char const* query)
 {
-    CharacterDatabase.AsyncPQuery(&massMailerQueryHandler, &MassMailerQueryHandler::HandleQueryCallback, mailProto, sender, "%s", query);
+    CharacterDatabase.AsyncPQuery([mailProto, sender](QueryResult* result)
+                                  {
+                                      massMailerQueryHandler.HandleQueryCallback(result, mailProto, sender);
+                                  }, "%s", query);
 }
 
 /**

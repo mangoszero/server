@@ -30,80 +30,25 @@
 template<class OBJECT> class GridReference;
 
 template<class OBJECT>
-
-/**
- * @brief
- *
- */
 class GridRefManager : public RefManager<GridRefManager<OBJECT>, OBJECT>
 {
     public:
 
-        /**
-         * @brief
-         *
-         */
         typedef LinkedListHead::Iterator< GridReference<OBJECT> > iterator;
 
-        /**
-         * @brief
-         *
-         * @return GridReference<OBJECT>
-         */
         GridReference<OBJECT>* getFirst()
         {
             return (GridReference<OBJECT>*)RefManager<GridRefManager<OBJECT>, OBJECT>::getFirst();
         }
 
-        /**
-         * @brief
-         *
-         * @return GridReference<OBJECT>
-         */
         GridReference<OBJECT>* getLast()
         {
             return (GridReference<OBJECT>*)RefManager<GridRefManager<OBJECT>, OBJECT>::getLast();
         }
 
-        /**
-         * @brief
-         *
-         * @return iterator
-         */
-        iterator begin()
-        {
-            return iterator(getFirst());
-        }
-
-        /**
-         * @brief
-         *
-         * @return iterator
-         */
-        iterator end()
-        {
-            return iterator(nullptr);
-        }
-
-        /**
-         * @brief
-         *
-         * @return iterator
-         */
-        iterator rbegin()
-        {
-            return iterator(getLast());
-        }
-
-        /**
-         * @brief
-         *
-         * @return iterator
-         */
-        iterator rend()
-        {
-            return iterator(nullptr);
-        }
-
+        iterator begin() { return iterator(getFirst()); }
+        iterator end() { return iterator(nullptr); }
+        iterator rbegin() { return iterator(getLast()); }
+        iterator rend() { return iterator(nullptr); }
 };
 #endif

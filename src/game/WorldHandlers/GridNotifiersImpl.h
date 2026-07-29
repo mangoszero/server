@@ -149,7 +149,9 @@ inline void MaNGOS::DynamicObjectUpdater::VisitHelper(Unit* target)
         return;
     }
 
-    if (!i_dynobject.IsWithinDistInMap(target, i_dynobject.GetRadius()))
+    // Deck-aware: for an effect on a transport this measures the local separation, so the
+    // world position the server is only guessing at never enters the test.
+    if (!i_dynobject.IsInEffectRange(target))
     {
         return;
     }

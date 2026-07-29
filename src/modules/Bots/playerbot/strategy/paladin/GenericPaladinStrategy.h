@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include "../Strategy.h"
 #include "PaladinAiObjectContext.h"
 #include "../generic/MeleeCombatStrategy.h"

@@ -39,11 +39,13 @@
  * determine how items are distributed among party members.
  */
 
-#include "Common.h"
+#include <cmath>
+#include "Platform/Define.h"
+#include <vector>
 #include "WorldPacket.h"
 #include "Log.h"
 #include "Player.h"
-#include "ObjectAccessor.h"
+#include "PlayerRegistry.h"
 #include "ObjectGuid.h"
 #include "WorldSession.h"
 #include "LootMgr.h"
@@ -51,6 +53,7 @@
 #include "GameObject.h"
 #include "Group.h"
 #include "World.h"
+#include "Corpse.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -74,7 +77,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
             GameObject* go = player->GetMap()->GetGameObject(lguid);
 
             // not check distance for GO in case owned GO (fishing bobber case, for example) or Fishing hole GO
-            if (!go || ((go->GetOwnerGuid() != _player->GetObjectGuid() && go->GetGoType() != GAMEOBJECT_TYPE_FISHINGHOLE) && !go->IsWithinDistInMap(_player, INTERACTION_DISTANCE)))
+            if (!go || ((go->GetOwnerGuid() != _player->GetObjectGuid() && go->GetGoType() != GAMEOBJECT_TYPE_FISHINGHOLE) && !InReach(*go, *_player, INTERACTION_DISTANCE)))
             {
                 player->SendLootRelease(lguid);
                 return;
@@ -113,7 +116,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
 
             bool ok_loot = pCreature && pCreature->IsAlive() == (player->getClass() == CLASS_ROGUE && pCreature->lootForPickPocketed);
 
-            if (!ok_loot || !pCreature->IsWithinDistInMap(_player, INTERACTION_DISTANCE))
+            if (!ok_loot || !InReach(*pCreature, *_player, INTERACTION_DISTANCE))
             {
                 player->SendLootRelease(lguid);
                 return;
@@ -273,7 +276,7 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
             GameObject* pGameObject = GetPlayer()->GetMap()->GetGameObject(guid);
 
             // not check distance for GO in case owned GO (fishing bobber case, for example)
-            if (pGameObject && (pGameObject->GetOwnerGuid() == _player->GetObjectGuid() || pGameObject->IsWithinDistInMap(_player, INTERACTION_DISTANCE)))
+            if (pGameObject && (pGameObject->GetOwnerGuid() == _player->GetObjectGuid() || InReach(*pGameObject, *_player, INTERACTION_DISTANCE)))
             {
                 pLoot = &pGameObject->loot;
             }
@@ -286,7 +289,7 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
         {
             Corpse* bones = _player->GetMap()->GetCorpse(guid);
 
-            if (bones && bones->IsWithinDistInMap(_player, INTERACTION_DISTANCE))
+            if (bones && InReach(*bones, *_player, INTERACTION_DISTANCE))
             {
                 pLoot = &bones->loot;
                 pLoot->NotifyMoneyRemoved();
@@ -322,7 +325,7 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
 
             bool ok_loot = pCreature && pCreature->IsAlive() == (player->getClass() == CLASS_ROGUE && pCreature->lootForPickPocketed);
 
-            if (ok_loot && pCreature->IsWithinDistInMap(_player, INTERACTION_DISTANCE))
+            if (ok_loot && InReach(*pCreature, *_player, INTERACTION_DISTANCE))
             {
                 pLoot = &pCreature->loot ;
             }
@@ -356,7 +359,7 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
                     {
                         continue;
                     }
-                    if (player->IsWithinDistInMap(playerGroup, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
+                    if (InReach(*player, *playerGroup, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
                     {
                         playersNear.push_back(playerGroup);
                     }
@@ -464,7 +467,7 @@ void WorldSession::DoLootRelease(ObjectGuid lguid)
             GameObject* go = GetPlayer()->GetMap()->GetGameObject(lguid);
 
             // not check distance for GO in case owned GO (fishing bobber case, for example) or Fishing hole GO
-            if (!go || ((go->GetOwnerGuid() != _player->GetObjectGuid() && go->GetGoType() != GAMEOBJECT_TYPE_FISHINGHOLE) && !go->IsWithinDistInMap(_player, INTERACTION_DISTANCE)))
+            if (!go || ((go->GetOwnerGuid() != _player->GetObjectGuid() && go->GetGoType() != GAMEOBJECT_TYPE_FISHINGHOLE) && !InReach(*go, *_player, INTERACTION_DISTANCE)))
             {
                 return;
             }
@@ -569,7 +572,7 @@ void WorldSession::DoLootRelease(ObjectGuid lguid)
             Corpse* corpse = _player->GetMap()->GetCorpse(lguid);
 
             /* If corpse is invalid or not in a valid position, dont allow looting */
-            if (!corpse || !corpse->IsWithinDistInMap(_player, INTERACTION_DISTANCE))
+            if (!corpse || !InReach(*corpse, *_player, INTERACTION_DISTANCE))
             {
                 return;
             }
@@ -627,7 +630,7 @@ void WorldSession::DoLootRelease(ObjectGuid lguid)
             bool ok_loot = (pCreature && // The creature exists (we dont have a null pointer)
                 pCreature->IsAlive() == // Creature is alive and we're a rogue and creature can be pickpocketed
                 (player->getClass() == CLASS_ROGUE && pCreature->lootForPickPocketed));
-            if (!ok_loot || !pCreature->IsWithinDistInMap(_player, INTERACTION_DISTANCE))
+            if (!ok_loot || !InReach(*pCreature, *_player, INTERACTION_DISTANCE))
             {
                 return;
             }
@@ -702,7 +705,7 @@ void WorldSession::HandleLootMasterGiveOpcode(WorldPacket& recv_data)
         return;
     }
 
-    Player* target = sObjectAccessor.FindPlayer(target_playerguid);
+    Player* target = sPlayerRegistry.Find(target_playerguid);
     if (!target)
     {
         return;

@@ -32,6 +32,7 @@
  * - Chat channel management
  */
 
+#include <string>
 #include "Chat.h"
 
 #include "World.h"

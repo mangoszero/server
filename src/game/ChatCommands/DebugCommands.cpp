@@ -33,7 +33,12 @@
  * - AI and path debugging
  */
 
-#include "Common.h"
+#include <cstdlib>
+#include "Platform/Define.h"
+#include <cstring>
+#include <string>
+#include <vector>
+#include <sstream>
 #include "DBCStores.h"
 #include "WorldPacket.h"
 #include "Player.h"
@@ -127,7 +132,7 @@ bool ChatHandler::HandleDebugSendPoiCommand(char* args)
     }
 
     DETAIL_LOG("Command : POI, NPC = %u, icon = %u flags = %u", target->GetGUIDLow(), icon, flags);
-    pPlayer->PlayerTalkClass->SendPointOfInterest(target->GetPositionX(), target->GetPositionY(), Poi_Icon(icon), flags, 30, "Test POI");
+    pPlayer->PlayerTalkClass->SendPointOfInterest(target->Where().X(), target->Where().Y(), Poi_Icon(icon), flags, 30, "Test POI");
     return true;
 }
 
@@ -647,7 +652,7 @@ bool ChatHandler::HandleDebugGetLootRecipientCommand(char* /*args*/)
  */
 bool ChatHandler::HandleDebugSendQuestInvalidMsgCommand(char* args)
 {
-    uint32 msg = atol(args);
+    uint32 msg = std::strtoul(args, NULL, 10);
     m_session->GetPlayer()->SendCanTakeQuestResponse(msg);
     return true;
 }

@@ -25,80 +25,72 @@
 #include "HomeMovementGenerator.h"
 #include "Creature.h"
 #include "CreatureAI.h"
-#include "movement/MoveSplineInit.h"
-#include "movement/MoveSpline.h"
 
-/**
- * @brief Initializes the HomeMovementGenerator by setting the target location for the creature.
- * @param owner Reference to the creature.
- */
-void HomeMovementGenerator<Creature>::Initialize(Creature& owner)
+void HomeMovementGenerator::Initialize(Unit& owner)
 {
-    _setTargetLocation(owner);
-}
+    m_arrived = false;
+    m_haveHome = false;
+    ResetLeg();
 
-/**
- * @brief Resets the HomeMovementGenerator.
- * @param owner Reference to the creature.
- */
-void HomeMovementGenerator<Creature>::Reset(Creature&)
-{
-}
-
-/**
- * @brief Sets the target location for the creature to move to its home position.
- * @param owner Reference to the creature.
- */
-void HomeMovementGenerator<Creature>::_setTargetLocation(Creature& owner)
-{
     if (owner.hasUnitState(UNIT_STAT_NOT_MOVE))
     {
         return;
     }
 
-    Movement::MoveSplineInit init(owner);
+    // MotionMaster::Mutate initializes us BEFORE pushing us, so the stack top here is
+    // still the generator we are evacuating — and it is the only one that knows where
+    // this creature belongs. Ask it now; once we are on top the answer is unreachable.
     float x, y, z, o;
-    // If the motion master is empty or cannot get the reset position, use the respawn coordinates
-    if (owner.GetMotionMaster()->empty() || !owner.GetMotionMaster()->top()->GetResetPosition(owner, x, y, z, o))
-    {
-        owner.GetRespawnCoord(x, y, z, &o);
-    }
-    init.SetFacing(o);
-    init.MoveTo(x, y, z, true);
-    init.SetWalk(false);
-    init.Launch();
+    MotionMaster* motion = owner.GetMotionMaster();
 
-    arrived = false;
+    if (motion->empty() || !motion->top()->GetResetPosition(owner, x, y, z, o))
+    {
+        const Creature& home = static_cast<Creature&>(owner);
+        x = home.Spawn().X();
+        y = home.Spawn().Y();
+        z = home.Spawn().Z();
+        o = home.Spawn().Facing();
+    }
+
+    m_home = Motion::Vector3(x, y, z);
+    m_facing = o;
+    m_haveHome = true;
+
     owner.clearUnitState(UNIT_STAT_ALL_DYN_STATES);
 }
 
-/**
- * @brief Updates the HomeMovementGenerator.
- * @param owner Reference to the creature.
- * @param time_diff Time difference.
- * @return True if the update was successful, false otherwise.
- */
-bool HomeMovementGenerator<Creature>::Update(Creature& owner, const uint32& /*time_diff*/)
+Motion::MoveIntent HomeMovementGenerator::Intent(Unit& /*owner*/,
+                                                 Motion::MoveStatus const& status,
+                                                 uint32 /*diff*/)
 {
-    arrived = owner.movespline->Finalized();
-    return !arrived;
+    // A creature that could not be sent home — it cannot move, or there was no way back
+    // at all — still counts as home. Evade MUST always terminate, or the creature stays
+    // stuck in a fight it has already left.
+    if (!m_haveHome || status.arrived || status.blocked)
+    {
+        m_arrived = true;
+        return Motion::MoveIntent::Done();
+    }
+
+    return Motion::MoveIntent::Move(m_home, Motion::MOVE_NONE,
+                                    Motion::Facing::ToAngle(m_facing));
 }
 
-/**
- * @brief Finalizes the HomeMovementGenerator.
- * @param owner Reference to the creature.
- */
-void HomeMovementGenerator<Creature>::Finalize(Creature& owner)
+void HomeMovementGenerator::Finalize(Unit& owner)
 {
-    if (arrived)
+    if (!m_arrived)
     {
-        if (owner.GetTemporaryFactionFlags() & TEMPFACTION_RESTORE_REACH_HOME)
-        {
-            owner.ClearTemporaryFaction();
-        }
-
-        owner.SetWalk(!owner.hasUnitState(UNIT_STAT_RUNNING_STATE) && !owner.IsLevitating(), false);
-        owner.LoadCreatureAddon(true);
-        owner.AI()->JustReachedHome();
+        return;
     }
+
+    Creature& creature = static_cast<Creature&>(owner);
+
+    if (creature.GetTemporaryFactionFlags() & TEMPFACTION_RESTORE_REACH_HOME)
+    {
+        creature.ClearTemporaryFaction();
+    }
+
+    creature.SetWalk(!creature.hasUnitState(UNIT_STAT_RUNNING_STATE) && !creature.IsLevitating(), false);
+    creature.LoadCreatureAddon(true);
+    creature.AI()->JustReachedHome();
 }

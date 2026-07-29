@@ -40,9 +40,12 @@
 #ifndef MANGOS_MASS_MAIL_MGR_H
 #define MANGOS_MASS_MAIL_MGR_H
 
+#include <unordered_set>
 #include <memory>
 
-#include "Common.h"
+#include "Utilities/Errors.h"
+#include "Platform/Define.h"
+#include <list>
 #include "Mail.h"
 
 /**
@@ -59,7 +62,7 @@ class MassMailMgr
         void GetStatistic(uint32& tasks, uint32& mails, uint32& needTime) const;
 
     public:                                                 // modifiers
-        typedef UNORDERED_SET<uint32> ReceiversList;
+        typedef std::unordered_set<uint32> ReceiversList;
 
         /**
          * And new mass mail task for raceMask filter applied to characters list.

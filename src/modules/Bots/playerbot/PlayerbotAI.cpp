@@ -1,3 +1,7 @@
+#include "Utilities/MathDefines.h"
+#include <cmath>
+#include <string>
+#include <cstdlib>
 #include "../botpch.h"
 #include "PlayerbotMgr.h"
 #include "playerbot.h"
@@ -36,7 +40,7 @@ uint32 PlayerbotChatHandler::extractQuestId(string str)
 {
     char* source = (char*)str.c_str();
     char* cId = ExtractKeyFromLink(&source,"Hquest");
-    return cId ? atol(cId) : 0;
+    return cId ? std::strtoul(cId, NULL, 10) : 0;
 }
 
 /**

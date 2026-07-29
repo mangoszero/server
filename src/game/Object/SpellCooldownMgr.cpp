@@ -33,7 +33,6 @@
 #include "Spell.h"
 #include "DBCStores.h"
 #include "Database/DatabaseEnv.h"
-#include "Database/DatabaseImpl.h"
 
 void SpellCooldownMgr::AddSpellAndCategoryCooldowns(SpellEntry const* spellInfo, uint32 itemId, Spell* spell, bool infinityCooldown)
 {

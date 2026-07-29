@@ -46,7 +46,8 @@
 
 
 #include "Group.h"
-#include "Common.h"
+#include "Platform/Define.h"
+#include <ctime>
 #include "Opcodes.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -54,7 +55,6 @@
 #include "World.h"
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"
-#include "ObjectAccessor.h"
 #include "Util.h"
 #include "Formulas.h"
 #include "BattleGround/BattleGround.h"

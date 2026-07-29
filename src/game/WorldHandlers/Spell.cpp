@@ -43,6 +43,7 @@
  * @see SpellMgr for spell management
  */
 
+#include "Utilities/Errors.h"
 #include "Spell.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
@@ -60,17 +61,17 @@
 #include "DynamicObject.h"
 #include "Group.h"
 #include "UpdateData.h"
-#include "ObjectAccessor.h"
+#include "ObjectLookup.h"
 #include "CellImpl.h"
 #include "Policies/Singleton.h"
 #include "SharedDefines.h"
 #include "LootMgr.h"
-#include "VMapFactory.h"
 #include "BattleGround/BattleGround.h"
 #include "Util.h"
 #include "Chat.h"
 #include "SQLStorages.h"
 #include "DisableMgr.h"
+#include "Corpse.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -124,9 +125,9 @@ void SpellCastTargets::setUnitTarget(Unit* target)
         return;
     }
 
-    m_destX = target->GetPositionX();
-    m_destY = target->GetPositionY();
-    m_destZ = target->GetPositionZ();
+    m_destX = target->Where().X();
+    m_destY = target->Where().Y();
+    m_destZ = target->Where().Z();
     m_unitTarget = target;
     m_unitTargetGUID = target->GetObjectGuid();
     m_targetMask |= TARGET_FLAG_UNIT;
@@ -225,7 +226,7 @@ void SpellCastTargets::Update(Unit* caster)
 {
     m_GOTarget   = m_GOTargetGUID ? caster->GetMap()->GetGameObject(m_GOTargetGUID) : NULL;
     m_unitTarget = m_unitTargetGUID
-        ? (m_unitTargetGUID == caster->GetObjectGuid() ? caster : sObjectAccessor.GetUnit(*caster, m_unitTargetGUID))
+        ? (m_unitTargetGUID == caster->GetObjectGuid() ? caster : ObjectLookup::GetUnit(*caster, m_unitTargetGUID))
         : NULL;
 
     m_itemTarget = NULL;
@@ -267,9 +268,9 @@ void SpellCastTargets::read(ByteBuffer& data, Unit* caster)
 
     if (m_targetMask == TARGET_FLAG_SELF)
     {
-        m_destX = caster->GetPositionX();
-        m_destY = caster->GetPositionY();
-        m_destZ = caster->GetPositionZ();
+        m_destX = caster->Where().X();
+        m_destY = caster->Where().Y();
+        m_destZ = caster->Where().Z();
         m_unitTarget = caster;
         m_unitTargetGUID = caster->GetObjectGuid();
         return;
@@ -556,7 +557,7 @@ bool Spell::IsAliveUnitPresentInTargetList()
     {
         if (ihit->missCondition == SPELL_MISS_NONE && (needAliveTargetMask & ihit->effectMask))
         {
-            Unit* unit = m_caster->GetObjectGuid() == ihit->targetGUID ? m_caster : sObjectAccessor.GetUnit(*m_caster, ihit->targetGUID);
+            Unit* unit = m_caster->GetObjectGuid() == ihit->targetGUID ? m_caster : ObjectLookup::GetUnit(*m_caster, ihit->targetGUID);
 
             // either unit is alive and normal spell, or unit dead and deathonly-spell
             if (unit && (unit->IsAlive() != IsDeathOnlySpell(m_spellInfo)))
@@ -586,10 +587,10 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, Aura* triggeredB
 {
     m_targets = *targets;
 
-    m_castPositionX = m_caster->GetPositionX();
-    m_castPositionY = m_caster->GetPositionY();
-    m_castPositionZ = m_caster->GetPositionZ();
-    m_castOrientation = m_caster->GetOrientation();
+    m_castPositionX = m_caster->Where().X();
+    m_castPositionY = m_caster->Where().Y();
+    m_castPositionZ = m_caster->Where().Z();
+    m_castOrientation = m_caster->Where().Facing();
 
     if (triggeredByAura)
     {
@@ -838,7 +839,7 @@ void Spell::DelayedChannel()
     {
         if ((*ihit).missCondition == SPELL_MISS_NONE)
         {
-            if (Unit* unit = m_caster->GetObjectGuid() == ihit->targetGUID ? m_caster : sObjectAccessor.GetUnit(*m_caster, ihit->targetGUID))
+            if (Unit* unit = m_caster->GetObjectGuid() == ihit->targetGUID ? m_caster : ObjectLookup::GetUnit(*m_caster, ihit->targetGUID))
             {
                 unit->DelaySpellAuraHolder(m_spellInfo->ID, delaytime, unit->GetObjectGuid());
             }
@@ -873,7 +874,7 @@ void Spell::UpdateOriginalCasterPointer()
     }
     else
     {
-        Unit* unit = sObjectAccessor.GetUnit(*m_caster, m_originalCasterGUID);
+        Unit* unit = ObjectLookup::GetUnit(*m_caster, m_originalCasterGUID);
         m_originalCaster = unit && unit->IsInWorld() ? unit : NULL;
     }
 }
@@ -1103,9 +1104,9 @@ bool Spell::IsLockInRange(GameObject* go)
     const SpellRangeEntry* srange = sSpellRangeStore.LookupEntry(m_spellInfo->RangeIndex);
 
     // This check is not related to bounding radius
-    float dx = m_caster->GetPositionX() - go->GetPositionX();
-    float dy = m_caster->GetPositionY() - go->GetPositionY();
-    float dz = m_caster->GetPositionZ() - go->GetPositionZ();
+    float dx = m_caster->Where().X() - go->Where().X();
+    float dy = m_caster->Where().Y() - go->Where().Y();
+    float dz = m_caster->Where().Z() - go->Where().Z();
 
     return (dx * dx + dy * dy + dz * dz < srange->RangeMax);
 }

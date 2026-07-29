@@ -234,8 +234,8 @@ namespace ai
             {
                 Unit* target = AI_VALUE(Unit*, "current target");
                 float minDist = GetMinShootDistance();
-                float reach = bot->GetCombatReach(target, false);
-                if(bot->GetCombatDistance(target, false) > sPlayerbotAIConfig.spellDistance)
+                float reach = CombatReachBetween(*bot, *target, false);
+                if(CombatDistanceBetween(*bot, *target, false) > sPlayerbotAIConfig.spellDistance)
                 {
                     return MoveTo(target, sPlayerbotAIConfig.spellDistance - 1.0);
                 }
@@ -251,7 +251,7 @@ namespace ai
                 {
                     return false;
                 }
-                float distance = bot->GetCombatDistance(target, false);
+                float distance = CombatDistanceBetween(*bot, *target, false);
                 return distance < GetMinShootDistance() || distance > sPlayerbotAIConfig.spellDistance;
             }
     };

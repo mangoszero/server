@@ -41,6 +41,7 @@
  * - CMSG_CHANNEL_UNBAN: Unban from channel
  */
 
+#include <string>
 #include "ObjectMgr.h"                                      // for normalizePlayerName
 #include "ChannelMgr.h"
 #include "OpcodeTable.h"
@@ -69,7 +70,7 @@ void WorldSession::HandleJoinChannelOpcode(WorldPacket& recvPacket)
     char tmpStr[255];
 
     // Current player area id
-    const uint32 playerZoneId = _player->GetZoneId();
+    const uint32 playerZoneId = _player->GetTerrain()->GetZoneId(_player->Where().X(), _player->Where().Y(), _player->Where().Z());
     const uint32 stormwindZoneID = 1519;
     const uint32 ironforgeZoneID = 1537;
     const uint32 darnassusZoneID = 1657;

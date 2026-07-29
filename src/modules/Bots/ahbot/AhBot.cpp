@@ -8,7 +8,7 @@
 #include "AuctionHouseMgr.h"
 #include "WorldSession.h"
 #include "Player.h"
-#include "ObjectAccessor.h"
+#include "ObjectLookup.h"
 #include "ObjectGuid.h"
 #include "ObjectMgr.h"
 #include "playerbot/PlayerbotAIConfig.h"
@@ -75,7 +75,6 @@ bool ChatHandler::HandleAhBotCommand(char* args)
     return true;
 }
 
-INSTANTIATE_SINGLETON_1( ahbot::AhBot );
 
 uint32 AhBot::auctionIds[MAX_AUCTIONS] = {1,6,7};
 uint32 AhBot::auctioneers[MAX_AUCTIONS] = {79707,4656,23442};

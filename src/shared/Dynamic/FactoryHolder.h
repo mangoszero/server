@@ -25,13 +25,13 @@
 #ifndef MANGOS_FACTORY_HOLDER
 #define MANGOS_FACTORY_HOLDER
 
+#include <string>
 #include "Platform/Define.h"
 #include "Utilities/TypeList.h"
 #include "ObjectRegistry.h"
 #include "Policies/Singleton.h"
 
 template < class T, class Key = std::string >
-
 /**
  * @brief FactoryHolder holds a factory object of a specific type
  *
@@ -44,7 +44,6 @@ class FactoryHolder
          *
          */
         typedef ObjectRegistry<FactoryHolder<T, Key >, Key > FactoryHolderRegistry;
-
         /**
          * @brief
          *
@@ -57,13 +56,11 @@ class FactoryHolder
          * @param k
          */
         FactoryHolder(Key k) : i_key(k) {}
-
         /**
          * @brief
          *
          */
         virtual ~FactoryHolder() {}
-
         /**
          * @brief
          *
@@ -76,12 +73,14 @@ class FactoryHolder
          *
          */
         void RegisterSelf(void) { FactoryHolderRepository::Instance().InsertItem(this, i_key); }
-
         /**
          * @brief
          *
          */
-        void DeregisterSelf(void) { FactoryHolderRepository::Instance().RemoveItem(this, false); }
+        /// `i_key`, not `this`: RemoveItem takes the KEY. Passing the pointer never
+        /// failed to build only because a template member is not instantiated until it
+        /// is called, and nothing called this one.
+        void DeregisterSelf() { FactoryHolderRepository::Instance().RemoveItem(i_key, false); }
 
         /**
          * @brief Abstract Factory create method
@@ -95,7 +94,6 @@ class FactoryHolder
 };
 
 template<class T>
-
 /**
  * @brief Permissible is a classic way of letting the object decide whether how good they handle things.
  *
@@ -109,7 +107,6 @@ class Permissible
          *
          */
         virtual ~Permissible() {}
-
         /**
          * @brief
          *

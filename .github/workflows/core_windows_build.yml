@@ -1,37 +1,37 @@
 name: Windows Build (MSVC)
 
+on:
+  push:
+    branches: [ master, united, devel ]
+  pull_request:
+    branches: [ master, united ]
+
 permissions:
   contents: read
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   OPENSSL_VERSION: 3.6.3
   OPENSSL_SHA512: 120A2E9A3E8B961484CB94D52F85D48DC2C8AF777B5B3B9E26BF49B4408797281F7C0FB2D543FD7796B3C3232ADFAA0F675E7122C0E5C4225B3B02E767197AC6
 
-on:
-  push:
-    branches: [master, devel]
-  pull_request:
-    branches: [master]
-
-# Supersede an in-flight run when the branch moves on: its result is already stale.
-concurrency:
-  group: windows-build-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build:
     runs-on: windows-2022
-    strategy:
-      fail-fast: false
+
+    env:
+      BUILD_DIR: ${{ github.workspace }}\..\build-msvc
+      CCACHE_DIR: ${{ github.workspace }}\..\ccache
+      SCCACHE_DIR: ${{ github.workspace }}\..\sccache
 
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 1
-
 
       # Bump the -vN suffix to force a re-install of OpenSSL.
       - name: Cache OpenSSL
@@ -40,7 +40,6 @@ jobs:
         with:
           path: C:\Program Files\OpenSSL-Win64
           key: ${{ runner.os }}-openssl-${{ env.OPENSSL_VERSION }}-v1
-
 
       - name: Install full OpenSSL (developer)
         if: steps.cache-openssl.outputs.cache-hit != 'true'
@@ -67,12 +66,10 @@ jobs:
             throw "OpenSSL installer failed with exit code $($process.ExitCode)"
           }
 
-
       - name: Verify OpenSSL major version
         shell: powershell
         run: |
           $openssl = "C:\Program Files\OpenSSL-Win64\bin\openssl.exe"
-
           if (-not (Test-Path $openssl)) {
             throw "OpenSSL executable not found at $openssl"
           }
@@ -83,61 +80,83 @@ jobs:
             throw "Windows CI requires OpenSSL 3.x, found: $version"
           }
 
-
-      - name: Setup Windows 10 SDK
-        uses: GuillaumeFalourd/setup-windows10-sdk-action@v2
-        with:
-          sdk-version: 22621
-
-
       - name: Configure OpenSSL environment
         shell: bash
         run: |
-          if [ -d "C:/Program Files/OpenSSL-Win64/lib/VC" ]; then
-            echo "OPENSSL_ROOT_DIR=C:/Program Files/OpenSSL-Win64" >> $GITHUB_ENV
-            echo "OPENSSL_INCLUDE_DIR=C:/Program Files/OpenSSL-Win64/include" >> $GITHUB_ENV
-            echo "OPENSSL_CRYPTO_LIBRARY=C:/Program Files/OpenSSL-Win64/lib/VC/libcrypto64MT.lib" >> $GITHUB_ENV
-            echo "OPENSSL_SSL_LIBRARY=C:/Program Files/OpenSSL-Win64/lib/VC/libssl64MT.lib" >> $GITHUB_ENV
+          root="C:/Program Files/OpenSSL-Win64"
+          if [ -d "$root/lib/VC" ]; then
+            echo "OPENSSL_ROOT_DIR=$root" >> "$GITHUB_ENV"
+            echo "OPENSSL_INCLUDE_DIR=$root/include" >> "$GITHUB_ENV"
+            echo "OPENSSL_CRYPTO_LIBRARY=$root/lib/VC/libcrypto64MT.lib" >> "$GITHUB_ENV"
+            echo "OPENSSL_SSL_LIBRARY=$root/lib/VC/libssl64MT.lib" >> "$GITHUB_ENV"
+            echo "$root/bin" >> "$GITHUB_PATH"
           else
             echo "::error::OpenSSL developer libraries not found"
             exit 1
           fi
 
+      # Supplies the toolchain and the Windows SDK together, which is why there
+      # is no separate setup-windows10-sdk step.
+      - name: Setup MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
-      - name: Configure CMake project
+      - name: Compiler cache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+          key: windows-msvc
+          max-size: 500M
+
+      - name: Configure
         shell: bash
-        run: |
-          mkdir -p build && cd build
-          cmake .. \
-            -G "Visual Studio 17 2022" \
-            -A x64 \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DOPENSSL_USE_STATIC_LIBS=TRUE \
-            -DBUILD_TOOLS=1 \
-            -DBUILD_MANGOSD=1 \
-            -DBUILD_REALMD=1 \
-            -DSOAP=1 \
-            -DSCRIPT_LIB_ELUNA=1 \
-            -DSCRIPT_LIB_SD3=1 \
-            -DPLAYERBOTS=1 \
-            -DUSE_STORMLIB=1 \
-            -DBUILD_AH_SERVICE=1 \
-            -DPCH=0
+        run: >
+          cmake -S . -B "$BUILD_DIR" -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_INSTALL_PREFIX="$BUILD_DIR/install"
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          -DOPENSSL_ROOT_DIR="$OPENSSL_ROOT_DIR"
+          -DBUILD_TOOLS=1
+          -DBUILD_MANGOSD=1
+          -DBUILD_REALMD=1
+          -DBUILD_AH_SERVICE=1
+          -DWITH_TESTS=1
+          # Never the socket tests: they bind real listeners and dominate the
+          # suite's wall-clock. A human asks for them, CI does not.
+          -DWITH_NET_TESTS=0
+          -DSOAP=1
+          -DSCRIPT_LIB_ELUNA=1
+          -DSCRIPT_LIB_SD3=1
+          -DPLAYERBOTS=1
+          -DUSE_STORMLIB=1
+          -DPCH=1
 
-
-      - name: Build project
+      - name: Build
         shell: bash
-        run: |
-          cd build
-          cmake --build . --config Release --parallel
+        run: cmake --build "$BUILD_DIR" --parallel
+
+      - name: Test
+        shell: bash
+        run: ctest --test-dir "$BUILD_DIR" --output-on-failure
 
       - name: AH service IPC self-test
         shell: bash
         run: |
-          bin="$(find build -type f -name ah-service.exe | head -n1)"
+          bin="$(find "$BUILD_DIR" -type f -name ah-service.exe | head -n1)"
           if [ -z "$bin" ]; then echo "ah-service.exe not found"; exit 1; fi
           echo "Running: $bin --selftest"
           out="$("$bin" --selftest)"
           echo "$out"
           echo "$out" | grep -q "intent codec selftest OK" || { echo "MISSING: intent codec selftest OK"; exit 1; }
           echo "$out" | grep -q "ipc selftest OK"           || { echo "MISSING: ipc selftest OK"; exit 1; }
+
+      - name: Verify the working tree is clean
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::the build modified the source tree"
+            git status --porcelain
+            exit 1
+          fi

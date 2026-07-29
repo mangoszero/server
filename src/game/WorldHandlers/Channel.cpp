@@ -41,6 +41,7 @@
  * @see ChannelMgr for channel management
  */
 
+#include <string>
 #include "Channel.h"
 #include "ObjectMgr.h"
 #include "World.h"

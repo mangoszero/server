@@ -22,7 +22,7 @@
 #ifndef AH_IPC_PROCESS_H
 #define AH_IPC_PROCESS_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 
 #include <string>
 #include <vector>

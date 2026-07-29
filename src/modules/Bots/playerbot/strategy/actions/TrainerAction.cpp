@@ -1,3 +1,5 @@
+#include <cmath>
+#include <algorithm>
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "TrainerAction.h"

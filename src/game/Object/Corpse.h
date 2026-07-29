@@ -48,7 +48,8 @@
 #ifndef MANGOSSERVER_CORPSE_H
 #define MANGOSSERVER_CORPSE_H
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <ctime>
 #include "Object.h"
 #include "Database/DatabaseEnv.h"
 #include "GridDefines.h"

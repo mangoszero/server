@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
+ * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,56 +22,49 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-/// \addtogroup mangosd
-/// @{
-/// \file
-
 #ifndef MANGOS_H_SERVICE
 #define MANGOS_H_SERVICE
 
+#include <thread>
+#include <string>
+
 /**
- * @brief One auxiliary thread of the daemon, with a uniform lifecycle.
+ * @brief A background activity that runs alongside the world loop.
  *
- * The freeze watchdog, the console reader, the remote-access listener and SOAP each used to
- * carry their own bespoke start and their own bespoke shutdown dance, hand-wired into
- * Master::Run() in an order that existed only as the sequence those statements happened to
- * appear in. Nobody had written that order down, and nothing enforced it — so the teardown
- * was correct by coincidence rather than by construction, and every new background thread
- * added another private ritual to remember.
+ * The console reader, remote administration, SOAP and the freeze watchdog were
+ * four separate classes with four different shapes -- one ACE_Task_Base, one
+ * reactor handler, one raw std::thread, and one more ACE task -- each started
+ * and stopped by hand from main(), in an order that had to be remembered rather
+ * than expressed. This is the one shape they all share.
  *
- * Behind this interface they all start the same way, are asked to stop the same way, and are
- * joined in exactly the reverse of the order they were started.
- *
- * The stop *signal* is not part of this interface: it is global (World::StopNow /
- * World::IsStopped), and every service loop already watches it. RequestStop() exists only
- * for the services that park in a blocking call and therefore need a nudge before they can
- * notice a flag that was set while they were asleep.
+ * The contract is deliberately three calls, because shutdown needs all three
+ * separated: RequestStop() must be able to run for every service before any of
+ * them blocks in Join(), or stopping N services takes the sum of their timeouts
+ * instead of the longest.
  */
 class IService
 {
     public:
 
-        virtual ~IService() = default;
+        virtual ~IService() {}
 
-        /// Name of this service, for the shutdown log.
+        /// Human-readable name, used only for start-up and shutdown logging.
         virtual const char* Name() const = 0;
 
-        /// Bring the service up. Called exactly once.
+        /// Begin work. Called once, from the main thread, before the world loop.
         virtual void Start() = 0;
 
         /**
-         * @brief Wake a service that is parked in a blocking call.
+         * @brief Ask the service to wind down. Must not block.
          *
-         * The world has already been asked to stop by the time this runs; a service whose
-         * loop simply polls World::IsStopped() needs nothing here and can take the default.
-         * Only a service blocked inside a syscall it cannot otherwise leave (the console
-         * reader, sitting in fgets()) has to override this.
+         * Called for every service before any Join(), and may arrive on a
+         * different thread than Start(). Implementations set a flag, close a
+         * socket, or wake a condition variable -- nothing that waits.
          */
         virtual void RequestStop() {}
 
-        /// Block until the service's thread has exited. Called once, after RequestStop().
+        /// Wait for the service to finish. May block; called after RequestStop().
         virtual void Join() = 0;
 };
 
 #endif
-/// @}

@@ -31,7 +31,6 @@
 #include "OutdoorPvPSI.h"
 #include "DisableMgr.h"
 
-INSTANTIATE_SINGLETON_1(OutdoorPvPMgr);
 
 OutdoorPvPMgr::OutdoorPvPMgr()
 {

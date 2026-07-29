@@ -1,7 +1,7 @@
 #ifndef MANGOS_AHBOT_SYSTEM_OWNER_H
 #define MANGOS_AHBOT_SYSTEM_OWNER_H
 
-#include "Common.h"      // uint32
+#include "Platform/Define.h"
 #include "ObjectGuid.h"  // ObjectGuid, HIGHGUID_PLAYER
 
 // Forged "system" owner for the out-of-process AH bot: a reserved player

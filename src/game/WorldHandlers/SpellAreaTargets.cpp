@@ -64,12 +64,10 @@
 #include "Group.h"
 #include "UpdateData.h"
 #include "MapManager.h"
-#include "ObjectAccessor.h"
 #include "CellImpl.h"
 #include "Policies/Singleton.h"
 #include "SharedDefines.h"
 #include "LootMgr.h"
-#include "VMapFactory.h"
 #include "BattleGround/BattleGround.h"
 #include "Util.h"
 #include "Chat.h"
@@ -125,7 +123,7 @@ void Spell::FillRaidOrPartyTargets(UnitList& targetUnitMap, Unit* member, float 
                 !m_caster->IsHostileTo(Target))
             {
                 if ((Target == m_caster && withcaster) ||
-                    (Target != m_caster && m_caster->IsWithinDistInMap(Target, radius)))
+                    (Target != m_caster && InReach(*m_caster, *Target, radius)))
                 {
                     targetUnitMap.push_back(Target);
                 }
@@ -135,7 +133,7 @@ void Spell::FillRaidOrPartyTargets(UnitList& targetUnitMap, Unit* member, float 
                     if (Pet* pet = Target->GetPet())
                     {
                         if ((pet == m_caster && withcaster) ||
-                            (pet != m_caster && m_caster->IsWithinDistInMap(pet, radius)))
+                            (pet != m_caster && InReach(*m_caster, *pet, radius)))
                         {
                             targetUnitMap.push_back(pet);
                         }
@@ -148,7 +146,7 @@ void Spell::FillRaidOrPartyTargets(UnitList& targetUnitMap, Unit* member, float 
     {
         Unit* ownerOrSelf = pMember ? pMember : member->GetCharmerOrOwnerOrSelf();
         if ((ownerOrSelf == m_caster && withcaster) ||
-            (ownerOrSelf != m_caster && m_caster->IsWithinDistInMap(ownerOrSelf, radius)))
+            (ownerOrSelf != m_caster && InReach(*m_caster, *ownerOrSelf, radius)))
         {
             targetUnitMap.push_back(ownerOrSelf);
         }
@@ -158,7 +156,7 @@ void Spell::FillRaidOrPartyTargets(UnitList& targetUnitMap, Unit* member, float 
             if (Pet* pet = ownerOrSelf->GetPet())
             {
                 if ((pet == m_caster && withcaster) ||
-                    (pet != m_caster && m_caster->IsWithinDistInMap(pet, radius)))
+                    (pet != m_caster && InReach(*m_caster, *pet, radius)))
                 {
                     targetUnitMap.push_back(pet);
                 }

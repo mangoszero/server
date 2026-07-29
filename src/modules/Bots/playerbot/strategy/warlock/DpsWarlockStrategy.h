@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include "GenericWarlockStrategy.h"
 #include "../generic/CombatStrategy.h"
 

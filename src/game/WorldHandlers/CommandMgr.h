@@ -19,12 +19,15 @@
 #ifndef COMMANDMGR_H
 #define COMMANDMGR_H
 
+#include <unordered_map>
+#include <string>
+#include <vector>
 struct CommandHelpLocale
 {
     std::vector<std::string> HelpText;
 };
 
-typedef UNORDERED_MAP<uint32, CommandHelpLocale> CommandHelpLocaleMap;
+typedef std::unordered_map<uint32, CommandHelpLocale> CommandHelpLocaleMap;
 
 class CommandMgr
 {

@@ -69,7 +69,7 @@ AggressorAI::AggressorAI(Creature* c) : CreatureAI(c), i_state(STATE_NORMAL), i_
 void AggressorAI::MoveInLineOfSight(Unit* u)
 {
     // Ignore Z for flying creatures
-    if (!m_creature->CanFly() && m_creature->GetDistanceZ(u) > CREATURE_Z_ATTACK_RANGE)
+    if (!m_creature->CanFly() && m_creature->Where().HeightGapTo(u->Where()) > CREATURE_Z_ATTACK_RANGE)
     {
         return;
     }
@@ -78,7 +78,7 @@ void AggressorAI::MoveInLineOfSight(Unit* u)
         m_creature->IsHostileTo(u) && u->isInAccessablePlaceFor(m_creature))
     {
         float attackRadius = m_creature->GetAttackDistance(u);
-        if (m_creature->IsWithinDistInMap(u, attackRadius) && m_creature->IsWithinLOSInMap(u))
+        if (InReach(*m_creature, *u, attackRadius) && HasLineOfSight(*m_creature, *u))
         {
             if (!m_creature->getVictim())
             {
@@ -189,7 +189,7 @@ void AggressorAI::UpdateAI(const uint32 diff)
  */
 bool AggressorAI::IsVisible(Unit* pl) const
 {
-    return m_creature->IsWithinDist(pl, sWorld.getConfig(CONFIG_FLOAT_SIGHT_MONSTER)) &&
+    return m_creature->Where().WithinDist(pl->Where(), sWorld.getConfig(CONFIG_FLOAT_SIGHT_MONSTER)) &&
         pl->IsVisibleForOrDetect(m_creature, m_creature, true);
 }
 

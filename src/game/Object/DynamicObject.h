@@ -64,7 +64,7 @@ class DynamicObject : public WorldObject
         bool IsHostileTo(Unit const* unit) const override;
         bool IsFriendlyTo(Unit const* unit) const override;
 
-        float GetObjectBoundingRadius() const override      // overwrite WorldObject version
+        float ComputeBoundingRadius() const override      // overwrite WorldObject version
         {
             return 0.0f;                                    // dynamic object not have real interact size
         }
@@ -75,6 +75,29 @@ class DynamicObject : public WorldObject
         }
 
         bool IsVisibleForInState(Player const* u, WorldObject const* viewPoint, bool inVisibleList) const override;
+
+        /**
+         * @brief Anchor this area effect to a DECK spot rather than a world point.
+         *
+         * A persistent area aura cast on a transport belongs to the deck, not to the patch
+         * of sea the ship is leaving behind. Its true coordinates are the local offset,
+         * because on a deck the world transform is a lie and the offset is the only thing
+         * that does not move.
+         */
+        void BindToTransport(ObjectGuid transportGuid, float lx, float ly, float lz);
+
+        bool OnTransport() const { return bool(m_transportGuid); }
+
+        /**
+         * @brief Is `target` inside the effect, measured the honest way?
+         *
+         * A deck effect and a boarded target are both points in the vessel's own space, so
+         * the distance between them is their LOCAL separation -- exact, and independent of
+         * wherever the server imagines the hull to be. A target not on this vessel is not
+         * in a deck effect at all. Only an ordinary world effect falls back to the world
+         * distance.
+         */
+        bool IsInEffectRange(Unit const* target) const;
 
         GridReference<DynamicObject>& GetGridRef()
         {
@@ -88,6 +111,10 @@ class DynamicObject : public WorldObject
         float m_radius;                                     // radius apply persistent effect, 0 = no persistent effect
         bool m_positive;
         GuidSet m_affected;
+
+        /// The vessel this effect rides, or an empty guid for an ordinary world effect.
+        ObjectGuid m_transportGuid;
+        float m_transOffsetX, m_transOffsetY, m_transOffsetZ;
     private:
         GridReference<DynamicObject> m_gridRef;
 };

@@ -44,7 +44,9 @@
 
 
 
-#include "Common.h"
+#include <cmath>
+#include "Platform/Define.h"
+#include "Common/ServerDefines.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "Opcodes.h"

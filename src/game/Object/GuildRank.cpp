@@ -24,6 +24,7 @@
 
 
 
+#include <string>
 #include "Guild.h"
 #include "GuildMgr.h"
 #include "Database/DatabaseEnv.h"

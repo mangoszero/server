@@ -25,7 +25,8 @@
 #ifndef MANGOS_H_OBJECT_POS_SELECTOR
 #define MANGOS_H_OBJECT_POS_SELECTOR
 
-#include<Common.h>
+#include "Platform/Define.h"
+#include <map>
 
 #include<map>
 

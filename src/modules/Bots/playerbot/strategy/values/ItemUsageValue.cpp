@@ -1,3 +1,5 @@
+#include <map>
+#include <set>
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "ItemUsageValue.h"

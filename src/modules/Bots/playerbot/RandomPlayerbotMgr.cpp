@@ -1,3 +1,8 @@
+#include <unordered_map>
+#include <algorithm>
+#include <vector>
+#include <map>
+#include <list>
 #include "Config/Config.h"
 #include "../botpch.h"
 #include "playerbot.h"
@@ -16,7 +21,6 @@
 #include "Group.h"
 #include "Timer.h"
 
-INSTANTIATE_SINGLETON_1(RandomPlayerbotMgr);
 
 /**
  * RandomPlayerbotMgr is responsible for managing random player bots in the game.
@@ -386,13 +390,13 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
         }
 
         sLog.outDetail("Random teleporting bot %s to %s %f,%f,%f", bot->GetName(), area->AreaName_lang[0], x, y, z);
-        float height = map->GetTerrain()->GetHeightStatic(x, y, 0.5f + z, true, MAX_HEIGHT);
-        if (height <= INVALID_HEIGHT)
+        std::optional<float> floor = map->GetTerrain()->StaticFloor(x, y, 0.5f + z);
+        if (!floor)
         {
             continue;
         }
 
-        z = 0.05f + map->GetTerrain()->GetHeightStatic(x, y, 0.05f + z, true, MAX_HEIGHT);
+        z = 0.05f + *floor;
 
         bot->GetMotionMaster()->Clear();
         bot->TeleportTo(loc.mapid, x, y, z, 0);

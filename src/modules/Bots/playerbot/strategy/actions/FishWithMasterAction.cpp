@@ -1,3 +1,4 @@
+#include "Utilities/MathDefines.h"
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "FishWithMasterAction.h"

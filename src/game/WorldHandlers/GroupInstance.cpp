@@ -46,7 +46,8 @@
 
 
 #include "Group.h"
-#include "Common.h"
+#include "Platform/Define.h"
+#include <set>
 #include "Opcodes.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -55,7 +56,7 @@
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"
 #include "Formulas.h"
-#include "ObjectAccessor.h"
+#include "PlayerRegistry.h"
 #include "BattleGround/BattleGround.h"
 #include "BattleGround/BattleGroundMgr.h"
 #include "MapManager.h"
@@ -93,8 +94,8 @@ void Group::UpdateLooterGuid(WorldObject* pSource, bool ifneed)
         if (ifneed)
         {
             // not update if only update if need and ok
-            Player* looter = sObjectAccessor.FindPlayer(guid_itr->guid);
-            if (looter && looter->IsWithinDist(pSource, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
+            Player* looter = sPlayerRegistry.Find(guid_itr->guid);
+            if (looter && looter->Where().WithinDist(pSource->Where(), sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
             {
                 return;
             }
@@ -107,9 +108,9 @@ void Group::UpdateLooterGuid(WorldObject* pSource, bool ifneed)
     {
         for (member_citerator itr = guid_itr; itr != m_memberSlots.end(); ++itr)
         {
-            if (Player* pl = sObjectAccessor.FindPlayer(itr->guid))
+            if (Player* pl = sPlayerRegistry.Find(itr->guid))
             {
-                if (pl->IsWithinDist(pSource, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
+                if (pl->Where().WithinDist(pSource->Where(), sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
                 {
                     bool refresh = pl->GetLootGuid() == pSource->GetObjectGuid();
 
@@ -130,9 +131,9 @@ void Group::UpdateLooterGuid(WorldObject* pSource, bool ifneed)
     // search from start
     for (member_citerator itr = m_memberSlots.begin(); itr != guid_itr; ++itr)
     {
-        if (Player* pl = sObjectAccessor.FindPlayer(itr->guid))
+        if (Player* pl = sPlayerRegistry.Find(itr->guid))
         {
-            if (pl->IsWithinDist(pSource, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
+            if (pl->Where().WithinDist(pSource->Where(), sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
             {
                 bool refresh = pl->GetLootGuid() == pSource->GetObjectGuid();
 

@@ -24,6 +24,9 @@
 
 
 
+#include "Common/Locales.h"
+#include <string>
+#include "Utilities/PackedValues.h"
 #include "ObjectMgr.h"
 #include "Database/DatabaseEnv.h"
 #include "Log.h"

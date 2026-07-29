@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Utilities/MathDefines.h"
+#include <cmath>
 #include "../Action.h"
 #include "MovementActions.h"
 #include "GenericSpellActions.h"

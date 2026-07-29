@@ -46,7 +46,6 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "ObjectMgr.h"
-#include "ObjectAccessor.h"
 #include "CreatureAI.h"
 #include "Formulas.h"
 #include "Group.h"
@@ -62,7 +61,6 @@
 #include "OutdoorPvP/OutdoorPvP.h"
 #include "Chat.h"
 #include "revision_data.h"
-#include "Database/DatabaseImpl.h"
 #include "Spell.h"
 #include "ScriptMgr.h"
 #include "SocialMgr.h"
@@ -108,7 +106,7 @@ void Player::SetBattleGroundEntryPoint(Player* leader /*= NULL*/)
         // If map is dungeon find linked graveyard
         if (leader->GetMap()->IsDungeon())
         {
-            if (const WorldSafeLocsEntry* entry = sObjectMgr.GetClosestGraveYard(leader->GetPositionX(), leader->GetPositionY(), leader->GetPositionZ(), leader->GetMapId(), leader->GetTeam()))
+            if (const WorldSafeLocsEntry* entry = sObjectMgr.GetClosestGraveYard(leader->Where().X(), leader->Where().Y(), leader->Where().Z(), leader->GetMapId(), leader->GetTeam()))
             {
                 m_bgData.joinPos = WorldLocation(entry->map_id, entry->x, entry->y, entry->z, 0.0f);
                 m_bgData.m_needSave = true;
@@ -122,7 +120,7 @@ void Player::SetBattleGroundEntryPoint(Player* leader /*= NULL*/)
         // If new entry point is not BG or arena set it
         else if (!leader->GetMap()->IsBattleGround())
         {
-            m_bgData.joinPos = WorldLocation(leader->GetMapId(), leader->GetPositionX(), leader->GetPositionY(), leader->GetPositionZ(), leader->GetOrientation());
+            m_bgData.joinPos = WorldLocation(leader->GetMapId(), leader->Where().X(), leader->Where().Y(), leader->Where().Z(), leader->Where().Facing());
             m_bgData.m_needSave = true;
             return;
         }

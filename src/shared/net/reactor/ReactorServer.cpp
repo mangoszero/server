@@ -22,6 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <queue>
 #include "net/reactor/ReactorServer.hpp"
 
 #include "net/BindAddress.hpp"
@@ -149,7 +150,6 @@ void ReactorServer::stop() {
     for (auto& w : m_workers) {
         for (auto* c : w->incoming) {
             if (c->channel) c->channel->disarm();   // wake any parked producer
-            if (c->session) c->session->onClose();
             ::close(c->fd);
             delete c;
         }
@@ -284,10 +284,6 @@ void ReactorServer::drainIncoming(Worker& w) {
     }
     for (auto* conn : pending) {
         if (!w.poller->add(conn->fd, EvRead, conn)) {
-            if (conn->channel)
-                conn->channel->disarm();
-            if (conn->session)
-                conn->session->onClose();
             ::close(conn->fd);
             delete conn;
             continue;
@@ -359,11 +355,17 @@ void ReactorServer::drainSendRequests(Worker& w) {
             closeConn(w, conn);
             continue;
         }
-        if (wantClose) {
-            if (conn->channel->out.empty())
-                closeConn(w, conn);
-            else
-                conn->closeAfterDrain = true;  // flush() will close once drained
+        if (wantClose)
+        {
+            conn->closeAfterDrain = true;
+        }
+        // Close here if the backlog is already gone. Deferring to the EvWrite
+        // branch alone would strand the connection: a fully drained flush()
+        // disarms write interest, so no further writability event ever arrives
+        // to notice closeAfterDrain.
+        if (conn->closeAfterDrain && conn->channel->out.empty())
+        {
+            closeConn(w, conn);
         }
     }
 }
@@ -391,11 +393,16 @@ void ReactorServer::workerLoop(Worker& w) {
     while (true) {
         int n = w.poller->wait(evs, MAXEV);
         if (n < 0) break;
-
-        drainIncoming(w);                 // register any newly handed-off conns
-        drainSendRequests(w);             // apply world-thread sends/closes
         if (!m_running.load()) break;
 
+        // Socket events are handled FIRST, while every Connection* that wait()
+        // put in evs[] is still alive. drainIncoming()/drainSendRequests() can
+        // both close — and therefore free — a connection; they are safe about it
+        // because they reach it through the SendChannel, which disarm() neutralises
+        // under a lock. The raw pointers in evs[] have no such guard, so running
+        // those drains first would leave this loop dereferencing freed memory
+        // whenever a connection had a pending socket event and a queued send that
+        // failed in the same wake-up.
         for (int i = 0; i < n; ++i) {
             auto* conn = static_cast<Connection*>(evs[i].udata);
             if (!conn) continue;          // wakeup-only event
@@ -428,6 +435,9 @@ void ReactorServer::workerLoop(Worker& w) {
 
             if (dead) closeConn(w, conn);
         }
+
+        drainIncoming(w);                 // register any newly handed-off conns
+        drainSendRequests(w);             // apply world-thread sends/closes
     }
 
     // Shutdown: close every connection this worker still owns. disarm() first so a

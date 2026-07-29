@@ -69,6 +69,7 @@ char const* GitRevision::GetDepSD3Branch()
     return DEP_SD3_REVISION_BRANCH;
 }
 
+
 char const* GitRevision::GetCMakeVersion()
 {
     return CMAKE_VERSION;
@@ -81,19 +82,19 @@ char const* GitRevision::GetHostOSVersion()
 
 // Platform Define
 #if PLATFORM == PLATFORM_WINDOWS
-#ifdef _WIN64
-#define MANGOS_PLATFORM_STR "Win64"
-#else
-#define MANGOS_PLATFORM_STR "Win32"
-#endif
+    #ifdef _WIN64
+        #define MANGOS_PLATFORM_STR "Win64"
+    #else
+        #define MANGOS_PLATFORM_STR "Win32"
+    #endif
 #elif PLATFORM == PLATFORM_APPLE
-#define MANGOS_PLATFORM_STR "MacOSX"
+    #define MANGOS_PLATFORM_STR "MacOSX"
 #elif PLATFORM == PLATFORM_INTEL
-#define MANGOS_PLATFORM_STR "Intel"
+    #define MANGOS_PLATFORM_STR "Intel"
 #elif PLATFORM == PLATFORM_UNIX
-#define MANGOS_PLATFORM_STR "Linux"
+    #define MANGOS_PLATFORM_STR "Linux"
 #else
-#define MANGOS_PLATFORM_STR "Unknown System"
+    #define MANGOS_PLATFORM_STR "Unknown System"
 #endif
 
 // Database Revision

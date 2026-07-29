@@ -26,12 +26,17 @@
  * @file Threading.cpp
  * @brief std::thread-based threading implementation
  *
- * A minimal, platform-independent threading abstraction built directly on the
- * C++ standard library (std::thread):
+ * A minimal, platform-independent threading abstraction built directly on
+ * the C++ standard library (std::thread):
  *
  * - Runnable-based task execution
  * - Thread lifecycle management (start, wait)
  * - Reference counting for task safety
+ *
+ * The previous implementation also exposed setPriority/suspend/resume/
+ * destroy/current/currentId/currentHandle; grepping the tree found no caller
+ * of any of them outside Threading.cpp itself, so they are dropped rather
+ * than ported -- matching what mangostwo's de-ACE-ing (#240) kept.
  *
  * @see Thread for the main thread class
  * @see Runnable for the task interface
@@ -54,8 +59,9 @@ namespace MaNGOS
     {
         if (m_task)
         {
-            // The Thread's own reference, released in the destructor. Every call site
-            // constructs a Thread expecting it to already be running.
+            // The Thread's own reference, released in the destructor. Every
+            // call site constructs a Thread expecting it to already be
+            // running.
             m_task->incReference();
 
             const bool started = start();

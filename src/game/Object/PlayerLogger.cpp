@@ -22,8 +22,9 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <vector>
 #include "PlayerLogger.h"
-#include "ObjectAccessor.h"
+#include "PlayerRegistry.h"
 #include "Database/DatabaseEnv.h"
 #include "World.h"
 #include "Log.h"
@@ -535,10 +536,10 @@ void PlayerLogger::SetLogActiveMask(PlayerLogEntity entity, bool on)
  */
 Player* PlayerLogger::GetPlayer() const
 {
-    Player* pl = sObjectAccessor.FindPlayer(ObjectGuid(HIGHGUID_PLAYER, playerGuid), true);
+    Player* pl = sPlayerRegistry.Find(ObjectGuid(HIGHGUID_PLAYER, playerGuid), true);
     if (!pl)
     {
-        pl = sObjectAccessor.FindPlayer(ObjectGuid(HIGHGUID_CORPSE, playerGuid), true);
+        pl = sPlayerRegistry.Find(ObjectGuid(HIGHGUID_CORPSE, playerGuid), true);
     }
 
     if (!pl)
@@ -558,7 +559,7 @@ Player* PlayerLogger::GetPlayer() const
 void PlayerLogger::FillPosition(PlayerLogPosition* log, Player* me)
 {
     log->map = uint16(me->GetMapId());
-    log->x = me->GetPositionX();
-    log->y = me->GetPositionY();
-    log->z = me->GetPositionZ();
+    log->x = me->Where().X();
+    log->y = me->Where().Y();
+    log->z = me->Where().Z();
 }

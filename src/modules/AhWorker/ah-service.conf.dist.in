@@ -17,7 +17,7 @@ LogLevel = 1
 #        compromised child holding write-capable creds could write the DB
 #        directly and bypass the executor. Provision a DEDICATED least-privilege
 #        MySQL account with SELECT-only grants for this connection. See the
-#        "Security" section of doc/AuctionHouseBot.md for example GRANT
+#        "Security" section of extra/doc/AuctionHouseBot.md for example GRANT
 #        statements.
 #    Default: "" (disabled)
 #
@@ -47,7 +47,7 @@ WorldDatabaseConnections = 1
 #        WriteAuthority additionally requires INSERT, UPDATE, and DELETE on
 #        exactly `auction` and `ah_worker_journal`, plus SELECT on
 #        `custody_ledger` for safe journal retention. See "Worker DB grant
-#        delta" in doc/AuctionHouseBot.md.
+#        delta" in extra/doc/AuctionHouseBot.md.
 #    Default: "" (disabled)
 #
 #    Example (point at the mode-appropriate dedicated account):

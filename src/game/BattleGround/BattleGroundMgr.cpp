@@ -36,7 +36,12 @@
  * - Premade group matching
  */
 
-#include "Common.h"
+#include "Utilities/Util.h"
+#include "Platform/Define.h"
+#include <ctime>
+#include <vector>
+#include <map>
+#include <set>
 #include "SharedDefines.h"
 #include "Player.h"
 #include "BattleGroundMgr.h"
@@ -60,7 +65,6 @@
 
 #include "Policies/Singleton.h"
 
-INSTANTIATE_SINGLETON_1(BattleGroundMgr);
 
 /*********************************************************/
 /***            BATTLEGROUND QUEUE SYSTEM              ***/

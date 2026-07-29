@@ -45,7 +45,7 @@
 
 
 #include "SpellAuras.h"
-#include "Common.h"
+#include "Platform/Define.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -61,7 +61,7 @@
 #include "DynamicObject.h"
 #include "Group.h"
 #include "UpdateData.h"
-#include "ObjectAccessor.h"
+#include "ObjectLookup.h"
 #include "Policies/Singleton.h"
 #include "Totem.h"
 #include "Creature.h"
@@ -340,7 +340,7 @@ void Aura::HandleAuraRetainComboPoints(bool apply, bool Real)
     // remove only if aura expire by time (in case combo points amount change aura removed without combo points lost)
     if (!apply && m_removeMode == AURA_REMOVE_BY_EXPIRE && target->GetComboTargetGuid())
     {
-        if (Unit* unit = sObjectAccessor.GetUnit(*GetTarget(), target->GetComboTargetGuid()))
+        if (Unit* unit = ObjectLookup::GetUnit(*GetTarget(), target->GetComboTargetGuid()))
         {
             target->AddComboPoints(unit, -m_modifier.m_amount);
         }

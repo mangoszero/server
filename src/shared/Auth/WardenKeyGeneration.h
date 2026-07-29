@@ -24,6 +24,7 @@
  */
 
 #include "Auth/Sha1.h"
+#include <cstring>
 
 #ifndef _WARDEN_KEY_GENERATION_H
 #define _WARDEN_KEY_GENERATION_H

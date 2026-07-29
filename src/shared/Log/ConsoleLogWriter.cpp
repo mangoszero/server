@@ -31,9 +31,30 @@
  * transform) off the world and map-update threads.
  */
 
+#include "Threading/Threading.h"
 #include "ConsoleLogWriter.h"
+#include "Console/ConsoleUI.h"
 
 #include <cstdio>
+
+namespace
+{
+    /// Severity -> full-screen theme. Deliberately not m_colors: the configured
+    /// palette targets a 16-colour console and would clash with the UI's own.
+    MaNGOS::Console::Style StyleFor(LogType type)
+    {
+        switch (type)
+        {
+        case LogDetails: return MaNGOS::Console::STYLE_DETAIL;
+        case LogDebug:   return MaNGOS::Console::STYLE_DEBUG;
+        case LogError:   return MaNGOS::Console::STYLE_ERROR;
+        case LogNormal:
+        default:         return MaNGOS::Console::STYLE_NORMAL;
+        }
+    }
+
+    const int IDLE_RENDER_TICKS = 6;                     // ~30ms between idle repaints
+}
 
 ConsoleLogWriter::ConsoleLogWriter()
     : m_depth(0), m_dropped(0), m_running(true)
@@ -42,7 +63,7 @@ ConsoleLogWriter::ConsoleLogWriter()
 
 void ConsoleLogWriter::Enqueue(ConsoleLogRecord& rec)
 {
-    if (m_depth.load() >= MAX_CONSOLE_QUEUE)
+    if (m_depth.load(std::memory_order_relaxed) >= MAX_CONSOLE_QUEUE)
     {
         ++m_dropped;
         return;
@@ -53,9 +74,22 @@ void ConsoleLogWriter::Enqueue(ConsoleLogRecord& rec)
 
 void ConsoleLogWriter::run()
 {
+    int idleTicks = 0;
+
     while (m_running)
     {
-        if (!DrainOnce())
+        const bool didWork = DrainOnce();
+
+        // Sole renderer of the full-screen console: repaint after every drain so
+        // new lines appear at once, and on a slow idle tick so the clock, status
+        // and progress bar keep moving when nothing is being logged.
+        if (didWork || ++idleTicks >= IDLE_RENDER_TICKS)
+        {
+            idleTicks = 0;
+            MaNGOS::Console::ConsoleUI::Instance().Render();
+        }
+
+        if (!didWork)
         {
             MaNGOS::Thread::Sleep(5);
         }
@@ -63,31 +97,39 @@ void ConsoleLogWriter::run()
     // Authoritative final drain: runs on the writer thread while wait()
     // blocks the caller, so any straggler enqueued before Stop() is rendered.
     DrainOnce();
+    MaNGOS::Console::ConsoleUI::Instance().Render();
 }
 
 bool ConsoleLogWriter::DrainOnce()
 {
     bool didWork = false;
 
-    long dropped = m_dropped.load();
+    long dropped = m_dropped.load(std::memory_order_relaxed);
     if (dropped > 0)
     {
         m_dropped -= dropped;
         char note[96];
+        // Leading '\n' starts the notice on a fresh line: a progress-bar redraw
+        // may have left the cursor mid-line (its trailing '\r' + left edge), and
+        // without this the red notice would land on top of the bar.
         int n = snprintf(note, sizeof(note),
-            "[Log] %ld console line(s) dropped (queue full)\n", dropped);
+            "\n[Log] %ld console line(s) dropped (queue full)\n", dropped);
         if (n >= (int)sizeof(note))
         {
             n = (int)sizeof(note) - 1;                       // clamp: never fwrite past note[]
         }
         if (n > 0)
         {
-            // A progress-bar redraw may have parked the cursor mid-line; wipe it
-            // first so the notice does not land on top of the bar.
-            Log::ClearConsoleLine(stdout);
-            Log::SetColor(true, RED);
-            fwrite(note, 1, (size_t)n, stdout);
-            Log::ResetColor(true);
+            if (MaNGOS::Console::ConsoleUI::Instance().Active())
+            {
+                MaNGOS::Console::ConsoleUI::Instance().PushLog(note, MaNGOS::Console::STYLE_ERROR);
+            }
+            else
+            {
+                Log::SetColor(true, RED);
+                fwrite(note, 1, (size_t)n, stdout);
+                Log::ResetColor(true);
+            }
         }
         didWork = true;
     }
@@ -104,7 +146,7 @@ bool ConsoleLogWriter::DrainOnce()
     // piped stdout is fully buffered, and flushing here (off the world/map
     // threads) makes output prompt without any producer paying for it. A real
     // console is effectively unbuffered, so this is a cheap no-op there.
-    if (didWork)
+    if (didWork && !MaNGOS::Console::ConsoleUI::Instance().Active())
     {
         fflush(stdout);
     }
@@ -114,6 +156,22 @@ bool ConsoleLogWriter::DrainOnce()
 
 void ConsoleLogWriter::Emit(const ConsoleLogRecord& rec)
 {
+    if (MaNGOS::Console::ConsoleUI::Instance().Active())
+    {
+        // Raw records still reaching here are text (CLI command output, loglevel
+        // notices): the bar is intercepted upstream by the progress sink and the
+        // prompt is suppressed, since the console draws both regions itself.
+        if (rec.isRaw)
+        {
+            MaNGOS::Console::ConsoleUI::Instance().PushRaw(rec.text, MaNGOS::Console::STYLE_NORMAL);
+        }
+        else
+        {
+            MaNGOS::Console::ConsoleUI::Instance().PushLog(rec.text, StyleFor(rec.type));
+        }
+        return;
+    }
+
     FILE* out = rec.toStdout ? stdout : stderr;
     if (rec.isRaw)
     {
@@ -123,17 +181,9 @@ void ConsoleLogWriter::Emit(const ConsoleLogRecord& rec)
         if (!rec.text.empty())
         {
             fwrite(rec.text.data(), 1, rec.text.size(), out);
-            // Anything not terminated by a newline leaves the cursor parked on a
-            // drawn line, which the next ordinary log line has to wipe first.
-            Log::MarkConsoleLineDirty(rec.text[rec.text.size() - 1] != '\n');
         }
         return;
     }
-
-    // An ordinary line must never be printed on top of a bar / startup-UI line
-    // that is still drawn: erase it and start from a clean column 0.
-    Log::ClearConsoleLine(out);
-
     if (rec.applyColor)
     {
         Log::SetColor(rec.toStdout, rec.color);

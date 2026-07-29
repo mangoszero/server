@@ -22,7 +22,7 @@
 #ifndef AH_IPC_SERVER_HANDLER_H
 #define AH_IPC_SERVER_HANDLER_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "Utilities/ByteBuffer.h"
 #include "IpcMessage.h"
 #include "BoundedQueue.h"

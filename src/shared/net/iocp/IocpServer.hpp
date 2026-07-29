@@ -41,8 +41,8 @@
 #include "net/ISession.hpp"
 #include "net/SendQueue.hpp"
 #include <atomic>
-#include <cassert>
 #include <condition_variable>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -52,68 +52,6 @@
 #include <vector>
 
 namespace net {
-
-class OutstandingOperations {
-public:
-    bool startSubmissions()
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        if (m_count != 0)
-            return false;
-        m_acceptingSubmissions = true;
-        return true;
-    }
-
-    bool tryBegin()
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        if (!m_acceptingSubmissions)
-            return false;
-        ++m_count;
-        return true;
-    }
-
-    void stopSubmissions()
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_acceptingSubmissions = false;
-        if (m_count == 0)
-            m_zero.notify_all();
-    }
-
-    void complete()
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        assert(m_count != 0);
-        --m_count;
-        if (m_count == 0)
-            m_zero.notify_all();
-    }
-
-    void waitForZero()
-    {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        m_zero.wait(lock, [&] { return m_count == 0; });
-    }
-
-    std::size_t count() const
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        return m_count;
-    }
-
-    bool acceptingSubmissions() const
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        return m_acceptingSubmissions;
-    }
-
-private:
-    mutable std::mutex m_mutex;
-    std::condition_variable m_zero;
-    std::size_t m_count = 0;
-    bool m_acceptingSubmissions = true;
-};
 
 // ── Per-operation type tag ────────────────────────────────────────────────────
 enum class IoType : uint8_t { Accept, Recv, Send };
@@ -145,9 +83,19 @@ struct SendOv {
     WSABUF     wsabuf{};
 };
 
+// The worker recovers the op type from a bare OVERLAPPED* by reading the byte at
+// sizeof(OVERLAPPED) past it. That is only valid while the compiler puts `type`
+// exactly there, which holds today (OVERLAPPED aligns to a pointer, IoType is a
+// uint8_t) but is silent if a member is ever inserted or the tag is widened.
+// Assert it instead of trusting it: a layout change becomes a compile error rather
+// than completions being dispatched to the wrong handler at runtime.
+static_assert(offsetof(AcceptOv, type) == sizeof(OVERLAPPED), "AcceptOv layout");
+static_assert(offsetof(RecvOv,   type) == sizeof(OVERLAPPED), "RecvOv layout");
+static_assert(offsetof(SendOv,   type) == sizeof(OVERLAPPED), "SendOv layout");
+
 // ── Per-connection context ────────────────────────────────────────────────────
-class IocpServer;
 struct ConnCtx;
+class IocpServer;
 
 // Lifetime-safe handle the session uses to send from any thread (e.g. the world
 // update thread). While armed it forwards to ConnCtx::enqueue; disarm() (called
@@ -161,12 +109,15 @@ struct ConnCtx;
 struct SendChannel {
     std::mutex mu;
     ConnCtx*   ctx = nullptr;
-    bool       closeRequested = false;
-    bool       sendShutdown = false;
     SendQueue  out;                        // coalescing buffer + byte backpressure
 
+    // A close asked for by the session, honoured only once its bytes are out. The
+    // flag lives on the CHANNEL rather than the ctx because the channel is what a
+    // world thread holds, and it outlives the ctx by design.
+    bool closeRequested = false;
+
     void post(const uint8_t* data, size_t len);  // append + kick a write while armed
-    void requestClose();                   // close the socket -> triggers teardown
+    void requestClose();                   // drain, then close
     void disarm();                         // detach from the ctx, forever
 };
 
@@ -174,10 +125,8 @@ struct ConnCtx {
     SOCKET   sock{INVALID_SOCKET};
     RecvOv   recvOv;
     SendOv   sendOv;
-    OVERLAPPED closeOv{};
     std::shared_ptr<ISession>    session;
     std::shared_ptr<SendChannel> channel;
-    IocpServer* owner = nullptr;
 
     // Lifetime: the ConnCtx must outlive every overlapped op posted on it, because
     // their completions arrive (keyed by this pointer) on an IOCP worker possibly
@@ -187,13 +136,57 @@ struct ConnCtx {
     // teardown idempotent across the recv/send/close paths that can all race to it.
     std::atomic<long> refs{1};
     std::atomic<bool> dead{false};
-    std::atomic<bool> controlPending{false};
 
-    ConnCtx(const SessionFactory& factory, IocpServer* server)
-        : session(factory()), owner(server) {}
+    // Set once the FIN has been sent, so the half-close is not repeated.
+    bool sendShutdown = false;
+
+    // True while a worker is inside this connection's session callbacks.
+    //
+    // A session closes by setting closed() and calling the closer FROM INSIDE onData,
+    // before it has returned the bytes that explain the disconnect. Acting on the
+    // request there would find an empty queue and shut the send side down a moment
+    // before those bytes are queued -- which is precisely the data loss this is meant
+    // to prevent. So the request is only recorded while dispatching; the dispatcher
+    // honours it once the response is in the queue.
+    std::atomic<bool> dispatching{false};
+
+    // Serialises this connection's session callbacks. IOCP places no ordering on the
+    // completions for one handle, so without this a recv-data completion (onData) and
+    // a concurrent send- or error-completion (which can reach onClose) for the same
+    // ctx could run on two workers at once -- a data race on the session's state and a
+    // teardown racing a live delivery. The reactor/io_uring backends inherit this from
+    // their single I/O thread; here the worker takes it around the dispatch, never
+    // across the release() that may free the ctx.
+    std::mutex cb;
+
+    // Serialises the Winsock calls on `sock` (WSARecv/WSASend/closesocket). Winsock
+    // forbids concurrent calls on one socket, and shutdown closes sockets while workers
+    // may still be posting I/O -- this makes every such call mutually exclusive and lets
+    // close() run idempotently from teardown, a world-thread requestClose, and stop().
+    std::mutex sockMu;
+
+    // The owning server. When the last ref drops, release() hands the ctx to
+    // owner->removeAndDelete(), which erases it from m_conns under m_connsMu and only then
+    // deletes it. A stop() scan holds m_connsMu and touches only ctxs still in the set, and
+    // each is erased before it is deleted, so the scan never sees freed memory -- which is
+    // what makes an empty m_conns true I/O quiescence. Set once in handleAccept().
+    IocpServer* owner{nullptr};
+
+    explicit ConnCtx(const SessionFactory& factory) : session(factory()) {}
+
+    // True once the session's outbound bytes have all reached the socket, so a
+    // requested close can be honoured. Checked wherever a send or recv completes.
+    bool drained() const;
+
+    // Closes if a close was asked for and nothing is left to send. Returns true when
+    // it closed. The half-close is a shutdown(SD_SEND), not a closesocket: the peer
+    // gets a FIN and reads the tail, instead of losing it to a reset.
+    bool closeIfDrained();
 
     void addRef()  { refs.fetch_add(1, std::memory_order_relaxed); }
-    void release() { if (refs.fetch_sub(1, std::memory_order_acq_rel) == 1) delete this; }
+    // Out of line: the last release routes through owner->removeAndDelete(), which needs
+    // the (here still-incomplete) IocpServer definition.
+    void release();
 
     // Append bytes to the outbound buffer and start a write if none is in flight.
     // Thread-safe; callable from any thread.
@@ -226,11 +219,9 @@ public:
     void stop();
 
 private:
-    friend struct SendChannel;
-    friend struct ConnCtx;
-
     HANDLE   m_iocp{nullptr};
     SOCKET   m_listen{INVALID_SOCKET};
+    std::mutex m_listenMu;   // serialises AcceptEx / SO_UPDATE_ACCEPT_CONTEXT / close on m_listen
     SessionFactory m_factory;
 
     LPFN_ACCEPTEX               m_fnAcceptEx{nullptr};
@@ -238,25 +229,33 @@ private:
 
     std::vector<std::thread>    m_workers;
     std::atomic<bool>           m_running{false};
-    OutstandingOperations       m_operations;
     bool                        m_wsaStarted{false};   // owns one WSAStartup ref
 
     static constexpr int PENDING_ACCEPTS = 4;
     static constexpr ULONG_PTR SHUTDOWN_KEY = ~(ULONG_PTR)0;
 
-    // Tracks live connections for cleanup on shutdown
+    // Tracks live connections. A ConnCtx is inserted in handleAccept() and removed by
+    // removeAndDelete() (from ConnCtx::release()) only when its last reference drops, so an
+    // empty m_conns means every connection's overlapped I/O has completed -- the true
+    // quiescence that stop() waits on before it joins the workers and tears the port down.
     std::mutex                             m_connsMu;
+    std::condition_variable                m_connsCv;   // signalled when a ConnCtx is freed
     std::unordered_set<ConnCtx*>           m_conns;
+
+    // Posted-but-not-yet-completed AcceptEx operations. m_conns only tracks adopted
+    // connections, so shutdown also waits for this to reach 0 before joining the workers,
+    // otherwise a still-pending (or cancelled-but-undequeued) accept leaks its AcceptOv.
+    std::atomic<int>                       m_pendingAccepts{0};
+
+    friend struct ConnCtx;                      // ConnCtx::release() calls removeAndDelete
+    void removeAndDelete(ConnCtx* ctx);         // erase from m_conns (locked) + notify + delete
 
     void workerThread();
     void postAccept();
     bool postRecv  (ConnCtx* ctx);              // refs++ on success
-    bool postControl(ConnCtx* ctx);              // refs++ on success
     void handleAccept(AcceptOv* aov, DWORD bytes);
     void handleRecv (ConnCtx* ctx, DWORD bytes);
     void handleSend (ConnCtx* ctx, DWORD bytes);// `bytes` MUST be honoured (short writes)
-    void handleControl(ConnCtx* ctx);
-    bool closeIfDrained(ConnCtx* ctx);
     void markDead   (ConnCtx* ctx);             // idempotent teardown; releases alive ref
 };
 

@@ -27,7 +27,7 @@
 
 #include "Auth/BigNumber.h"
 #include "Platform/Define.h"
-#include "Utilities/WorldPacket.h"
+#include "WorldPacket.h"
 
 #include <memory>
 #include <string>

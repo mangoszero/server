@@ -5,9 +5,9 @@ permissions:
 
 on:
   push:
-    branches: [master, devel]
+    branches: [master, united, devel]
   pull_request:
-    branches: [master]
+    branches: [master, united]
 
 concurrency:
   group: codestyle-${{ github.ref }}
@@ -25,4 +25,4 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Check Codestyling
-        run: source ./apps/ci/ci-codestyle.sh
+        run: source ./.github/apps/ci/ci-codestyle.sh

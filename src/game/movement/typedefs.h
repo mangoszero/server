@@ -25,20 +25,16 @@
 #ifndef MANGOSSERVER_TYPEDEFS_H
 #define MANGOSSERVER_TYPEDEFS_H
 
-#include "Common.h"
-
-namespace G3D
-{
-    class Vector2;
-    class Vector3;
-    class Vector4;
-}
+#include "Platform/Define.h"
+#include "Geometry/Vector2.h"
+#include "Geometry/Vector3.h"
+#include "Geometry/Vector4.h"
 
 namespace Movement
 {
-    using G3D::Vector2;
-    using G3D::Vector3;
-    using G3D::Vector4;
+    using Geometry::Vector2;
+    using Geometry::Vector3;
+    using Geometry::Vector4;
 
     /**
      * @brief Converts seconds to milliseconds.

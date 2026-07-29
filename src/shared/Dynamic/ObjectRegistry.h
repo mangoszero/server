@@ -26,7 +26,6 @@
 #define MANGOS_OBJECTREGISTRY_H
 
 #include "Platform/Define.h"
-#include "Utilities/UnorderedMapSet.h"
 #include "Policies/Singleton.h"
 
 #include <string>
@@ -34,7 +33,6 @@
 #include <map>
 
 template < class T, class Key = std::string >
-
 /**
  * @brief ObjectRegistry holds all registry item of the same type
  *
@@ -151,7 +149,6 @@ class ObjectRegistry
          *
          */
         ObjectRegistry() {}
-
         /**
          * @brief
          *

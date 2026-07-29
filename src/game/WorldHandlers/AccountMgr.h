@@ -25,7 +25,9 @@
 #ifndef MANGOS_H_ACCMGR
 #define MANGOS_H_ACCMGR
 
-#include "Common.h"
+#include "Common/ServerDefines.h"
+#include "Platform/Define.h"
+#include <string>
 
 /**
  * @brief Account operation result enumeration

@@ -1,3 +1,4 @@
+#include <string>
 #include "Config/Config.h"
 #include "../botpch.h"
 #include "playerbot.h"

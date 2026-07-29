@@ -22,7 +22,8 @@
 #ifndef MANGOS_H_AUCTION_INTENT_EXECUTOR
 #define MANGOS_H_AUCTION_INTENT_EXECUTOR
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <ctime>
 #include "Policies/Singleton.h"
 #include "IpcMessage.h"
 

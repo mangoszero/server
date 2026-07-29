@@ -22,7 +22,7 @@
 #ifndef AH_IPC_OPCODES_H
 #define AH_IPC_OPCODES_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 
 /**
  * @brief IPC opcode enumeration for the AH subprocess wire protocol.

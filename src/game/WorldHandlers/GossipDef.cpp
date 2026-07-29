@@ -43,6 +43,8 @@
  * @see GossipMenuData for menu data
  */
 
+#include "Utilities/Errors.h"
+#include <string>
 #include "GossipDef.h"
 #include "QuestDef.h"
 #include "ObjectMgr.h"

@@ -22,7 +22,7 @@
 #ifndef AH_IPC_MESSAGE_H
 #define AH_IPC_MESSAGE_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "Utilities/ByteBuffer.h"
 #include "IpcOpcodes.h"
 #include "IpcVersion.h"

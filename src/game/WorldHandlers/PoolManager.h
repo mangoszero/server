@@ -25,7 +25,12 @@
 #ifndef MANGOS_POOLHANDLER_H
 #define MANGOS_POOLHANDLER_H
 
-#include "Common.h"
+#include <cmath>
+#include <utility>
+#include <string>
+#include <vector>
+#include <map>
+#include <set>
 #include "Platform/Define.h"
 #include "Creature.h"
 #include "GameObject.h"

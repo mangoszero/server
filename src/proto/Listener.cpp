@@ -22,6 +22,8 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <cstdint>
+#include <string>
 #include "Listener.h"
 
 #include "ClientConnection.h"
@@ -30,22 +32,44 @@
 
 namespace proto
 {
-Listener::Listener(IWorldGateway& gateway)
-    : m_gateway(gateway)
-{
-}
+    Listener::Listener(IWorldGateway& gateway)
+        : m_gateway(gateway),
+          m_running(false)
+    {
+    }
 
-bool Listener::Start(uint16 port, std::string const& bindIp)
-{
-    return m_server.start(port,
-        [this]() -> std::shared_ptr<net::ISession>
+    Listener::~Listener()
+    {
+        Stop();
+    }
+
+    bool Listener::Start(uint16_t port, const std::string& bindIp)
+    {
+        if (m_running)
         {
-            return std::make_shared<ClientConnection>(m_gateway);
-        }, bindIp);
-}
+            return true;
+        }
 
-void Listener::Stop()
-{
-    m_server.stop();
-}
+        IWorldGateway* gateway = &m_gateway;
+
+        m_running = m_server.start(port,
+            [gateway]() -> std::shared_ptr<net::ISession>
+            {
+                return std::make_shared<ClientConnection>(*gateway);
+            },
+            bindIp);
+
+        return m_running;
+    }
+
+    void Listener::Stop()
+    {
+        if (!m_running)
+        {
+            return;
+        }
+
+        m_server.stop();
+        m_running = false;
+    }
 }

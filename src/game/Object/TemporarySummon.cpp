@@ -25,6 +25,7 @@
 #include "TemporarySummon.h"
 #include "Log.h"
 #include "CreatureAI.h"
+#include "Corpse.h"
 
 /**
  * @brief Creates a temporary summon instance.
@@ -215,7 +216,7 @@ void TemporarySummon::Update(uint32 update_diff,  uint32 diff)
             if (GetCharmerGuid())
             {
                 Unit* charmer = GetCharmer();
-                if (!charmer || !IsWithinDistInMap(charmer, GetMap()->GetVisibilityDistance()))
+                if (!charmer || !InReach(*this, *charmer, GetMap()->GetVisibilityDistance()))
                 {
                     UnSummon();
                     return;

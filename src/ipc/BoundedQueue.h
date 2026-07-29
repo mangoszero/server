@@ -22,7 +22,8 @@
 #ifndef AH_IPC_BOUNDED_QUEUE_H
 #define AH_IPC_BOUNDED_QUEUE_H
 
-#include "Common.h"
+#include "LockedQueue/LockedQueue.h"
+#include <memory>
 #include <deque>
 #include <mutex>
 #include <utility>

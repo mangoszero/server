@@ -39,12 +39,11 @@
  * @see ChannelMgr for the manager interface
  */
 
+#include <string>
 #include "ChannelMgr.h"
 #include "Policies/Singleton.h"
 #include "World.h"
 
-INSTANTIATE_SINGLETON_1(AllianceChannelMgr);
-INSTANTIATE_SINGLETON_1(HordeChannelMgr);
 
 /**
  * @brief Get the appropriate channel manager for a team

@@ -23,6 +23,7 @@
  */
 
 #pragma once
+#include <queue>
 #include "net/ISession.hpp"
 #include "net/reactor/Connection.hpp"
 #include "net/reactor/Poller.hpp"

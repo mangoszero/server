@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include "ListQuestsActions.h"
 #include "StatsAction.h"
 #include "LeaveGroupAction.h"

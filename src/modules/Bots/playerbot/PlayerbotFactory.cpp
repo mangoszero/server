@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "botpch.h"
 #include "playerbot.h"
 #include "ahbot/AhBot.h"

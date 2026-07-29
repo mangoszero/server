@@ -211,11 +211,11 @@ if(
   OR NOT "${dep_eluna_rev_branch_cached}" MATCHES "${dep_eluna_rev_branch}"
   OR NOT "${dep_sd3_rev_hash_cached}"     MATCHES "${dep_sd3_rev_hash}"
   OR NOT "${dep_sd3_rev_branch_cached}"   MATCHES "${dep_sd3_rev_branch}"
-  OR NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/src/shared/revision_data.h"
+  OR NOT EXISTS "${BUILDDIR}/src/shared/revision_data.h"
 )
   configure_file(
     "${CMAKE_SOURCE_DIR}/src/shared/revision_data.h.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/src/shared/revision_data.h"
+    "${BUILDDIR}/src/shared/revision_data.h"
     @ONLY
   )
   set(rev_hash_cached             "${rev_hash}"             CACHE INTERNAL "Cached commit-hash"       )

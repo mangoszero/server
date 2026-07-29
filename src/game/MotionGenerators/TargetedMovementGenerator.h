@@ -25,329 +25,149 @@
 #ifndef MANGOS_TARGETEDMOVEMENTGENERATOR_H
 #define MANGOS_TARGETEDMOVEMENTGENERATOR_H
 
-#include "MovementGenerator.h"
 #include "FollowerReference.h"
-#include "G3D/Vector3.h"
-#include "PathFinder.h" // Include the header file for PathFinder
-
-class PathFinder;
+#include "IntentMovementGenerator.h"
+#include "Unit.h"
 
 /**
- * @brief Base class for targeted movement generators.
+ * @brief Holds the link to the tracked target.
+ *
+ * A separate class only because FollowerReference is declared as
+ * Reference<Unit, TargetedMovementGeneratorBase> — the reference machinery names this
+ * type, so it has to keep existing under this name.
  */
 class TargetedMovementGeneratorBase
 {
     public:
-        /**
-         * @brief Constructor for TargetedMovementGeneratorBase.
-         * @param target Reference to the target unit.
-         */
-        TargetedMovementGeneratorBase(Unit& target) { i_target.link(&target, this); }
+        explicit TargetedMovementGeneratorBase(Unit& target) { i_target.link(&target, this); }
 
-        /**
-         * @brief Stops following the target.
-         */
         void stopFollowing() {}
 
     protected:
-        FollowerReference i_target; ///< Reference to the target unit.
+        FollowerReference i_target;
 };
 
 /**
- * @brief Template class for medium targeted movement generators.
- * @tparam T Type of the unit (Player or Creature).
- * @tparam D Derived class type.
+ * @brief The two movement kinds that track ANOTHER object rather than a fixed point.
+ *
+ * Both answer the same question each tick — "where do I want to stand relative to that
+ * thing, and am I there yet?" — and differ only in how the standing spot is derived and
+ * what happens on arrival. Everything that used to make these the most duplicated code
+ * in the movement tree (owning a PathFinder, deciding when a moving goal is stale enough
+ * to re-route, building a spline, sending the packet) now lives once, in the MotionDriver.
+ *
+ * What is left here is the genuinely per-kind policy, expressed as the handful of hooks
+ * below: how far "close enough" is, how often to look, and what to do on arrival.
  */
-template<class T, typename D>
-    class TargetedMovementGeneratorMedium
-        : public MovementGeneratorMedium< T, D >, public TargetedMovementGeneratorBase
+class TargetedMovementGenerator : public IntentMovementGenerator,
+                                  public TargetedMovementGeneratorBase
 {
-    protected:
-        /**
-         * @brief Constructor for TargetedMovementGeneratorMedium.
-         * @param target Reference to the target unit.
-         * @param offset Offset distance from the target.
-         * @param angle Angle to maintain from the target.
-         */
-        TargetedMovementGeneratorMedium(Unit& target, float offset, float angle)
-            : TargetedMovementGeneratorBase(target),
-            i_recheckDistance(0),
-            i_offset(offset), i_angle(angle),
-            m_speedChanged(false), i_targetReached(false),
-            i_path(NULL)
-        {
-        }
-
-        /**
-         * @brief Destructor for TargetedMovementGeneratorMedium.
-         */
-        ~TargetedMovementGeneratorMedium()
-        {
-            delete i_path;
-        }
-
     public:
-        /**
-         * @brief Updates the movement generator.
-         * @param owner Reference to the unit.
-         * @param diff Time difference.
-         * @return True if the update was successful, false otherwise.
-         */
-        bool Update(T&, const uint32&);
-
-        /**
-         * @brief Checks if the target is reachable.
-         * @return True if the target is reachable, false otherwise.
-         */
-        bool IsReachable() const;
-
-        /**
-         * @brief Gets the target unit.
-         * @return Pointer to the target unit.
-         */
         Unit* GetTarget() const { return i_target.getTarget(); }
 
-        /**
-         * @brief Called when the unit's speed changes.
-         */
-        void unitSpeedChanged()
-        {
-            m_speedChanged = true;
-        }
-
     protected:
-        /**
-         * @brief Sets the target location for the unit.
-         * @param owner Reference to the unit.
-         * @param updateDestination Whether to update the destination.
-         */
-        void _setTargetLocation(T&, bool updateDestination);
+        TargetedMovementGenerator(Unit& target, float offset, float angle)
+            : TargetedMovementGeneratorBase(target), m_offset(offset), m_angle(angle) {}
 
-        /**
-         * @brief Checks if a new position is required.
-         * @param owner Reference to the unit.
-         * @param x X-coordinate of the position.
-         * @param y Y-coordinate of the position.
-         * @param z Z-coordinate of the position.
-         * @return True if a new position is required, false otherwise.
-         */
-        bool RequiresNewPosition(T& owner, float x, float y, float z) const;
+        Motion::MoveIntent Intent(Unit& owner, Motion::MoveStatus const& status,
+                                  uint32 diff) final;
 
-        /**
-         * @brief Gets the dynamic target distance.
-         * @param owner Reference to the unit.
-         * @param forRangeCheck Whether the distance is for range check.
-         * @return The dynamic target distance.
-         */
-        virtual float GetDynamicTargetDistance(T& /*owner*/, bool /*forRangeCheck*/) const { return i_offset; }
+        /// Set/clear the unit state that says "I am moving because of THIS generator".
+        virtual void AddMoveState(Unit& owner) const = 0;
+        virtual void ClearMoveState(Unit& owner) const = 0;
 
-        TimeTracker i_recheckDistance; ///< Time tracker for rechecking distance.
-        float i_offset; ///< Offset distance from the target.
-        float i_angle; ///< Angle to maintain from the target.
-        G3D::Vector3 m_prevTargetPos; ///< Previous target position.
-        bool m_speedChanged : 1; ///< Indicates if the speed has changed.
-        bool i_targetReached : 1; ///< Indicates if the target has been reached.
-        PathFinder* i_path; ///< Path finder for the movement.
-};
+        /// How far from the target the unit wants to stand (forRangeCheck = false), and
+        /// how far the target may drift before that spot is stale (true). The gap
+        /// between the two is the hysteresis that stops a victim shuffling a yard inside
+        /// melee from provoking a string of sub-yard catch-up legs.
+        virtual float TargetDistance(Unit& owner, bool forRangeCheck) const = 0;
 
-/**
- * @brief ChaseMovementGenerator is a movement generator that makes a unit chase a target.
- * @tparam T Type of the unit (Player or Creature).
- */
-template<class T>
-    class ChaseMovementGenerator : public TargetedMovementGeneratorMedium<T, ChaseMovementGenerator<T> >
-{
-    public:
-        /**
-         * @brief Constructor for ChaseMovementGenerator.
-         * @param target Reference to the target unit.
-         * @param offset Offset distance from the target.
-         * @param angle Angle to maintain from the target.
-         */
-        ChaseMovementGenerator(Unit& target, float offset, float angle)
-            : TargetedMovementGeneratorMedium<T, ChaseMovementGenerator<T> >(target, offset, angle) {}
+        /// The target is gone in a way only this kind can detect (a creature that killed
+        /// its own pet is no longer chasing anything).
+        virtual bool LostTarget(Unit& /*owner*/) const { return false; }
 
-        /**
-         * @brief Destructor for ChaseMovementGenerator.
-         */
-        ~ChaseMovementGenerator() {}
+        /// The unit is now as close as it asked to be. Fires once per approach.
+        virtual void ReachTarget(Unit& /*owner*/) {}
 
-        /**
-         * @brief Gets the type of the movement generator.
-         * @return The type of the movement generator.
-         */
-        MovementGeneratorType GetMovementGeneratorType() const override { return CHASE_MOTION_TYPE; }
+        virtual bool EnableWalking(Unit& /*owner*/) const { return false; }
 
-        /**
-         * @brief Initializes the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Initialize(T&);
+        /// How often the standing spot is re-derived. Deriving it is the expensive half
+        /// (it snaps to the ground), so it is throttled — and a follower looks twice as
+        /// often as a chaser, because a pet lagging behind its master reads far worse
+        /// than a mob lagging a step behind its victim.
+        virtual uint32 RecheckIntervalMs() const { return 100; }
 
-        /**
-         * @brief Finalizes the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Finalize(T&);
+        /// Reset the tracking state. Call from Initialize/Interrupt.
+        void ResetTracking();
 
-        /**
-         * @brief Interrupts the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Interrupt(T&);
-
-        /**
-         * @brief Resets the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Reset(T&);
-
-        /**
-         * @brief Clears the unit's move state.
-         * @param u Reference to the unit.
-         */
-        static void _clearUnitStateMove(T& u);
-
-        /**
-         * @brief Adds the unit's move state.
-         * @param u Reference to the unit.
-         */
-        static void _addUnitStateMove(T& u);
-
-        /**
-         * @brief Checks if walking is enabled.
-         * @return False, as walking is not enabled for chase movement.
-         */
-        bool EnableWalking() const { return false;}
-
-        /**
-         * @brief Checks if the target is lost.
-         * @param u Reference to the unit.
-         * @return True if the target is lost, false otherwise.
-         */
-        bool _lostTarget(T& u) const;
-
-        /**
-         * @brief Called when the target is reached.
-         * @param owner Reference to the unit.
-         */
-        void _reachTarget(T&);
-
-    protected:
-        /**
-         * @brief Gets the dynamic target distance.
-         * @param owner Reference to the unit.
-         * @param forRangeCheck Whether the distance is for range check.
-         * @return The dynamic target distance.
-         */
-        float GetDynamicTargetDistance(T& owner, bool forRangeCheck) const override;
-};
-
-/**
- * @brief FollowMovementGenerator is a movement generator that makes a unit follow a target.
- * @tparam T Type of the unit (Player or Creature).
- */
-template<class T>
-    class FollowMovementGenerator : public TargetedMovementGeneratorMedium<T, FollowMovementGenerator<T> >
-{
-    public:
-        /**
-         * @brief Constructor for FollowMovementGenerator.
-         * @param target Reference to the target unit.
-         */
-        FollowMovementGenerator(Unit& target)
-            : TargetedMovementGeneratorMedium<T, FollowMovementGenerator<T> >(target) {}
-
-        /**
-         * @brief Constructor for FollowMovementGenerator with offset and angle.
-         * @param target Reference to the target unit.
-         * @param offset Offset distance from the target.
-         * @param angle Angle to maintain from the target.
-         */
-        FollowMovementGenerator(Unit& target, float offset, float angle)
-            : TargetedMovementGeneratorMedium<T, FollowMovementGenerator<T> >(target, offset, angle) {}
-
-        /**
-         * @brief Destructor for FollowMovementGenerator.
-         */
-        ~FollowMovementGenerator() {}
-
-        /**
-         * @brief Gets the type of the movement generator.
-         * @return The type of the movement generator.
-         */
-        MovementGeneratorType GetMovementGeneratorType() const override { return FOLLOW_MOTION_TYPE; }
-
-        /**
-         * @brief Initializes the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Initialize(T&);
-
-        /**
-         * @brief Finalizes the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Finalize(T&);
-
-        /**
-         * @brief Interrupts the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Interrupt(T&);
-
-        /**
-         * @brief Resets the movement generator.
-         * @param owner Reference to the unit.
-         */
-        void Reset(T&);
-
-        /**
-         * @brief Clears the unit's move state.
-         * @param u Reference to the unit.
-         */
-        static void _clearUnitStateMove(T& u);
-
-        /**
-         * @brief Adds the unit's move state.
-         * @param u Reference to the unit.
-         */
-        static void _addUnitStateMove(T& u);
-
-        /**
-         * @brief Checks if walking is enabled.
-         * @return True if walking is enabled, false otherwise.
-         */
-        bool EnableWalking() const;
-
-        /**
-         * @brief Checks if the target is lost.
-         * @param owner Reference to the unit.
-         * @return False, as the target is not lost for follow movement.
-         */
-        bool _lostTarget(T&) const { return false; }
-
-        /**
-         * @brief Called when the target is reached.
-         * @param owner Reference to the unit.
-         */
-        void _reachTarget(T&) {}
+        float m_offset; ///< Distance to keep from the target.
+        float m_angle;  ///< Bearing to keep, relative to the target's facing.
 
     private:
-        /**
-         * @brief Updates the unit's speed.
-         * @param owner Reference to the unit.
-         */
-        void _updateSpeed(T& u);
+        /// Where the unit wants to stand, relative to the target.
+        Motion::Vector3 ComputeDestination(Unit& owner) const;
+
+        /// Has the target moved far enough from `spot` that it is stale?
+        bool RequiresNewPosition(Unit& owner, Motion::Vector3 const& spot) const;
+
+        TimeTracker m_recheckTime{0};
+        Motion::Vector3 m_dest;      ///< The standing spot we are heading for.
+        bool m_haveDest = false;     ///< False before the first spot has been derived.
+        bool m_targetReached = false;///< ReachTarget already fired for this approach.
+};
+
+/**
+ * @brief Combat pursuit: run the victim down and stay in its face.
+ */
+class ChaseMovementGenerator final : public TargetedMovementGenerator
+{
+    public:
+        ChaseMovementGenerator(Unit& target, float offset, float angle)
+            : TargetedMovementGenerator(target, offset, angle) {}
+
+        void Initialize(Unit& owner) override;
+        void Finalize(Unit& owner) override;
+        void Interrupt(Unit& owner) override;
+        void Reset(Unit& owner) override;
+
+        MovementGeneratorType GetMovementGeneratorType() const override { return CHASE_MOTION_TYPE; }
 
     protected:
-        /**
-         * @brief Gets the dynamic target distance.
-         * @param owner Reference to the unit.
-         * @param forRangeCheck Whether the distance is for range check.
-         * @return The dynamic target distance.
-         */
-        float GetDynamicTargetDistance(T& owner, bool forRangeCheck) const override;
+        void AddMoveState(Unit& owner) const override { owner.addUnitState(UNIT_STAT_CHASE_MOVE); }
+        void ClearMoveState(Unit& owner) const override { owner.clearUnitState(UNIT_STAT_CHASE_MOVE); }
+
+        float TargetDistance(Unit& owner, bool forRangeCheck) const override;
+        bool LostTarget(Unit& owner) const override;
+        void ReachTarget(Unit& owner) override;
+};
+
+/**
+ * @brief Keep station on a target: a pet at its master's heel, an escorted NPC.
+ */
+class FollowMovementGenerator final : public TargetedMovementGenerator
+{
+    public:
+        FollowMovementGenerator(Unit& target, float offset, float angle)
+            : TargetedMovementGenerator(target, offset, angle) {}
+
+        void Initialize(Unit& owner) override;
+        void Finalize(Unit& owner) override;
+        void Interrupt(Unit& owner) override;
+        void Reset(Unit& owner) override;
+
+        MovementGeneratorType GetMovementGeneratorType() const override { return FOLLOW_MOTION_TYPE; }
+
+    protected:
+        void AddMoveState(Unit& owner) const override { owner.addUnitState(UNIT_STAT_FOLLOW_MOVE); }
+        void ClearMoveState(Unit& owner) const override { owner.clearUnitState(UNIT_STAT_FOLLOW_MOVE); }
+
+        float TargetDistance(Unit& owner, bool forRangeCheck) const override;
+        bool EnableWalking(Unit& owner) const override;
+        uint32 RecheckIntervalMs() const override { return 50; }
+
+    private:
+        /// A pet mirrors its master's speed, so it can actually keep up.
+        void SyncSpeedWithMaster(Unit& owner) const;
 };
 
 #endif // MANGOS_TARGETEDMOVEMENTGENERATOR_H

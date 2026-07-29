@@ -45,6 +45,8 @@
 
 
 
+#include <set>
+#include <mutex>
 #include "ScriptMgr.h"
 #include "Log.h"
 #include "ProgressBar.h"

@@ -22,7 +22,7 @@ below.
 Both runs read and write the same shared `auction` table schema; only the single
 writer swaps. `Custody = 1` in BOTH runs so the escrow ledger is populated
 identically and the diff is apples-to-apples (enabling B with `Custody = 0` is
-unsupported -- see `doc/AuctionHouseBot.md`).
+unsupported -- see `extra/doc/AuctionHouseBot.md`).
 
 ## Determinism preconditions (must hold for BOTH runs)
 
@@ -58,7 +58,7 @@ sellers/bidders S and B1/B2):
    bid, row stays live -- spec 4.1).
 8. **cancel** -- S cancels X (nonzero-cut cancel leg; S pays the auction cut, B2 is
    refunded). **NOTE:** this is the leg the `-t` harness cannot cover; it MUST be
-   observed here end-to-end (see `doc/AuctionHouseBot.md` OPERATOR WARNING 3).
+   observed here end-to-end (see `extra/doc/AuctionHouseBot.md` OPERATOR WARNING 3).
 9. **expire** -- advance the clock so any remaining live listing hits the
    expiry/win tick (no-bid expiry: deposit forfeit + item back to seller).
 
@@ -166,5 +166,5 @@ The differential passes when, for the full workload:
   buyout, which the base workload avoids).
 
 Record the diffs (or their absence) per workload row. This runbook plus the
-`doc/AuctionHouseBot.md` crash-injection procedure together constitute the
+`extra/doc/AuctionHouseBot.md` crash-injection procedure together constitute the
 deterministic acceptance gate for enabling `WriteAuthority` on a solo realm.

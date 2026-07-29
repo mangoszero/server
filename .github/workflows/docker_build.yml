@@ -1,14 +1,16 @@
 name: Docker Build
 
-# Only builds images and pushes nothing, so read is all the token ever needs.
-permissions:
-  contents: read
-
 on:
   push:
-    branches: [master, devel]
+    branches: [ master, united, devel ]
   pull_request:
-    branches: [master]
+    branches: [ master, united ]
+
+# Builds images and pushes nothing, so read is all the token ever needs -- at the
+# workflow level and again on the job, because a job may widen what the workflow grants
+# but never the other way round.
+permissions:
+  contents: read
 
 concurrency:
   group: docker-build-${{ github.ref }}
@@ -17,9 +19,10 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
-      # v2 runs on a deprecated Node runtime.
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -29,23 +32,22 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Layer caching across runs.
-      - name: Build Mangosd Docker image
+      - name: Build mangosd image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: dockercontainer/DockerFile-mangosd
+          file: extra/docker/DockerFile-mangosd
           tags: mangosd:latest
           push: false
           cache-from: type=gha,scope=mangosd
-          cache-to: type=gha,mode=max,scope=mangosd
+          cache-to: type=gha,scope=mangosd,mode=max
 
-      - name: Build Realmd Docker image
+      - name: Build realmd image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: dockercontainer/DockerFile-realmd
+          file: extra/docker/DockerFile-realmd
           tags: realmd:latest
           push: false
           cache-from: type=gha,scope=realmd
-          cache-to: type=gha,mode=max,scope=realmd
+          cache-to: type=gha,scope=realmd,mode=max

@@ -25,6 +25,7 @@
 #ifndef MANGOS_CREATUREAI_H
 #define MANGOS_CREATUREAI_H
 
+#include <vector>
 #include "Platform/Define.h"
 #include "Dynamic/FactoryHolder.h"
 #include "ObjectGuid.h"

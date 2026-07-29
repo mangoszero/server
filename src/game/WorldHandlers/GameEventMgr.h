@@ -25,7 +25,13 @@
 #ifndef MANGOS_GAMEEVENT_MGR_H
 #define MANGOS_GAMEEVENT_MGR_H
 
-#include "Common.h"
+#include <utility>
+#include <ctime>
+#include <string>
+#include <vector>
+#include <map>
+#include <set>
+#include <list>
 #include "SharedDefines.h"
 #include "Platform/Define.h"
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include "GenericPriestStrategy.h"
 
 namespace ai

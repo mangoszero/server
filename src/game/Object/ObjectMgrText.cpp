@@ -24,6 +24,8 @@
 
 
 
+#include <sstream>
+#include <set>
 #include "ObjectMgr.h"
 #include "Database/DatabaseEnv.h"
 #include "Log.h"

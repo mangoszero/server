@@ -2,16 +2,15 @@ name: Linux Build (GCC + Clang)
 
 on:
   push:
-    branches: [master, devel]
+    branches: [ master, united, devel ]
   pull_request:
-    branches: [master]
+    branches: [ master, united ]
 
 permissions:
   contents: read
 
-# A second push to the same branch makes the first run's result worthless.
 concurrency:
-  group: linux-build-${{ github.ref }}
+  group: linux-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -32,6 +31,10 @@ jobs:
 
     name: Build (${{ matrix.name }})
 
+    env:
+      BUILD_DIR: ${{ github.workspace }}/../build-${{ matrix.name }}
+      CCACHE_DIR: ${{ github.workspace }}/../ccache
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,66 +42,54 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      # ccache, not a cached build directory: actions/checkout rewrites every source file,
-      # so restored objects are always older than their sources and make rebuilds everything.
-      # ccache keys on translation-unit content instead. github.sha keeps the key unique so
-      # the cache is always re-saved; restore-keys seeds it from the newest previous run.
-      - name: Cache ccache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ccache
-          key: ${{ runner.os }}-${{ matrix.name }}-ccache-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.name }}-ccache-
-
       - name: Install build dependencies
         run: |
           sudo apt-get update -qq
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-            git cmake make build-essential ccache \
-            libssl-dev libbz2-dev default-libmysqlclient-dev \
-            libreadline-dev \
-            ${{ matrix.pkg }}
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq             cmake ninja-build ccache             libssl-dev libbz2-dev default-libmysqlclient-dev libreadline-dev             ${{ matrix.pkg }}
 
-      - name: Configure project
+      - name: Compiler cache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: linux-${{ matrix.name }}
+          max-size: 500M
+
+      - name: Configure
+        run: >
+          cmake -S . -B "$BUILD_DIR" -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_INSTALL_PREFIX="$BUILD_DIR/install"
+          -DCMAKE_C_COMPILER=${{ matrix.cc }}
+          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          -DBUILD_TOOLS=1
+          -DBUILD_MANGOSD=1
+          -DBUILD_REALMD=1
+          -DBUILD_AH_SERVICE=1
+          -DWITH_TESTS=1
+          # Never the socket tests: they bind real listeners and dominate the
+          # suite's wall-clock. A human asks for them, CI does not.
+          -DWITH_NET_TESTS=0
+          -DSOAP=1
+          -DSCRIPT_LIB_ELUNA=1
+          -DSCRIPT_LIB_SD3=1
+          -DPLAYERBOTS=1
+          -DUSE_STORMLIB=1
+          -DPCH=0
+
+      - name: Build
+        run: cmake --build "$BUILD_DIR" --parallel
+
+      - name: Test
+        run: ctest --test-dir "$BUILD_DIR" --output-on-failure
+
+      - name: Install
+        run: cmake --install "$BUILD_DIR"
+
+      - name: Verify the working tree is clean
         run: |
-          mkdir -p _build _install
-          cd _build
-          cmake .. \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=../_install \
-            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
-            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DBUILD_TOOLS=1 \
-            -DBUILD_MANGOSD=1 \
-            -DBUILD_REALMD=1 \
-            -DSOAP=1 \
-            -DSCRIPT_LIB_ELUNA=1 \
-            -DSCRIPT_LIB_SD3=1 \
-            -DPLAYERBOTS=1 \
-            -DUSE_STORMLIB=1 \
-            -DBUILD_AH_SERVICE=1 \
-            -DPCH=0 \
-            --warn-uninitialized
-
-      - name: Build and install
-        run: |
-          cd _build
-          make -j"$(nproc)"
-          make install -j"$(nproc)"
-
-      - name: AH service IPC self-test
-        run: |
-          bin="$(find _install _build -type f -name ah-service | head -n1)"
-          if [ -z "$bin" ]; then echo "ah-service binary not found"; exit 1; fi
-          echo "Running: $bin --selftest"
-          out="$("$bin" --selftest)"
-          echo "$out"
-          echo "$out" | grep -q "intent codec selftest OK" || { echo "MISSING: intent codec selftest OK"; exit 1; }
-          echo "$out" | grep -q "ipc selftest OK"           || { echo "MISSING: ipc selftest OK"; exit 1; }
-
-      - name: ccache statistics
-        if: always()
-        run: ccache -s
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::the build modified the source tree"
+            git status --porcelain
+            exit 1
+          fi

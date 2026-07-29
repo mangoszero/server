@@ -22,7 +22,8 @@
 #ifndef AH_IPC_BROWSE_MESSAGES_H
 #define AH_IPC_BROWSE_MESSAGES_H
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Common/Locales.h"
 #include "Utilities/ByteBuffer.h"
 #include <string>
 #include <vector>

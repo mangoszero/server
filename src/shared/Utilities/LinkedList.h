@@ -25,7 +25,8 @@
 #ifndef _LINKEDLIST
 #define _LINKEDLIST
 
-#include "Common.h"
+#include <iterator>
+#include "Platform/Define.h"
 
 //============================================
 class LinkedListHead;
@@ -65,17 +66,13 @@ class LinkedListElement
          * the element is not yet part of any list.
          */
         LinkedListElement()  { iNext = NULL; iPrev = NULL; }
-
         /**
          * @brief Destructs the element and automatically unlinks it from any list
          *
          * Calls delink() to ensure the element is properly removed from its list
          * before being destroyed.
          */
-        ~LinkedListElement()
-        {
-            delink();
-        }
+        ~LinkedListElement() { delink(); }
 
         /**
          * @brief Checks if this element has a next element in the list
@@ -83,14 +80,12 @@ class LinkedListElement
          * @return bool True if there is another element after this one, false otherwise
          */
         bool hasNext() const  { return (iNext->iNext != NULL); }
-
         /**
          * @brief Checks if this element has a previous element in the list
          *
          * @return bool True if there is another element before this one, false otherwise
          */
         bool hasPrev() const  { return (iPrev->iPrev != NULL); }
-
         /**
          * @brief Checks if this element is currently part of a linked list
          *
@@ -107,14 +102,12 @@ class LinkedListElement
          * @return LinkedListElement* Pointer to next element or NULL
          */
         LinkedListElement*       next()       { return hasNext() ? iNext : NULL; }
-
         /**
          * @brief Returns the next element (const version)
          *
          * @return LinkedListElement const* Pointer to next element or NULL
          */
         LinkedListElement const* next() const { return hasNext() ? iNext : NULL; }
-
         /**
          * @brief Returns the previous element in the list with bounds checking
          *
@@ -124,7 +117,6 @@ class LinkedListElement
          * @return LinkedListElement* Pointer to previous element or NULL
          */
         LinkedListElement*       prev()       { return hasPrev() ? iPrev : NULL; }
-
         /**
          * @brief Returns the previous element (const version)
          *
@@ -141,14 +133,12 @@ class LinkedListElement
          * @return LinkedListElement* Direct pointer to next element
          */
         LinkedListElement*       nocheck_next()       { return iNext; }
-
         /**
          * @brief Returns the next element without bounds checking (const version)
          *
          * @return LinkedListElement const* Direct pointer to next element
          */
         LinkedListElement const* nocheck_next() const { return iNext; }
-
         /**
          * @brief Returns the previous element without bounds checking
          *
@@ -158,7 +148,6 @@ class LinkedListElement
          * @return LinkedListElement* Direct pointer to previous element
          */
         LinkedListElement*       nocheck_prev()       { return iPrev; }
-
         /**
          * @brief Returns the previous element without bounds checking (const version)
          *
@@ -252,7 +241,6 @@ class LinkedListHead
          * @return LinkedListElement
          */
         LinkedListElement*       getFirst()       { return (isEmpty() ? NULL : iFirst.iNext); }
-
         /**
          * @brief
          *
@@ -266,7 +254,6 @@ class LinkedListHead
          * @return LinkedListElement
          */
         LinkedListElement*       getLast()        { return (isEmpty() ? NULL : iLast.iPrev); }
-
         /**
          * @brief
          *
@@ -324,22 +311,14 @@ class LinkedListHead
          * @brief
          *
          */
-        void incSize()
-        {
-            ++iSize;
-        }
-
+        void incSize() { ++iSize; }
         /**
          * @brief
          *
          */
-        void decSize()
-        {
-            --iSize;
-        }
+        void decSize() { --iSize; }
 
         template<class _Ty>
-
         /**
          * @brief
          *
@@ -353,43 +332,36 @@ class LinkedListHead
                  *
                  */
                 typedef std::bidirectional_iterator_tag iterator_category;
-
                 /**
                  * @brief
                  *
                  */
                 typedef _Ty value_type;
-
                 /**
                  * @brief
                  *
                  */
                 typedef ptrdiff_t difference_type;
-
                 /**
                  * @brief
                  *
                  */
                 typedef ptrdiff_t distance_type;
-
                 /**
                  * @brief
                  *
                  */
                 typedef _Ty* pointer;
-
                 /**
                  * @brief
                  *
                  */
                 typedef _Ty const* const_pointer;
-
                 /**
                  * @brief
                  *
                  */
                 typedef _Ty& reference;
-
                 /**
                  * @brief
                  *

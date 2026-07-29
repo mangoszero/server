@@ -22,7 +22,7 @@
 #ifndef AH_IPC_AUCTION_INTENTS_H
 #define AH_IPC_AUCTION_INTENTS_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "Utilities/ByteBuffer.h"
 
 /**

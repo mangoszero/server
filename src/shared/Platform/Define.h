@@ -27,8 +27,10 @@
 
 #include <sys/types.h>
 
+#include <cinttypes>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 #include "Platform/CompilerDefs.h"
 
@@ -54,14 +56,11 @@
 #  define MANGOS_PATH_MAX 1024
 #endif
 
-// Symbol-visibility spec kept for the DLL-exported module classes (playerbot).
 #if PLATFORM == PLATFORM_WINDOWS
-#  define MANGOS_DLL_SPEC __declspec(dllexport)
 #  ifndef DECLSPEC_NORETURN
 #    define DECLSPEC_NORETURN __declspec(noreturn)
 #  endif // DECLSPEC_NORETURN
 #else // PLATFORM != PLATFORM_WINDOWS
-#  define MANGOS_DLL_SPEC
 #  define DECLSPEC_NORETURN
 #endif // PLATFORM
 
@@ -104,5 +103,39 @@ typedef uint16      WORD;
  */
 typedef uint32      DWORD;
 #endif // COMPILER
+
+// ---------------------------------------------------------------------------
+// 64-bit printf formatting and literals.
+//
+// These used to expand to ACE_UINT64_FORMAT_SPECIFIER and friends, which is why
+// printing a uint64 anywhere in the server pulled in ACE. <cinttypes> is the
+// standard answer to the same problem and is correct on every platform by
+// definition, so the macros survive but their contents no longer come from a
+// third-party portability layer.
+// ---------------------------------------------------------------------------
+#define UI64FMTD "%" PRIu64
+#define SI64FMTD "%" PRId64
+#define I64FMT   "%016" PRIX64
+#define I32FMT   "%08" PRIX32
+
+#define UI64LIT(N) UINT64_C(N)
+#define SI64LIT(N) INT64_C(N)
+
+/// Number of elements in a C array. Rejects pointers at compile time, which the
+/// old sizeof/sizeof macro silently accepted.
+template<typename T, std::size_t N>
+constexpr std::size_t countof(T const (&)[N]) noexcept
+{
+    return N;
+}
+
+#define STRINGIZE(a) #a
+
+// MSVC spells the case-insensitive compares with a leading underscore.
+#if COMPILER == COMPILER_MICROSOFT
+#  define strnicmp _strnicmp
+#else
+#  define strnicmp strncasecmp
+#endif
 
 #endif // MANGOS_DEFINE_H

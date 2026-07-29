@@ -39,7 +39,8 @@
 
 
 #include "BattleGroundMgr.h"
-#include "Common.h"
+#include "Platform/Define.h"
+#include <algorithm>
 #include "SharedDefines.h"
 #include "Player.h"
 #include "BattleGroundAV.h"

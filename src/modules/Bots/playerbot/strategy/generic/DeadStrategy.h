@@ -1,4 +1,5 @@
 #pragma once
+#include <list>
 #include "PassTroughStrategy.h"
 
 namespace ai

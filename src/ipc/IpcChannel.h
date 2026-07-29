@@ -22,7 +22,8 @@
 #ifndef AH_IPC_CHANNEL_H
 #define AH_IPC_CHANNEL_H
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <atomic>
 #include "IpcMessage.h"
 #include "IpcThread.h"
 #include "IpcLink.h"

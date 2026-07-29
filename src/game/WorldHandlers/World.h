@@ -29,7 +29,15 @@
 #ifndef MANGOS_H_WORLD
 #define MANGOS_H_WORLD
 
-#include "Common.h"
+#include <unordered_map>
+#include "LockedQueue/LockedQueue.h"
+#include "Common/ServerDefines.h"
+#include "Platform/Define.h"
+#include "Common/Locales.h"
+#include <cstring>
+#include <ctime>
+#include <string>
+#include <map>
 #include "ScheduledExit.h"
 #include "Utilities/Util.h"
 #include "Timer.h"
@@ -471,7 +479,7 @@ struct CliCommandHolder
 
 /// The World
 
-typedef UNORDERED_MAP<uint32, WorldSession*> SessionMap;
+typedef std::unordered_map<uint32, WorldSession*> SessionMap;
 
 class World
 {

@@ -66,8 +66,6 @@ file(GLOB SRC_GRP_TOOL Tools/*.cpp Tools/*.h)
 source_group("Tool" FILES ${SRC_GRP_TOOL})
 
 #VMap group
-file(GLOB SRC_GRP_VMAPS vmap/*.cpp vmap/*.h)
-source_group("vmaps" FILES ${SRC_GRP_VMAPS})
 
 #Warden group
 file(GLOB SRC_GRP_WARDEN Warden/*.cpp Warden/*.h)
@@ -94,6 +92,13 @@ if(SCRIPT_LIB_ELUNA)
         ${CMAKE_SOURCE_DIR}/src/modules/Eluna/methods/Mangos/*.h
     )
     source_group("Eluna" FILES ${SRC_GRP_ELUNA})
+
+    # Eluna is an untouched submodule; see cmake/SubmoduleCompat.cmake. The forced
+    # include goes to Eluna's own sources only; the include DIRECTORY has to be
+    # visible to all of `game`, because core files include Eluna headers and those
+    # open with #include "Common.h".
+    mangos_submodule_compat_sources("${SRC_GRP_ELUNA}"
+        "${CMAKE_SOURCE_DIR}/src/shared/Compat/eluna")
 endif()
 
 if(PLAYERBOTS)
@@ -186,41 +191,6 @@ endif()
 
 configure_file(AuctionHouseBot/ahbot.conf.dist.in ${CMAKE_CURRENT_BINARY_DIR}/AuctionHouseBot/ahbot.conf.dist)
 
-if(BUILD_TOOLS)
-add_library(vmap2 STATIC
-    vmap/BIH.cpp
-    vmap/VMapManager2.cpp
-    vmap/MapTree.cpp
-    vmap/TileAssembler.cpp
-    vmap/WorldModel.cpp
-    vmap/ModelInstance.cpp
-    vmap/BIH.h
-    vmap/VMapManager2.h
-    vmap/MapTree.h
-    vmap/TileAssembler.h
-    vmap/WorldModel.h
-    vmap/ModelInstance.h
-)
-
-target_include_directories(vmap2
-    PUBLIC
-        vmap
-        WorldHandlers
-)
-
-target_compile_definitions(vmap2
-    PUBLIC
-        MMAP_GENERATOR
-        NO_CORE_FUNCS
-)
-target_link_libraries(vmap2
-    PUBLIC
-        shared
-        g3dlite
-        RecastNavigation::Detour
-)
-endif()
-
 add_library(game STATIC
     ${SRC_GRP_AHBOT}
     ${SRC_GRP_BATTLEGROUND}
@@ -234,13 +204,19 @@ add_library(game STATIC
     ${SRC_GRP_SERVER}
     ${SRC_GRP_TIME}
     ${SRC_GRP_TOOL}
-    ${SRC_GRP_VMAPS}
     ${SRC_GRP_WARDEN}
     ${SRC_GRP_WARDEN_MODULES}
     ${SRC_GRP_WORLD_HANDLERS}
     $<$<BOOL:${SCRIPT_LIB_ELUNA}>:${SRC_GRP_ELUNA}>
     $<$<BOOL:${PLAYERBOTS}>:${SRC_GRP_BOTS}>
 )
+
+# Eluna headers are included by core files and open with #include "Common.h";
+# see the note above. Passive -- nothing in the core names that header.
+if(SCRIPT_LIB_ELUNA)
+    target_include_directories(game
+        PRIVATE "${CMAKE_SOURCE_DIR}/src/shared/Compat/eluna")
+endif()
 
 target_include_directories(game
     PUBLIC
@@ -256,7 +232,6 @@ target_include_directories(game
         Server
         Time
         Tools
-        vmap
         Warden
         Warden/Modules
         WorldHandlers
@@ -275,6 +250,9 @@ target_include_directories(game
 target_compile_definitions(game
     PUBLIC
         $<$<BOOL:${SOAP}>:ENABLE_SOAP>
+        # The old coordinate-owning spatial API. SD3 no longer needs it -- it calls
+        # Where()/Place() -- so this is Eluna's alone. See Object/ScriptApiCompat.inl.
+        $<$<OR:$<BOOL:${SCRIPT_LIB_ELUNA}>,$<BOOL:${PLAYERBOTS}>>:MANGOS_SCRIPT_COMPAT>
         $<$<BOOL:${SCRIPT_LIB_SD3}>:ENABLE_SD3>
         $<$<BOOL:${PLAYERBOTS}>:ENABLE_PLAYERBOTS>
         $<$<BOOL:${SCRIPT_LIB_ELUNA}>:ENABLE_ELUNA ELUNA_EXPANSION=0 ELUNA_MANGOS>
@@ -282,12 +260,15 @@ target_compile_definitions(game
 
 target_link_libraries(game
     PUBLIC
+        # The terrain engine: geometry and baked tiles, and no knowledge of the
+        # world, the database or any DBC.
+        terrain
+        geometry
         proto
         shared
         ah_ipc
         RecastNavigation::Detour
         ZLIB::ZLIB
-        g3dlite
         $<$<BOOL:${SCRIPT_LIB_SD3}>:mangosscript>
         $<$<BOOL:${SCRIPT_LIB_ELUNA}>:lualib>
     PRIVATE

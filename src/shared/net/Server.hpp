@@ -24,14 +24,18 @@
 
 #pragma once
 
-// Single entry point to the shared networking. net::Server is the backend chosen for
-// the current platform, behind a uniform start(port, factory) / stop() facade; the
-// factory mints one ISession per accepted connection.
+// Single entry point to the shared networking: net::Server is the backend chosen for
+// this platform behind a uniform start(port, factory) / stop() facade, and the factory
+// mints one ISession per accepted connection.
 //
-//   - Windows                     -> IocpServer    (proactor, I/O completion ports)
-//   - Linux + MANGOS_USE_IO_URING -> UringServer   (proactor, io_uring)
-//   - Linux (default)             -> ReactorServer (epoll)
-//   - BSD / macOS                 -> ReactorServer (kqueue)
+//   Windows                     -> IocpServer    (proactor, I/O completion ports)
+//   Linux + MANGOS_USE_IO_URING -> UringServer   (proactor, io_uring)
+//   Linux (default)             -> ReactorServer (readiness, epoll)
+//   BSD / macOS                 -> ReactorServer (readiness, kqueue)
+//
+// Proactor and reactor are deliberately NOT unified behind one interface -- they are
+// different I/O models, and only this thin facade is shared. A new reactor platform is
+// a Poller subclass (net/reactor/PollerFactory.cpp); a proactor is its own server class.
 
 #include "net/ISession.hpp"
 

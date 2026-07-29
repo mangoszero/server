@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <map>
+#include <list>
 #include <unordered_map>
 #include "Action.h"
 #include "Queue.h"

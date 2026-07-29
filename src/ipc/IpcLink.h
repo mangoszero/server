@@ -22,7 +22,7 @@
 #ifndef AH_IPC_LINK_H
 #define AH_IPC_LINK_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "IpcMessage.h"
 
 #include <atomic>

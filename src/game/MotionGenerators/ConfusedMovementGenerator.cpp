@@ -23,160 +23,120 @@
  */
 
 #include "ConfusedMovementGenerator.h"
-#include "Creature.h"
-#include "Player.h"
-#include "movement/MoveSplineInit.h"
-#include "movement/MoveSpline.h"
+#include "MotionFrame.h"
+#include "Unit.h"
+#include "Util.h"
 
-template<class T>
-
-/**
- * @brief Initializes the confused movement state for a unit.
- *
- * @param unit The unit using the movement generator.
- */
-void ConfusedMovementGenerator<T>::Initialize(T& unit)
+namespace
 {
-    unit.addUnitState(UNIT_STAT_CONFUSED);
+    /// How far from the spot it was confused at a unit may stagger.
+    constexpr float STAGGER_RADIUS = 10.0f;
 
-    // Set initial position
-    unit.GetPosition(i_x, i_y, i_z);
+    constexpr uint32 STAGGER_INTERVAL_MIN = 800;
+    constexpr uint32 STAGGER_INTERVAL_MAX = 1500;
 
-    if (!unit.IsAlive() || unit.hasUnitState(UNIT_STAT_NOT_MOVE))
+    /// Retry delay after a lurch that could not be routed or placed.
+    constexpr uint32 RETRY_DELAY = 50;
+}
+
+void ConfusedMovementGenerator::Initialize(Unit& owner)
+{
+    owner.addUnitState(UNIT_STAT_CONFUSED);
+
+    // The stagger is anchored to wherever the unit stood when it lost its wits — read
+    // through the frame, because for a boarded unit GetPosition() returns the world cache
+    // (an estimate of a pose the server does not know), while RandomPoint below will be
+    // handed this anchor as a DECK offset. Mixing the two would anchor the stagger to a
+    // point somewhere out at sea.
+    m_anchor = Motion::FrameFor(owner).MoverPosition(owner);
+
+    m_staggerTime.Reset(0);
+    m_haveLurch = false;
+    ResetLeg();
+
+    if (!owner.IsAlive() || owner.hasUnitState(UNIT_STAT_NOT_MOVE))
     {
         return;
     }
 
-    unit.InterruptMoving();
-    unit.addUnitState(UNIT_STAT_CONFUSED_MOVE);
+    owner.StopMoving();
+    owner.addUnitState(UNIT_STAT_CONFUSED_MOVE);
 }
 
-template<class T>
-
-/**
- * @brief Interrupts confused movement while preserving the confused state.
- *
- * @param unit The unit using the movement generator.
- */
-void ConfusedMovementGenerator<T>::Interrupt(T& unit)
+void ConfusedMovementGenerator::Reset(Unit& owner)
 {
-    unit.InterruptMoving();
-    // Confused state still applied while movegen disabled
-    unit.clearUnitState(UNIT_STAT_CONFUSED_MOVE);
-}
+    m_staggerTime.Reset(0);
+    m_haveLurch = false;
+    ResetLeg();
 
-template<class T>
-
-/**
- * @brief Resets confused movement timing and movement flags.
- *
- * @param unit The unit using the movement generator.
- */
-void ConfusedMovementGenerator<T>::Reset(T& unit)
-{
-    i_nextMoveTime.Reset(0);
-
-    if (!unit.IsAlive() || unit.hasUnitState(UNIT_STAT_NOT_MOVE))
+    if (!owner.IsAlive() || owner.hasUnitState(UNIT_STAT_NOT_MOVE))
     {
         return;
     }
 
-    unit.StopMoving();
-    unit.addUnitState(UNIT_STAT_CONFUSED | UNIT_STAT_CONFUSED_MOVE);
+    owner.StopMoving();
+    owner.addUnitState(UNIT_STAT_CONFUSED | UNIT_STAT_CONFUSED_MOVE);
 }
 
-template<class T>
-
-/**
- * @brief Updates confused movement and launches new random short walks as needed.
- *
- * @param unit The unit using the movement generator.
- * @param diff The elapsed update time in milliseconds.
- * @return true if the generator remains active; otherwise false.
- */
-bool ConfusedMovementGenerator<T>::Update(T& unit, const uint32& diff)
+void ConfusedMovementGenerator::Interrupt(Unit& owner)
 {
-    // Ignore in case other no reaction state
-    if (unit.hasUnitState(UNIT_STAT_CAN_NOT_REACT & ~UNIT_STAT_CONFUSED))
+    owner.InterruptMoving();
+    // The confused state itself outlives the generator being suspended.
+    owner.clearUnitState(UNIT_STAT_CONFUSED_MOVE);
+    m_haveLurch = false;
+    ResetLeg();
+}
+
+void ConfusedMovementGenerator::Finalize(Unit& owner)
+{
+    owner.clearUnitState(UNIT_STAT_CONFUSED | UNIT_STAT_CONFUSED_MOVE);
+
+    // A player is left where it stands with its client told to stop; a creature's
+    // spline is simply abandoned to whatever generator takes over.
+    if (owner.GetTypeId() == TYPEID_PLAYER)
     {
-        return true;
+        owner.StopMoving(true);
+    }
+}
+
+Motion::MoveIntent ConfusedMovementGenerator::Intent(Unit& owner,
+                                                     Motion::MoveStatus const& status,
+                                                     uint32 diff)
+{
+    // Ignore while any OTHER no-reaction state applies (stunned, rooted, ...).
+    if (owner.hasUnitState(UNIT_STAT_CAN_NOT_REACT & ~UNIT_STAT_CONFUSED))
+    {
+        return Motion::MoveIntent::Hold();
     }
 
-    if (i_nextMoveTime.Passed())
+    owner.addUnitState(UNIT_STAT_CONFUSED_MOVE);
+
+    if (status.blocked)
     {
-        // Currently moving, update location
-        unit.addUnitState(UNIT_STAT_CONFUSED_MOVE);
-
-        if (unit.movespline->Finalized())
-        {
-            i_nextMoveTime.Reset(urand(800, 1500));
-        }
-    }
-    else
-    {
-        // Waiting for next move
-        i_nextMoveTime.Update(diff);
-        if (i_nextMoveTime.Passed())
-        {
-            // Start moving
-            unit.addUnitState(UNIT_STAT_CONFUSED_MOVE);
-
-            float destX = i_x;
-            float destY = i_y;
-            float destZ = i_z;
-
-            // Check if new random position is assigned, GetReachableRandomPosition may fail
-            if (unit.GetMap()->GetReachableRandomPosition(&unit, destX, destY, destZ, 10.0f))
-            {
-                Movement::MoveSplineInit init(unit);
-                init.MoveTo(destX, destY, destZ, true);
-                init.SetWalk(true);
-                init.Launch();
-                i_nextMoveTime.Reset(urand(800, 1000)); // Keep a short wait time
-            }
-            else
-            {
-                i_nextMoveTime.Reset(50); // Retry later
-            }
-        }
+        m_haveLurch = false;
+        m_staggerTime.Reset(RETRY_DELAY);
     }
 
-    return true;
+    // The timer runs even mid-leg, which is the point: when it fires early the new
+    // destination supersedes the one being walked to and the leg is cut off part-way.
+    m_staggerTime.Update(diff);
+    if (!m_staggerTime.Passed())
+    {
+        return (status.traveling && m_haveLurch)
+            ? Motion::MoveIntent::Move(m_lurch, Motion::MOVE_WALK)
+            : Motion::MoveIntent::Hold();
+    }
+
+    const auto lurch = Motion::FrameFor(owner).RandomPoint(owner, m_anchor, STAGGER_RADIUS);
+    if (!lurch)
+    {
+        m_staggerTime.Reset(RETRY_DELAY);
+        return Motion::MoveIntent::Hold();
+    }
+
+    m_lurch = *lurch;
+    m_haveLurch = true;
+    m_staggerTime.Reset(urand(STAGGER_INTERVAL_MIN, STAGGER_INTERVAL_MAX));
+
+    return Motion::MoveIntent::Move(m_lurch, Motion::MOVE_WALK);
 }
-
-template<>
-
-/**
- * @brief Finalizes confused movement for a player and stops active movement.
- *
- * @param unit The player using the movement generator.
- */
-void ConfusedMovementGenerator<Player>::Finalize(Player& unit)
-{
-    unit.clearUnitState(UNIT_STAT_CONFUSED | UNIT_STAT_CONFUSED_MOVE);
-    unit.StopMoving(true);
-}
-
-template<>
-
-/**
- * @brief Finalizes confused movement for a creature.
- *
- * @param unit The creature using the movement generator.
- */
-void ConfusedMovementGenerator<Creature>::Finalize(Creature& unit)
-{
-    unit.clearUnitState(UNIT_STAT_CONFUSED | UNIT_STAT_CONFUSED_MOVE);
-}
-
-// Template instantiations for Player and Creature
-template void ConfusedMovementGenerator<Player>::Initialize(Player& player);
-template void ConfusedMovementGenerator<Creature>::Initialize(Creature& creature);
-template void ConfusedMovementGenerator<Player>::Finalize(Player& player);
-template void ConfusedMovementGenerator<Creature>::Finalize(Creature& creature);
-template void ConfusedMovementGenerator<Player>::Interrupt(Player& player);
-template void ConfusedMovementGenerator<Creature>::Interrupt(Creature& creature);
-template void ConfusedMovementGenerator<Player>::Reset(Player& player);
-template void ConfusedMovementGenerator<Creature>::Reset(Creature& creature);
-template bool ConfusedMovementGenerator<Player>::Update(Player& player, const uint32& diff);
-template bool ConfusedMovementGenerator<Creature>::Update(Creature& creature, const uint32& diff);

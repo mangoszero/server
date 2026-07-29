@@ -42,7 +42,8 @@
  * - CMSG_REPAIR_ITEM: Repair item
  */
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <string>
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "Opcodes.h"

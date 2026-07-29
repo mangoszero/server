@@ -25,7 +25,7 @@
 #ifndef MANGOS_H_ITEM_ENCHANTMENT_MGR
 #define MANGOS_H_ITEM_ENCHANTMENT_MGR
 
-#include "Common.h"
+#include "Platform/Define.h"
 
 /**
  * Loads the random enchantment modifier table from the configured data source.

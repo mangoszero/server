@@ -1,4 +1,5 @@
 #pragma once
+#include "Utilities/MathDefines.h"
 #include "../Value.h"
 
 namespace ai

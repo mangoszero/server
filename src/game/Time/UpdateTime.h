@@ -25,7 +25,7 @@
 #ifndef UPDATETIME_H
 #define UPDATETIME_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "Timer.h"
 
 #include <array>

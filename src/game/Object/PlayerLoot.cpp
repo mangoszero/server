@@ -46,7 +46,7 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "ObjectMgr.h"
-#include "ObjectAccessor.h"
+#include "CorpseManager.h"
 #include "CreatureAI.h"
 #include "Formulas.h"
 #include "Group.h"
@@ -62,7 +62,6 @@
 #include "OutdoorPvP/OutdoorPvP.h"
 #include "Chat.h"
 #include "revision_data.h"
-#include "Database/DatabaseImpl.h"
 #include "Spell.h"
 #include "ScriptMgr.h"
 #include "SocialMgr.h"
@@ -73,6 +72,7 @@
 #include "DisableMgr.h"
 #include "CinematicFlyover.h"
 #include <cmath>
+#include "Corpse.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -108,7 +108,7 @@ void Player::RemovedInsignia(Player* looterPlr)
 
     // We have to convert player corpse to bones, not to be able to resurrect there
     // SpawnCorpseBones isn't handy, 'cos it saves player while he in BG
-    Corpse* bones = sObjectAccessor.ConvertCorpseForPlayer(GetObjectGuid(), true);
+    Corpse* bones = sCorpseManager.ConvertCorpseForPlayer(GetObjectGuid(), true);
     if (!bones)
     {
         return;
@@ -163,7 +163,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
 
             // not check distance for GO in case owned GO (fishing bobber case, for example)
             // And permit out of range GO with no owner in case fishing hole
-            if (!go || (loot_type != LOOT_FISHINGHOLE && ((loot_type != LOOT_FISHING && loot_type != LOOT_FISHING_FAIL) || go->GetOwnerGuid() != GetObjectGuid()) && !go->IsWithinDistInMap(this, INTERACTION_DISTANCE)))
+            if (!go || (loot_type != LOOT_FISHINGHOLE && ((loot_type != LOOT_FISHING && loot_type != LOOT_FISHING_FAIL) || go->GetOwnerGuid() != GetObjectGuid()) && !InReach(*go, *this, INTERACTION_DISTANCE)))
             {
                 SendLootRelease(guid);
                 return;
@@ -209,7 +209,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
                         break;
                     case LOOT_FISHING:
                         uint32 zone, subzone;
-                        go->GetZoneAndAreaId(zone, subzone);
+                        go->GetTerrain()->GetZoneAndAreaId(zone, subzone, go->Where().X(), go->Where().Y(), go->Where().Z());
                         // if subzone loot exist use it
                         if (!loot->FillLoot(subzone, LootTemplates_Fishing, this, true, (subzone != zone)) && subzone != zone)
                             // else use zone loot (if zone diff. from subzone, must exist in like case)
@@ -353,7 +353,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
             Creature* creature = GetMap()->GetCreature(guid);
 
             // must be in range and creature must be alive for pickpocket and must be dead for another loot
-            if (!creature || creature->IsAlive() != (loot_type == LOOT_PICKPOCKETING) || !creature->IsWithinDistInMap(this, INTERACTION_DISTANCE))
+            if (!creature || creature->IsAlive() != (loot_type == LOOT_PICKPOCKETING) || !InReach(*creature, *this, INTERACTION_DISTANCE))
             {
                 SendLootRelease(guid);
                 return;

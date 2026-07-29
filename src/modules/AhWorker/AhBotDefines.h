@@ -22,7 +22,7 @@
 #ifndef AH_SERVICE_AHBOT_DEFINES_H
 #define AH_SERVICE_AHBOT_DEFINES_H
 
-#include "Common.h"
+#include "Common/TimeConstants.h"
 
 /**
  * @file AhBotDefines.h

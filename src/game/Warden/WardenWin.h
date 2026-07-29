@@ -26,6 +26,7 @@
 #ifndef _WARDEN_WIN_H
 #define _WARDEN_WIN_H
 
+#include <list>
 #include "Warden.h"
 
 #if defined(__GNUC__)

@@ -54,6 +54,17 @@ namespace GameTime
     uint32 GetGameTimeMS();
 
     /**
+     * @brief Absolute wall-clock milliseconds since the Unix epoch.
+     *
+     * For anything whose phase must survive a restart. GetGameTimeMS() counts from process
+     * start, so `time % period` resets to zero every boot -- a transport keyed off it sails
+     * from the beginning of its route each time the server comes up, and the client, which
+     * interpolates the hull from the value we send, then draws it somewhere the server does
+     * not believe it is.
+     */
+    uint64 GetAbsoluteTimeMS();
+
+    /**
      * @brief Get current chrono system_clock time point
      * @return Current system_clock time point
      */

@@ -44,25 +44,12 @@
  *   }
  */
 
+#include <string>
 #include <stdio.h>
 
 #include "ProgressBar.h"
 #include "ProgressBarRender.h"
 #include "Errors.h"
-
-#include <chrono>
-#include <string>
-
-namespace
-{
-    /// Monotonic millisecond clock, independent of any game/world timer so the
-    /// bar keeps working in the offline tools.
-    uint64 NowMs()
-    {
-        using namespace std::chrono;
-        return (uint64)duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
-    }
-}
 
 /**
  * @var BarGoLink::m_showOutput
@@ -85,29 +72,28 @@ void BarGoLink::DefaultSink(char const* bytes, size_t len)
 }
 
 BarGoLink::ConsoleSink BarGoLink::m_sink = &BarGoLink::DefaultSink;
-BarGoLink::Renderer BarGoLink::m_renderer = NULL;
+BarGoLink::ProgressSink BarGoLink::m_progressSink = NULL;
 
 void BarGoLink::SetConsoleSink(ConsoleSink sink)
 {
     m_sink = sink ? sink : &BarGoLink::DefaultSink;
 }
 
-void BarGoLink::SetRenderer(Renderer renderer)
+void BarGoLink::SetProgressSink(ProgressSink sink)
 {
-    m_renderer = renderer;
+    m_progressSink = sink;
 }
 
-void BarGoLink::emit(std::string const& bytes)
+void BarGoLink::emit(int percent, const std::string& bytes)
 {
-    if (!bytes.empty())
+    if (m_progressSink)
+    {
+        m_progressSink(percent);
+    }
+    else
     {
         m_sink(bytes.data(), bytes.size());
     }
-}
-
-uint32 BarGoLink::elapsedMs() const
-{
-    return (uint32)(NowMs() - start_ms);
 }
 
 /**
@@ -137,15 +123,7 @@ BarGoLink::~BarGoLink()
         return;
     }
 
-    if (m_renderer)
-    {
-        // The styled bar shares its line with the step it belongs to: the final
-        // redraw is the startup UI's business, not a bare newline.
-        emit(m_renderer(rec_no, num_rec, elapsedMs(), true));
-        return;
-    }
-
-    emit(ProgressBarRender::buildEnd());
+    emit(-1, ProgressBarRender::buildEnd());
 }
 
 /**
@@ -163,20 +141,13 @@ void BarGoLink::init(int row_count)
     rec_pos   = 0;
     indic_len = 50;
     num_rec   = row_count;
-    start_ms  = NowMs();
 
     if (!m_showOutput)
     {
         return;
     }
 
-    if (m_renderer)
-    {
-        emit(m_renderer(0, num_rec, 0, false));
-        return;
-    }
-
-    emit(ProgressBarRender::buildInit(indic_len));
+    emit(0, ProgressBarRender::buildInit(indic_len));
 }
 
 /**
@@ -205,14 +176,7 @@ void BarGoLink::step()
     int n = rec_no * indic_len / num_rec;
     if (n != rec_pos)
     {
-        if (m_renderer)
-        {
-            emit(m_renderer(rec_no, num_rec, elapsedMs(), false));
-        }
-        else
-        {
-            emit(ProgressBarRender::buildStep(n, indic_len));
-        }
+        emit(n * 100 / indic_len, ProgressBarRender::buildStep(n, indic_len));
         rec_pos = n;
     }
 }

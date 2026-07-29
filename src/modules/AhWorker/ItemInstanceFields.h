@@ -22,7 +22,7 @@
 #ifndef AH_WORKER_ITEM_INSTANCE_FIELDS_H
 #define AH_WORKER_ITEM_INSTANCE_FIELDS_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include <string>
 
 /// Decoded subset of the item_instance.data UpdateFields blob the AH wire needs.

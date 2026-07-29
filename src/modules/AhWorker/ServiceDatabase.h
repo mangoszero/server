@@ -22,7 +22,7 @@
 #ifndef AH_SERVICE_SERVICE_DATABASE_H
 #define AH_SERVICE_SERVICE_DATABASE_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "Database/DatabaseEnv.h"
 
 #include <string>

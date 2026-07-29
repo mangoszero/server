@@ -17,6 +17,11 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+# Geometry is header-only and sits below everything else: it knows nothing
+# about WoW, any client version, or the server.
+add_subdirectory(shared/Geometry)
+add_subdirectory(shared/terrain)
+
 # Build the mangos shared library
 add_subdirectory(shared)
 
@@ -50,12 +55,33 @@ endif()
 # Build the mangos realm authentication server
 if(BUILD_REALMD)
     add_subdirectory(realmd)
+
+    # realmd is a SUBMODULE and is never edited here. Its own test executables
+    # compile Auth/PatchArtifact.cpp, which includes Auth/Md5.h -- a header this
+    # core owns, under src/shared. The realmd library reaches it by linking
+    # `shared`; the test targets link neither, so the path is attached from the
+    # outside, which is the only place a submodule may be adapted from.
+    foreach(realmd_test IN ITEMS
+            realmd_patch_safety_tests
+            realmd_auth_protocol_tests
+            realmd_realm_snapshot_tests
+            realmd_client_build_policy_tests)
+        if(TARGET ${realmd_test})
+            target_include_directories(${realmd_test} PRIVATE
+                ${CMAKE_SOURCE_DIR}/src/shared)
+        endif()
+    endforeach()
 endif()
 
-# If we want the tools for map/vmap/mmap extraction
-if(BUILD_TOOLS)
-    add_subdirectory(tools)
-endif()
+# The baker and its client-data parsers, configured unconditionally so the unit
+# tests can link the parsers without asking for the tools. BUILD_TOOLS no longer
+# gates it: the tiles it produces are what src/shared/terrain reads at runtime,
+# so it is not optional the way the old map/vmap extractors were.
+add_subdirectory(tools/extractor)
+
+# Scores those tiles against the world database's own ground-only creature spawns.
+# A clean parse is not correct geometry; this is what says whether it is.
+add_subdirectory(tools/height-check)
 
 if (BUILD_MANGOSD OR BUILD_REALMD)
     if(WIN32)
@@ -64,4 +90,8 @@ if (BUILD_MANGOSD OR BUILD_REALMD)
         STRING(REPLACE ".lib" ".dll" MYSQL_LIB_DLL ${MYSQL_LIB_DLL})
         install(FILES ${MYSQL_LIB_DIR}/${MYSQL_LIB_DLL} DESTINATION ${BIN_DIR})
     endif()
+endif()
+
+if(WITH_TESTS OR WITH_NET_TESTS)
+    add_subdirectory(tests)
 endif()

@@ -22,6 +22,12 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <stdexcept>
+#include <utility>
+#include <string>
+#include <sstream>
+#include "Utilities/Errors.h"
+#include <algorithm>
 #include "DatabaseEnv.h"
 
 /**
@@ -226,7 +232,6 @@ void SqlPlainPreparedStatement::DataToString(const SqlStmtFieldData& data, std::
  * @param param1 The value to set.
  */
 template<typename T1>
-
 /**
  * @brief Set the value of the field.
  * @param param1 The value to set.

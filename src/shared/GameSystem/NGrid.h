@@ -40,103 +40,38 @@ class GridInfo
 {
     public:
 
-        /**
-         * @brief
-         *
-         */
         GridInfo()
             : i_timer(0), i_unloadActiveLockCount(0), i_unloadExplicitLock(false)
         {
         }
 
-        /**
-         * @brief
-         *
-         * @param expiry
-         * @param unload
-         */
         GridInfo(time_t expiry, bool unload = true)
             : i_timer(expiry), i_unloadActiveLockCount(0), i_unloadExplicitLock(!unload)
         {
         }
 
-        /**
-         * @brief
-         *
-         * @return const TimeTracker
-         */
         const TimeTracker& getTimeTracker() const { return i_timer; }
 
-        /**
-         * @brief
-         *
-         * @return bool
-         */
         bool getUnloadLock() const
         {
             return i_unloadActiveLockCount || i_unloadExplicitLock;
         }
 
-        /**
-         * @brief
-         *
-         * @param on
-         */
         void setUnloadExplicitLock(bool on) { i_unloadExplicitLock = on; }
+        void incUnloadActiveLock() { ++i_unloadActiveLockCount; }
+        void decUnloadActiveLock() { if (i_unloadActiveLockCount) { --i_unloadActiveLockCount; } }
 
-        /**
-         * @brief
-         *
-         */
-        void incUnloadActiveLock()
-        {
-            ++i_unloadActiveLockCount;
-        }
-
-        /**
-         * @brief
-         *
-         */
-        void decUnloadActiveLock()
-        {
-            if (i_unloadActiveLockCount)
-            {
-                --i_unloadActiveLockCount;
-            }
-        }
-
-        /**
-         * @brief
-         *
-         * @param pTimer
-         */
         void setTimer(const TimeTracker& pTimer) { i_timer = pTimer; }
-
-        /**
-         * @brief
-         *
-         * @param interval
-         */
         void ResetTimeTracker(time_t interval) { i_timer.Reset(interval); }
-
-        /**
-         * @brief
-         *
-         * @param diff
-         */
         void UpdateTimeTracker(time_t diff) { i_timer.Update(diff); }
 
     private:
 
-        TimeTracker i_timer;                                /**< TODO */
-        uint16 i_unloadActiveLockCount : 16;                /**< lock from active object spawn points (prevent clone loading) */
-        bool i_unloadExplicitLock      : 1;                 /**< explicit manual lock or config setting */
+        TimeTracker i_timer;
+        uint16 i_unloadActiveLockCount;                     ///< lock from active object spawn points (prevents clone loading)
+        bool i_unloadExplicitLock;                          ///< explicit manual lock or config setting
 };
 
-/**
- * @brief
- *
- */
 typedef enum
 {
     GRID_STATE_INVALID = 0,
@@ -146,44 +81,25 @@ typedef enum
     MAX_GRID_STATE = 4
 } grid_state_t;
 
-template <uint32 N, class ACTIVE_OBJECT, class WORLD_OBJECT_TYPES, class GRID_OBJECT_TYPES>
-
-/**
- * @brief
- *
- */
+template
+<
+uint32 N,
+       class ACTIVE_OBJECT,
+       class WORLD_OBJECT_TYPES,
+       class GRID_OBJECT_TYPES
+       >
 class NGrid
 {
     public:
 
-        /**
-         * @brief
-         *
-         */
         using GridType = Grid<ACTIVE_OBJECT, WORLD_OBJECT_TYPES, GRID_OBJECT_TYPES>;
 
-        /**
-         * @brief
-         *
-         * @param id
-         * @param x
-         * @param y
-         * @param expiry
-         * @param unload
-         */
         NGrid(uint32 id, uint32 x, uint32 y, time_t expiry, bool unload = true)
             : i_gridId(id), i_x(x), i_y(y), i_cellstate(GRID_STATE_INVALID), i_GridObjectDataLoaded(false)
         {
             i_GridInfo = GridInfo(expiry, unload);
         }
 
-        /**
-         * @brief
-         *
-         * @param x
-         * @param y
-         * @return const GridType &operator
-         */
         const GridType& operator()(uint32 x, uint32 y) const
         {
             assert(x < N);
@@ -191,13 +107,6 @@ class NGrid
             return i_cells[x][y];
         }
 
-        /**
-         * @brief
-         *
-         * @param x
-         * @param y
-         * @return GridType &operator
-         */
         GridType& operator()(uint32 x, uint32 y)
         {
             assert(x < N);
@@ -205,68 +114,19 @@ class NGrid
             return i_cells[x][y];
         }
 
-        /**
-         * @brief
-         *
-         * @return const uint32
-         */
-        const uint32& GetGridId() const { return i_gridId; }
-
-        /**
-         * @brief
-         *
-         * @param id
-         */
+        uint32 GetGridId() const { return i_gridId; }
         void SetGridId(const uint32 id) { i_gridId = id; }
-
-        /**
-         * @brief
-         *
-         * @return grid_state_t
-         */
         grid_state_t GetGridState() const { return i_cellstate; }
-
-        /**
-         * @brief
-         *
-         * @param s
-         */
         void SetGridState(grid_state_t s) { i_cellstate = s; }
-
-        /**
-         * @brief
-         *
-         * @return uint32
-         */
         uint32 getX() const { return i_x; }
-
-        /**
-         * @brief
-         *
-         * @return uint32
-         */
         uint32 getY() const { return i_y; }
 
-        /**
-         * @brief
-         *
-         * @param GridRefManager<NGrid<N
-         * @param ACTIVE_OBJECT
-         * @param WORLD_OBJECT_TYPES
-         * @param pTo
-         */
         void link(GridRefManager<NGrid<N, ACTIVE_OBJECT, WORLD_OBJECT_TYPES, GRID_OBJECT_TYPES> >* pTo)
         {
             i_Reference.link(pTo, this);
         }
 
-        /**
-         * @brief
-         *
-         * @return bool
-         */
         bool isGridObjectDataLoaded() const { return i_GridObjectDataLoaded; }
-
         /**
          * @brief True if this cell has been loaded/scanned (FULL grid or envelope cell).
          *
@@ -289,11 +149,6 @@ class NGrid
             return uint32(i_cellLoaded.count());
         }
 
-        /**
-         * @brief
-         *
-         * @param pLoaded
-         */
         void markGridObjectDataLoading()
         {
             i_GridObjectDataLoaded = true;
@@ -308,67 +163,13 @@ class NGrid
             }
         }
 
-        /**
-         * @brief
-         *
-         * @return GridInfo
-         */
-        GridInfo* getGridInfoRef()
-        {
-            return &i_GridInfo;
-        }
-
-        /**
-         * @brief
-         *
-         * @return const TimeTracker
-         */
+        GridInfo* getGridInfoRef() { return &i_GridInfo; }
         const TimeTracker& getTimeTracker() const { return i_GridInfo.getTimeTracker(); }
-
-        /**
-         * @brief
-         *
-         * @return bool
-         */
         bool getUnloadLock() const { return i_GridInfo.getUnloadLock(); }
-
-        /**
-         * @brief
-         *
-         * @param on
-         */
         void setUnloadExplicitLock(bool on) { i_GridInfo.setUnloadExplicitLock(on); }
-
-        /**
-         * @brief
-         *
-         */
-        void incUnloadActiveLock()
-        {
-            i_GridInfo.incUnloadActiveLock();
-        }
-
-        /**
-         * @brief
-         *
-         */
-        void decUnloadActiveLock()
-        {
-            i_GridInfo.decUnloadActiveLock();
-        }
-
-        /**
-         * @brief
-         *
-         * @param interval
-         */
+        void incUnloadActiveLock() { i_GridInfo.incUnloadActiveLock(); }
+        void decUnloadActiveLock() { i_GridInfo.decUnloadActiveLock(); }
         void ResetTimeTracker(time_t interval) { i_GridInfo.ResetTimeTracker(interval); }
-
-        /**
-         * @brief
-         *
-         * @param diff
-         */
         void UpdateTimeTracker(time_t diff) { i_GridInfo.UpdateTimeTracker(diff); }
 
         uint16 getPlayerCount() const { return i_playerCount; }
@@ -383,41 +184,18 @@ class NGrid
         TimeTracker& getDowngradeTimer() { return i_downgradeTimer; }
 
         template<class SPECIFIC_OBJECT>
-
-        /**
-         * @brief
-         *
-         * @param x
-         * @param y
-         * @param obj
-         */
         void AddWorldObject(const uint32 x, const uint32 y, SPECIFIC_OBJECT* obj)
         {
             getGridType(x, y).AddWorldObject(obj);
         }
 
         template<class SPECIFIC_OBJECT>
-
-        /**
-         * @brief
-         *
-         * @param x
-         * @param y
-         * @param obj
-         */
         void RemoveWorldObject(const uint32 x, const uint32 y, SPECIFIC_OBJECT* obj)
         {
             getGridType(x, y).RemoveWorldObject(obj);
         }
 
         template<class T, class TT>
-
-        /**
-         * @brief
-         *
-         * @param TypeContainerVisitor<T
-         * @param visitor
-         */
         void Visit(TypeContainerVisitor<T, TT>& visitor)
         {
             for (uint32 x = 0; x < N; ++x)
@@ -430,25 +208,11 @@ class NGrid
         }
 
         template<class T, class TT>
-
-        /**
-         * @brief
-         *
-         * @param x
-         * @param y
-         * @param TypeContainerVisitor<T
-         * @param visitor
-         */
         void Visit(const uint32& x, const uint32& y, TypeContainerVisitor<T, TT>& visitor)
         {
             getGridType(x, y).Visit(visitor);
         }
 
-        /**
-         * @brief
-         *
-         * @return uint32
-         */
         uint32 ActiveObjectsInGrid() const
         {
             uint32 count = 0;
@@ -464,30 +228,12 @@ class NGrid
         }
 
         template<class SPECIFIC_OBJECT>
-
-        /**
-         * @brief
-         *
-         * @param x
-         * @param y
-         * @param obj
-         * @return bool
-         */
         bool AddGridObject(const uint32 x, const uint32 y, SPECIFIC_OBJECT* obj)
         {
             return getGridType(x, y).AddGridObject(obj);
         }
 
         template<class SPECIFIC_OBJECT>
-
-        /**
-         * @brief
-         *
-         * @param x
-         * @param y
-         * @param obj
-         * @return bool
-         */
         bool RemoveGridObject(const uint32 x, const uint32 y, SPECIFIC_OBJECT* obj)
         {
             return getGridType(x, y).RemoveGridObject(obj);
@@ -495,13 +241,6 @@ class NGrid
 
     private:
 
-        /**
-         * @brief
-         *
-         * @param x
-         * @param y
-         * @return GridType
-         */
         GridType& getGridType(const uint32& x, const uint32& y)
         {
             assert(x < N);
@@ -509,14 +248,14 @@ class NGrid
             return i_cells[x][y];
         }
 
-        uint32 i_gridId; /**< TODO */
-        GridInfo i_GridInfo; /**< TODO */
-        GridReference<NGrid<N, ACTIVE_OBJECT, WORLD_OBJECT_TYPES, GRID_OBJECT_TYPES> > i_Reference; /**< TODO */
-        uint32 i_x; /**< TODO */
-        uint32 i_y; /**< TODO */
-        grid_state_t i_cellstate; /**< TODO */
-        GridType i_cells[N][N]; /**< TODO */
-        bool i_GridObjectDataLoaded; /**< TODO */
+        uint32 i_gridId;
+        GridInfo i_GridInfo;
+        GridReference<NGrid<N, ACTIVE_OBJECT, WORLD_OBJECT_TYPES, GRID_OBJECT_TYPES> > i_Reference;
+        uint32 i_x;
+        uint32 i_y;
+        grid_state_t i_cellstate;
+        GridType i_cells[N][N];
+        bool i_GridObjectDataLoaded;
         std::bitset<N * N> i_cellLoaded; /**< per-cell DB-object-loaded flags; bit (x*N+y) set ⇔ cell (x,y) instantiated */
         uint16 i_playerCount = 0;
         TimeTracker i_downgradeTimer;

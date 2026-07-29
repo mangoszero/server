@@ -42,30 +42,36 @@
  * @{
  */
 
+#include <csignal>
+#include "Common/ServerDefines.h"
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
-#include <openssl/provider.h>
-#include "Auth/OpenSSLProvider.h"
-#include "Common.h"
+#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
+#  include <openssl/provider.h>
+#  include "Auth/OpenSSLProvider.h"
+#endif
+
+#include "Platform/Define.h"
+#include <cstdio>
+#include <cstring>
+#include <string>
 #include "Database/DatabaseEnv.h"
 #include "Config/Config.h"
 #include "GitRevision.h"
 #include "ProgressBar.h"
-#include "StartupUI.h"
+#include "Console/ConsoleUI.h"
 #include "Log.h"
 #include "SystemConfig.h"
 #include "AuctionHouseBot.h"
-#include "revision_data.h"
+#include "Master.h"
 #include "World.h"
 #include "Util.h"
 #include "DBCStores.h"
 #include "MassMailMgr.h"
 #include "ScriptMgr.h"
 
-#include "Master.h"
 
 #ifdef _WIN32
-#include <process.h>
 #include "ServiceWin32.h"
 #include "WheatyExceptionReport.h"
 
@@ -84,6 +90,30 @@ DatabaseType CharacterDatabase;                             ///< Accessor to the
 DatabaseType LoginDatabase;                                 ///< Accessor to the realm/login database
 
 uint32 realmID = 0;                                         ///< Id of the realm
+
+/**
+ * @brief Clear online status for realm accounts on startup
+ *
+ * Resets the 'online' status for all accounts that were marked as
+ * connected to this realm. This handles cases where the server
+ * crashed without properly logging out all players.
+ *
+ * Also resets character online status and battleground instance data.
+ */
+
+/**
+ * @brief Initialize database connections
+ * @return true if all databases connected successfully, false otherwise
+ *
+ * Connects to three databases:
+ * - World Database: Contains game data (creatures, items, quests, etc.)
+ * - Character Database: Contains player character data
+ * - Login Database: References realm authentication data
+ *
+ * Validates database versions and connection counts from configuration.
+ * On failure, properly cleans up any connections that were established.
+ */
+
 /// Handle termination signals
 static void on_signal(int s)
 {
@@ -130,8 +160,6 @@ static void usage(const char* prog)
         "    -v, --version              print version and exist\n\r"
         "    -c <config_file>           use config_file as configuration file\n\r"
         "    -a, --ahbot <config_file>  use config_file as ahbot configuration file\n\r"
-        "    --console-demo [<style>]   draw a sample startup on this console and exit;\n\r"
-        "                               style is auto (default), fancy or plain\n\r"
 #ifdef WIN32
         "    Running as service functions:\n\r"
         "    -s run                     run as service\n\r"
@@ -145,101 +173,70 @@ static void usage(const char* prog)
     , prog);
 }
 
+/// Progress-bar console sink: forward a fully-built bar redraw to the off-thread
+/// console writer (verbatim, no prefix/color/newline) so the bar shares one
+/// serialized stdout with the log lines and cannot tear against them. Installed
+/// once the writer thread is running; before that BarGoLink uses its default
+/// synchronous sink.
+static void MangosBarConsoleSink(char const* bytes, size_t len)
+{
+    sLog.ConsoleEmitRaw(std::string(bytes, len));
+}
+
+/// Progress-bar sink for the full-screen console: it draws its own bar, so it
+/// wants the percentage, not a redraw. -1 means the bar finished.
+static void MangosBarProgressSink(int percent)
+{
+    MaNGOS::Console::ConsoleUI::Instance().SetProgress(percent);
+}
+
 /// Launch the mangos server
 int main(int argc, char** argv)
 {
 #ifdef _WIN32
-    // Install the exception handler for unhandled exceptions in the main thread
-    static WheatyExceptionReport exceptionReport;
-    SetUnhandledExceptionFilter(WheatyExceptionReport::WheatyUnhandledExceptionFilter);
+      // Install the exception handler for unhandled exceptions in the main thread
+        static WheatyExceptionReport exceptionReport;
+        SetUnhandledExceptionFilter(WheatyExceptionReport::WheatyUnhandledExceptionFilter);
 #endif
 
     ///- Command line parsing
     char const* cfg_file = MANGOSD_CONFIG_LOCATION;
 
     char serviceDaemonMode = '\0';
-    std::string testMode;
-    bool consoleDemo = false;               ///< --console-demo: draw a sample startup and exit
-    std::string demoStyle = "auto";
 
-    // Minimal command-line parser. Recognised: -c <file>, -a/--ahbot <file>,
-    // -s <mode>, -t <mode>, -v/--version.
+    // Walked by hand rather than with ACE_Get_Opt (gone with the rest of ACE) or
+    // getopt (absent on MSVC). Four options do not justify a dependency.
     for (int i = 1; i < argc; ++i)
     {
-        char const* arg = argv[i];
+        const std::string arg = argv[i];
+        const bool hasValue = (i + 1) < argc;
 
-        // Fetch the value for an option that requires an argument, or fail.
-        auto value = [&](char const* name) -> char const*
-        {
-            if (i + 1 >= argc)
-            {
-                sLog.outError("Runtime-Error: %s option requires an input argument", name);
-                usage(argv[0]);
-                Log::WaitBeforeContinueIfNeed();
-                return nullptr;
-            }
-            return argv[++i];
-        };
-
-        if (!strcmp(arg, "-v") || !strcmp(arg, "--version"))
+        if (arg == "-v" || arg == "--version")
         {
             printf("%s\n", GitRevision::GetProjectRevision());
             return 0;
         }
-        else if (!strcmp(arg, "-c"))
+        else if ((arg == "-c") && hasValue)
         {
-            char const* v = value("-c");
-            if (!v) { return 1; }
-            cfg_file = v;
+            cfg_file = argv[++i];
         }
-        else if (!strcmp(arg, "-a") || !strcmp(arg, "--ahbot"))
+        else if ((arg == "-a" || arg == "--ahbot") && hasValue)
         {
-            char const* v = value("--ahbot");
-            if (!v) { return 1; }
-            sAuctionBotConfig.SetConfigFileName(v);
+            sAuctionBotConfig.SetConfigFileName(argv[++i]);
         }
-        else if (!strcmp(arg, "-t"))
+        else if (arg == "-s" && hasValue)
         {
-            char const* v = value("-t");
-            if (!v) { return 1; }
-            testMode = v;
-        }
-        else if (!strcmp(arg, "--console-demo"))
-        {
-            consoleDemo = true;
-            // The style is optional: "--console-demo" alone means "auto".
-            if (i + 1 < argc && argv[i + 1][0] != '-')
-            {
-                demoStyle = argv[++i];
-            }
-        }
-        else if (!strcmp(arg, "-s"))
-        {
-            char const* mode = value("-s");
-            if (!mode) { return 1; }
-
-            if (!strcmp(mode, "run"))
-            {
-                serviceDaemonMode = 'r';
-            }
-#ifdef WIN32
-            else if (!strcmp(mode, "install"))
-            {
-                serviceDaemonMode = 'i';
-            }
-            else if (!strcmp(mode, "uninstall"))
-            {
-                serviceDaemonMode = 'u';
-            }
+            const std::string mode = argv[++i];
+            if (mode == "run")            { serviceDaemonMode = 'r'; }
+#ifdef _WIN32
+            else if (mode == "install")   { serviceDaemonMode = 'i'; }
+            else if (mode == "uninstall") { serviceDaemonMode = 'u'; }
 #else
-            else if (!strcmp(mode, "stop"))
-            {
-                serviceDaemonMode = 's';
-            }
+            else if (mode == "stop")      { serviceDaemonMode = 's'; }
 #endif
             else
             {
-                sLog.outError("Runtime-Error: -s unsupported argument %s", mode);
+                sLog.outError("Runtime-Error: -s unsupported argument %s", mode.c_str());
                 usage(argv[0]);
                 Log::WaitBeforeContinueIfNeed();
                 return 1;
@@ -247,23 +244,11 @@ int main(int argc, char** argv)
         }
         else
         {
-            sLog.outError("Runtime-Error: bad format of commandline arguments");
+            sLog.outError("Runtime-Error: unsupported option %s", arg.c_str());
             usage(argv[0]);
             Log::WaitBeforeContinueIfNeed();
             return 1;
         }
-    }
-
-    ///- Draw a sample startup and leave. Deliberately ahead of the config and the
-    ///  databases: the point is to look at this console, and neither has to exist
-    ///  for that. Runs on the same off-thread writer the real startup uses, so what
-    ///  it shows is what a real startup shows.
-    if (consoleDemo)
-    {
-        sLog.StartConsoleThread();
-        StartupUI::Demo(demoStyle);
-        sLog.StopConsoleThread();
-        return 0;
     }
 
 #ifdef _WIN32                                                // windows service command need execute before config read
@@ -310,10 +295,6 @@ int main(int argc, char** argv)
     }
 #endif
 
-    ///- Probe the console and install the startup UI hooks. Must precede the first
-    ///  line drawn, and follows the config, which decides the style.
-    StartupUI::Initialize(sConfig.GetStringDefault("Console.Style", "auto"));
-
     sLog.outString("%s [world-daemon]", GitRevision::GetProjectRevision());
     sLog.outString("%s", GitRevision::GetFullRevision());
     sLog.outString("%s", GitRevision::GetDepElunaFullRevisionStr());
@@ -323,16 +304,28 @@ int main(int argc, char** argv)
 
     DETAIL_LOG("Using SSL version: %s (Library: %s)", OPENSSL_VERSION_TEXT, OpenSSL_version(OPENSSL_VERSION));
 
-    // RAII provider management - automatically handles cleanup
-    OpenSSLProviderManager providerManager;
-    if (!providerManager.IsInitialized())
+#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
+    if (!OpenSSLProviderManager::Instance().IsInitialized())
     {
         Log::WaitBeforeContinueIfNeed();
         return 1;
     }
+#else
+    if (SSLeay() < 0x10100000L || SSLeay() > 0x10200000L)
+    {
+        DETAIL_LOG("WARNING: OpenSSL version may be out of date or unsupported. Logins to server may not work!");
+        DETAIL_LOG("WARNING: Minimal required version [OpenSSL 1.1.x] and Maximum supported version [OpenSSL 1.2]");
+    }
+#endif
+
 
     ///- Set progress bars show mode
     BarGoLink::SetOutputState(sConfig.GetBoolDefault("ShowProgressBars", true));
+
+    // Serialise the bar through the console writer instead of letting it write
+    // straight to stdout from the loading thread: two owners of stdout is what
+    // shreds the start-up log, with bar redraws landing inside log lines.
+    BarGoLink::SetConsoleSink(&MangosBarConsoleSink);
 
     /// worldd PID file creation
     std::string pidfile = sConfig.GetStringDefault("PidFile", "");
@@ -349,28 +342,68 @@ int main(int argc, char** argv)
         sLog.outString("Daemon PID: %u\n", pid);
     }
 
+    // Move the console emit off the world/map-update threads. Started before the
+    // world loads (the LivingWorld spawn burst) so the hot console path is
+    // covered, and after the fallible init above so an early return never leaves
+    // a writer thread running into stdio teardown.
+    sLog.StartConsoleThread();
+
+    // Only now: until the writer thread exists, console emits take the
+    // synchronous path and would write straight over the full-screen frame.
+    if (sConfig.GetBoolDefault("Console.FullScreen", true) &&
+        MaNGOS::Console::ConsoleUI::Instance().Start("MaNGOS Zero", "Vanilla 1.12.x"))
+    {
+        MaNGOS::Console::ConsoleUI::Instance().SetHeaderRight(
+            std::string("realm ") + std::to_string(realmID));
+        MaNGOS::Console::ConsoleUI::Instance().SetHint(
+            "PgUp/PgDn scroll \xC2\xB7 Ctrl+L redraw");
+        MaNGOS::Console::ConsoleUI::Instance().SetKeyEcho(
+            sConfig.GetBoolDefault("Console.DebugKeys", false));
+        MaNGOS::Console::ConsoleUI::Instance().SetScrollback(
+            uint32(sConfig.GetIntDefault("Console.Scrollback", 20000)));
+        BarGoLink::SetProgressSink(&MangosBarProgressSink);
+    }
+
     ///- Catch termination signals
     hook_signals();
 
-    ///- Bring the world up, run it, and take it back down. Returns once the world has
-    ///  stopped and every auxiliary thread has been joined.
+    // Databases, world, listener and background services all live in Master. It
+    // runs the world loop on this thread and returns once the world has stopped
+    // and every service has been joined.
     Master master;
-    const int code = master.Run(testMode);
+    const int runCode = master.Run();
 
     ///- Remove signal handling before leaving
     unhook_signals();
 
-#ifdef WIN32
+    ///- Set server offline in realmlist
+    LoginDatabase.DirectPExecute(
+        "UPDATE `realmlist` SET `realmflags` = `realmflags` | %u WHERE `id` = '%u'",
+        REALM_FLAG_OFFLINE, realmID);
+
+    // Master has already kicked the players, stopped every service, cleared the
+    // online flags and halted the database delay threads. What is left here is
+    // process-level teardown only.
+
+    // Unload the script library explicitly: ~ScriptMgr() runs too late, at static
+    // destruction, to unload the shared object safely.
+    sLog.outString("[shutdown] unloading script library...");
+    sScriptMgr.UnloadScriptLibrary();
+    sLog.outString("[shutdown] script library unloaded");
+
+#ifdef _WIN32
     _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
 #endif
 
-    // Stop and join the off-thread console writer before the final shutdown lines:
-    // later lines ("Bye!") then take the synchronous fallback. Master::Run() has already
-    // joined EVERY console-producing thread -- the world/map-update workers, the CLI
-    // reader and the SOAP listener -- so no concurrent producer can race the writer
-    // delete. The remaining main-thread shutdown lines are drained by the still-running
-    // writer before it joins. Precedes the final Flush.
+    // Stop and join the off-thread console writer last. Every thread that can
+    // emit to the console -- the map-update workers, the network workers and all
+    // background services -- has been joined by Master::Run() before this point,
+    // so nothing can race the writer's deletion. The remaining main-thread lines
+    // drain through it before it joins; "Bye!" then takes the synchronous path.
     sLog.StopConsoleThread();
+
+    // After the writer is joined, so no repaint can race the terminal restore.
+    MaNGOS::Console::ConsoleUI::Instance().Stop();
 
     sLog.outString("Bye!");
 
@@ -379,6 +412,6 @@ int main(int argc, char** argv)
     // reach disk first.
     sLog.Flush();
 
-    return code;
+    return runCode;
 }
 /// @}

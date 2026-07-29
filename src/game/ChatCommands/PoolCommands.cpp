@@ -32,6 +32,7 @@
  * - Pool respawn control
  */
 
+#include <string>
 #include "Chat.h"
 #include "ObjectMgr.h"
 

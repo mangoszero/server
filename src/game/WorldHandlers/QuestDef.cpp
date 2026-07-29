@@ -42,6 +42,7 @@
  * @see QuestMgr for quest management
  */
 
+#include <cmath>
 #include "QuestDef.h"
 #include "Player.h"
 #include "World.h"

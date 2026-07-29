@@ -25,7 +25,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include "Common/Common.h"
 #include <Policies/Singleton.h>
 #include "Platform/Define.h"
 
@@ -106,6 +105,14 @@ class Config
          * @return int32 The configuration value or default value
          */
         int32 GetIntDefault(const char* name, const int32 def);
+        /**
+         * @brief Retrieves a 64-bit integer configuration value with default fallback
+         *
+         * @param name Key name to look up
+         * @param def Default value if the key is absent or unparsable
+         * @return int64 The configuration value or default value
+         */
+        int64 GetInt64Default(const char* name, const int64 def);
         /**
          * @brief Retrieves a floating-point configuration value with default fallback
          *

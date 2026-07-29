@@ -25,7 +25,7 @@
 #ifndef WORLD_PVP_SI
 #define WORLD_PVP_SI
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "OutdoorPvP.h"
 
 /**

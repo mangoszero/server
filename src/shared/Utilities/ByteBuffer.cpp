@@ -30,14 +30,23 @@
  * class, including hex dumps and formatted storage displays.
  */
 
+#include <cstdio>
 #include "ByteBuffer.h"
 #include "Log/Log.h"
 
+#include <sstream>
+
+/**
+ * @brief Print exception details with position information
+ *
+ * Logs the error message including the operation (read/write),
+ * position in buffer, buffer size, and attempted value size.
+ * Includes stack trace if ACE stack trace is available.
+ */
 void ByteBufferException::PrintPosError() const
 {
     sLog.outError(
-            "Attempted to %s in ByteBuffer (pos: %zu size: %zu) "
-            "value with size: %zu",
+        "Attempted to %s in ByteBuffer (pos: %zu size: %zu) value with size: %zu",
         (add ? "put" : "get"), pos, size, esize);
 }
 
