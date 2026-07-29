@@ -24,6 +24,7 @@
 
 #include <vector>
 #include "PlayerLogger.h"
+#include "Player.h"
 #include "PlayerRegistry.h"
 #include "Database/DatabaseEnv.h"
 #include "World.h"

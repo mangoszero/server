@@ -8,7 +8,7 @@
     path = src/modules/SD3
     url = https://github.com/mangos/ScriptDev3.git
 [submodule "win"]
-	path = extra/win
+	path = win
     url = https://github.com/mangostools/EasyBuild
 [submodule "src/modules/Eluna"]
 	path = src/modules/Eluna

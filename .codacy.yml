@@ -21,4 +21,4 @@ exclude_paths:
   - "src/realmd/**"
   - "src/modules/SD3/**"
   - "src/modules/Eluna/**"
-  - "extra/win/**"
+  - "win/**"
