@@ -1834,8 +1834,10 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
                 data << uint32(mapid);
                 if (m_transport)
                 {
+                    // The map he is LEAVING, and that is the one the ship sails. Never her
+                    // own: the client has no terrain for it and dies in CMap::LoadWdt().
                     data << uint32(m_transport->GetEntry());
-                    data << uint32(GetMapId());
+                    data << uint32(m_transport->GetMapId());
                 }
                 GetSession()->SendPacket(&data);
             }
