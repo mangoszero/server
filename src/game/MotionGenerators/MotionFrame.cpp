@@ -415,9 +415,12 @@ namespace Motion
         // The one place in the server where "which world am I in?" is decided. A boarded
         // unit moves in its vessel's frame; everything else in the map's. Nothing above
         // this call knows the difference, and nothing above it needs to.
-        if (mover.GetMap() && mover.GetMap()->AsTransport())
+        if (Map const* on = mover.FindMap())
         {
-            return s_transportFrame;
+            if (on->AsTransport())
+            {
+                return s_transportFrame;
+            }
         }
 
         return s_worldFrame;
