@@ -8,7 +8,7 @@ alt="GitHub last commit" border=0 valign="top"/>][61]
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<B>Build Status:</b>
  Linux/MAC: [<img src='https://github.com/mangoszero/server/actions/workflows/core_linux_build.yml/badge.svg' border=0 valign="middle">][10]
  Windows: [<img src='https://ci.appveyor.com/api/projects/status/github/mangoszero/server?branch=master&svg=true' border=0 valign="middle">][11]
- <br><b>Repository Status:</b> 
+ <br><b>Repository Status:</b>
 [<img src='https://api.codacy.com/project/badge/Grade/714e767d4df146a985ffff368c558503' border=0 valign="middle"/>][12]
 [<img src='https://www.codefactor.io/repository/github/mangoszero/server/badge' border=0 valign="middle"/>][13]
 [<img src='https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat' border=0 valign="middle"/>][14]
@@ -20,15 +20,15 @@ alt="GitHub last commit" border=0 valign="top"/>][61]
  **MangosZero - Vanilla WoW server**
 ===
 
-**Mangos** is an open source project written in [C++][7] . It's fast, runs on multiple
-platforms and stores game data in [MySQL][40] or [MariaDB][41]. It also has 
+**Mangos** is an open source project written in [C++][7]. It's fast, runs on multiple
+platforms and stores game data in [MySQL][40] or [MariaDB][41]. It also has
 optional support for SOAP.
 
 If you liked the original incarnation of [World of Warcraft][2] and still want to play it,
-this is the branch for you. We provide an authentication server where you can manage your users, 
+this is the branch for you. We provide an authentication server where you can manage your users,
 and a world server which serves game content just like the original did back then.
 
-It aims to be 100% compatible with the 3 final versions of Vanilla [World of Warcraft][2], 
+It aims to be 100% compatible with the 3 final versions of Vanilla [World of Warcraft][2],
 namely [patch 1.12.1][4], [patch 1.12.2][5] & [patch 1.12.3][6].
 <br>**IT DOES NOT SUPPORT 1.13.x** and beyond which is the newly released Classic Experience (NuClassic).
 
@@ -63,7 +63,7 @@ Compilers
 Building the server is currently possible with these compilers:
 
 * **[Microsoft Visual Studio][31] 32 bit and 64 bit.** All editions of Visual Studio
-from 2015 upwards are officially supported (although support for 2015 and 2017 are end of life.)
+from 2015 upwards are officially supported (although support for 2015 through 2022 are end of life.)
 
 * **[GCC][32]**, 32 bit and 64 bit. Version 8 or newer, for complete C++17 support.
   This is one of the two compilers the Linux CI builds with.
@@ -105,7 +105,7 @@ Optional dependencies
 <br>We have a small, but extremely friendly and helpful community managed by MadMax and Antz.
 
 
-Our discord/forum motto is: 
+Our discord/forum motto is:
 ```js
 'Be nice or Be somewhere else'
 ```
@@ -116,7 +116,7 @@ Any trolling or unpleasantness is swiftly dealt with !!
 
 We welcome anyone who is interested in enjoying older versions of wow or contributing and helping out !
 
-* [**Official MaNGOS Website**][3]  
+* [**Official MaNGOS Website**][3]
 
 **Discord Server**
 ----
@@ -145,14 +145,14 @@ Found an issue or something which doesn't seem right, please log it in the relev
 
 Installation instructions for various operation systems can be found here.
 
-* [**Installation Guides**][17] 
+* [**Installation Guides**][17]
 
 
 License
 -------
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
+Foundation, either version 3 of the License, or (at your option) any later
 version.
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY
@@ -160,8 +160,7 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with
-this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
-Street, Fifth Floor, Boston, MA 02110-1301 USA.
+this program.  If not, see <https://www.gnu.org/licenses/>.
 
 The full license is included in the file [LICENSE](LICENSE).
 
