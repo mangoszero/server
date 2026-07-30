@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 #include "winres.h"
 #include "VersionInfo.h"
 
@@ -25,7 +27,7 @@ BEGIN
             VALUE "ProductName", PRODUCT_BUNDLE
             VALUE "ProductVersion", PRODUCT_VERSION_RESOURCE_STR
             VALUE "FileDescription", PRODUCT_FILE_DESCRIPTION
-            VALUE "LegalCopyright", "Copyright (C) 2005-2025 MaNGOS"
+            VALUE "LegalCopyright", "Copyright (C) 2005-2026 MaNGOS"
         END
     END
     BLOCK "VarFileInfo"

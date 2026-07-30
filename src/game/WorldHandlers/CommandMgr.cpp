@@ -1,5 +1,7 @@
 /**
- * Copyright (C) 2009-2025 MaNGOS <https://www.getmangos.eu>
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * Copyright (C) 2009-2026 MaNGOS <https://www.getmangos.eu>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
