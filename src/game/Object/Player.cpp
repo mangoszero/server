@@ -779,6 +779,8 @@ bool Player::Create(uint32 guidlow, const std::string& name, uint8 race, uint8 c
     // Set player's initial location
     SetLocationMapId(info->mapId);
     Place().MoveTo(info->positionX, info->positionY, info->positionZ, info->orientation);
+    m_movementInfo.ChangePosition(info->positionX, info->positionY,
+                                  info->positionZ, info->orientation);
 
     // Set the player's map
     SetMap(sMapMgr.CreateMap(info->mapId, this));
@@ -3233,6 +3235,11 @@ bool Player::SetPosition(float x, float y, float z, float orientation, bool tele
 
         // move and update visible state if need
         m->PlayerRelocation(this, x, y, z, orientation);
+
+        // The movement state follows the placement whenever the SERVER is the one moving
+        // him -- a teleport, a summon, a spline. It is the client's claim the rest of the
+        // time, and it is what every create block is written from.
+        m_movementInfo.ChangePosition(x, y, z, orientation);
 
         // reread after Map::Relocation
         m = GetMap();

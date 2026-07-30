@@ -166,6 +166,13 @@ void WorldSession::HandleMoveWorldportAckOpcode()
     GetPlayer()->SetMap(map);
     GetPlayer()->Place().MoveTo(loc.coord_x, loc.coord_y, loc.coord_z, loc.orientation);
 
+    // And the movement state, which is what the packets on the far side are written from.
+    // Without it the client arrives on the new map holding the pose it had on the old one:
+    // `.tele menethil` from a deck put a player on Eastern Kingdoms still carrying the
+    // ship's Icecrown position, down to the hull's own facing.
+    GetPlayer()->m_movementInfo.ChangePosition(loc.coord_x, loc.coord_y,
+                                               loc.coord_z, loc.orientation);
+
     // The client threw away every object it had when it left the old map, so the set of
     // "things he already has" is now a lie in the one direction that hurts: anything still
     // listed here will be skipped by UpdateVisibilityOf and never sent again. That
