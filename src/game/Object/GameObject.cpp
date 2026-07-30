@@ -1079,7 +1079,7 @@ void GameObject::SetQuaternion(Geometry::Quat const& q)
 
     // The pose is the object's to set and the index's only job is to re-file the
     // body under whatever tiles its new world box covers.
-    if (m_model && GetMap())
+    if (m_model && FindMap())
     {
         GetMap()->RefreshGameObjectModel(*m_model);
     }

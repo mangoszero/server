@@ -854,6 +854,11 @@ class WorldObject : public Object
 
         void SetMap(Map* map);
         Map* GetMap() const { MANGOS_ASSERT(m_currMap); return m_currMap; }
+
+        /// The map, or NULL, for the paths that legitimately run on an object which never
+        /// reached one -- a destructor after LoadFromDB failed, above all. GetMap() asserts
+        /// there, so `if (GetMap())` is not a guard, it is the crash.
+        Map* FindMap() const { return m_currMap; }
         // used to check all object's GetMap() calls when object is not in world!
         void ResetMap();
 

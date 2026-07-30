@@ -782,7 +782,7 @@ void GameEventMgr::UnApplyEvent(uint16 event_id)
 void GameEventMgr::ApplyNewEvent(uint16 event_id, bool resume)
 {
     m_ActiveEvents.insert(event_id);
-    CharacterDatabase.PExecute("INSERT INTO `game_event_status` (`event`) VALUES (%u)", event_id);
+    CharacterDatabase.PExecute("INSERT IGNORE INTO `game_event_status` (`event`) VALUES (%u)", event_id);
 
     if (sWorld.getConfig(CONFIG_BOOL_EVENT_ANNOUNCE))
     {
