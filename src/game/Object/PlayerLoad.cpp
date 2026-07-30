@@ -319,6 +319,14 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
     Place().MoveTo(fields[12].GetFloat(), fields[13].GetFloat(), fields[14].GetFloat(), fields[16].GetFloat());
     SetLocationMapId(fields[15].GetUInt32());
 
+    // AND TELL THE MOVEMENT STATE. The placement is where the server says he is; the create
+    // block the client receives is written from m_movementInfo, whose pose is the CLIENT's
+    // last claim -- which for someone who has just logged in is nothing at all. Leave it and
+    // he is placed at the map origin, in the air, under the ground, and falls until he
+    // drowns. Seed it here: the server speaking first, before the client has anything to say.
+    m_movementInfo.ChangePosition(Where().X(), Where().Y(), Where().Z(),
+                                  Where().Facing());
+
     _LoadGroup(holder->GetResult(PLAYER_LOGIN_QUERY_LOADGROUP));
 
     m_highest_rank.rank        = fields[38].GetUInt32();
@@ -696,6 +704,11 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
 
     // has to be called after last Relocate() in Player::LoadFromDB
     SetFallInformation(0, Where().Z());
+
+    // Same reason, and this is the LAST relocate: homebind, taxi and areatrigger rescues
+    // above all moved him after the seed near the DB read.
+    m_movementInfo.ChangePosition(Where().X(), Where().Y(), Where().Z(),
+                                  Where().Facing());
 
     _LoadSpellCooldowns(holder->GetResult(PLAYER_LOGIN_QUERY_LOADSPELLCOOLDOWNS));
 

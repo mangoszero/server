@@ -1336,6 +1336,7 @@ void Map::PlayerRelocation(Player* player, float x, float y, float z, float orie
     bool same_cell = (new_cell == old_cell);
 
     player->Place().MoveTo(x, y, z, orientation);
+    player->m_movementInfo.ChangePosition(x, y, z, orientation);
 
     if (old_cell.DiffGrid(new_cell) || old_cell.DiffCell(new_cell))
     {
@@ -1387,6 +1388,7 @@ void Map::CreatureRelocation(Creature* creature, float x, float y, float z, floa
     {
         // update pos
         creature->Place().MoveTo(x, y, z, ang);
+        creature->m_movementInfo.ChangePosition(x, y, z, ang);
         creature->OnRelocated();
     }
     // if creature can't be move in new cell/grid (not loaded) move it to repawn cell/grid
@@ -1560,6 +1562,7 @@ bool Map::CreatureRespawnRelocation(Creature* c)
     if (CreatureCellRelocation(c, resp_cell))
     {
         c->Place().MoveTo(resp_x, resp_y, resp_z, resp_o);
+        c->m_movementInfo.ChangePosition(resp_x, resp_y, resp_z, resp_o);
         c->GetMotionMaster()->Initialize();                 // prevent possible problems with default move generators
         c->OnRelocated();
         return true;

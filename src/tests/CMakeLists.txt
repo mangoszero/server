@@ -106,6 +106,11 @@ add_test(NAME spatial_boundary
         -DSOURCE_ROOT=${CMAKE_SOURCE_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckSpatialBoundary.cmake)
 
+add_test(NAME movement_state_seed
+    COMMAND ${CMAKE_COMMAND}
+        -DSOURCE_ROOT=${CMAKE_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckMovementStateSeed.cmake)
+
 # Put the runtime DLLs beside the test binary so it can be run from the build tree.
 # A convenience, never a gate: the search is derived from the library that was actually
 # found, and a miss warns rather than failing the configure.

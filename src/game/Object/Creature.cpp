@@ -190,6 +190,12 @@ bool CreatureCreatePos::PlaceOn(Creature* cr) const
 {
     cr->Place().MoveTo(m_pos.x, m_pos.y, m_pos.z, m_pos.o);
 
+    // The create block the client receives is written from the movement state, not from
+    // the placement. Leave it empty and every creature that never moves is drawn at the
+    // map origin -- which is why only the ones walking a waypoint path looked right: their
+    // first SMSG_MONSTER_MOVE carried real coordinates and corrected the lie.
+    cr->m_movementInfo.ChangePosition(m_pos.x, m_pos.y, m_pos.z, m_pos.o);
+
     if (!IsPlaceable(*cr))
     {
         sLog.outError("%s not created. Suggested coordinates isn't valid (X: %f Y: %f)", cr->GetGuidStr().c_str(), cr->Where().X(), cr->Where().Y());
