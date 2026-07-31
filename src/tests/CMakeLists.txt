@@ -37,6 +37,7 @@ set(SRC_GRP_TESTS
     TestHarness.h
     BigNumberTest.cpp
     Utf8Test.cpp
+    ConfigTest.cpp
     ByteBufferTest.cpp
     SessionMailboxTest.cpp
     SessionProtocolPolicyTest.cpp

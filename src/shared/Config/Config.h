@@ -29,6 +29,7 @@
 #include <Policies/Singleton.h>
 #include "Platform/Define.h"
 
+#include <algorithm>
 #include <map>
 #include <string>
 #include <utility>
@@ -135,14 +136,58 @@ class Config
 
     private:
 
+        /**
+         * @brief Orders keys ignoring case, so lookup is case-insensitive.
+         *
+         * Config keys have never been consistently cased: the core reads
+         * `RA.Secure` and `GMLogFile` while every shipped config since Release
+         * 20 has written `Ra.Secure` and `GmLogFile`. That resolved for years,
+         * only stopped when the config backend became an exact-match std::map.
+         * Comparing case-insensitively restores it without touching either
+         * spelling, and covers any other drift of the same kind.
+         *
+         * ASCII-only by design: config keys are ASCII identifiers, and a
+         * locale-sensitive fold would make resolution depend on the run
+         * environment.
+         */
+        struct KeyLess
+        {
+            bool operator()(const std::string& lhs,
+                            const std::string& rhs) const
+            {
+                return std::lexicographical_compare(
+                           lhs.begin(), lhs.end(), rhs.begin(), rhs.end(),
+                           [](unsigned char a, unsigned char b)
+                           {
+                               return AsciiLower(a) < AsciiLower(b);
+                           });
+            }
+
+            static unsigned char AsciiLower(unsigned char c)
+            {
+                return (c >= 'A' && c <= 'Z')
+                       ? (unsigned char)(c - 'A' + 'a')
+                       : c;
+            }
+        };
+
         /// One [section] and its key/value pairs. Within a section the last assignment
         /// of a key wins; across sections the first section holding the key wins (see
         /// GetValue). Sections are kept in file order so that resolution is stable.
-        typedef std::map<std::string, std::string> SectionEntries;
+        /// Keys compare case-insensitively; see KeyLess.
+        typedef std::map<std::string, std::string, KeyLess> SectionEntries;
         typedef std::vector<std::pair<std::string, SectionEntries> > Sections;
 
         /// Look @p name up across every section, first match wins.
         bool GetValue(const char* name, std::string& result) const;
+
+        /// Warn that two spellings in one section are the same setting.
+        void WarnDuplicateKey(const std::string& section,
+                              const std::string& kept,
+                              const std::string& dropped) const;
+
+        /// Warn where an earlier section answers a later section's key.
+        void WarnShadowedKeys() const;
 
     private:
 

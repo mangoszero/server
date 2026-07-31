@@ -50,6 +50,7 @@
 #include "Config.h"
 #include "Policies/Singleton.h"
 
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -201,11 +202,82 @@ bool Config::Reload()
         // Everything after the '=' is the value: no inline-comment handling, because a
         // quoted value may legitimately contain '#' or ';'. The last assignment of a key
         // within a section wins.
-        mSections.back().second[key] = Unquote(Trim(text.substr(eq + 1)));
+        SectionEntries& entries = mSections.back().second;
+
+        // Keys match without regard to case, so two spellings differing only in
+        // case are one entry: the later value wins and the earlier is lost. Say
+        // so rather than silently dropping a line the admin expects to apply.
+        const SectionEntries::const_iterator clash = entries.find(key);
+        if (clash != entries.end() && clash->first != key)
+        {
+            WarnDuplicateKey(mSections.back().first, clash->first, key);
+        }
+
+        entries[key] = Unquote(Trim(text.substr(eq + 1)));
     }
+
+    WarnShadowedKeys();
 
     mLoaded = true;
     return true;
+}
+
+/**
+ * @brief Report a key written twice in one section under different casing.
+ *
+ * Straight to stderr, not through sLog: Log itself reads sConfig while
+ * starting up, so the logger does not exist yet at parse time. Config is also
+ * loaded well before the full-screen console takes the screen, so this cannot
+ * disturb it.
+ *
+ * @param section Section holding both spellings; empty for the leading section.
+ * @param kept    Spelling already stored, which keeps its casing.
+ * @param dropped Spelling just seen, whose value overwrites the earlier one.
+ */
+void Config::WarnDuplicateKey(const std::string& section,
+                              const std::string& kept,
+                              const std::string& dropped) const
+{
+    std::fprintf(stderr,
+                 "Config: in section [%s], \"%s\" and \"%s\" differ only in "
+                 "case and are the same setting; the later value wins.\n",
+                 section.c_str(), kept.c_str(), dropped.c_str());
+}
+
+/**
+ * @brief Report a key an earlier section already answers under other casing.
+ *
+ * GetValue returns the first section holding the key, so a differently-cased
+ * spelling in an earlier section now answers a lookup that a later section
+ * spells exactly. That is invisible without this warning.
+ */
+void Config::WarnShadowedKeys() const
+{
+    for (Sections::const_iterator later = mSections.begin();
+         later != mSections.end(); ++later)
+    {
+        for (SectionEntries::const_iterator entry = later->second.begin();
+             entry != later->second.end(); ++entry)
+        {
+            for (Sections::const_iterator earlier = mSections.begin();
+                 earlier != later; ++earlier)
+            {
+                const SectionEntries::const_iterator hit =
+                    earlier->second.find(entry->first);
+
+                if (hit != earlier->second.end() && hit->first != entry->first)
+                {
+                    std::fprintf(stderr,
+                                 "Config: \"%s\" in section [%s] is shadowed "
+                                 "by \"%s\" in earlier section [%s]; they "
+                                 "differ only in case and the earlier one "
+                                 "answers lookups.\n",
+                                 entry->first.c_str(), later->first.c_str(),
+                                 hit->first.c_str(), earlier->first.c_str());
+                }
+            }
+        }
+    }
 }
 
 /**
