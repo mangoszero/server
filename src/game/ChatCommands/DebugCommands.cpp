@@ -53,6 +53,11 @@
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"
 #include "SpellMgr.h"
+#include "Pet.h"
+#include "Map.h"
+#include "MapManager.h"
+#include "TransportMap.h"
+#include "Transports.h"
 
 /**
  * @brief Handler for HandleDebugSendSpellFailCommand command.
@@ -1681,4 +1686,103 @@ bool ChatHandler::HandleDebugSpellModsCommand(char* args)
     chr->GetSession()->SendPacket(&data);
 
     return true;
+}
+
+/**
+ * @brief `.debug minion` -- where a player's minions actually are, deck boundary and all.
+ *
+ * The steady state is what needs reading, not the transition: a pet left on a deck looks
+ * exactly like a pet that followed and stopped, and the difference is a map id. So this
+ * reports three things that must agree and usually do not: what the master OWNS, what stands
+ * on the master's own map, and what stands on every deck sailing that map.
+ */
+bool ChatHandler::HandleDebugMinionCommand(char* /*args*/)
+{
+    Player* master = getSelectedPlayer();
+    if (!master)
+    {
+        master = m_session ? m_session->GetPlayer() : NULL;
+    }
+
+    if (!master)
+    {
+        SendSysMessage(LANG_NO_CHAR_SELECTED);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    PSendSysMessage("master   %s", DescribeSpatially(master).c_str());
+    PSendSysMessage("petguid  %s  transport=%s",
+                    master->GetPetGuid().GetString().c_str(),
+                    master->GetTransport() ? "yes" : "no");
+
+    int owned = 0;
+    master->CallForAllControlledUnits(
+        [this, &owned](Unit* minion)
+        {
+            ++owned;
+            PSendSysMessage("owned    %s", DescribeSpatially(minion).c_str());
+        },
+        CONTROLLED_PET | CONTROLLED_MINIPET | CONTROLLED_GUARDIANS | CONTROLLED_TOTEMS |
+        CONTROLLED_CHARM);
+
+    if (!owned)
+    {
+        SendSysMessage("owned    NONE -- the master controls nothing the sweep can find");
+    }
+
+    Map* on = master->FindMap();
+    if (!on)
+    {
+        return true;
+    }
+
+    DumpPetsOn(on, "onmap");
+
+    // The decks are the other half of the answer: a pet the master no longer owns is still
+    // standing somewhere, and it is almost always on the hull he walked off.
+    if (TransportMap* deck = on->AsTransport())
+    {
+        if (Transport* vessel = deck->Vessel())
+        {
+            if (Map* sailed = vessel->GetMap())
+            {
+                DumpPetsOn(sailed, "ashore");
+            }
+        }
+    }
+    else
+    {
+        MapManager::TransportsByMapType::const_iterator vessels =
+            sMapMgr.m_TransportsByMap.find(on->GetId());
+        if (vessels != sMapMgr.m_TransportsByMap.end())
+        {
+            for (Transport* vessel : vessels->second)
+            {
+                if (TransportMap* hull = vessel->AsMap())
+                {
+                    DumpPetsOn(hull, "ondeck");
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+/// Every pet standing on one map, whoever owns it. `label` says which map it was.
+void ChatHandler::DumpPetsOn(Map* on, char const* label)
+{
+    for (auto const& entry : on->GetObjectsStore().GetElements<Pet>())
+    {
+        Pet* pet = entry.second;
+        if (!pet)
+        {
+            continue;
+        }
+
+        Unit* owner = pet->GetOwner();
+        PSendSysMessage("%-8s %s owner=%s", label, DescribeSpatially(pet).c_str(),
+                        owner ? owner->GetGuidStr().c_str() : "(none)");
+    }
 }

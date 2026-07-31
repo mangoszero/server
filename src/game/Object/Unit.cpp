@@ -61,6 +61,7 @@
 #include "GameTime.h"
 #include "Transports.h"
 #include "TransportMap.h"
+#include "MapManager.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #include "ElunaConfig.h"
@@ -531,7 +532,16 @@ void Unit::WriteMovementInfo(ByteBuffer& out) const
 
     if (!vessel)
     {
-        m_movementInfo.Write(out);
+        // BOTH BRANCHES READ Where(), and the asymmetry was the bug. A pose set by
+        // Place().MoveTo -- how anything is teleported, minions across a deck boundary
+        // above all -- never reaches m_movementInfo, so writing that struct as-is sent
+        // the position the unit held BEFORE the move. Coming off a ship that is a
+        // deck-local coordinate in a world position field, and the client walks the pet
+        // to (-3, -8, 6) on the continent. Boarding was never affected, because the deck
+        // branch below had always taken its numbers from Where().
+        MovementInfo ashore = m_movementInfo;
+        ashore.ChangePosition(Where().X(), Where().Y(), Where().Z(), Where().Facing());
+        ashore.Write(out);
         return;
     }
 
@@ -3255,9 +3265,50 @@ Pet* Unit::GetPet() const
 {
     if (ObjectGuid pet_guid = GetPetGuid())
     {
-        if (Pet* pet = GetMap()->GetPet(pet_guid))
+        Map* on = FindMap();
+        if (!on)
+        {
+            return NULL;
+        }
+
+        if (Pet* pet = on->GetPet(pet_guid))
         {
             return pet;
+        }
+
+        // ACROSS THE DECK BOUNDARY. A master and his minion stand on two maps for as long
+        // as one of them has crossed and the other has not, and the owner's map alone
+        // cannot find it. Giving up here did not lose the pet -- it was alive the whole
+        // time, on the other side -- it made the OWNER FORGET IT, because the line below
+        // clears the guid, and after that nothing ever reclaims it.
+        if (TransportMap* hull = on->AsTransport())
+        {
+            Transport* vessel = hull->Vessel();
+            if (Map* sailed = vessel ? vessel->GetMap() : NULL)
+            {
+                if (Pet* pet = sailed->GetPet(pet_guid))
+                {
+                    return pet;
+                }
+            }
+        }
+        else
+        {
+            MapManager::TransportsByMapType::const_iterator vessels =
+                sMapMgr.m_TransportsByMap.find(on->GetId());
+            if (vessels != sMapMgr.m_TransportsByMap.end())
+            {
+                for (Transport* vessel : vessels->second)
+                {
+                    if (TransportMap* deck = vessel->AsMap())
+                    {
+                        if (Pet* pet = deck->GetPet(pet_guid))
+                        {
+                            return pet;
+                        }
+                    }
+                }
+            }
         }
 
         sLog.outError("Unit::GetPet: %s not exist.", pet_guid.GetString().c_str());

@@ -97,6 +97,7 @@ LogFilterData logFilterData[LOG_FILTER_COUNT] =
     { "cell_envelope",       "LogFilter_CellEnvelope",       true  },
     { "grid_add",            "LogFilter_GridAdd",            true  },
     { "db_scripts",          "LogFilter_DbScripts",          true  },
+    { "deck_minions",        "LogFilter_DeckMinions",        true  },
 };
 
 /**

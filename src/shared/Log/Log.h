@@ -85,9 +85,10 @@ enum LogFilters
     LOG_FILTER_CELL_ENVELOPE      = 0x100000,               // 20 LivingWorld B-Cell envelope load/accrete trace
     LOG_FILTER_GRID_ADD           = 0x200000,               // 21 object added to a grid cell ("X enters grid[x,y]") - high-volume, mostly creatures
     LOG_FILTER_DB_SCRIPTS         = 0x400000,               // 22 db_scripts command processing trace (execution, not errors)
+    LOG_FILTER_DECK_MINIONS       = 0x800000,               // 23 minions drawn across a deck boundary: board, step ashore, reconcile
 };
 
-#define LOG_FILTER_COUNT            23
+#define LOG_FILTER_COUNT            24
 
 /**
  * @brief Configuration data for individual log filters

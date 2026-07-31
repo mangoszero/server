@@ -28,6 +28,7 @@
 #include "Map.h"
 
 #include <optional>
+#include <string>
 #include <vector>
 
 class Creature;
@@ -35,6 +36,11 @@ class Player;
 class Transport;
 class Unit;
 class UpdateData;
+
+/// One line saying where a unit ACTUALLY is -- map, whether that map is a deck, the frame its
+/// coordinates are measured in, the pose, and which generator is driving it. The deck bugs are
+/// all the same picture from the client and all a different answer here.
+std::string DescribeSpatially(Unit* u);
 
 /// A map region a visibility pass must sweep in addition to the viewer's own, because a
 /// vessel and the shore it sails past are two maps that must see each other.

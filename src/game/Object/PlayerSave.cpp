@@ -32,6 +32,7 @@
 #include <list>
 #include "Utilities/PackedValues.h"
 #include "Player.h"
+#include "TransportMap.h"
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
@@ -176,11 +177,45 @@ void Player::SaveToDB()
 
     if (!IsBeingTeleported())
     {
-        uberInsert.addUInt32(GetMapId());
-        uberInsert.addFloat(finiteAlways(Where().X()));
-        uberInsert.addFloat(finiteAlways(Where().Y()));
-        uberInsert.addFloat(finiteAlways(Where().Z()));
-        uberInsert.addFloat(finiteAlways(Where().Facing()));
+        // What goes in this row is what the client will be handed at the next login, so it
+        // is the map the ship SAILS and a point on it -- never the deck map, which the
+        // client cannot load. Where he actually stands is the deck position saved in the
+        // transport columns below, and that is the one that survives the voyage intact.
+        //
+        // The vessel is taken from the boarding relationship when it is intact, and from
+        // the map otherwise: a GM `.tele` onto a hull puts him there with no transport at
+        // all. Written once, a deck map in this column is unloadable for ever and the
+        // character is stuck at the loading screen with no way back in.
+        uint32 savedMap = GetMapId();
+        float savedX = Where().X(), savedY = Where().Y();
+        float savedZ = Where().Z(), savedO = Where().Facing();
+
+        Transport* vessel = m_transport;
+        if (!vessel)
+        {
+            if (Map* on = FindMap())
+            {
+                if (TransportMap* hull = on->AsTransport())
+                {
+                    vessel = hull->Vessel();
+                }
+            }
+        }
+
+        if (vessel)
+        {
+            savedMap = vessel->GetMapId();
+            savedX = vessel->Where().X();
+            savedY = vessel->Where().Y();
+            savedZ = vessel->Where().Z();
+            savedO = vessel->Where().Facing();
+        }
+
+        uberInsert.addUInt32(savedMap);
+        uberInsert.addFloat(finiteAlways(savedX));
+        uberInsert.addFloat(finiteAlways(savedY));
+        uberInsert.addFloat(finiteAlways(savedZ));
+        uberInsert.addFloat(finiteAlways(savedO));
     }
     else
     {

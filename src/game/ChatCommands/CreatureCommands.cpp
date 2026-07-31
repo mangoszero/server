@@ -1236,7 +1236,7 @@ namespace
                                 cellLoaded ? "yes" : "no",
                                 inWorld ? "" : " (not in world)");
 
-        if (watched->Where().ShareFrame(unit->Where()))
+        if (CanBeSeen(*unit, *watched))
         {
             handler.PSendSysMessage("    distance=%.3f",
                                     watched->Where().DistanceTo(unit->Where()));

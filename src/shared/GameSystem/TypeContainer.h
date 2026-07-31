@@ -118,6 +118,14 @@ class TypeUnorderedMapContainer
             return true;
         }
 
+        /// Every object of one type held here. `find` answers "is this guid on the map";
+        /// this answers "what of this kind IS on the map", which no lookup by guid can.
+        template <typename T>
+        std::unordered_map<KEY_TYPE, T*> const& GetElements() const
+        {
+            return std::get<Meta::IndexOf<T,Tuple>::value>(i_container);
+        }
+
         template <typename T>
         T* find (KEY_TYPE handle, T*)
         {

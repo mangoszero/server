@@ -25,6 +25,7 @@
 #include "Utilities/Errors.h"
 #include <algorithm>
 #include "Pet.h"
+#include "TransportMap.h"
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
 #include "WorldPacket.h"
@@ -187,8 +188,17 @@ void Pet::Update(uint32 update_diff, uint32 diff)
         {
             // unsummon pet that lost owner
             Unit* owner = GetOwner();
+            // A minion whose master is on ANOTHER MAP is mid-crossing, not off its leash.
+            // Stepping on or off a deck leaves them in different frames for the one tick
+            // before TransportMap's reconciler draws it across, and InReach fails closed on
+            // a cross-frame question. Unsummoning on that answer is how a pet vanished the
+            // instant its master went ashore.
+            const bool crossingDeck = owner && !Where().ShareFrame(owner->Where()) &&
+                                      ((FindMap() && FindMap()->AsTransport()) ||
+                                       (owner->FindMap() && owner->FindMap()->AsTransport()));
+
             if (!owner ||
-                (!InReach(*this, *owner, GetMap()->GetVisibilityDistance()) && (owner->GetCharmGuid() && (owner->GetCharmGuid() != GetObjectGuid()))) ||
+                (!crossingDeck && !InReach(*this, *owner, GetMap()->GetVisibilityDistance()) && (owner->GetCharmGuid() && (owner->GetCharmGuid() != GetObjectGuid()))) ||
                 (isControlled() && !owner->GetPetGuid()))
             {
                 Unsummon(PET_SAVE_REAGENTS);

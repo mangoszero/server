@@ -50,6 +50,10 @@
 #include <string>
 #include <vector>
 
+#ifndef MANGOS_CLIENT_NAME
+#define MANGOS_CLIENT_NAME "unknown client"
+#endif
+
 using namespace world::terrain;
 
 namespace
@@ -59,6 +63,7 @@ namespace
         std::string src = "Data";
         std::string dest = "extracted_data";
         std::string locale;         ///< empty = detect it from the client
+        bool allLocales = false;    ///< --locale all: every language on the disc
         int mapFilter = -1;
         bool dbc = false;
         bool tiles = false;
@@ -89,18 +94,14 @@ namespace
     }
 
     /**
-     * @brief Which locale the client under @p dataDir is, read off the disk.
+     * @brief Every locale the client under @p dataDir carries, enUS first if present.
      *
      * A locale directory is only a locale directory if it holds the archive named after
-     * it, so a stray folder cannot be mistaken for one. Several is normal on a client
-     * that has been switched: enUS wins if it is there, otherwise the first found.
-     *
-     * It matters less than it looks -- every ADT, WMO and WDT lives in the
-     * locale-independent archives, and Map.dbc's Directory is an internal path name --
-     * but the DBC set is read from the locale side, and naming the wrong one opens
-     * nothing at all.
+     * it, so a stray folder cannot be mistaken for one. Several is normal: a European
+     * install ships nine or more, and until this returned all of them the baker took the
+     * first and silently gave every other language the English strings.
      */
-    std::string DetectLocale(const std::string& dataDir)
+    std::vector<std::string> FindLocales(const std::string& dataDir)
     {
         std::vector<std::string> found;
         std::error_code ec;
@@ -117,25 +118,31 @@ namespace
             }
         }
 
-        if (found.empty())
-        {
-            return std::string();
-        }
-        for (const std::string& name : found)
-        {
-            if (name == "enUS")
-            {
-                return name;
-            }
-        }
         std::sort(found.begin(), found.end());
-        return found.front();
+
+        // enUS first when it is there: it is the set that goes in the base dbc/ folder,
+        // and the one the server falls back to for anything a translation is missing.
+        const auto en = std::find(found.begin(), found.end(), std::string("enUS"));
+        if (en != found.end())
+        {
+            std::rotate(found.begin(), en, en + 1);
+        }
+        return found;
+    }
+
+    /// The one the client is, for everything that is not a DBC -- terrain, models and
+    /// collision live in the locale-independent archives and do not care which it is.
+    std::string DetectLocale(const std::string& dataDir)
+    {
+        const std::vector<std::string> found = FindLocales(dataDir);
+        return found.empty() ? std::string() : found.front();
     }
 
     void Usage()
     {
         std::printf(
 "mangos-extractor -- bakes a WoW client into the caches mangosd reads.\n"
+"  built for: " MANGOS_CLIENT_NAME "\n"
 "\n"
 "  usage: mangos-extractor [component ...] [option ...]\n"
 "\n"
@@ -162,6 +169,9 @@ namespace
 "                  Detected by looking for locale-<loc>.MPQ inside a folder\n"
 "                  of that name. Only the DBC set is locale-dependent; all\n"
 "                  terrain and models live in shared archives.\n"
+"                  --locale all bakes EVERY language the client carries:\n"
+"                  the first (enUS if present) into dbc/, each of the rest\n"
+"                  into dbc/<loc>/, which is where the server looks.\n"
 "\n"
 "AUTHORED INPUT -- both default to a file beside the executable\n"
 "\n"
@@ -202,7 +212,12 @@ namespace
             else if (a == "--vessels" && hasValue) { out.vesselList = argv[++i]; }
             else if (a == "--src" && hasValue) { out.src = argv[++i]; }
             else if (a == "--dest" && hasValue) { out.dest = argv[++i]; }
-            else if (a == "--locale" && hasValue) { out.locale = argv[++i]; }
+            else if (a == "--locale" && hasValue)
+            {
+                const std::string v = argv[++i];
+                out.allLocales = (v == "all");
+                out.locale = out.allLocales ? std::string() : v;
+            }
             else if (a == "--map" && hasValue) { out.mapFilter = std::atoi(argv[++i]); }
             else if (a == "--offmesh" && hasValue) { out.offMesh = argv[++i]; }
             else if (a == "--threads" && hasValue) { out.threads = std::atoi(argv[++i]); }
@@ -792,6 +807,35 @@ int main(int argc, char** argv)
         g_console.SetStage("dbc");
         ExtractDbc(mpq, opt.dest + "/dbc", opt.locale);
     }
+
+    // EVERY OTHER LANGUAGE THE CLIENT CARRIES. Only the DBC set is locale-dependent, so
+    // this is the whole of "extract them all": one more archive chain per locale, and its
+    // databases under dbc/<loc>/ -- which is exactly where the server looks for them
+    // (DBCStores builds `dbc_path + locale + "/" + file`). The base dbc/ folder keeps the
+    // primary set, and a translation that is missing a row falls back to it.
+    if (opt.dbc && opt.allLocales)
+    {
+        for (const std::string& loc : FindLocales(opt.src))
+        {
+            if (loc == opt.locale)
+            {
+                continue;                       // already written, at the dbc/ root
+            }
+
+            StormLibArchive other;
+            if (!other.OpenClientData(opt.src, ClientArchives112(),
+                                       ClientLocaleArchives112(), loc))
+            {
+                g_console.Warn("  no archives for locale " + loc + " -- skipped");
+                continue;
+            }
+
+            g_console.SetLocale(loc);
+            ExtractDbc(other, opt.dest + "/dbc/" + loc, loc);
+        }
+        g_console.SetLocale(opt.locale);
+    }
+
 
     if (!opt.tiles && !opt.goModels)
     {

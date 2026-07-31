@@ -287,6 +287,7 @@ MaxWhoListReturns                 = 49
 #    LogFilter_MapsLoading
 #    LogFilter_EventAiDev
 #    LogFilter_CellEnvelope
+#    LogFilter_DeckMinions
 #    LogFilter_GridAdd
 #    LogFilter_DbScripts
 #        Log filters (active by default - meaning: the filter is active, hence the log is not displayed)
@@ -420,6 +421,7 @@ LogFilter_EventAiDev         = 1
 LogFilter_CellEnvelope       = 1
 LogFilter_GridAdd            = 1
 LogFilter_DbScripts          = 1
+LogFilter_DeckMinions        = 1
 LogFilter_PeriodicAffects    = 1
 LogFilter_PlayerMoves        = 1
 LogFilter_SQLText            = 1

@@ -57,6 +57,7 @@ class GameObject;
 class Creature;
 class Player;
 class Unit;
+class Map;
 
 class ChatCommand
 {
@@ -301,6 +302,7 @@ class ChatHandler
         bool HandleDebugGetItemValueCommand(char* args);
         bool HandleDebugGetLootRecipientCommand(char* args);
         bool HandleDebugGetValueCommand(char* args);
+        bool HandleDebugMinionCommand(char* args);
         bool HandleDebugModItemValueCommand(char* args);
         bool HandleDebugModValueCommand(char* args);
         bool HandleDebugSetAuraStateCommand(char* args);
@@ -819,6 +821,8 @@ class ChatHandler
         std::string GenerateDeletedCharacterGUIDsWhereStr(DeletedInfoList::const_iterator& itr, DeletedInfoList::const_iterator const& itr_end);
         void HandleCharacterDeletedListHelper(DeletedInfoList const& foundList);
         void HandleCharacterDeletedRestoreHelper(DeletedInfo const& delInfo);
+
+        void DumpPetsOn(Map* on, char const* label);
 
         void SetSentErrorMessage(bool val) { sentErrorMessage = val;};
     private:
