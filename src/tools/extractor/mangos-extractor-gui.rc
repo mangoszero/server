@@ -30,6 +30,10 @@
    string name sorts after every number. This is the one Explorer draws. */
 1 ICON DISCARDABLE "mangos-extractor.ico"
 
+/* The header badge, decoded at run time: a JPEG is not a BITMAP resource, so it
+   travels as raw bytes and OleLoadPicture turns it into something drawable. */
+MANGOSLOGO RCDATA DISCARDABLE "mangos-tools.jpg"
+
 VS_VERSION_INFO VERSIONINFO
     FILEVERSION     VER_FILEVERSION
     PRODUCTVERSION  VER_PRODUCTVERSION

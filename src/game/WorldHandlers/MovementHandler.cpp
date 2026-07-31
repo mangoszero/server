@@ -728,6 +728,14 @@ void WorldSession::HandleMoverRelocation(MovementInfo& movementInfo)
 
     if (Player* plMover = mover->GetTypeId() == TYPEID_PLAYER ? (Player*)mover : NULL)
     {
+        // BEFORE the transport branch, and the ordering is the whole of it.
+        // TransportMap::Add reads the passenger's OWN m_movementInfo for his deck offset; the
+        // assignment used to sit below this branch, so on the first ONTRANSPORT packet Add read
+        // the PREVIOUS one -- which carries no transport data -- and stood him on the hull
+        // origin. His minions were then drawn beside (0, 0, 0): a yard off the keel and six
+        // metres under the deck, which is what "the pet comes up through the walls" was.
+        plMover->m_movementInfo = movementInfo;
+
         if (movementInfo.HasMovementFlag(MOVEFLAG_ONTRANSPORT))
         {
             if (!plMover->m_transport)

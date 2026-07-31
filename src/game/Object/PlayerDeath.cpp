@@ -142,8 +142,12 @@ void Player::BuildPlayerRepop()
 
     SendCorpseReclaimDelay();
 
-    // to prevent cheating
-    corpse->ResetGhostTime();
+    // to prevent cheating. NULL when he died aboard a vessel: no corpse is left on a deck
+    // that sails away from it, and RepopAtGraveyard revives him at the port instead.
+    if (corpse)
+    {
+        corpse->ResetGhostTime();
+    }
 
     StopMirrorTimers();                                     // disable timers(bars)
 

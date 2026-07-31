@@ -28,7 +28,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <list>
+#include <string>
 #include <vector>
 
 #include "Transports.h"
@@ -39,10 +41,44 @@
 #include "DBCStores.h"
 #include "MotionGenerators/MotionMaster.h"
 #include "WorldPacket.h"
+#include "Log.h"
 #include "terrain/GoModelStore.hpp"
 #include "CellImpl.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
+
+/**
+ * @brief Where a unit ACTUALLY is: map, frame, pose, and whether anything can move it.
+ *
+ * Every pet symptom aboard looks the same from the client -- it stands there, or it is gone --
+ * and every one of them is a different answer to this line. The frame matters as much as the
+ * map: a pet whose placement still says `deck` while it sits on a world map is infinitely far
+ * from its master, so nothing reaches it and no rule fires.
+ */
+std::string DescribeSpatially(Unit* u)
+{
+    if (!u)
+    {
+        return "(null)";
+    }
+
+    Map* on = u->FindMap();
+    Geometry::Frame const& f = u->Where().CurrentFrame();
+
+    char buf[320];
+    snprintf(buf, sizeof(buf),
+             "%s map=%u%s frame=%s/%llu pos=(%.2f %.2f %.2f) inworld=%d alive=%d gen=%u",
+             u->GetGuidStr().c_str(),
+             on ? on->GetId() : 0u,
+             on && on->AsTransport() ? "[deck]" : "",
+             f.IsPlaced() ? (f.IsDeck() ? "deck" : "world") : "nowhere",
+             static_cast<unsigned long long>(f.Id()),
+             u->Where().X(), u->Where().Y(), u->Where().Z(),
+             u->IsInWorld() ? 1 : 0, u->IsAlive() ? 1 : 0,
+             unsigned(u->GetMotionMaster()->GetCurrentMovementGeneratorType()));
+
+    return buf;
+}
 
 namespace
 {
@@ -102,6 +138,21 @@ namespace
                         != CREATURE_TYPEFLAGS_TRANSPORT_FORBIDDEN;
     }
 
+    /// Drop a minion from one client, both halves: the packet AND the server's record that
+    /// the client holds it. Either one alone leaves the two disagreeing.
+    void ForgetMinion(Creature* minion, Unit* watcher)
+    {
+        Player* client = watcher && watcher->GetTypeId() == TYPEID_PLAYER
+                             ? static_cast<Player*>(watcher) : NULL;
+        if (!client)
+        {
+            return;
+        }
+
+        minion->DestroyForPlayer(client);
+        client->m_clientGUIDs.erase(minion->GetObjectGuid());
+    }
+
     /**
      * @brief Move a minion to the map its master is on, beside him.
      *
@@ -111,17 +162,33 @@ namespace
      */
     void DrawMinionTo(Unit* minion, Unit* master, Map* dest)
     {
-        if (!minion || !master || !dest || !minion->IsInWorld() || !minion->IsAlive())
+        if (!minion || !master || !dest)
         {
+            DEBUG_FILTER_LOG(LOG_FILTER_DECK_MINIONS,
+                             "DrawMinionTo: SKIP null (minion=%p master=%p dest=%p)",
+                             (void*)minion, (void*)master, (void*)dest);
             return;
         }
 
-        if (minion->GetMap() == dest)
+        if (!minion->IsInWorld() || !minion->IsAlive())
         {
+            DEBUG_FILTER_LOG(LOG_FILTER_DECK_MINIONS,
+                             "DrawMinionTo: SKIP not-drawable %s", DescribeSpatially(minion).c_str());
             return;
+        }
+
+        if (minion->FindMap() == dest)
+        {
+            return;                         // the ordinary case, once a tick, per minion
         }
 
         Creature* c = static_cast<Creature*>(minion);
+
+        DEBUG_FILTER_LOG(LOG_FILTER_DECK_MINIONS,
+                         "DrawMinionTo: FROM %s", DescribeSpatially(c).c_str());
+        DEBUG_FILTER_LOG(LOG_FILTER_DECK_MINIONS,
+                         "DrawMinionTo:   TO map=%u%s beside %s", dest->GetId(),
+                         dest->AsTransport() ? "[deck]" : "", DescribeSpatially(master).c_str());
 
         float x, y, z;
         ClosePointNear(*master, x, y, z, minion->Where().Extent(), PET_FOLLOW_DIST,
@@ -130,12 +197,76 @@ namespace
         // Whatever leg it was on was planned in the map it is leaving; none of it survives.
         c->StopMoving();
 
+        // TELL EVERY CLIENT TO DROP IT FIRST, and MAKE THE SERVER AGREE. Without this the
+        // ones already holding it get only a heartbeat at the far side and interpolate the
+        // difference -- which a player sees as his pet swimming up through the hull.
+        //
+        // The packet alone is not enough and that is the whole trap: DestroyForPlayer does
+        // not touch m_clientGUIDs, so the server still believes the client holds it, and the
+        // visibility pass at the far side takes the HaveAtClient branch and sends NO CREATE.
+        // The client is left drawing its last copy -- for a pet coming off a ship, still
+        // attached to the ship. Erasing the guid is what makes the arrival a real CREATE.
+        //
+        // And THE MASTER MUST BE IN THE LIST. He is the one client that has to re-create it,
+        // and he is the one this loop cannot reach: by the time a minion is drawn ashore he
+        // has already been taken off the deck map it is walking.
+        ForgetMinion(c, master);
+
+        for (Map::PlayerList::const_iterator itr = c->GetMap()->GetPlayers().begin();
+             itr != c->GetMap()->GetPlayers().end(); ++itr)
+        {
+            ForgetMinion(c, itr->getSource());
+        }
+
         c->GetMap()->Remove(c, false);
         c->Place().MoveTo(x, y, z, master->Where().Facing());
         dest->Add(c);
 
-        c->GetMotionMaster()->Initialize();
+        // AND THE MOTION, in the frame it now stands in. Initialize() alone restores the
+        // creature's DEFAULT generator -- for a pet that is not following anybody, which is
+        // a pet teleported neatly to its master's side and then standing there.
+        //
+        // MoveFollow and MoveIdle each clear the stack themselves, and correctly. Clearing
+        // it here first with all=true emptied it down to and including the idle generator,
+        // and the Clear inside MoveFollow then asserted on !empty() -- a crash on every
+        // step ashore, from MotionMaster::DirectClean.
+        if (c->GetCharmInfo() && c->GetCharmInfo()->HasCommandState(COMMAND_STAY))
+        {
+            c->GetMotionMaster()->MoveIdle();
+        }
+        else
+        {
+            c->GetMotionMaster()->MoveFollow(master, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+        }
+
         c->SendHeartBeat();
+
+        DEBUG_FILTER_LOG(LOG_FILTER_DECK_MINIONS,
+                         "DrawMinionTo: DONE %s", DescribeSpatially(c).c_str());
+    }
+
+    /// Every minion this master controls, moved to `dest` beside him. The reconciler does
+    /// the same sweep once per tick; this is the immediate half, so nothing is ever seen
+    /// standing where its master no longer is.
+    void DrawMinionsTo(Player* master, Map* dest)
+    {
+        if (!master || !dest)
+        {
+            return;
+        }
+
+        // A ZERO HERE IS THE ANSWER, not a quiet success: the sweep found nothing to move,
+        // which means the master no longer owns what is standing on the other map.
+        int seen = 0;
+        master->CallForAllControlledUnits(
+            [master, dest, &seen](Unit* minion) { ++seen; DrawMinionTo(minion, master, dest); },
+            CONTROLLED_PET | CONTROLLED_MINIPET | CONTROLLED_GUARDIANS | CONTROLLED_TOTEMS);
+
+        DEBUG_FILTER_LOG(LOG_FILTER_DECK_MINIONS,
+                         "DrawMinionsTo: %s -> map=%u%s, %d controlled unit(s), petguid=%s",
+                         master->GetGuidStr().c_str(), dest->GetId(),
+                         dest->AsTransport() ? "[deck]" : "", seen,
+                         master->GetPetGuid().GetString().c_str());
     }
 }
 
@@ -294,7 +425,13 @@ bool TransportMap::Add(Player* passenger)
     passenger->BuildCreateUpdateBlockForPlayer(&data, passenger);
 
     WorldPacket packet;
-    data.BuildPacket(&packet);
+    // hasTransport, and it must be true: this packet carries the vessel and a
+    // passenger whose own block names her. The byte is written on CLASSIC and TBC
+    // only -- mangos_two omits the argument because there the field does not exist,
+    // and copying that form here tells the client there is no transport in a packet
+    // that is nothing but transport. It then has nothing to compose him against and
+    // never leaves the loading screen.
+    data.BuildPacket(&packet, true);
     passenger->GetSession()->SendPacket(&packet);
 
     // And the OTHER ships on the water she is crossing. His client is drawing that map, so
@@ -335,8 +472,17 @@ void TransportMap::Embark(Player* passenger)
     // He WALKED aboard: he really was ashore a moment ago, so he really does leave that map.
     // Login and the far side of a seam do not come through here -- they never touch the
     // world's grid at all, they are added straight to this map.
+    DEBUG_FILTER_LOG(LOG_FILTER_DECK_MINIONS, "Embark: %s",
+                     DescribeSpatially(passenger).c_str());
+
     passenger->GetMap()->Remove(passenger, false);
     Add(passenger);
+
+    // His minions come with him, NOW. UpdateMinions reconciles this once per tick and is
+    // the safety net for the half-dozen other ways one arrives -- but a pet that waits a
+    // tick is a pet standing at the rail while its master walks off, which is what a player
+    // actually sees. Retail teleports it beside him on the spot; so does this.
+    DrawMinionsTo(passenger, this);
 }
 
 void TransportMap::Disembark(Player* passenger, float x, float y, float z, float o)
@@ -352,9 +498,23 @@ void TransportMap::Disembark(Player* passenger, float x, float y, float z, float
         return;
     }
 
+    DEBUG_FILTER_LOG(LOG_FILTER_DECK_MINIONS, "Disembark: %s",
+                     DescribeSpatially(passenger).c_str());
+
     Remove(passenger, false);
     passenger->Place().MoveTo(x, y, z, o);
+
+    // BEFORE the add, not after. Map::Add sends SendInitTransports, whose loop skips
+    // player->GetTransport() on the assumption that our own vessel already reached us
+    // through SendInitSelf. Stepping ashore is the one case where that is false: leave the
+    // pointer set and the ship he just left is the single vessel never announced to him, so
+    // it vanishes the instant he is off it.
+    passenger->SetTransport(NULL);
+
     sailed->Add(passenger);
+
+    // And they follow him ashore in the same tick, for the same reason.
+    DrawMinionsTo(passenger, sailed);
 }
 
 void TransportMap::VesselLeavingWorld(Map* oldWorld, uint32 newMapId,
@@ -477,20 +637,26 @@ void TransportMap::UpdateMinions()
             CONTROLLED_PET | CONTROLLED_MINIPET | CONTROLLED_GUARDIANS | CONTROLLED_TOTEMS);
     }
 
-    // And the reverse: anything aboard whose master has left. Crew have no owner, so they are
-    // never candidates -- which is the only distinction that has ever mattered between a
-    // deckhand and a pet, and it is one the creature already carries.
+    // And the reverse: anything aboard whose master has left.
+    //
+    // NOT `m_crew`. A pet is not crew and must never be enlisted as one -- crew are exempt
+    // from the visibility sweep, and a pet that is exempt is a pet no client ever destroys,
+    // which is how one came to swim up through the hull. So the roster it is looked for in
+    // is the MAP'S OWN pet store: everything of the kind that is standing here, crew or not.
+    // Scanning m_crew asked a container pets are not in, found nothing, and left every pet
+    // whose master had walked ashore standing on the deck for good.
     std::vector<Creature*> stranded;
 
-    for (Creature* aboard : m_crew)
+    for (auto const& entry : GetObjectsStore().GetElements<Pet>())
     {
-        if (!aboard || IsPlanted(aboard))
+        Creature* aboard = entry.second;
+        if (!aboard || !aboard->IsInWorld() || IsPlanted(aboard))
         {
             continue;                       // a totem rides the ship it was planted on
         }
 
         Unit* master = aboard->GetOwner();
-        if (master && master->IsInWorld() && master->GetMap() != this)
+        if (master && master->IsInWorld() && master->FindMap() != this)
         {
             stranded.push_back(aboard);
         }
@@ -499,7 +665,9 @@ void TransportMap::UpdateMinions()
     for (Creature* minion : stranded)
     {
         Unit* master = minion->GetOwner();
-        DrawMinionTo(minion, master, master->GetMap());
+        DEBUG_FILTER_LOG(LOG_FILTER_DECK_MINIONS,
+                         "UpdateMinions: STRANDED aboard %s", DescribeSpatially(minion).c_str());
+        DrawMinionTo(minion, master, master->FindMap());
     }
 }
 
