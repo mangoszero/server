@@ -38,6 +38,7 @@
 #include "Log.h"
 #include "MapManager.h"
 #include "Server/WorldNetwork.h"
+#include "SystemConfig.h"
 #include "Timer.h"
 #include "World.h"
 
@@ -98,6 +99,35 @@ namespace
 
         return db.CheckDatabaseVersion(versionKind);
     }
+
+#ifdef _WIN32
+    /**
+     * @brief Show the live player and connection counts in the window title.
+     *
+     * The title belongs to the OS window, not to the console frame, so it stays
+     * readable while the server is minimised or buried in the taskbar -- which
+     * the in-frame status bar is not. Rewritten only when the text actually
+     * changes, because SetConsoleTitleA is a cross-process call.
+     *
+     * @param players     Currently active sessions.
+     * @param connections Currently open socket connections.
+     */
+    void UpdateConsoleTitle(uint32 players, uint32 connections)
+    {
+        static std::string s_lastTitle;
+
+        char title[128];
+        snprintf(title, sizeof(title), "%s (%u Players - %u Connections)",
+                 MANGOS_PACKAGENAME, players, connections);
+
+        std::string newTitle(title);
+        if (s_lastTitle != newTitle)
+        {
+            s_lastTitle = newTitle;
+            SetConsoleTitleA(title);
+        }
+    }
+#endif
 }
 
 Master::Master()
@@ -250,6 +280,14 @@ void Master::StopServices()
 
 void Master::PublishConsoleStatus(uint32 diff)
 {
+#ifdef _WIN32
+    // Before the early-out below: the window title is owned by the OS rather
+    // than by the console frame, so it is kept current even when the
+    // full-screen UI is switched off and there is no status bar to publish to.
+    UpdateConsoleTitle(sWorld.GetActiveSessionCount(),
+                       sWorldNetwork.GetOpenConnectionCount());
+#endif
+
     MaNGOS::Console::ConsoleUI& ui = MaNGOS::Console::ConsoleUI::Instance();
     if (!ui.Active())
     {

@@ -802,8 +802,8 @@ SD3ErrorLogFile              = "scriptdev3-errors.log"
 #        Default: 0 (false)
 #                 1 (true)
 #
-#    BeepAtStart
-#        Beep at mangosd start finished (mostly work only at Unix/Linux systems)
+#    Console.BeepAtStart
+#        Beep once mangosd has finished starting and the console is ready.
 #        Default: 1 (true)
 #                 0 (false)
 #
@@ -818,8 +818,9 @@ SD3ErrorLogFile              = "scriptdev3-errors.log"
 #        Default: "auto"  (draw the boxed, coloured loading UI when stdout is an
 #                          interactive console; plain text when it is redirected
 #                          to a file or a pipe, or when running as a service)
-#                 "fancy" (force the loading UI on, for a terminal that cannot be
-#                          detected as one)
+#                 "fancy" (currently behaves as "auto": forcing the UI on for a
+#                          terminal that cannot be detected as one is not yet
+#                          implemented)
 #                 "plain" (never; plain text, as older releases printed it)
 #
 #    WaitAtStartupError
@@ -910,7 +911,7 @@ MailDeliveryDelay                         = 3600
 MassMailer.SendPerTick                    = 10
 PetUnsummonAtMount                        = 0
 Event.Announce                            = 0
-BeepAtStart                               = 1
+Console.BeepAtStart                       = 1
 ShowProgressBars                          = 1
 Console.Style                             = "auto"
 WaitAtStartupError                        = 10
