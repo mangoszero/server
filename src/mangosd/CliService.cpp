@@ -133,9 +133,20 @@ void CliService::Run()
     // Let start-up finish printing before the prompt lands in the middle of it.
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
-    if (m_beep && !MaNGOS::Console::ConsoleUI::Instance().Active())
+    // The bell has to bypass the log pipeline entirely. With the full-screen UI
+    // up, ConsoleLogWriter::Emit() folds a raw record into the UI's scrollback
+    // as text, so a BEL routed through sLog is displayed rather than sounded --
+    // which is why gating this on !ConsoleUI::Active() silenced it outright.
+    if (m_beep)
     {
-        sLog.ConsoleEmitRaw("\a");
+#ifdef _WIN32
+        // The system "default" sound, i.e. what the console bell used to raise.
+        MessageBeep(MB_OK);
+#else
+        // Straight to the terminal: non-printing, so it cannot disturb a frame.
+        std::fputs("\a", stdout);
+        std::fflush(stdout);
+#endif
     }
 
     Prompt();

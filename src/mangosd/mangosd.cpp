@@ -351,7 +351,11 @@ int main(int argc, char** argv)
 
     // Only now: until the writer thread exists, console emits take the
     // synchronous path and would write straight over the full-screen frame.
-    if (sConfig.GetBoolDefault("Console.FullScreen", true) &&
+    // "plain" never draws the loading UI. "auto" and "fancy" both ask for it,
+    // and Start() declines on its own when stdout is not a real terminal.
+    const std::string consoleStyle =
+        sConfig.GetStringDefault("Console.Style", "auto");
+    if (consoleStyle != "plain" &&
         MaNGOS::Console::ConsoleUI::Instance().Start("MaNGOS Zero", "Vanilla 1.12.x"))
     {
         MaNGOS::Console::ConsoleUI::Instance().SetHeaderRight(
