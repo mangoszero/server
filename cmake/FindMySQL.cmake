@@ -8,9 +8,21 @@ Provides the following variables:
 
 set(MySQL_FOUND 0)
 
+# An install outside the default locations is pointed at with -DMYSQL_ROOT= or a
+# MYSQL_ROOT / MARIADB_ROOT environment variable, and wins over every other path.
+set(MYSQL_ROOT "$ENV{MYSQL_ROOT}" CACHE PATH "Root of a MySQL or MariaDB installation")
+set(_MySQL_hints)
+foreach (_MySQL_root IN ITEMS "${MYSQL_ROOT}" "$ENV{MARIADB_ROOT}")
+  if (_MySQL_root)
+    file(TO_CMAKE_PATH "${_MySQL_root}" _MySQL_root)
+    list(APPEND _MySQL_hints "${_MySQL_root}")
+  endif ()
+endforeach ()
+unset(_MySQL_root)
+
 # No .pc files are shipped with MySQL on Windows.
 set(_MYSQL_USE_PKGCONFIG 0)
-if (NOT WIN32)
+if (NOT WIN32 AND NOT _MySQL_hints)
   find_package(PkgConfig)
   if (PkgConfig_FOUND)
     set(_MYSQL_USE_PKGCONFIG 1)
@@ -78,24 +90,26 @@ if(NOT MySQL_FOUND)
 
   find_path(MySQL_INCLUDE_DIR
     NAMES mysql.h
+    HINTS ${_MySQL_hints}
     PATHS
       "C:/Program Files/MySQL/include"
       "C:/MySQL/include"
       ${_MySQL_paths}
       /usr
       /usr/include
-    PATH_SUFFIXES include include/mysql
+    PATH_SUFFIXES include include/mysql include/mariadb
     DOC "Location of mysql.h")
   mark_as_advanced(MySQL_INCLUDE_DIR)
   find_library(MySQL_LIBRARY
     NAMES libmariadb mysql libmysql mysqlclient
+    HINTS ${_MySQL_hints}
     PATHS
       "C:/Program Files/MySQL/lib"
       "C:/MySQL/lib/debug"
       ${_MySQL_paths}
       /usr
       /usr/local/
-    PATH_SUFFIXES lib lib/opt lib/mysql
+    PATH_SUFFIXES lib lib/opt lib/mysql lib/mariadb
     DOC "Location of the mysql library")
   mark_as_advanced(MySQL_LIBRARY)
 
@@ -112,5 +126,6 @@ if(NOT MySQL_FOUND)
     set(MySQL_LIBRARIES "${MySQL_LIBRARY}")
   endif ()
 endif ()
+unset(_MySQL_hints)
 unset(_MYSQL_USE_PKGCONFIG)
 
