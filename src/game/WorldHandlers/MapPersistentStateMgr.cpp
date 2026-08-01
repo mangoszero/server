@@ -74,7 +74,7 @@ static uint32 resetEventTypeDelay[MAX_RESET_EVENT_TYPE] = { 0,                  
         60, 30, 10, 5 };        // (seconds) fast reset by gm command inform timer
 
 //== MapPersistentState functions ==========================
-MapPersistentState::MapPersistentState(uint16 MapId, uint32 InstanceId)
+MapPersistentState::MapPersistentState(uint32 MapId, uint32 InstanceId)
     : m_instanceid(InstanceId), m_mapid(MapId),
     m_usedByMap(NULL)
 {
@@ -313,7 +313,7 @@ bool WorldPersistentState::CanBeUnload() const
 
 //== DungeonPersistentState functions =====================
 
-DungeonPersistentState::DungeonPersistentState(uint16 MapId, uint32 InstanceId, time_t resetTime, bool canReset)
+DungeonPersistentState::DungeonPersistentState(uint32 MapId, uint32 InstanceId, time_t resetTime, bool canReset)
     : MapPersistentState(MapId, InstanceId), m_resetTime(resetTime), m_canReset(canReset)
 {
 }

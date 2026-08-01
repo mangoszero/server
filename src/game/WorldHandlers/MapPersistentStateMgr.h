@@ -68,7 +68,12 @@ class MapPersistentState
     friend class MapPersistentStateManager;
 
     protected:
-        MapPersistentState(uint16 MapId, uint32 InstanceId);
+        // uint32, NOT uint16. A vessel's deck map carries a MINTED id well past 65535
+        // (Transport::RegisterVesselMap), and m_mapid has always been uint32 -- the
+        // truncation happened here, in the parameter. GetMapEntry() then looked up
+        // 1020808 & 0xFFFF = 37768, found nothing, and every caller that dereferenced
+        // the result crashed. Killing anything on a deck was enough.
+        MapPersistentState(uint32 MapId, uint32 InstanceId);
 
     public:
 
@@ -157,7 +162,7 @@ class WorldPersistentState : public MapPersistentState
          - any new non-instanceable map created
          - respawn data loading for non-instanceable map
          */
-        explicit WorldPersistentState(uint16 MapId) : MapPersistentState(MapId, 0) {}
+        explicit WorldPersistentState(uint32 MapId) : MapPersistentState(MapId, 0) {}
 
         ~WorldPersistentState() {}
 
@@ -185,7 +190,7 @@ class DungeonPersistentState : public MapPersistentState
          - any new instance is being generated
          - the first time a player bound to InstanceId logs in
          - when a group bound to the instance is loaded */
-        DungeonPersistentState(uint16 MapId, uint32 InstanceId, time_t resetTime, bool canReset);
+        DungeonPersistentState(uint32 MapId, uint32 InstanceId, time_t resetTime, bool canReset);
 
         ~DungeonPersistentState();
 
@@ -251,7 +256,7 @@ class BattleGroundPersistentState : public MapPersistentState
         /** Created either when:
          - any new BG/arena is being generated
          */
-        BattleGroundPersistentState(uint16 MapId, uint32 InstanceId)
+        BattleGroundPersistentState(uint32 MapId, uint32 InstanceId)
             : MapPersistentState(MapId, InstanceId) {}
 
         ~BattleGroundPersistentState() {}

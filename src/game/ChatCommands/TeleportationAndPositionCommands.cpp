@@ -41,6 +41,9 @@
 #include "World.h"
 #include "MapManager.h"
 #include "CellImpl.h"
+#include "Transports.h"
+#include "TransportMap.h"
+#include "Utilities/MathDefines.h"
 
 #ifdef _DEBUG_VMAPS
 #endif
@@ -95,10 +98,17 @@ static char const* const areatriggerKeys[] =
  */
 bool ChatHandler::HandleGoHelper(Player* player, uint32 mapid, float x, float y, float const zPtr, float const ortPtr)
 {
+    // A DECK IS TAKEN VERBATIM. The sentinels below read a non-positive z or orientation as
+    // "not given" and substitute the player's own -- which holds for world coordinates and
+    // fails on a hull, whose model space is centred on itself: half of every deck is at
+    // negative z, and a facing of exactly 0 is an ordinary heading. Guessing either would
+    // land the destination somewhere else on the ship.
+    const bool aboard = Transport::IsVesselMapId(mapid);
+
     float z;
-    float ort = player->Where().Facing();
+    float ort = aboard ? ortPtr : player->Where().Facing();
     z = zPtr;
-    if (zPtr > 0.0f)
+    if (!aboard && zPtr > 0.0f)
     {
         z = zPtr;
 
@@ -115,7 +125,7 @@ bool ChatHandler::HandleGoHelper(Player* player, uint32 mapid, float x, float y,
             return false;
         }
     }
-    else
+    else if (!aboard)
     {
         // we need check x,y before ask Z or can crash at invalide coordinates
         if (!MapManager::IsValidMapCoord(mapid, x, y))
@@ -142,7 +152,15 @@ bool ChatHandler::HandleGoHelper(Player* player, uint32 mapid, float x, float y,
         player->SaveRecallPosition();
     }
 
-    player->TeleportTo(mapid, x, y, z, ort);
+    // Reported only for a deck, and only because a refusal there is silent otherwise: he is
+    // left standing where he was, which looks exactly like a command that did nothing.
+    if (!player->TeleportTo(mapid, x, y, z, ort) && aboard)
+    {
+        SendSysMessage("That vessel is between two maps right now. You have not been moved; "
+                       "try again once she has arrived.");
+        SetSentErrorMessage(true);
+        return false;
+    }
 
     return true;
 }
@@ -588,6 +606,74 @@ bool ChatHandler::HandleRecallCommand(char* args)
 }
 
 /**
+ * @brief The transport half of .gps: where you are ON THE VESSEL, which is a map.
+ *
+ * There is one coordinate system aboard and this prints it. A hull's mesh IS its map's
+ * terrain, so the position and the floor under it are read the same way they are anywhere
+ * else -- and the vessel's own world pose is shown only to say which water she is on, with
+ * the reminder that it is an estimate nothing is allowed to decide anything from.
+ */
+void ChatHandler::ReportTransportPosition(WorldObject* obj)
+{
+    TransportMap* hull = obj->GetMap() ? obj->GetMap()->AsTransport() : NULL;
+    Transport* vessel = hull ? hull->Vessel() : NULL;
+
+    if (!vessel)
+    {
+        return;                                         // not aboard anything; nothing to say
+    }
+
+    PSendSysMessage("--- TRANSPORT %u (%s), map %u ---", vessel->GetEntry(), vessel->GetName(),
+                    hull->GetId());
+
+    PSendSysMessage("Vessel pose: X:%.3f Y:%.3f Z:%.3f O:%.3f  [waypoint estimate -- names "
+                    "the grid to search, decides nothing]",
+                    vessel->Where().X(), vessel->Where().Y(),
+                    vessel->Where().Z(), vessel->Where().Facing());
+
+    PSendSysMessage("Aboard at: X:%.3f Y:%.3f Z:%.3f O:%.3f  [this map's own coordinates]",
+                    obj->Where().X(), obj->Where().Y(), obj->Where().Z(), obj->Where().Facing());
+
+    if (!hull->IsCommissioned())
+    {
+        SendSysMessage("Deck mesh: NONE BAKED for this vessel. She carries nobody.");
+        return;
+    }
+
+    const auto deckZ = hull->SurfaceAt(obj->Where().X(), obj->Where().Y(), obj->Where().Z(),
+                                       3.0f, 10.0f);
+
+    if (!deckZ)
+    {
+        PSendSysMessage("Deck mesh: NO FLOOR under (%.3f, %.3f). You are over the side.",
+                        obj->Where().X(), obj->Where().Y());
+        return;
+    }
+
+    PSendSysMessage("Deck mesh: Z:%.3f  (you are %+.3f above it), hull radius %.1f",
+                    *deckZ, obj->Where().Z() - *deckZ, hull->HullRadius());
+
+    // The deck's slope under the feet, by sampling the mesh a short way out along the
+    // facing. This is the orientation a creature planted here would actually stand at.
+    const float PROBE = 1.0f;
+    const float lo = obj->Where().Facing();
+    const auto aheadZ = hull->SurfaceAt(obj->Where().X() + PROBE * cos(lo),
+                                        obj->Where().Y() + PROBE * sin(lo),
+                                        *deckZ, 3.0f, 10.0f);
+
+    if (aheadZ)
+    {
+        const float pitch = atan2(*aheadZ - *deckZ, PROBE);
+        PSendSysMessage("Deck slope along facing O:%.3f -> pitch %.3f rad (%.1f deg)",
+                        lo, pitch, pitch * 180.0f / M_PI_F);
+    }
+    else
+    {
+        PSendSysMessage("Deck slope: edge of the deck %.1f yd ahead along O:%.3f", PROBE, lo);
+    }
+}
+
+/**
  * @brief Handler for HandleGPSCommand command.
  *
  * @param args Command arguments.
@@ -679,6 +765,8 @@ bool ChatHandler::HandleGPSCommand(char* args)
         obj->Where().X(), obj->Where().Y(), obj->Where().Z(), obj->Where().Facing(),
         cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), obj->GetInstanceId(),
         zone_x, zone_y, ground_z, floor_z, have_map, have_vmap);
+
+    ReportTransportPosition(obj);
 
     DEBUG_LOG("Player %s GPS call for %s '%s' (%s: %u):",
         m_session ? GetNameLink().c_str() : GetMangosString(LANG_CONSOLE_COMMAND),
@@ -1640,6 +1728,14 @@ bool ChatHandler::HandleTeleAddCommand(char* args)
         return false;
     }
 
+    // ABOARD, THIS IS ALREADY THE SHIP'S OWN FRAME and nothing has to be done about it: his
+    // map IS the hull and Where() is a position on it. What is stored is a deck spot and the
+    // deck's map id, which is the vessel's identity -- minted from her game object entry, so
+    // it is the same number after a restart. Player::TeleportTo reads it back as "put him
+    // aboard her", wherever she has sailed to by then.
+    TransportMap* hull = player->GetMap() ? player->GetMap()->AsTransport() : NULL;
+    Transport* vessel = hull ? hull->Vessel() : NULL;
+
     GameTele tele;
     tele.position_x = player->Where().X();
     tele.position_y = player->Where().Y();
@@ -1651,6 +1747,15 @@ bool ChatHandler::HandleTeleAddCommand(char* args)
     if (sObjectMgr.AddGameTele(tele))
     {
         SendSysMessage(LANG_COMMAND_TP_ADDED);
+
+        if (vessel)
+        {
+            PSendSysMessage("Aboard %s (transport %u, map %u): X:%.3f Y:%.3f Z:%.3f O:%.3f "
+                            "[the deck's own coordinates -- .tele %s puts you back on her]",
+                            vessel->GetName(), vessel->GetEntry(), tele.mapId,
+                            tele.position_x, tele.position_y, tele.position_z,
+                            tele.orientation, tele.name.c_str());
+        }
     }
     else
     {

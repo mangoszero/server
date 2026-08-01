@@ -1102,7 +1102,7 @@ class ObjectMgr
         void SetDBCLocaleIndex(uint32 lang) { DBCLocaleIndex = GetIndexForLocale(LocaleConstant(lang)); }
 
         // global grid objects state (static DB spawns, global spawn mods from gameevent system)
-        CellObjectGuids const& GetCellObjectGuids(uint16 mapid, uint32 cell_id)
+        CellObjectGuids const& GetCellObjectGuids(uint32 mapid, uint32 cell_id)
         {
             return mMapObjectGuids[mapid][cell_id];
         }
@@ -1112,7 +1112,7 @@ class ObjectMgr
         // inserts an empty entry on miss, so scanning many cells (e.g. a
         // whole grid) does not mutate mMapObjectGuids. Returns NULL when
         // the cell has no static DB spawn definitions.
-        CellObjectGuids const* GetCellObjectGuidsReadOnly(uint16 mapid, uint32 cell_id) const
+        CellObjectGuids const* GetCellObjectGuidsReadOnly(uint32 mapid, uint32 cell_id) const
         {
             MapObjectGuids::const_iterator mapItr = mMapObjectGuids.find(mapid);
             if (mapItr == mMapObjectGuids.end())

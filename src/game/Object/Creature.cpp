@@ -165,20 +165,44 @@ bool ForcedDespawnDelayEvent::Execute(uint64 /*e_time*/, uint32 /*p_time*/)
  */
 void CreatureCreatePos::SelectFinalPoint(Creature* cr)
 {
-    // if object provided then selected point at specific dist/angle from object forward look
-    if (m_closeObject)
+    // no object to be near: the coordinates were given to us outright
+    if (!m_closeObject)
     {
-        if (m_dist == 0.0f)
+        return;
+    }
+
+    // right on top of it -- no floor to look for, so a deck needs no special case here
+    if (m_dist == 0.0f)
+    {
+        m_pos.x = m_closeObject->Where().X();
+        m_pos.y = m_closeObject->Where().Y();
+        m_pos.z = m_closeObject->Where().Z();
+        return;
+    }
+
+    // The summoner is standing on a deck, and its summon belongs on that deck -- which is
+    // the one floor GetClosePoint cannot find. It resolves Z against the WORLD, and the
+    // world beneath a hull is the sea floor: a pet called at the rail would be created a
+    // hundred yards straight down, in the water under the ship. Out of everyone's sight,
+    // too far below the deck to ever be boarded by TransportMap::UpdateMinions, and gone.
+    //
+    // So the spot is chosen on the vessel's own map, in that map's coordinates, which are
+    // the only coordinates a deck has -- nothing is composed and nothing is converted.
+    if (TransportMap* hull = m_closeObject->GetMap()->AsTransport())
+    {
+        const float distance2d = m_dist + m_closeObject->Where().Extent() +
+                                 cr->Where().Extent();
+
+        if (const auto spot = hull->FreeSpotNear(*m_closeObject, distance2d, m_angle))
         {
-            m_pos.x = m_closeObject->Where().X();
-            m_pos.y = m_closeObject->Where().Y();
-            m_pos.z = m_closeObject->Where().Z();
-        }
-        else
-        {
-            ClosePointNear(*m_closeObject, m_pos.x, m_pos.y, m_pos.z, cr->Where().Extent(), m_dist, m_angle);
+            m_pos.x = spot->x;
+            m_pos.y = spot->y;
+            m_pos.z = spot->z;
+            return;
         }
     }
+
+    ClosePointNear(*m_closeObject, m_pos.x, m_pos.y, m_pos.z, cr->Where().Extent(), m_dist, m_angle);
 }
 
 /**
@@ -341,6 +365,30 @@ void Creature::RemoveFromWorld()
     }
 
     Unit::RemoveFromWorld();
+}
+
+/**
+ * @brief Final cleanup before the creature is deleted.
+ *
+ * This -- not RemoveFromWorld -- is the path a dying or dismissed PET takes: Pet::Unsummon
+ * queues the pet on the map's remove list, and Map::RemoveAllObjectsInRemoveList reaps it
+ * through Map::Remove(true), which calls CleanupsBeforeDelete and then deletes. A boarded pet
+ * must leave its vessel HERE, before it is freed, or the ship keeps a dangling pointer to it
+ * in its crew index. (The GridReference auto-unlinks from the vessel's container when the
+ * creature is destroyed, but that index is a plain container and does not.) Idempotent, so
+ * it is safe alongside the RemoveFromWorld hook and the vessel's own explicit unboards.
+ */
+void Creature::CleanupsBeforeDelete()
+{
+    if (Map* on = FindMap())
+    {
+        if (TransportMap* hull = on->AsTransport())
+        {
+            hull->DelistCrew(this);
+        }
+    }
+
+    Unit::CleanupsBeforeDelete();
 }
 
 /**

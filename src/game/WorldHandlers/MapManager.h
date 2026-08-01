@@ -139,7 +139,15 @@ class MapManager : public MaNGOS::Singleton<MapManager>
         };
 
         LivingWorldStartupStats LoadContinents();
+
+        /// Mint every vessel's deck map id and inject its Map.dbc row. Runs BEFORE the spawn
+        /// tables are read, because those reject a row whose map sMapStore does not know.
+        void RegisterVesselMaps();
+
         void LoadTransports();
+
+        /// Destroy every vessel and its crew. Must run while the maps are still alive.
+        void DestroyTransports();
 
         typedef std::set<Transport*> TransportSet;
         TransportSet m_Transports;

@@ -1926,21 +1926,25 @@ void Map::SendInitTransports(Player* player)
         return;
     }
 
-    MapManager::TransportsByMapType& tmap = sMapMgr.m_TransportsByMap;
-
-    if (tmap.find(player->GetMapId()) != tmap.end())
+    // Keyed on i_id -- the map doing the sending -- not on the player's own map id, which
+    // during a teleport is not yet this one. find(), not operator[]: the subscript inserts
+    // an empty set into a container every map shares.
+    MapManager::TransportsByMapType::const_iterator vessels = sMapMgr.m_TransportsByMap.find(i_id);
+    if (vessels == sMapMgr.m_TransportsByMap.end())
     {
-        MapManager::TransportSet& tset = tmap[player->GetMapId()];
+        return;
+    }
 
-        for (MapManager::TransportSet::const_iterator i = tset.begin(); i != tset.end(); ++i)
+    for (Transport* vessel : vessels->second)
+    {
+        // Our own vessel came from SendInitSelf, ahead of our own body, so we already
+        // stand on something by the time our block lands. Skip it here.
+        if (vessel == player->GetTransport() || vessel->GetMapId() != i_id)
         {
-            // Our own vessel came from SendInitSelf, ahead of our own body, so we already
-            // stand on something by the time our block lands. Skip it here.
-            if ((*i) != player->GetTransport() && (*i)->GetMapId() == i_id)
-            {
-                TransportMap::AnnounceVessel(*i, player);
-            }
+            continue;
         }
+
+        TransportMap::AnnounceVessel(vessel, player);
     }
 }
 
