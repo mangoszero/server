@@ -28,7 +28,7 @@ mkdir -p _build _install && cd _build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../_install \
   -DBUILD_TOOLS=1 -DBUILD_MANGOSD=1 -DBUILD_REALMD=1 -DSOAP=1 \
   -DSCRIPT_LIB_ELUNA=1 -DSCRIPT_LIB_SD3=1 -DPLAYERBOTS=1 \
-  -DUSE_STORMLIB=1 -DBUILD_AH_SERVICE=1 -DPCH=0
+  -DBUILD_AH_SERVICE=1 -DPCH=0
 make -j"$(nproc)" && make install -j"$(nproc)"
 ```
 
