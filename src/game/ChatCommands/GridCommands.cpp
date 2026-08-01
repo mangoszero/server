@@ -81,7 +81,7 @@ namespace
 
     // Static DB spawn-definition occupancy for one grid. Read-only: reads only the
     // ObjectMgr per-cell spawn store. Never loads/creates grids, never spawns.
-    GridOccupancy ComputeGridOccupancy(uint16 mapId, uint32 gridX, uint32 gridY)
+    GridOccupancy ComputeGridOccupancy(uint32 mapId, uint32 gridX, uint32 gridY)
     {
         GridOccupancy occ;
         for (uint32 cellX = 0; cellX < MAX_NUMBER_OF_CELLS; ++cellX)
@@ -146,7 +146,7 @@ bool ChatHandler::HandleGridInfoCommand(char* args)
         return false;
     }
 
-    uint16 mapId = player->GetMapId();
+    uint32 mapId = player->GetMapId();
     uint32 gridX = 0;
     uint32 gridY = 0;
 
@@ -240,7 +240,7 @@ bool ChatHandler::HandleGridAnchorsCommand(char* args)
         return false;
     }
 
-    uint16 mapId = player->GetMapId();
+    uint32 mapId = player->GetMapId();
 
     // Startup-active anchor set restricted to the player's current map. This is the
     // *enabled* startup anchor set (extra-active + enabled LivingWorld anchors), not

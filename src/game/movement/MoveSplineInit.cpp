@@ -27,6 +27,30 @@
 #include "MoveSpline.h"
 #include "packet_builder.h"
 #include "Unit.h"
+#include "Transports.h"
+#include "TransportMap.h"
+#include "Map.h"
+
+namespace
+{
+    /// The vessel whose deck this unit is standing on, or an empty guid. Derived from the
+    /// map, so a spline goes out as SMSG_MONSTER_MOVE_TRANSPORT for anything on a deck --
+    /// crew, pet or totem alike -- without anyone having registered it as anything.
+    ObjectGuid DeckVesselGuidOf(Unit const& unit)
+    {
+        if (Map* on = unit.GetMap())
+        {
+            if (TransportMap* hull = on->AsTransport())
+            {
+                if (Transport* vessel = hull->Vessel())
+                {
+                    return vessel->GetObjectGuid();
+                }
+            }
+        }
+        return ObjectGuid();
+    }
+}
 
 namespace Movement
 {
@@ -69,6 +93,10 @@ namespace Movement
     int32 MoveSplineInit::Launch()
     {
         MoveSpline& move_spline = *unit.movespline;
+
+        // A DECK IS NOT A SEAT. The unit's map is the vessel and its position is already
+        // deck-local, so Where() is the answer and nothing is composed or looked up.
+        const ObjectGuid vesselGuid = DeckVesselGuidOf(unit);
 
         Vector3 real_position(unit.Where().X(), unit.Where().Y(), unit.Where().Z());
         // there is a big chance that current position is unknown if current state is not finalized, need compute it
@@ -113,6 +141,13 @@ namespace Movement
 
         WorldPacket data(SMSG_MONSTER_MOVE, 64);
         data << unit.GetPackGUID();
+
+        if (!vesselGuid.IsEmpty())
+        {
+            data.SetOpcode(SMSG_MONSTER_MOVE_TRANSPORT);
+            data << vesselGuid.WriteAsPacked();
+        }
+
         PacketBuilder::WriteMonsterMove(move_spline, data);
         unit.SendMessageToSet(&data, true);
 
@@ -131,6 +166,8 @@ namespace Movement
         {
             return;
         }
+
+        const ObjectGuid vesselGuid = DeckVesselGuidOf(unit);
 
         Location real_position(unit.Where().X(), unit.Where().Y(), unit.Where().Z(), unit.Where().Facing());
 
@@ -155,6 +192,13 @@ namespace Movement
 
         WorldPacket data(SMSG_MONSTER_MOVE, 64);
         data << unit.GetPackGUID();
+
+        if (!vesselGuid.IsEmpty())
+        {
+            data.SetOpcode(SMSG_MONSTER_MOVE_TRANSPORT);
+            data << vesselGuid.WriteAsPacked();
+        }
+
         data << real_position.x << real_position.y << real_position.z;
         data << move_spline.GetId();
         data << uint8(MonsterMoveStop);

@@ -273,7 +273,9 @@ struct EquipmentInfoRaw
 struct CreatureData
 {
     uint32 id;                                              // entry in creature_template
-    uint16 mapid;
+    // uint32, NOT uint16: a vessel's deck map has a minted id above 65535, and crew are
+    // ordinary `creature` rows on it. GameObjectData::mapid has always been uint32.
+    uint32 mapid;
     uint32 modelid_override;                                // overrides any model defined in creature_template
     int32 equipmentId;
     float posX;
@@ -580,6 +582,7 @@ class Creature : public Unit
 
         void AddToWorld() override;
         void RemoveFromWorld() override;
+        void CleanupsBeforeDelete() override;
 
         bool Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo const* cinfo, Team team = TEAM_NONE, const CreatureData* data = NULL, GameEventCreatureData const* eventData = NULL);
         bool LoadCreatureAddon(bool reload);

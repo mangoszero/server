@@ -437,6 +437,10 @@ class ChatHandler
 
         //-----------------------Npc Commands-----------------------
         bool HandleNpcAddCommand(char* args);
+
+        // The transport half of .gps: deck offsets and what the baked mesh says is under
+        // them. No-op when the object is not aboard anything.
+        void ReportTransportPosition(WorldObject* obj);
         bool HandleNpcAddVendorItemCommand(char* args);
         bool HandleNpcAIInfoCommand(char* args);
         bool HandleNpcAllowMovementCommand(char* args);

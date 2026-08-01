@@ -56,6 +56,7 @@
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
 #include "Transports.h"
+#include "TransportMap.h"
 #include "GridDefines.h"
 #include "World.h"
 #include "CellImpl.h"
@@ -75,9 +76,36 @@ MapManager::MapManager()
 
 MapManager::~MapManager()
 {
+    // Vessels BEFORE maps -- see the comment in UnloadAll(). Ordinarily UnloadAll has already
+    // done this and the set is empty; this is the path where it never ran.
+    DestroyTransports();
+
     for (MapMapType::iterator iter = i_maps.begin(); iter != i_maps.end(); ++iter)
     {
         delete iter->second;
+    }
+
+    DeleteStateMachine();
+}
+
+/**
+ * @brief Destroy every vessel, and with it every crew member aboard.
+ *
+ * This MUST run while the maps are still alive. A transport owns its crew outright (nothing
+ * else does -- they are in no grid cell, so no Map::UnloadAll will ever reach them), and
+ * ~Transport tears each one down through Creature::RemoveFromWorld, which reaches into the
+ * map's object store to unregister it. Delete the maps first and that store is freed memory.
+ *
+ * Idempotent: the set is emptied, so the destructor calling this again is a no-op.
+ */
+void MapManager::DestroyTransports()
+{
+    // Crew live in their map's object store, not the vessel's, and the vessel itself is in
+    // the world without being in any cell. Both have to be undone while the maps are still
+    // alive -- the vessels are deleted below, after them.
+    for (TransportSet::iterator i = m_Transports.begin(); i != m_Transports.end(); ++i)
+    {
+        (*i)->WithdrawFromWorld();
     }
 
     for (TransportSet::iterator i = m_Transports.begin(); i != m_Transports.end(); ++i)
@@ -85,7 +113,8 @@ MapManager::~MapManager()
         delete *i;
     }
 
-    DeleteStateMachine();
+    m_Transports.clear();
+    m_TransportsByMap.clear();
 }
 
 void
@@ -194,7 +223,18 @@ Map* MapManager::CreateMap(uint32 id, const WorldObject* obj)
         m = FindMap(id);
         if (m == NULL)
         {
-            m = new WorldMap(id, i_gridCleanUpDelay);
+            // A vessel's deck is its own kind of map, and the vessel asking for it is the
+            // object it belongs to -- which is the only moment that link can be made.
+            if (Transport::IsVesselMapId(id) && obj &&
+                obj->GetTypeId() == TYPEID_GAMEOBJECT)
+            {
+                m = new TransportMap(id, i_gridCleanUpDelay,
+                                     const_cast<Transport*>(static_cast<Transport const*>(obj)));
+            }
+            else
+            {
+                m = new WorldMap(id, i_gridCleanUpDelay);
+            }
             // add map into container
             i_maps[MapID(id)] = m;
 
@@ -403,6 +443,12 @@ bool MapManager::IsValidMAP(uint32 mapid)
  */
 void MapManager::UnloadAll()
 {
+    // The vessels first, while their maps are still standing: a crew member is registered in
+    // its map's object store and unregisters itself from there as it is destroyed. Nothing
+    // else will ever free them -- a transport is in no grid cell, so Map::UnloadAll cannot
+    // see it, and its crew are in no cell either.
+    DestroyTransports();
+
     for (MapMapType::iterator iter = i_maps.begin(); iter != i_maps.end(); ++iter)
     {
         iter->second->UnloadAll(true);

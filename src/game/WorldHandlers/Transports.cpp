@@ -50,6 +50,52 @@
 #include "ScriptMgr.h"
 
 /**
+ * @brief Mints every vessel's deck map id, and nothing else.
+ *
+ * A pass of its own because the vessels are built LATE: until their Map.dbc rows are in
+ * sMapStore every spawn table drops its deck rows as pointing at a nonexistent map.
+ */
+void MapManager::RegisterVesselMaps()
+{
+    QueryResult* result = WorldDatabase.Query("SELECT `entry`, `name` FROM `transports`");
+
+    if (!result)
+    {
+        sLog.outString(">> No vessel maps to mint. DB table `transports` is empty.");
+        return;
+    }
+
+    BarGoLink bar(result->GetRowCount());
+    uint32 minted = 0;
+
+    do
+    {
+        bar.step();
+
+        Field* fields = result->Fetch();
+        uint32 entry = fields[0].GetUInt32();
+        std::string name = fields[1].GetCppString();
+
+        GameObjectInfo const* goinfo = ObjectMgr::GetGameObjectInfo(entry);
+
+        // Silent: LoadTransports is where a bad row is refused and reported.
+        if (!goinfo || goinfo->type != GAMEOBJECT_TYPE_MO_TRANSPORT)
+        {
+            continue;
+        }
+
+        Transport::RegisterVesselMap(entry, name.c_str());
+        ++minted;
+    }
+    while (result->NextRow());
+
+    delete result;
+
+    sLog.outString();
+    sLog.outString(">> Minted %u vessel deck map(s)", minted);
+}
+
+/**
  * @brief Loads and initializes all configured global transports.
  */
 void MapManager::LoadTransports()
@@ -124,8 +170,8 @@ void MapManager::LoadTransports()
             continue;
         }
 
-        // A map for this vessel, resolved from the client or minted, before Create asks for
-        // it.
+        // Normally already minted by RegisterVesselMaps, and idempotent. Kept so a vessel
+        // still gets its map if this runs without that pass having gone first.
         Transport::RegisterVesselMap(entry, name.c_str());
 
         // creates the Gameobject
@@ -232,10 +278,21 @@ bool Transport::Create(uint32 guidlow, uint32 mapid, float x, float y, float z, 
 
     SetGoType(GAMEOBJECT_TYPE_MO_TRANSPORT);
     SetUInt32Value(GAMEOBJECT_FACTION, goinfo->faction);
-    SetUInt32Value(GAMEOBJECT_FLAGS, goinfo->flags);
+
+    // Forced, not taken from `gameobject_template`: a vessel is a transport and never
+    // despawns, whatever the row happens to say.
+    SetUInt32Value(GAMEOBJECT_FLAGS, (GO_FLAG_TRANSPORT | GO_FLAG_NODESPAWN));
+
+    // THE ROUTE'S PERIOD, AND THE CLIENT READS IT FROM HERE. It interpolates the hull
+    // itself from `time % period`, so a vessel that ships a zero here is drawn stopped at
+    // her first node no matter what the server sends afterwards. GenerateWaypoints has
+    // already run and set m_period.
+    SetUInt32Value(GAMEOBJECT_LEVEL, m_period);
+
     SetEntry(goinfo->id);
     SetUInt32Value(GAMEOBJECT_DISPLAYID, goinfo->displayId);
     SetGoState(GO_STATE_READY);
+    SetGoArtKit(0);
     SetGoAnimProgress(animprogress);
     SetName(goinfo->name);
 

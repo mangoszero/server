@@ -713,10 +713,27 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     WorldPacket data(SMSG_LOGIN_VERIFY_WORLD, 20);
     data << pCurrChar->GetMapId();
-    data << pCurrChar->Where().X();
-    data << pCurrChar->Where().Y();
-    data << pCurrChar->Where().Z();
-    data << pCurrChar->Where().Facing();
+
+    // ABOARD, THE OFFSET -- exactly what SMSG_NEW_WORLD carries on the teleport path, and
+    // for the same reason. The create block that follows says the player is at (0, 0, 0) on
+    // a transport, with the deck spot in the offset; sending the ship's WORLD pose here
+    // instead means the two packets describe the position with two different meanings, and
+    // the second one has an orientation the vessel never updates (Transport::Create leaves
+    // it at 1.0). The teleport path is the one that demonstrably works; this makes login
+    // say the same thing.
+    if (pCurrChar->GetTransport())
+    {
+        Position const* aboard = pCurrChar->m_movementInfo.GetTransportPos();
+        data << aboard->x << aboard->y << aboard->z << aboard->o;
+    }
+    else
+    {
+        data << pCurrChar->Where().X();
+        data << pCurrChar->Where().Y();
+        data << pCurrChar->Where().Z();
+        data << pCurrChar->Where().Facing();
+    }
+
     SendPacket(&data);
 
     data.Initialize(SMSG_ACCOUNT_DATA_TIMES, 128);

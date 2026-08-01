@@ -585,6 +585,11 @@ void World::SetInitialWorldSettings()
     sLog.outString("Loading Pet Create Spells...");
     sObjectMgr.LoadPetCreateSpells();
 
+    // BEFORE every spawn table below: a deck map exists only once it has been minted into
+    // sMapStore, and a spawn on a map the store does not know is dropped as invalid.
+    sLog.outString("Minting vessel deck maps...");
+    sMapMgr.RegisterVesselMaps();
+
     sLog.outString("Loading Creature Data...");
     sObjectMgr.LoadCreatures();
 
