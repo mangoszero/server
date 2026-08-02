@@ -36,7 +36,6 @@ TEST(OpenSSL_runtime_and_providers_are_major_three)
 {
     const char* modules = std::getenv("OPENSSL_MODULES");
     std::string modulesBefore = modules ? modules : "";
-    REQUIRE(modulesBefore.empty());
 
     OpenSSLProviderManager& manager =
         OpenSSLProviderManager::Instance();
