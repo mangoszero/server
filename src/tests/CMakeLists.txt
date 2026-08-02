@@ -88,11 +88,6 @@ target_link_libraries(mangos_tests
 
 add_test(NAME mangos_tests COMMAND mangos_tests)
 
-if(WIN32)
-    set_tests_properties(mangos_tests PROPERTIES
-        ENVIRONMENT "OPENSSL_MODULES=${OPENSSL_ROOT_DIR}/bin")
-endif()
-
 add_test(NAME proto_boundary
     COMMAND ${CMAKE_COMMAND}
         -DSOURCE_ROOT=${CMAKE_SOURCE_DIR}
@@ -145,5 +140,27 @@ if(WIN32)
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "${MANGOS_TEST_MYSQL_DLL_DIR}/${MANGOS_TEST_MYSQL_DLL_NAME}"
                 "$<TARGET_FILE_DIR:mangos_tests>")
+    endif()
+    set_tests_properties(mangos_tests PROPERTIES
+        ENVIRONMENT "OPENSSL_MODULES=")
+
+    # Match the release layout and leave OPENSSL_MODULES empty: provider discovery
+    # must work from ossl-modules beside the executable, not from the build host.
+    find_file(MANGOS_TEST_OPENSSL_LEGACY_DLL
+        NAMES legacy.dll
+        HINTS "${MANGOS_SSL_ROOT}" "${OPENSSL_ROOT_DIR}"
+        PATH_SUFFIXES bin/ossl-modules bin ossl-modules lib/ossl-modules ""
+        NO_DEFAULT_PATH)
+
+    if(MANGOS_TEST_OPENSSL_LEGACY_DLL)
+        add_custom_command(TARGET mangos_tests POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+                "$<TARGET_FILE_DIR:mangos_tests>/ossl-modules"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${MANGOS_TEST_OPENSSL_LEGACY_DLL}"
+                "$<TARGET_FILE_DIR:mangos_tests>/ossl-modules/legacy.dll")
+    else()
+        message(WARNING
+            "OpenSSL legacy provider (legacy.dll) not found; mangos_tests may fail its RC4 cases.")
     endif()
 endif()

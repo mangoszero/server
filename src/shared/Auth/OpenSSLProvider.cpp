@@ -32,11 +32,18 @@
 #include "OpenSSLProvider.h"
 #include "Log/Log.h"
 
+#include <algorithm>
 #include <charconv>
 #include <cstdlib>
+#include <filesystem>
 #include <openssl/core_names.h>
 #include <openssl/params.h>
 #include <utility>
+#include <vector>
+
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 /**
  * Creates a new OpenSSL cipher context wrapper.
@@ -101,6 +108,179 @@ bool ParseProviderMajor(const std::string& version, unsigned& major)
     std::from_chars_result parsed =
         std::from_chars(begin, end, major);
     return parsed.ec == std::errc{} && parsed.ptr == end;
+}
+
+#ifdef WIN32
+std::wstring ReadWindowsEnvironment(const wchar_t* name)
+{
+    DWORD required = GetEnvironmentVariableW(name, nullptr, 0);
+    if (required == 0)
+        return {};
+
+    std::vector<wchar_t> buffer(required);
+    while (true)
+    {
+        DWORD written = GetEnvironmentVariableW(
+            name, buffer.data(), static_cast<DWORD>(buffer.size()));
+        if (written == 0)
+            return {};
+        if (written < buffer.size())
+            return std::wstring(buffer.data(), written);
+        buffer.resize(static_cast<std::size_t>(written) + 1);
+    }
+}
+
+std::filesystem::path GetExecutableDirectory()
+{
+    constexpr std::size_t MAX_WINDOWS_PATH = 32768;
+    std::vector<wchar_t> buffer(MAX_PATH);
+
+    while (buffer.size() <= MAX_WINDOWS_PATH)
+    {
+        DWORD written = GetModuleFileNameW(
+            nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
+        if (written == 0)
+            return {};
+        if (written < buffer.size())
+        {
+            return std::filesystem::path(
+                std::wstring(buffer.data(), written)).parent_path();
+        }
+
+        if (buffer.size() == MAX_WINDOWS_PATH)
+            break;
+        buffer.resize((std::min)(buffer.size() * 2, MAX_WINDOWS_PATH));
+    }
+
+    return {};
+}
+
+bool ConvertWideToAnsi(const std::wstring& value, std::string& converted)
+{
+    converted.clear();
+    if (value.empty())
+        return false;
+
+    BOOL usedDefault = FALSE;
+    int required = WideCharToMultiByte(
+        CP_ACP, WC_NO_BEST_FIT_CHARS, value.c_str(), -1,
+        nullptr, 0, nullptr, &usedDefault);
+    if (required <= 0 || usedDefault)
+        return false;
+
+    std::vector<char> buffer(static_cast<std::size_t>(required));
+    usedDefault = FALSE;
+    int written = WideCharToMultiByte(
+        CP_ACP, WC_NO_BEST_FIT_CHARS, value.c_str(), -1,
+        buffer.data(), required, nullptr, &usedDefault);
+    if (written <= 0 || usedDefault)
+        return false;
+
+    converted.assign(buffer.data(), static_cast<std::size_t>(written - 1));
+    return true;
+}
+
+bool IsUsableOpenSSLPath(const std::wstring& path, std::string& converted)
+{
+    if (!ConvertWideToAnsi(path, converted))
+        return false;
+
+    constexpr std::size_t LEGACY_SUFFIX_LENGTH = sizeof("\\legacy.dll") - 1;
+    return converted.size() + LEGACY_SUFFIX_LENGTH < MAX_PATH;
+}
+
+bool ConvertForOpenSSL(
+    const std::filesystem::path& directory, std::string& converted)
+{
+    const std::wstring& nativePath = directory.native();
+    if (IsUsableOpenSSLPath(nativePath, converted))
+        return true;
+
+    DWORD required = GetShortPathNameW(nativePath.c_str(), nullptr, 0);
+    if (required == 0)
+        return false;
+
+    std::vector<wchar_t> shortPath(required);
+    DWORD written = GetShortPathNameW(
+        nativePath.c_str(), shortPath.data(), required);
+    if (written == 0 || written >= shortPath.size())
+        return false;
+
+    return IsUsableOpenSSLPath(
+        std::wstring(shortPath.data(), written), converted);
+}
+
+void ConfigureBundledProviderSearchPath()
+{
+    if (!ReadWindowsEnvironment(L"OPENSSL_MODULES").empty())
+        return;
+
+    try
+    {
+        std::filesystem::path executableDirectory = GetExecutableDirectory();
+        if (executableDirectory.empty())
+        {
+            sLog.outError(
+                "OpenSSLProvider: Failed to resolve the executable directory");
+            return;
+        }
+
+        std::filesystem::path providerDirectory =
+            executableDirectory / L"ossl-modules";
+        std::filesystem::path legacyProvider =
+            providerDirectory / L"legacy.dll";
+        std::error_code fileError;
+        if (!std::filesystem::is_regular_file(legacyProvider, fileError))
+            return;
+
+        std::string providerPath;
+        if (!ConvertForOpenSSL(providerDirectory, providerPath))
+        {
+            sLog.outError(
+                "OpenSSLProvider: Bundled provider path cannot be represented "
+                "for the OpenSSL Windows loader");
+            return;
+        }
+
+        if (OSSL_PROVIDER_set_default_search_path(
+                nullptr, providerPath.c_str()) != 1)
+        {
+            sLog.outError(
+                "OpenSSLProvider: Failed to configure bundled provider path '%s'",
+                providerPath.c_str());
+        }
+    }
+    catch (const std::filesystem::filesystem_error& error)
+    {
+        sLog.outError(
+            "OpenSSLProvider: Failed to inspect bundled provider path: %s",
+            error.what());
+    }
+}
+#endif
+
+OpenSSLProvider LoadLegacyProvider()
+{
+#ifdef WIN32
+    ConfigureBundledProviderSearchPath();
+#endif
+    return OpenSSLProvider("legacy");
+}
+
+std::string OpenSSLModulesForDiagnostic()
+{
+#ifdef WIN32
+    std::wstring modules = ReadWindowsEnvironment(L"OPENSSL_MODULES");
+    if (modules.empty())
+        return "<unset>";
+
+    std::string converted;
+    return ConvertWideToAnsi(modules, converted)
+        ? converted : "<unrepresentable>";
+#else
+    const char* modules = std::getenv("OPENSSL_MODULES");
+    return modules ? std::string(modules) : std::string("<unset>");
+#endif
 }
 }
 
@@ -179,7 +359,9 @@ OpenSSLProvider& OpenSSLProvider::operator=(OpenSSLProvider&& other) noexcept
  * Initializes the OpenSSL provider manager and loads required providers.
  */
 OpenSSLProviderManager::OpenSSLProviderManager()
-    : m_legacyProvider("legacy"), m_defaultProvider("default"), m_initialized(false)
+    : m_legacyProvider(LoadLegacyProvider()),
+      m_defaultProvider("default"),
+      m_initialized(false)
 {
     if (!m_legacyProvider.IsLoaded() || !m_defaultProvider.IsLoaded())
     {
@@ -189,9 +371,9 @@ OpenSSLProviderManager::OpenSSLProviderManager()
         {
             sLog.outError("  - Legacy provider failed to load");
 #ifdef WIN32
-            sLog.outError("    Please check you have set the following Environment Variable:");
-            sLog.outError("    OPENSSL_MODULES=C:\\OpenSSL-Win64\\bin");
-            sLog.outError("    (where C:\\OpenSSL-Win64\\bin is the location you installed OpenSSL");
+            sLog.outError("    Use a complete release with ossl-modules\\legacy.dll");
+            sLog.outError("    beside the daemon, or set OPENSSL_MODULES to the");
+            sLog.outError("    directory containing a matching legacy.dll.");
 #endif
         }
 
@@ -217,7 +399,7 @@ OpenSSLProviderManager::OpenSSLProviderManager()
         || !parsedLegacy || legacyMajor != runtimeMajor
         || !parsedDefault || defaultMajor != runtimeMajor)
     {
-        const char* modules = std::getenv("OPENSSL_MODULES");
+        std::string modules = OpenSSLModulesForDiagnostic();
         sLog.outError(
             "OpenSSL 3.x provider/runtime validation failed: "
             "runtime='%s', legacy provider='%s', default provider='%s', "
@@ -225,7 +407,7 @@ OpenSSLProviderManager::OpenSSLProviderManager()
             OpenSSL_version(OPENSSL_VERSION),
             legacyVersion.empty() ? "<unavailable>" : legacyVersion.c_str(),
             defaultVersion.empty() ? "<unavailable>" : defaultVersion.c_str(),
-            modules ? modules : "<unset>");
+            modules.c_str());
         return;
     }
 

@@ -28,13 +28,20 @@
 #include "Auth/OpenSSLProvider.h"
 
 #include <charconv>
+#include <cstdlib>
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
 
 TEST(OpenSSL_runtime_and_providers_are_major_three)
 {
+    const char* modules = std::getenv("OPENSSL_MODULES");
+    std::string modulesBefore = modules ? modules : "";
+
     OpenSSLProviderManager& manager =
         OpenSSLProviderManager::Instance();
+
+    const char* modulesAfter = std::getenv("OPENSSL_MODULES");
+    CHECK_STR(std::string(modulesAfter ? modulesAfter : ""), modulesBefore);
     REQUIRE(manager.IsInitialized());
 
     unsigned runtimeMajor =
