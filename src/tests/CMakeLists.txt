@@ -149,7 +149,7 @@ if(WIN32)
     find_file(MANGOS_TEST_OPENSSL_LEGACY_DLL
         NAMES legacy.dll
         HINTS "${MANGOS_SSL_ROOT}" "${OPENSSL_ROOT_DIR}"
-        PATH_SUFFIXES bin/ossl-modules ossl-modules lib/ossl-modules ""
+        PATH_SUFFIXES bin/ossl-modules bin ossl-modules lib/ossl-modules ""
         NO_DEFAULT_PATH)
 
     if(MANGOS_TEST_OPENSSL_LEGACY_DLL)
