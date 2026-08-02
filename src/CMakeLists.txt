@@ -84,6 +84,11 @@ add_subdirectory(tools/extractor)
 # A clean parse is not correct geometry; this is what says whether it is.
 add_subdirectory(tools/height-check)
 
+# Windows-only mangosd.conf editors (Win32 and/or HTML+WebView2).
+if(BUILD_CONFEDITOR OR BUILD_CONFEDITOR_WEB)
+    add_subdirectory(tools/confeditor)
+endif()
+
 if (BUILD_MANGOSD OR BUILD_REALMD)
     if(WIN32)
         get_filename_component(MYSQL_LIB_DIR ${MySQL_LIBRARIES} DIRECTORY)

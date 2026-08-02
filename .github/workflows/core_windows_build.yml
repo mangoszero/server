@@ -109,6 +109,8 @@ jobs:
           key: windows-msvc
           max-size: 500M
 
+      # WITH_NET_TESTS stays off: socket tests bind real listeners and dominate wall-clock.
+      # BUILD_CONFEDITOR_WEB fetches the WebView2 NuGet SDK at configure (needs network).
       - name: Configure
         shell: bash
         run: >
@@ -122,9 +124,10 @@ jobs:
           -DBUILD_MANGOSD=1
           -DBUILD_REALMD=1
           -DBUILD_AH_SERVICE=1
+          -DBUILD_CONFEDITOR=1
+          -DBUILD_CONFEDITOR_WEB=1
+          -DWEBVIEW2_FETCH_SDK=1
           -DWITH_TESTS=1
-          # Never the socket tests: they bind real listeners and dominate the
-          # suite's wall-clock. A human asks for them, CI does not.
           -DWITH_NET_TESTS=0
           -DSOAP=1
           -DSCRIPT_LIB_ELUNA=1
@@ -150,6 +153,24 @@ jobs:
           echo "$out"
           echo "$out" | grep -q "intent codec selftest OK" || { echo "MISSING: intent codec selftest OK"; exit 1; }
           echo "$out" | grep -q "ipc selftest OK"           || { echo "MISSING: ipc selftest OK"; exit 1; }
+
+      # Both conf editors are Windows-only; the web one needs WebView2 SDK at
+      # configure (fetched) and the Runtime only at run time (present on runners).
+      - name: Verify conf editors built
+        shell: bash
+        run: |
+          win32="$(find "$BUILD_DIR" -type f -name mangos-conf-editor.exe | head -n1)"
+          web="$(find "$BUILD_DIR" -type f -name mangos-conf-editor-web.exe | head -n1)"
+          if [ -z "$win32" ]; then echo "mangos-conf-editor.exe not found"; exit 1; fi
+          if [ -z "$web" ]; then echo "mangos-conf-editor-web.exe not found"; exit 1; fi
+          ui_dir="$(dirname "$web")/confeditor-ui"
+          if [ ! -f "$ui_dir/index.html" ]; then
+            echo "confeditor-ui/index.html missing next to web editor"
+            exit 1
+          fi
+          echo "Win32 conf editor: $win32"
+          echo "Web conf editor:   $web"
+          echo "HTML UI:           $ui_dir"
 
       - name: Verify the working tree is clean
         shell: bash

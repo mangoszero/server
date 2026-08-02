@@ -496,11 +496,6 @@ SD3ErrorLogFile              = "scriptdev3-errors.log"
 #        0 = English; 1 = Korean; 2 = French; 3 = German; 4 = Chinese; 5 = Taiwanese; 6 = Spanish;
 #        255 = Auto Detect (Default)
 #
-#    DeclinedNames
-#    Allow russian clients to set and use declined names
-#    Default: 0 - do not use declined names, except when the Russian RealmZone is set
-#             1 - use declined names
-#
 #    StrictPlayerNames
 #        Limit player name to language specific symbols set, not allow create characters, and set rename request and disconnect at not allowed symbols name
 #        Default: 0 disable (but limited server timezone dependent client check)
@@ -848,7 +843,6 @@ SD3ErrorLogFile              = "scriptdev3-errors.log"
 GameType                                  = 1
 RealmZone                                 = 1
 DBC.Locale                                = 255
-DeclinedNames                             = 0
 StrictPlayerNames                         = 0
 StrictCharterNames                        = 0
 StrictPetNames                            = 0
@@ -949,12 +943,6 @@ AutoBroadcast                             = 0
 #        Default: 0 (Not allowed)
 #                 1 (Allowed)
 #
-#    TalentsInspecting
-#        Allow other players see character talents in inspect dialog (Characters in Gamemaster mode can
-#        inspect talents always)
-#        Default: 1 (allow)
-#                 0 (not allow)
-#
 ################################################################################
 
 AllowTwoSide.Accounts             = 0
@@ -967,7 +955,6 @@ AllowTwoSide.Interaction.Auction  = 0
 AllowTwoSide.Interaction.Mail     = 0
 AllowTwoSide.WhoList              = 0
 AllowTwoSide.AddFriend            = 0
-TalentsInspecting                 = 1
 
 ################################################################################
 # LIVINGWORLD SETTINGS
@@ -1309,7 +1296,7 @@ GM.MaxSpeedFactor         = 10
 #
 #    Visibility.Distance.Continents
 #    Visibility.Distance.Instances
-#    Visibility.Distance.BG
+#    Visibility.Distance.BGArenas
 #        Visibility distance for different ingame object in different maps.
 #        Visibility on continents on offy ~90 yards. In BG ~180. For instances default ~120.
 #        Max limited by active player zone: ~ 333
@@ -1358,7 +1345,7 @@ GM.MaxSpeedFactor         = 10
 Visibility.GroupMode               = 0
 Visibility.Distance.Continents     = 100
 Visibility.Distance.Instances      = 120
-Visibility.Distance.BG             = 180
+Visibility.Distance.BGArenas       = 180
 Visibility.Distance.InFlight       = 100
 Visibility.Distance.Grey.Unit      = 1
 Visibility.Distance.Grey.Object    = 10
@@ -1382,10 +1369,6 @@ Visibility.ObserverSweep.Interval  = 2000
 #        Update interval for moving the cinematic body (in milliseconds)
 #        Default: 200
 #
-#    Cinematic.Flyover.TimeoutSec
-#        Timeout for stopping the flyover if not completed (in seconds)
-#        Default: 120
-#
 #    Cinematic.Flyover.Debug
 #        Enable debug logging for cinematic flyover
 #        Default: 0 (disabled)
@@ -1406,7 +1389,6 @@ Visibility.ObserverSweep.Interval  = 2000
 
 Cinematic.Flyover.Enable        = 1
 Cinematic.Flyover.UpdateIntervalMs = 200
-Cinematic.Flyover.TimeoutSec    = 120
 Cinematic.Flyover.Debug         = 0
 Cinematic.Flyover.BodyEntry     = 12999
 Cinematic.Flyover.VisibilityDistance = 250
@@ -1718,24 +1700,6 @@ OutdoorPvp.EPEnabled = 1
 ################################################################################
 # NETWORK CONFIG
 #
-#    Network.Threads
-#         Number of threads for network queue handling, we recommend a minimum of 3,
-#         additional threads will assist with greater numbers of players.
-#         Default: 3
-#
-#    Network.OutKBuff
-#         The size of the output kernel buffer used ( SO_SNDBUF socket option, tcp manual ).
-#         Default: -1 (Use system default setting)
-#
-#    Network.OutUBuff
-#         Userspace buffer for output. This is amount of memory reserved per each connection.
-#         Default: 65536
-#
-#    Network.TcpNoDelay:
-#         TCP Nagle algorithm setting
-#         Default: 0 (enable Nagle algorithm, less traffic, more latency)
-#                  1 (TCP_NO_DELAY, disable Nagle algorithm, more traffic but less latency)
-#
 #    Network.KickOnBadPacket
 #         Kick player on bad packet format.
 #         Default: 0 - do not kick
@@ -1743,10 +1707,6 @@ OutdoorPvp.EPEnabled = 1
 #
 ################################################################################
 
-Network.Threads         = 3
-Network.OutKBuff        = -1
-Network.OutUBuff        = 65536
-Network.TcpNodelay      = 1
 Network.KickOnBadPacket = 0
 
 ################################################################################
@@ -2027,12 +1987,6 @@ Realm.RecommendedOrNew = 0
 #       Default:     true  - (enabled)
 #                    false - (disabled)
 #
-#   Eluna.CompatibilityMode
-#       Description: Toggles Eluna between compatibility mode (single-threaded) or multistate mode.
-#                    Compatibility mode limits the core to a single map update thread.
-#       Default:     true  - (enabled)
-#                    false - (disabled)
-#
 #   Eluna.OnlyOnMaps
 #       Description: When Eluna is enabled, a state will only be created for a list of specified maps
 #                    This only works for multistate mode.
@@ -2053,7 +2007,6 @@ Realm.RecommendedOrNew = 0
 ###################################################################################################
 
 Eluna.Enabled = true
-Eluna.CompatibilityMode = false
 Eluna.OnlyOnMaps = ""
 Eluna.TraceBack = false
 Eluna.ScriptPath = "lua_scripts"

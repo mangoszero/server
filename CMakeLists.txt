@@ -62,43 +62,48 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 #==================================================================================
 # Define available cmake options below
-option(BUILD_MANGOSD        "Build the main server"                         ON)
-option(BUILD_REALMD         "Build the login server"                        ON)
-option(BUILD_TOOLS          "Build the client-data extractor"               ON)
-option(SCRIPT_LIB_ELUNA     "Compile with support for Eluna scripts"        ON)
-option(SCRIPT_LIB_SD3       "Compile with support for ScriptDev3 scripts"   ON)
-option(PLAYERBOTS           "Enable Player Bots"                            OFF)
-option(SOAP                 "Enable remote access via SOAP"                 OFF)
-option(PCH                  "Enable precompiled headers"                    ON)
-option(WITH_IO_URING        "Use the io_uring network backend (Linux, needs liburing)" OFF)
-option(DEBUG                "Enable debug build (only on non IDEs)"         OFF)
-option(WITHOUT_GIT          "Disable Git revision detection"                OFF)
-option(BUILD_AH_SERVICE     "Build the out-of-process auction-house service" ON)
-option(WITH_TESTS           "Build the unit tests"                          OFF)
-option(WITH_NET_TESTS       "Build the socket tests (slow; never in CI)"    OFF)
+# Keep this list, the help message below, and cmake/StatusInfo.cmake in sync.
+option(BUILD_MANGOSD         "Build the main server"                         ON)
+option(BUILD_REALMD          "Build the login server"                        ON)
+option(BUILD_TOOLS           "Build the client-data extractor"               ON)
+option(BUILD_CONFEDITOR      "Build the Win32 mangosd.conf editor (Windows)" ON)
+option(BUILD_CONFEDITOR_WEB  "Build the HTML/WebView2 conf editor (Windows)" ON)
+option(BUILD_AH_SERVICE      "Build the out-of-process auction-house service" ON)
+option(SCRIPT_LIB_ELUNA      "Compile with support for Eluna scripts"        ON)
+option(SCRIPT_LIB_SD3        "Compile with support for ScriptDev3 scripts"   ON)
+option(PLAYERBOTS            "Enable Player Bots"                            OFF)
+option(SOAP                  "Enable remote access via SOAP"                 OFF)
+option(PCH                   "Enable precompiled headers"                    ON)
+option(WITH_IO_URING         "Use the io_uring network backend (Linux, needs liburing)" OFF)
+option(WITH_TESTS            "Build the unit tests"                          OFF)
+option(WITH_NET_TESTS        "Build the socket tests (slow; never in CI)"    OFF)
+option(DEBUG                 "Enable debug build (only on non IDEs)"         OFF)
+option(WITHOUT_GIT           "Disable Git revision detection"                OFF)
 #==================================================================================
 message("")
 message(
   "This script builds the MaNGOS server.
-  Options that can be used in order to configure the process:
+  Options that can be used in order to configure the process
+  (same set is summarised at the end of configure by cmake/StatusInfo.cmake):
+
    General:
     CMAKE_INSTALL_PREFIX    Path where the server should be installed to
     BUILD_MANGOSD           Build the main server
     BUILD_REALMD            Build the login server
     BUILD_TOOLS             Build the client-data extractor
-    SOAP                    Enable remote access via SOAP
-    PCH                     Enable use of precompiled headers
-    WITH_TESTS              Build the unit tests (target: mangos_tests)
-    WITH_NET_TESTS          Build the socket tests as well. Disjoint from WITH_TESTS,
-                            off by default, and deliberately not run in CI: they bind
-                            real sockets and dominate the suite's wall-clock time.
-    DEBUG                   Debug build, only for systems without IDE (Linux, *BSD)
-    WITHOUT_GIT             Disable Git revision detection
-   Scripting engines:
+    BUILD_CONFEDITOR        Win32 mangosd.conf dialog editor (Windows only)
+    BUILD_CONFEDITOR_WEB    HTML/WebView2 conf editor (Windows; needs WebView2 SDK)
+    BUILD_AH_SERVICE        Out-of-process auction-house service
     SCRIPT_LIB_ELUNA        Compile with support for Eluna scripts
     SCRIPT_LIB_SD3          Compile with support for ScriptDev3 scripts
-   Modules:
     PLAYERBOTS              Enable Player Bots
+    SOAP                    Enable remote access via SOAP
+    PCH                     Enable use of precompiled headers
+    WITH_IO_URING           io_uring network backend (Linux; needs liburing)
+    WITH_TESTS              Unit tests (target: mangos_tests)
+    WITH_NET_TESTS          Socket tests (slow; never in CI)
+    DEBUG                   Debug build, only for systems without IDE (Linux, *BSD)
+    WITHOUT_GIT             Disable Git revision detection
 
   To set an option simply type -D<OPTION>=<VALUE> after 'cmake <srcs>'.
   Also, you can specify the generator with -G. See 'cmake --help' for more details

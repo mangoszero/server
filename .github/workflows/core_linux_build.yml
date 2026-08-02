@@ -53,6 +53,8 @@ jobs:
           key: linux-${{ matrix.name }}
           max-size: 500M
 
+      # WITH_NET_TESTS off (slow sockets). CONFEDITOR* ON for option parity;
+      # the subdirectory is a no-op on Linux.
       - name: Configure
         run: >
           cmake -S . -B "$BUILD_DIR" -G Ninja
@@ -66,9 +68,9 @@ jobs:
           -DBUILD_MANGOSD=1
           -DBUILD_REALMD=1
           -DBUILD_AH_SERVICE=1
+          -DBUILD_CONFEDITOR=1
+          -DBUILD_CONFEDITOR_WEB=1
           -DWITH_TESTS=1
-          # Never the socket tests: they bind real listeners and dominate the
-          # suite's wall-clock. A human asks for them, CI does not.
           -DWITH_NET_TESTS=0
           -DSOAP=1
           -DSCRIPT_LIB_ELUNA=1

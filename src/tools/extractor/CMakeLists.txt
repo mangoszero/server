@@ -168,13 +168,13 @@ if(WIN32)
 endif()
 
 set_target_properties(mangos-extractor PROPERTIES FOLDER "tools")
-install(TARGETS mangos-extractor DESTINATION ${BIN_DIR}/tools)
+install(TARGETS mangos-extractor DESTINATION ${BIN_DIR}/tools/mangos-extractor)
 
 # Beside the binary, because that is where the tool looks for it when `--vessels` is
 # not given. It is data, not configuration: it changes when the client does.
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/vessels.txt
               ${CMAKE_CURRENT_SOURCE_DIR}/offmesh.txt
-        DESTINATION ${BIN_DIR}/tools)
+        DESTINATION ${BIN_DIR}/tools/mangos-extractor)
 
 # And beside the BUILT binary as well, not only the installed one. The tool resolves
 # both defaults relative to its own executable, so a build tree that lacks them is a
@@ -201,5 +201,5 @@ if(WIN32)
     target_compile_definitions(mangos-extractor-gui
         PRIVATE MANGOS_CLIENT_NAME="${MANGOS_CLIENT_NAME}")
     set_target_properties(mangos-extractor-gui PROPERTIES FOLDER "tools")
-    install(TARGETS mangos-extractor-gui DESTINATION ${BIN_DIR}/tools)
+    install(TARGETS mangos-extractor-gui DESTINATION ${BIN_DIR}/tools/mangos-extractor)
 endif()

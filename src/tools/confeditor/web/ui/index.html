@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MaNGOS Config Editor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="light">
+  <header class="header">
+    <div class="header-title">MaNGOS server configuration</div>
+    <div class="header-path" id="headerPath">Open a folder that holds mangosd.conf</div>
+  </header>
+
+  <div class="toolbar">
+    <button type="button" id="btnOpen">Open folder…</button>
+    <button type="button" id="btnSave">Save</button>
+    <button type="button" id="btnSaveAs">Save as…</button>
+    <button type="button" id="btnReload">Reload</button>
+    <input type="search" id="search" placeholder="Find setting…" autocomplete="off">
+    <button type="button" id="btnFind">Find</button>
+    <span class="toolbar-spacer"></span>
+    <button type="button" id="btnTheme">Theme: Light</button>
+  </div>
+
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+
+  <main class="page" id="page"></main>
+
+  <footer class="status" id="status">Starting…</footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
