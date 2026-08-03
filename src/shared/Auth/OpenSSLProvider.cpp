@@ -161,19 +161,26 @@ bool ConvertWideToAnsi(const std::wstring& value, std::string& converted)
     if (value.empty())
         return false;
 
+    constexpr UINT GB18030_CODE_PAGE = 54936;
+    UINT const codePage = GetACP();
+    bool const restrictedCodePage =
+        codePage == CP_UTF8 || codePage == GB18030_CODE_PAGE;
+    DWORD const flags = restrictedCodePage ?
+        WC_ERR_INVALID_CHARS : WC_NO_BEST_FIT_CHARS;
     BOOL usedDefault = FALSE;
+    BOOL* usedDefaultPointer = restrictedCodePage ? nullptr : &usedDefault;
     int required = WideCharToMultiByte(
-        CP_ACP, WC_NO_BEST_FIT_CHARS, value.c_str(), -1,
-        nullptr, 0, nullptr, &usedDefault);
-    if (required <= 0 || usedDefault)
+        codePage, flags, value.c_str(), -1,
+        nullptr, 0, nullptr, usedDefaultPointer);
+    if (required <= 0 || (!restrictedCodePage && usedDefault))
         return false;
 
     std::vector<char> buffer(static_cast<std::size_t>(required));
     usedDefault = FALSE;
     int written = WideCharToMultiByte(
-        CP_ACP, WC_NO_BEST_FIT_CHARS, value.c_str(), -1,
-        buffer.data(), required, nullptr, &usedDefault);
-    if (written <= 0 || usedDefault)
+        codePage, flags, value.c_str(), -1,
+        buffer.data(), required, nullptr, usedDefaultPointer);
+    if (written <= 0 || (!restrictedCodePage && usedDefault))
         return false;
 
     converted.assign(buffer.data(), static_cast<std::size_t>(written - 1));
