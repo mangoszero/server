@@ -75,6 +75,28 @@ namespace
             return false;
         }
 
+        // Later legs are welded by omitting leg.front(), which only holds if this leg
+        // really does start where the previous one was committed. That was guaranteed
+        // while the shortcut fallback returned the exact requested endpoints, but a
+        // routed leg ends on a navmesh-adjusted point while the next leg is calculated
+        // from the raw waypoint, so the two can part company.
+        //
+        // The resulting seam is small and finite, and survives the point filter below
+        // whenever it is at least MIN_SEGMENT_LENGTH. It still cannot be sent: the
+        // linear path packs intermediate offsets by truncating each component toward
+        // zero at 0.25yd (ByteBuffer::appendPackXYZ), so a seam under a quarter yard
+        // per component packs to all-zero fields and the client reconstructs the point
+        // on top of its neighbour. That zero-length segment makes the client divide by
+        // the segment length, compute 0/0, and store NaN as the mover's position.
+        //
+        // Refuse the leg instead. The builder already treats a later failed leg as a
+        // clean chunk boundary and keeps what it has assembled.
+        if (!points.empty() &&
+            (leg.front() - points.back()).length() >= WAYPOINT_SMOOTHING_MIN_SEGMENT_LENGTH)
+        {
+            return false;
+        }
+
         if (points.empty())
         {
             points.push_back(leg.front());
