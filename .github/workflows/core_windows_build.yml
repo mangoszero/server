@@ -22,7 +22,7 @@ jobs:
     runs-on: windows-2022
 
     env:
-      BUILD_DIR: ${{ runner.temp }}\build-msvc
+      BUILD_DIR: ${{ github.workspace }}\..\build-msvc
 
     steps:
       - name: Checkout repository
