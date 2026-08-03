@@ -22,9 +22,7 @@ jobs:
     runs-on: windows-2022
 
     env:
-      BUILD_DIR: ${{ github.workspace }}\..\build-msvc
-      CCACHE_DIR: ${{ github.workspace }}\..\ccache
-      SCCACHE_DIR: ${{ github.workspace }}\..\sccache
+      BUILD_DIR: ${{ runner.temp }}\build-msvc
 
     steps:
       - name: Checkout repository
@@ -109,6 +107,8 @@ jobs:
           key: windows-msvc
           max-size: 500M
 
+      # Never the socket tests: they bind real listeners and dominate the
+      # suite's wall-clock. A human asks for them, CI does not.
       - name: Configure
         shell: bash
         run: >
@@ -123,8 +123,6 @@ jobs:
           -DBUILD_REALMD=1
           -DBUILD_AH_SERVICE=1
           -DWITH_TESTS=1
-          # Never the socket tests: they bind real listeners and dominate the
-          # suite's wall-clock. A human asks for them, CI does not.
           -DWITH_NET_TESTS=0
           -DSOAP=1
           -DSCRIPT_LIB_ELUNA=1
