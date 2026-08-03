@@ -32,7 +32,7 @@ jobs:
     name: Build (${{ matrix.name }})
 
     env:
-      BUILD_DIR: ${{ runner.temp }}/build-${{ matrix.name }}
+      BUILD_DIR: ${{ github.workspace }}/../build-${{ matrix.name }}
 
     steps:
       - name: Checkout repository
