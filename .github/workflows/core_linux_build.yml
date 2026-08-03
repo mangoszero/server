@@ -32,8 +32,7 @@ jobs:
     name: Build (${{ matrix.name }})
 
     env:
-      BUILD_DIR: ${{ github.workspace }}/../build-${{ matrix.name }}
-      CCACHE_DIR: ${{ github.workspace }}/../ccache
+      BUILD_DIR: ${{ runner.temp }}/build-${{ matrix.name }}
 
     steps:
       - name: Checkout repository
@@ -53,6 +52,8 @@ jobs:
           key: linux-${{ matrix.name }}
           max-size: 500M
 
+      # Never the socket tests: they bind real listeners and dominate the
+      # suite's wall-clock. A human asks for them, CI does not.
       - name: Configure
         run: >
           cmake -S . -B "$BUILD_DIR" -G Ninja
@@ -67,8 +68,6 @@ jobs:
           -DBUILD_REALMD=1
           -DBUILD_AH_SERVICE=1
           -DWITH_TESTS=1
-          # Never the socket tests: they bind real listeners and dominate the
-          # suite's wall-clock. A human asks for them, CI does not.
           -DWITH_NET_TESTS=0
           -DSOAP=1
           -DSCRIPT_LIB_ELUNA=1
