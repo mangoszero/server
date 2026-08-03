@@ -172,7 +172,7 @@ bool ConvertWideToAnsi(const std::wstring& value, std::string& converted)
     int required = WideCharToMultiByte(
         codePage, flags, value.c_str(), -1,
         nullptr, 0, nullptr, usedDefaultPointer);
-    if (required <= 0 || (!restrictedCodePage && usedDefault))
+    if (required <= 0 || usedDefault)
         return false;
 
     std::vector<char> buffer(static_cast<std::size_t>(required));
@@ -180,7 +180,7 @@ bool ConvertWideToAnsi(const std::wstring& value, std::string& converted)
     int written = WideCharToMultiByte(
         codePage, flags, value.c_str(), -1,
         buffer.data(), required, nullptr, usedDefaultPointer);
-    if (written <= 0 || (!restrictedCodePage && usedDefault))
+    if (written <= 0 || usedDefault)
         return false;
 
     converted.assign(buffer.data(), static_cast<std::size_t>(written - 1));
