@@ -121,13 +121,13 @@ struct AuctionEntry
     /// caller checked-commits it then runs @p def (spec Sec 6 S4). @p newbidder is
     /// the online winner (buyout path) or NULL (expiry path).
     ///
-    /// @p knownBidKey is the idem_key of the live bid row to commit-net. It is
-    /// REQUIRED on the buyout path: the bid row was just RESERVED in the same
-    /// still-open transaction, so a synchronous SELECT (GetSingleLiveBidRow) cannot
-    /// see it yet -- the caller passes the key it just reserved. On the expiry path
-    /// the bid row is already committed, so the caller passes "" and this method
-    /// re-fetches + validates it via GetSingleLiveBidRow. Ignored when bidder == 0.
+    /// Seller custody and bid custody are independent: only seller custody
+    /// terminalizes item/deposit rows, and only bid custody terminalizes
+    /// @p knownBidKey. The caller validates any existing live bid row before
+    /// opening the transaction.
     void AuctionBidWinningCustody(Player* newbidder, CustodyDeferred& def,
+                                  bool usesPlayerSellerCustody,
+                                  bool hasLiveBidCustody,
                                   std::string const& knownBidKey = "");
     /// Custody co-commit mirror of the unsold-expiry path (spec S6): returns the
     /// item to the seller by mail (or destroys it if the account is gone),
@@ -138,6 +138,14 @@ struct AuctionEntry
     /// checked-commits it then runs @p def. S6 makes NO synchronous in-memory
     /// mutation, so on rollback there is nothing to restore.
     void ExpireUnsoldCustody(CustodyDeferred& def);
+    /// Append the cancel value transaction to the caller's open transaction.
+    /// The handler retains affordability checks, checked commit/rollback,
+    /// command results, cache removal, Eluna notification, and object deletion.
+    void PrepareCancelCustody(Player* seller, CustodyDeferred& def,
+                              bool usesPlayerSellerCustody,
+                              bool hasLiveBidCustody,
+                              std::string const& liveBidKey,
+                              uint32 auctionCut);
     bool UpdateBid(uint32 newbid, Player* newbidder = NULL);// true if normal bid, false if buyout, bidder==NULL for generated bid
     /// Custody co-commit mirror of UpdateBid: moves the bidder's gold via the
     /// custody primitives and appends every DB write to the caller's already-open
@@ -146,11 +154,10 @@ struct AuctionEntry
     /// mail is sent via the static SendAuctionOutbiddedMailInTransaction, which
     /// resolves the old bidder's session itself, so no acting session is needed.
     ///
-    /// @p liveBidKey is the idem_key of the existing live bid row, pre-fetched and
-    /// VALIDATED by the handler before BeginTransaction (spec I1) for the
-    /// same-bidder raise and the outbid-displacement cases; it is empty when the
-    /// auction has no live bid row (bidder==0 / first bid). Used directly so this
-    /// method never re-looks-up (and never trusts) an unvalidated row.
+    /// @p hadLiveBidCustody says whether @p liveBidKey identifies the validated
+    /// existing bid row. Seller custody can route here without such a row; in
+    /// that case prior-bid refunds retain legacy behavior and the replacement
+    /// bid starts custody from its full current amount.
     ///
     /// A buyout (newbid >= buyout) is absorbed here (Task 10): the bid is capped at
     /// buyout, reserved/refunded as a normal bid, then the win resolves on the same
@@ -158,6 +165,8 @@ struct AuctionEntry
     /// mutations deferred into @p def). Returns true if the auction remains active
     /// (normal bid), false on a buyout (auction resolved + scheduled for delete).
     bool UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDeferred& def,
+                          bool usesPlayerSellerCustody,
+                          bool hadLiveBidCustody,
                           std::string const& liveBidKey);
 };
 

@@ -57,7 +57,7 @@ stdout, then calls `_exit(3)`.
 4. Set `AH.Service.Custody = 1`.
 5. Ensure the auction under test is custody-managed when the row requires it:
    it must have `custody_ledger` rows, because the live gate is
-   `AH.Service.Custody && CustodyLedger::HasRows(auction_id)`.
+   `AH.Service.Custody` plus the auction's exact seller/bid route state.
 6. Record baseline counts before the seam:
 
 ```sql

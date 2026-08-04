@@ -23,6 +23,7 @@
 #include "Item.h"
 #include "BrowseMessages.h"
 #include "World.h"
+#include "WorldSession.h"
 #include "PlayerMutations.h"
 #include <cstdio>
 #include <ctime>
@@ -779,7 +780,7 @@ static int RunMailTest()
     return 2;
 }
 
-/// CRUD round-trip test for CustodyLedger: Insert, Get, HasRows, SetState,
+/// CRUD round-trip test for CustodyLedger: Insert, Get, GetRouteState, SetState,
 /// LoadNonTerminal, DeleteTerminalOlderThan.  Returns 0 on pass.
 static int RunCustodyTest()
 {
@@ -844,15 +845,17 @@ static int RunCustodyTest()
         }
     }
 
-    // HasRows(999) must be true; HasRows(424242) must be false.
-    if (!CustodyLedger::HasRows(999))
+    // The seeded bid row selects only bid custody; an absent auction selects none.
+    CustodyRouteState const seededRoute = CustodyLedger::GetRouteState(999);
+    if (seededRoute.usesPlayerSellerCustody || !seededRoute.hasLiveBidCustody)
     {
-        printf("custody FAIL: step 2 HasRows(999) returned false\n");
+        printf("custody FAIL: step 2 GetRouteState(999) mismatch\n");
         pass = false;
     }
-    if (CustodyLedger::HasRows(424242))
+    CustodyRouteState const absentRoute = CustodyLedger::GetRouteState(424242);
+    if (absentRoute.usesPlayerSellerCustody || absentRoute.hasLiveBidCustody)
     {
-        printf("custody FAIL: step 2 HasRows(424242) returned true (unexpected)\n");
+        printf("custody FAIL: step 2 GetRouteState(424242) unexpectedly routed\n");
         pass = false;
     }
 
@@ -3561,6 +3564,707 @@ static int RunAhResolveTest()
     return 2;
 }
 
+/// Route and conservation regressions for seller custody and bid custody as
+/// independent dimensions. Uses only disposable Character DB fixtures.
+static int RunAhCustodyRouteTest()
+{
+    bool pass = true;
+    CharacterDatabase.AllowAsyncTransactions();
+    sObjectMgr.LoadItemPrototypes();
+
+    uint32 itemId = 2589u;
+    if (!ObjectMgr::GetItemPrototype(itemId))
+    {
+        std::unique_ptr<QueryResult> result(WorldDatabase.Query(
+            "SELECT `entry` FROM `item_template` "
+            "WHERE `InventoryType`=0 AND `stackable`>1 ORDER BY `entry` LIMIT 1"));
+        if (result)
+        {
+            itemId = result->Fetch()[0].GetUInt32();
+        }
+    }
+    if (!ObjectMgr::GetItemPrototype(itemId))
+    {
+        printf("ahcustodyroute FAIL: no usable item prototype\n");
+        return 2;
+    }
+
+    uint32 const sellerGuid = 9501u;
+    uint32 const bidderGuid = 9502u;
+    uint32 const otherBidderGuid = 9503u;
+    uint64 const now = static_cast<uint64>(time(NULL));
+    uint64 const oldTime = now > 7200u ? now - 7200u : 1u;
+    std::vector<uint32> itemGuids;
+
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `mail_items` WHERE `receiver` IN (9501,9502,9503)");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `mail` WHERE `receiver` IN (9501,9502,9503)");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` WHERE `auction_id` BETWEEN 995100 AND 995199");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `auction` WHERE `id` BETWEEN 995100 AND 995199");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `item_instance` WHERE `owner_guid` IN (9501,9502,9503)");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `characters` WHERE `guid` IN (9501,9502,9503)");
+    CharacterDatabase.DirectExecute(
+        "INSERT INTO `characters` (`guid`,`account`,`name`,`money`) VALUES "
+        "(9501,9501,'AhRtSeller',1000),"
+        "(9502,9502,'AhRtBidder',1000),"
+        "(9503,9503,'AhRtOther',1000)");
+    sObjectMgr.SetHighestGuids();
+
+    AuctionHouseEntry house = {};
+    house.houseId = 7;
+    house.faction = 0;
+    house.depositPercent = 5;
+    house.cutPercent = 5;
+
+    auto seedRow = [oldTime](std::string const& key, uint8 kind, uint8 role,
+                             uint32 owner, uint32 amount, uint32 itemGuid,
+                             uint32 auctionId)
+    {
+        CharacterDatabase.DirectPExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('%s',%u,%u,0,%u,0,%u,%u,%u," UI64FMTD ",0)",
+            key.c_str(), uint32(kind), uint32(role), owner, amount,
+            itemGuid, auctionId, oldTime);
+    };
+
+    auto createAuction = [&](uint32 auctionId, uint32 owner, uint32 bidder,
+                             uint32 bid, uint32 buyout,
+                             uint32 deposit) -> AuctionEntry*
+    {
+        Item* item = Item::CreateItem(itemId, 1);
+        if (!item)
+        {
+            return NULL;
+        }
+        item->SetOwnerGuid(ObjectGuid(HIGHGUID_PLAYER, owner));
+        itemGuids.push_back(item->GetGUIDLow());
+
+        AuctionEntry* auction = new AuctionEntry();
+        auction->Id = auctionId;
+        auction->itemGuidLow = item->GetGUIDLow();
+        auction->itemTemplate = itemId;
+        auction->itemCount = 1;
+        auction->itemRandomPropertyId = 0;
+        auction->owner = owner;
+        auction->startbid = 10;
+        auction->bid = bid;
+        auction->buyout = buyout;
+        auction->expireTime = static_cast<time_t>(now + HOUR);
+        auction->bidder = bidder;
+        auction->deposit = deposit;
+        auction->auctionHouseEntry = &house;
+
+        CharacterDatabase.BeginTransaction();
+        item->SaveToDB();
+        auction->SaveToDB();
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            delete item;
+            delete auction;
+            return NULL;
+        }
+        sAuctionMgr.AddAItem(item);
+        return auction;
+    };
+
+    auto rowState = [](std::string const& key) -> uint32
+    {
+        CustodyRow row;
+        return CustodyLedger::Get(key, row) ? uint32(row.state) : 255u;
+    };
+    auto auctionExists = [](uint32 auctionId) -> bool
+    {
+        return CustodyLedger::AuctionExists(auctionId);
+    };
+    auto mailCount = [itemId](uint32 receiver, MailAuctionAnswers answer) -> uint32
+    {
+        std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery(
+            "SELECT COUNT(*) FROM `mail` WHERE `receiver`=%u "
+            "AND `subject`='%u:0:%u'", receiver, itemId, uint32(answer)));
+        return result ? result->Fetch()[0].GetUInt32() : 0u;
+    };
+    auto mailMoney = [itemId](uint32 receiver, MailAuctionAnswers answer) -> uint64
+    {
+        std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery(
+            "SELECT COALESCE(SUM(`money`),0) FROM `mail` WHERE `receiver`=%u "
+            "AND `subject`='%u:0:%u'", receiver, itemId, uint32(answer)));
+        return result ? result->Fetch()[0].GetUInt64() : 0u;
+    };
+    auto itemMailCount = [](uint32 receiver, uint32 itemGuid) -> uint32
+    {
+        std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery(
+            "SELECT COUNT(*) FROM `mail_items` WHERE `receiver`=%u AND `item_guid`=%u",
+            receiver, itemGuid));
+        return result ? result->Fetch()[0].GetUInt32() : 0u;
+    };
+    auto characterMoney = [](uint32 guid) -> uint32
+    {
+        std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery(
+            "SELECT `money` FROM `characters` WHERE `guid`=%u", guid));
+        return result ? result->Fetch()[0].GetUInt32() : 0u;
+    };
+    auto sellerRows = [](uint32 auctionId) -> uint32
+    {
+        std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery(
+            "SELECT COUNT(*) FROM `custody_ledger` WHERE `auction_id`=%u "
+            "AND `state`=0 AND (`idem_key` IN ('item:%u','dep:%u') "
+            "OR `role` IN (%u,%u))",
+            auctionId, auctionId, auctionId,
+            uint32(ROLE_ITEM), uint32(ROLE_DEPOSIT)));
+        return result ? result->Fetch()[0].GetUInt32() : 0u;
+    };
+    auto clearFixtureMail = []()
+    {
+        CharacterDatabase.DirectExecute(
+            "DELETE FROM `mail_items` WHERE `receiver` IN (9501,9502,9503)");
+        CharacterDatabase.DirectExecute(
+            "DELETE FROM `mail` WHERE `receiver` IN (9501,9502,9503)");
+    };
+
+    // Exact runtime route matrix, including the seller-only unsold-expiry fact.
+    seedRow("item:995101", CUSTODY_ITEM, ROLE_ITEM,
+            sellerGuid, 0, 1, 995101);
+    seedRow("dep:995101", CUSTODY_GOLD, ROLE_DEPOSIT,
+            sellerGuid, 5, 0, 995101);
+    seedRow("bid:995102:1", CUSTODY_GOLD, ROLE_BID,
+            bidderGuid, 20, 0, 995102);
+    seedRow("resolve:test:995103", CUSTODY_GOLD, ROLE_RESOLUTION,
+            0, 0, 0, 995103);
+    seedRow("botlist:test:995104", CUSTODY_ITEM, ROLE_RESOLUTION,
+            AHBOT_SYSTEM_OWNER_GUID, 0, 4, 995104);
+    seedRow("botlist:test:995105", CUSTODY_ITEM, ROLE_RESOLUTION,
+            AHBOT_SYSTEM_OWNER_GUID, 0, 5, 995105);
+    seedRow("bid:995105:1", CUSTODY_GOLD, ROLE_BID,
+            bidderGuid, 50, 0, 995105);
+    seedRow("botlist:test:995106", CUSTODY_ITEM, ROLE_RESOLUTION,
+            AHBOT_SYSTEM_OWNER_GUID, 0, 6, 995106);
+    seedRow("item:995106", CUSTODY_ITEM, ROLE_ITEM,
+            AHBOT_SYSTEM_OWNER_GUID, 0, 6, 995106);
+
+    struct RouteExpectation
+    {
+        uint32 auctionId;
+        bool seller;
+        bool bid;
+    };
+    RouteExpectation const routeExpectations[] = {
+        { 995101, true,  false },
+        { 995102, false, true  },
+        { 995103, false, false },
+        { 995104, false, false },
+        { 995105, false, true  },
+        { 995106, false, false },
+    };
+    for (size_t i = 0; i < sizeof(routeExpectations) / sizeof(routeExpectations[0]); ++i)
+    {
+        CustodyRouteState const route =
+            CustodyLedger::GetRouteState(routeExpectations[i].auctionId);
+        if (route.usesPlayerSellerCustody != routeExpectations[i].seller ||
+            route.hasLiveBidCustody != routeExpectations[i].bid)
+        {
+            printf("ahcustodyroute FAIL: route matrix mismatch auction=%u\n",
+                   routeExpectations[i].auctionId);
+            pass = false;
+        }
+    }
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` WHERE `auction_id` BETWEEN 995100 AND 995109");
+
+    // Marker-only first bid remains on the legacy path and creates no bid or
+    // seller custody while debiting/persisting exactly once.
+    {
+        uint32 const auctionId = 995110;
+        AuctionEntry* auction = createAuction(
+            auctionId, sellerGuid, 0, 0, 0, 20);
+        if (!auction)
+        {
+            printf("ahcustodyroute FAIL: legacy first-bid fixture creation\n");
+            pass = false;
+        }
+        else
+        {
+            seedRow("botlist:test:995110", CUSTODY_ITEM, ROLE_RESOLUTION,
+                    AHBOT_SYSTEM_OWNER_GUID, 0, auction->itemGuidLow, auctionId);
+            CustodyRouteState const route = CustodyLedger::GetRouteState(auctionId);
+            WorldSession session(9502, std::shared_ptr<proto::IClientLink>(),
+                                 std::shared_ptr<SessionMailbox>(), SEC_PLAYER,
+                                 0, LOCALE_enUS);
+            Player bidder(&session);
+            session.SetPlayer(&bidder);
+            bidder._Create(bidderGuid, HIGHGUID_PLAYER);
+            bidder.SetMoney(1000);
+            bool const active = auction->UpdateBid(100, &bidder);
+            CharacterDatabase.BeginTransaction();
+            CharacterDatabase.CommitTransactionChecked();
+
+            std::unique_ptr<QueryResult> persisted(CharacterDatabase.PQuery(
+                "SELECT `buyguid`,`lastbid` FROM `auction` WHERE `id`=%u",
+                auctionId));
+            std::unique_ptr<QueryResult> bidRows(CharacterDatabase.PQuery(
+                "SELECT COUNT(*) FROM `custody_ledger` WHERE `auction_id`=%u "
+                "AND `state`=0 AND `role`=%u",
+                auctionId, uint32(ROLE_BID)));
+            if (route.usesPlayerSellerCustody || route.hasLiveBidCustody ||
+                !active || bidder.GetMoney() != 900 ||
+                characterMoney(bidderGuid) != 900 || !persisted ||
+                persisted->Fetch()[0].GetUInt32() != bidderGuid ||
+                persisted->Fetch()[1].GetUInt32() != 100 || !bidRows ||
+                bidRows->Fetch()[0].GetUInt32() != 0 ||
+                rowState("botlist:test:995110") != CST_RESERVED)
+            {
+                printf("ahcustodyroute FAIL: marker-only first bid left legacy behavior\n");
+                pass = false;
+            }
+            session.SetPlayer(NULL);
+
+            Item* liveItem = sAuctionMgr.GetAItem(auction->itemGuidLow);
+            sAuctionMgr.RemoveAItem(auction->itemGuidLow);
+            delete liveItem;
+            delete auction;
+            CharacterDatabase.DirectPExecute(
+                "DELETE FROM `auction` WHERE `id`=%u", auctionId);
+            CharacterDatabase.DirectPExecute(
+                "DELETE FROM `custody_ledger` WHERE `auction_id`=%u", auctionId);
+        }
+    }
+
+    // Bid-winning expiry on a bot listing: seller and winner settlement remains
+    // legacy-equivalent, while only the player bid row is terminalized.
+    {
+        clearFixtureMail();
+        uint32 const auctionId = 995120;
+        AuctionEntry* auction = createAuction(
+            auctionId, sellerGuid, bidderGuid, 100, 0, 20);
+        if (!auction)
+        {
+            printf("ahcustodyroute FAIL: bid-only win fixture creation\n");
+            pass = false;
+        }
+        else
+        {
+            uint32 const itemGuid = auction->itemGuidLow;
+            std::string const markerKey = "botlist:test:995120";
+            std::string const bidKey = "bid:995120:1";
+            seedRow(markerKey, CUSTODY_ITEM, ROLE_RESOLUTION,
+                    AHBOT_SYSTEM_OWNER_GUID, 0, itemGuid, auctionId);
+            seedRow(bidKey, CUSTODY_GOLD, ROLE_BID,
+                    bidderGuid, 100, 0, auctionId);
+            CustodyRouteState const route = CustodyLedger::GetRouteState(auctionId);
+            CustodyDeferred def;
+            CharacterDatabase.BeginTransaction();
+            auction->AuctionBidWinningCustody(NULL, def,
+                                              route.usesPlayerSellerCustody,
+                                              route.hasLiveBidCustody, bidKey);
+            bool const committed = CharacterDatabase.CommitTransactionChecked();
+            if (committed)
+            {
+                def.run();
+            }
+            if (!committed || route.usesPlayerSellerCustody ||
+                !route.hasLiveBidCustody || auctionExists(auctionId) ||
+                rowState(bidKey) != CST_TERMINAL_OK ||
+                rowState(markerKey) != CST_RESERVED || sellerRows(auctionId) != 0 ||
+                mailCount(sellerGuid, AUCTION_SUCCESSFUL) != 1 ||
+                mailMoney(sellerGuid, AUCTION_SUCCESSFUL) == 0 ||
+                mailCount(bidderGuid, AUCTION_WON) != 1 ||
+                itemMailCount(bidderGuid, itemGuid) != 1)
+            {
+                printf("ahcustodyroute FAIL: bid-only winning expiry conservation\n");
+                pass = false;
+            }
+        }
+    }
+
+    // Same-bidder buyout preserves bot provenance, debits only the delta, and
+    // terminalizes the existing bid row without inventing seller rows.
+    {
+        clearFixtureMail();
+        uint32 const auctionId = 995121;
+        AuctionEntry* auction = createAuction(
+            auctionId, sellerGuid, bidderGuid, 40, 100, 20);
+        if (!auction)
+        {
+            printf("ahcustodyroute FAIL: buyout fixture creation\n");
+            pass = false;
+        }
+        else
+        {
+            uint32 const itemGuid = auction->itemGuidLow;
+            std::string const markerKey = "botlist:test:995121";
+            std::string const bidKey = "bid:995121:1";
+            seedRow(markerKey, CUSTODY_ITEM, ROLE_RESOLUTION,
+                    AHBOT_SYSTEM_OWNER_GUID, 0, itemGuid, auctionId);
+            seedRow(bidKey, CUSTODY_GOLD, ROLE_BID,
+                    bidderGuid, 40, 0, auctionId);
+
+            CharacterDatabase.DirectPExecute(
+                "UPDATE `characters` SET `money`=1000 WHERE `guid`=%u",
+                bidderGuid);
+            WorldSession session(9502, std::shared_ptr<proto::IClientLink>(),
+                                 std::shared_ptr<SessionMailbox>(), SEC_PLAYER,
+                                 0, LOCALE_enUS);
+            Player bidder(&session);
+            session.SetPlayer(&bidder);
+            bidder._Create(bidderGuid, HIGHGUID_PLAYER);
+            bidder.SetMoney(1000);
+
+            CustodyDeferred def;
+            CharacterDatabase.BeginTransaction();
+            bool const active = auction->UpdateBidCustody(
+                100, &bidder, def, false, true, bidKey);
+            bool const committed = CharacterDatabase.CommitTransactionChecked();
+            if (committed)
+            {
+                def.run();
+            }
+            if (!committed || active || bidder.GetMoney() != 940 ||
+                characterMoney(bidderGuid) != 940 || auctionExists(auctionId) ||
+                rowState(bidKey) != CST_TERMINAL_OK ||
+                rowState(markerKey) != CST_RESERVED || sellerRows(auctionId) != 0 ||
+                mailCount(sellerGuid, AUCTION_SUCCESSFUL) != 1 ||
+                itemMailCount(bidderGuid, itemGuid) != 1)
+            {
+                printf("ahcustodyroute FAIL: bid-only buyout conservation\n");
+                pass = false;
+            }
+            session.SetPlayer(NULL);
+        }
+    }
+
+    // Owner cancel on a bot listing refunds the bidder and returns the item,
+    // while only bid custody transitions and the bot marker remains reserved.
+    {
+        clearFixtureMail();
+        uint32 const auctionId = 995122;
+        AuctionEntry* auction = createAuction(
+            auctionId, sellerGuid, otherBidderGuid, 100, 0, 20);
+        if (!auction)
+        {
+            printf("ahcustodyroute FAIL: cancel fixture creation\n");
+            pass = false;
+        }
+        else
+        {
+            uint32 const itemGuid = auction->itemGuidLow;
+            std::string const markerKey = "botlist:test:995122";
+            std::string const bidKey = "bid:995122:1";
+            seedRow(markerKey, CUSTODY_ITEM, ROLE_RESOLUTION,
+                    AHBOT_SYSTEM_OWNER_GUID, 0, itemGuid, auctionId);
+            seedRow(bidKey, CUSTODY_GOLD, ROLE_BID,
+                    otherBidderGuid, 100, 0, auctionId);
+
+            CharacterDatabase.DirectPExecute(
+                "UPDATE `characters` SET `money`=1000 WHERE `guid`=%u",
+                sellerGuid);
+            WorldSession session(9501, std::shared_ptr<proto::IClientLink>(),
+                                 std::shared_ptr<SessionMailbox>(), SEC_PLAYER,
+                                 0, LOCALE_enUS);
+            Player seller(&session);
+            session.SetPlayer(&seller);
+            seller._Create(sellerGuid, HIGHGUID_PLAYER);
+            seller.SetMoney(1000);
+            uint32 const cut = auction->GetAuctionCut();
+
+            CustodyDeferred def;
+            CharacterDatabase.BeginTransaction();
+            auction->PrepareCancelCustody(&seller, def, false, true,
+                                          bidKey, cut);
+            bool const committed = CharacterDatabase.CommitTransactionChecked();
+            if (committed)
+            {
+                def.run();
+            }
+            if (!committed || auctionExists(auctionId) ||
+                seller.GetMoney() != 1000 - cut ||
+                characterMoney(sellerGuid) != 1000 - cut ||
+                rowState(bidKey) != CST_TERMINAL_BACK ||
+                rowState(markerKey) != CST_RESERVED || sellerRows(auctionId) != 0 ||
+                mailCount(otherBidderGuid, AUCTION_CANCELLED_TO_BIDDER) != 1 ||
+                mailMoney(otherBidderGuid, AUCTION_CANCELLED_TO_BIDDER) != 100 ||
+                mailCount(sellerGuid, AUCTION_CANCELED) != 1 ||
+                itemMailCount(sellerGuid, itemGuid) != 1)
+            {
+                printf("ahcustodyroute FAIL: bid-only cancel conservation\n");
+                pass = false;
+            }
+            session.SetPlayer(NULL);
+            delete auction;
+        }
+    }
+
+    // A same-bidder raise can meet player-seller custody layered over a legacy
+    // bid. Debit only the delta, then represent the full standing bid in one row.
+    {
+        clearFixtureMail();
+        uint32 const auctionId = 995124;
+        AuctionEntry* auction = createAuction(
+            auctionId, sellerGuid, bidderGuid, 40, 0, 20);
+        if (!auction)
+        {
+            printf("ahcustodyroute FAIL: legacy same-bid fixture creation\n");
+            pass = false;
+        }
+        else
+        {
+            std::string const itemKey = "item:995124";
+            std::string const depKey = "dep:995124";
+            seedRow(itemKey, CUSTODY_ITEM, ROLE_ITEM,
+                    sellerGuid, 0, auction->itemGuidLow, auctionId);
+            seedRow(depKey, CUSTODY_GOLD, ROLE_DEPOSIT,
+                    sellerGuid, 20, 0, auctionId);
+
+            CharacterDatabase.DirectPExecute(
+                "UPDATE `characters` SET `money`=1000 WHERE `guid`=%u",
+                bidderGuid);
+            WorldSession session(9502, std::shared_ptr<proto::IClientLink>(),
+                                 std::shared_ptr<SessionMailbox>(), SEC_PLAYER,
+                                 0, LOCALE_enUS);
+            Player bidder(&session);
+            session.SetPlayer(&bidder);
+            bidder._Create(bidderGuid, HIGHGUID_PLAYER);
+            bidder.SetMoney(1000);
+
+            CustodyRouteState const route = CustodyLedger::GetRouteState(auctionId);
+            CustodyDeferred def;
+            CharacterDatabase.BeginTransaction();
+            bool const active = auction->UpdateBidCustody(
+                60, &bidder, def, route.usesPlayerSellerCustody,
+                route.hasLiveBidCustody, "");
+            bool const committed = CharacterDatabase.CommitTransactionChecked();
+            if (committed)
+            {
+                def.run();
+            }
+
+            std::unique_ptr<QueryResult> bidRows(CharacterDatabase.PQuery(
+                "SELECT COUNT(*),COALESCE(MAX(`owner_guid`),0),"
+                "COALESCE(MAX(`amount`),0) FROM `custody_ledger` "
+                "WHERE `auction_id`=%u AND `state`=0 AND `role`=%u",
+                auctionId, uint32(ROLE_BID)));
+            Field* bidFields = bidRows ? bidRows->Fetch() : NULL;
+            if (!committed || !active || !route.usesPlayerSellerCustody ||
+                route.hasLiveBidCustody || bidder.GetMoney() != 980 ||
+                characterMoney(bidderGuid) != 980 || !auctionExists(auctionId) ||
+                auction->bidder != bidderGuid || auction->bid != 60 ||
+                !bidFields || bidFields[0].GetUInt32() != 1 ||
+                bidFields[1].GetUInt32() != bidderGuid ||
+                bidFields[2].GetUInt32() != 60 ||
+                rowState(itemKey) != CST_RESERVED ||
+                rowState(depKey) != CST_RESERVED)
+            {
+                printf("ahcustodyroute FAIL: legacy same-bid custody promotion\n");
+                pass = false;
+            }
+            session.SetPlayer(NULL);
+            delete auction;
+        }
+    }
+
+    // Replacing a legacy standing bid under player-seller custody preserves the
+    // old bidder's mail refund and starts custody only for the replacement bid.
+    {
+        clearFixtureMail();
+        uint32 const auctionId = 995125;
+        AuctionEntry* auction = createAuction(
+            auctionId, sellerGuid, otherBidderGuid, 40, 0, 20);
+        if (!auction)
+        {
+            printf("ahcustodyroute FAIL: legacy outbid fixture creation\n");
+            pass = false;
+        }
+        else
+        {
+            std::string const itemKey = "item:995125";
+            std::string const depKey = "dep:995125";
+            seedRow(itemKey, CUSTODY_ITEM, ROLE_ITEM,
+                    sellerGuid, 0, auction->itemGuidLow, auctionId);
+            seedRow(depKey, CUSTODY_GOLD, ROLE_DEPOSIT,
+                    sellerGuid, 20, 0, auctionId);
+
+            CharacterDatabase.DirectPExecute(
+                "UPDATE `characters` SET `money`=1000 WHERE `guid`=%u",
+                bidderGuid);
+            WorldSession session(9502, std::shared_ptr<proto::IClientLink>(),
+                                 std::shared_ptr<SessionMailbox>(), SEC_PLAYER,
+                                 0, LOCALE_enUS);
+            Player bidder(&session);
+            session.SetPlayer(&bidder);
+            bidder._Create(bidderGuid, HIGHGUID_PLAYER);
+            bidder.SetMoney(1000);
+
+            CustodyRouteState const route = CustodyLedger::GetRouteState(auctionId);
+            CustodyDeferred def;
+            CharacterDatabase.BeginTransaction();
+            bool const active = auction->UpdateBidCustody(
+                60, &bidder, def, route.usesPlayerSellerCustody,
+                route.hasLiveBidCustody, "");
+            bool const committed = CharacterDatabase.CommitTransactionChecked();
+            if (committed)
+            {
+                def.run();
+            }
+
+            std::unique_ptr<QueryResult> bidRows(CharacterDatabase.PQuery(
+                "SELECT COUNT(*),COALESCE(MAX(`owner_guid`),0),"
+                "COALESCE(MAX(`amount`),0) FROM `custody_ledger` "
+                "WHERE `auction_id`=%u AND `state`=0 AND `role`=%u",
+                auctionId, uint32(ROLE_BID)));
+            Field* bidFields = bidRows ? bidRows->Fetch() : NULL;
+            if (!committed || !active || !route.usesPlayerSellerCustody ||
+                route.hasLiveBidCustody || bidder.GetMoney() != 940 ||
+                characterMoney(bidderGuid) != 940 || !auctionExists(auctionId) ||
+                !bidFields || bidFields[0].GetUInt32() != 1 ||
+                bidFields[1].GetUInt32() != bidderGuid ||
+                bidFields[2].GetUInt32() != 60 ||
+                mailCount(otherBidderGuid, AUCTION_OUTBIDDED) != 1 ||
+                mailMoney(otherBidderGuid, AUCTION_OUTBIDDED) != 40 ||
+                rowState(itemKey) != CST_RESERVED ||
+                rowState(depKey) != CST_RESERVED)
+            {
+                printf("ahcustodyroute FAIL: legacy bidder replacement\n");
+                pass = false;
+            }
+            session.SetPlayer(NULL);
+            delete auction;
+        }
+    }
+
+    // Bid-only custody never selects the unsold custody path. Even malformed
+    // no-bid book facts retain the legacy item return and leave bid provenance.
+    {
+        clearFixtureMail();
+        uint32 const auctionId = 995126;
+        AuctionEntry* auction = createAuction(
+            auctionId, sellerGuid, 0, 0, 0, 20);
+        if (!auction)
+        {
+            printf("ahcustodyroute FAIL: bid-only unsold fixture creation\n");
+            pass = false;
+        }
+        else
+        {
+            uint32 const itemGuid = auction->itemGuidLow;
+            std::string const markerKey = "botlist:test:995126";
+            std::string const bidKey = "bid:995126:1";
+            seedRow(markerKey, CUSTODY_ITEM, ROLE_RESOLUTION,
+                    AHBOT_SYSTEM_OWNER_GUID, 0, itemGuid, auctionId);
+            seedRow(bidKey, CUSTODY_GOLD, ROLE_BID,
+                    bidderGuid, 50, 0, auctionId);
+            CustodyRouteState const route = CustodyLedger::GetRouteState(auctionId);
+            auction->expireTime = static_cast<time_t>(-1);
+            AuctionHouseObject* houseMap = sAuctionMgr.GetAuctionsMap(&house);
+            houseMap->AddAuction(auction);
+            houseMap->Update();
+            CharacterDatabase.BeginTransaction();
+            CharacterDatabase.CommitTransactionChecked();
+
+            bool const mapPresent = houseMap->GetAuction(auctionId) != NULL;
+            bool const dbPresent = auctionExists(auctionId);
+            uint32 const bidState = rowState(bidKey);
+            uint32 const markerState = rowState(markerKey);
+            uint32 const sellerRowCount = sellerRows(auctionId);
+            uint32 const expiredMailCount = mailCount(sellerGuid, AUCTION_EXPIRED);
+            uint32 const expiredItemCount = itemMailCount(sellerGuid, itemGuid);
+            if (route.usesPlayerSellerCustody || !route.hasLiveBidCustody ||
+                mapPresent || dbPresent || bidState != CST_RESERVED ||
+                markerState != CST_RESERVED || sellerRowCount != 0 ||
+                expiredMailCount != 1 || expiredItemCount != 1)
+            {
+                printf("ahcustodyroute FAIL: bid-only unsold routing "
+                       "route=%u/%u map=%u db=%u states=%u/%u seller=%u mail=%u/%u\n",
+                       uint32(route.usesPlayerSellerCustody),
+                       uint32(route.hasLiveBidCustody), uint32(mapPresent),
+                       uint32(dbPresent), bidState, markerState,
+                       sellerRowCount, expiredMailCount, expiredItemCount);
+                pass = false;
+            }
+        }
+    }
+
+    // Existing full player seller+bid custody still terminalizes all three
+    // value rows while delivering the same seller and winner mails.
+    {
+        clearFixtureMail();
+        uint32 const auctionId = 995123;
+        AuctionEntry* auction = createAuction(
+            auctionId, sellerGuid, bidderGuid, 100, 0, 20);
+        if (!auction)
+        {
+            printf("ahcustodyroute FAIL: full custody fixture creation\n");
+            pass = false;
+        }
+        else
+        {
+            uint32 const itemGuid = auction->itemGuidLow;
+            std::string const itemKey = "item:995123";
+            std::string const depKey = "dep:995123";
+            std::string const bidKey = "bid:995123:1";
+            seedRow(itemKey, CUSTODY_ITEM, ROLE_ITEM,
+                    sellerGuid, 0, itemGuid, auctionId);
+            seedRow(depKey, CUSTODY_GOLD, ROLE_DEPOSIT,
+                    sellerGuid, 20, 0, auctionId);
+            seedRow(bidKey, CUSTODY_GOLD, ROLE_BID,
+                    bidderGuid, 100, 0, auctionId);
+
+            CustodyDeferred def;
+            CharacterDatabase.BeginTransaction();
+            auction->AuctionBidWinningCustody(NULL, def, true, true, bidKey);
+            bool const committed = CharacterDatabase.CommitTransactionChecked();
+            if (committed)
+            {
+                def.run();
+            }
+            if (!committed || auctionExists(auctionId) ||
+                rowState(itemKey) != CST_TERMINAL_OK ||
+                rowState(depKey) != CST_TERMINAL_BACK ||
+                rowState(bidKey) != CST_TERMINAL_OK ||
+                mailCount(sellerGuid, AUCTION_SUCCESSFUL) != 1 ||
+                mailCount(bidderGuid, AUCTION_WON) != 1 ||
+                itemMailCount(bidderGuid, itemGuid) != 1)
+            {
+                printf("ahcustodyroute FAIL: full custody winning regression\n");
+                pass = false;
+            }
+        }
+    }
+
+    for (size_t i = 0; i < itemGuids.size(); ++i)
+    {
+        Item* liveItem = sAuctionMgr.GetAItem(itemGuids[i]);
+        if (liveItem)
+        {
+            sAuctionMgr.RemoveAItem(itemGuids[i]);
+            delete liveItem;
+        }
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `mail_items` WHERE `item_guid`=%u", itemGuids[i]);
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `item_instance` WHERE `guid`=%u", itemGuids[i]);
+    }
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `mail` WHERE `receiver` IN (9501,9502,9503)");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` WHERE `auction_id` BETWEEN 995100 AND 995199");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `auction` WHERE `id` BETWEEN 995100 AND 995199");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `characters` WHERE `guid` IN (9501,9502,9503)");
+
+    if (pass)
+    {
+        printf("ahcustodyroute OK\n");
+        return 0;
+    }
+    return 2;
+}
+
 /// Regression for a real SP-2 smoke failure: the worker committed a cancel and
 /// removed the auction, but mangosd missed the terminal result before restart.
 /// The pending map is then empty, so repair must replay from ah_worker_journal
@@ -4175,6 +4879,11 @@ int RunMangosdTest(std::string const& name)
     if (name == "ahrepair")
     {
         return RunAhRepairRecoveryTest();
+    }
+
+    if (name == "ahcustodyroute")
+    {
+        return RunAhCustodyRouteTest();
     }
 
     if (name == "ahmaterialize")
