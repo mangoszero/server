@@ -46,7 +46,6 @@
 #include "Chat.h"
 #include "Database/DatabaseEnv.h"
 #include "Item.h"
-#include "Log.h"
 #include "Mail.h"
 #include "ObjectMgr.h"
 #include "PlayerMutations.h"
@@ -58,6 +57,7 @@
 #include <cctype>
 #include <ctime>
 #include <memory>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -118,23 +118,16 @@ static char const* CustodyRoleName(uint8 role)
             return "proceeds";
         case ROLE_ITEM:
             return "item";
+        case ROLE_RESOLUTION:
+            return "resolution";
         default:
             return "unknown";
     }
 }
 
-static bool HasLiveAuction(uint32 auctionId)
+static bool IsBotMarkerKey(std::string const& key)
 {
-    for (uint32 i = 0; i < MAX_AUCTION_HOUSE_TYPE; ++i)
-    {
-        AuctionHouseObject* auctions = sAuctionMgr.GetAuctionsMap(AuctionHouseType(i));
-        if (auctions->GetAuction(auctionId))
-        {
-            return true;
-        }
-    }
-
-    return false;
+    return key.compare(0, 8, "botlist:") == 0;
 }
 
 static bool TerminalizeCustodyRow(CustodyRow const& row, uint8 terminalState)
@@ -209,8 +202,6 @@ static bool ReadCommittedCancelJournal(uint32 auctionId, PlayerMutationResult& o
     std::string bin;
     if (!RepairHexDecode(q->Fetch()[0].GetCppString(), bin))
     {
-        sLog.outError("ah repair: committed cancel journal facts decode failed for auction %u",
-                      auctionId);
         return false;
     }
 
@@ -219,8 +210,6 @@ static bool ReadCommittedCancelJournal(uint32 auctionId, PlayerMutationResult& o
     PlayerMutationResult res;
     if (!res.Decode(bb) || res.facts.auctionId != auctionId)
     {
-        sLog.outError("ah repair: committed cancel journal facts invalid for auction %u",
-                      auctionId);
         return false;
     }
 
@@ -243,8 +232,6 @@ static Item* LoadRepairItemFromDb(uint32 itemGuid, uint32 itemTemplate,
     ItemPrototype const* proto = ObjectMgr::GetItemPrototype(itemTemplate);
     if (!proto)
     {
-        sLog.outError("ah repair: item template %u missing while repairing item %u",
-                      itemTemplate, itemGuid);
         return NULL;
     }
 
@@ -253,8 +240,6 @@ static Item* LoadRepairItemFromDb(uint32 itemGuid, uint32 itemTemplate,
         itemGuid));
     if (!q)
     {
-        sLog.outError("ah repair: item_instance %u missing during committed cancel repair",
-                      itemGuid);
         return NULL;
     }
 
@@ -262,36 +247,60 @@ static Item* LoadRepairItemFromDb(uint32 itemGuid, uint32 itemTemplate,
     if (!item->LoadFromDB(itemGuid, q->Fetch(), ObjectGuid(HIGHGUID_PLAYER, ownerGuid)))
     {
         delete item;
-        sLog.outError("ah repair: item_instance %u failed LoadFromDB during committed cancel repair",
-                      itemGuid);
         return NULL;
     }
 
     return item;
 }
 
-bool AhRepairCommittedCancelAuction(uint32 auctionId, uint32& repairedRows)
+enum AhRepairActionStatus
 {
-    repairedRows = 0u;
+    AH_REPAIR_REPAIRED,
+    AH_REPAIR_SKIPPED,
+    AH_REPAIR_FAILED,
+};
 
-    if (HasLiveAuction(auctionId))
+struct AhRepairActionResult
+{
+    AhRepairActionStatus status;
+    uint32 repairedRows;
+    std::string detail;
+};
+
+static AhRepairActionResult RepairAction(AhRepairActionStatus status,
+                                         uint32 repairedRows,
+                                         std::string const& detail)
+{
+    AhRepairActionResult result;
+    result.status = status;
+    result.repairedRows = repairedRows;
+    result.detail = detail;
+    return result;
+}
+
+static AhRepairActionResult RepairCommittedCancelAuction(uint32 auctionId)
+{
+    std::ostringstream detail;
+    if (CustodyLedger::AuctionExists(auctionId))
     {
-        return false;
+        detail << "committed cancel auction " << auctionId
+               << " became live; skipped";
+        return RepairAction(AH_REPAIR_SKIPPED, 0, detail.str());
     }
 
     PlayerMutationResult stored;
     if (!ReadCommittedCancelJournal(auctionId, stored))
     {
-        return false;
+        detail << "committed cancel journal invalid for auction " << auctionId;
+        return RepairAction(AH_REPAIR_FAILED, 0, detail.str());
     }
 
     MutationFacts const& f = stored.facts;
     if (f.curBid != 0u || f.curBidderGuid != 0u)
     {
-        sLog.outError("ah repair: committed cancel repair for auction %u has a live bid; "
-                      "bidder refund replay is not supported by this repair path yet",
-                      auctionId);
-        return false;
+        detail << "committed cancel auction " << auctionId
+               << " has a live bid; replay unsupported";
+        return RepairAction(AH_REPAIR_SKIPPED, 0, detail.str());
     }
 
     std::string const depKey = "dep:" + std::to_string(auctionId);
@@ -309,7 +318,9 @@ bool AhRepairCommittedCancelAuction(uint32 auctionId, uint32& repairedRows)
 
     if (!hasDep && !hasItem)
     {
-        return false;
+        detail << "committed cancel auction " << auctionId
+               << " has no repairable reserved rows";
+        return RepairAction(AH_REPAIR_SKIPPED, 0, detail.str());
     }
 
     Item* item = NULL;
@@ -317,17 +328,20 @@ bool AhRepairCommittedCancelAuction(uint32 auctionId, uint32& repairedRows)
     {
         if (itemRow.ownerGuid != f.sellerGuid || itemRow.itemGuid != f.itemGuid)
         {
-            sLog.outError("ah repair: committed cancel custody mismatch for auction %u",
-                          auctionId);
-            return false;
+            detail << "committed cancel custody mismatch for auction "
+                   << auctionId;
+            return RepairAction(AH_REPAIR_FAILED, 0, detail.str());
         }
         item = LoadRepairItemFromDb(f.itemGuid, f.itemTemplate, f.sellerGuid);
         if (!item)
         {
-            return false;
+            detail << "committed cancel item unavailable for auction "
+                   << auctionId;
+            return RepairAction(AH_REPAIR_FAILED, 0, detail.str());
         }
     }
 
+    uint32 repairedRows = 0;
     CustodyDeferred def;
     CharacterDatabase.BeginTransaction();
 
@@ -356,16 +370,15 @@ bool AhRepairCommittedCancelAuction(uint32 auctionId, uint32& repairedRows)
 
     if (!CharacterDatabase.CommitTransactionChecked())
     {
-        sLog.outError("ah repair: committed cancel repair commit failed for auction %u",
-                      auctionId);
-        repairedRows = 0u;
-        return false;
+        detail << "committed cancel repair commit failed for auction "
+               << auctionId;
+        return RepairAction(AH_REPAIR_FAILED, 0, detail.str());
     }
 
     def.run();
-    sLog.outString("ah repair: replayed committed cancel for auction %u from journal",
-                   auctionId);
-    return true;
+    detail << "replayed committed cancel for auction " << auctionId
+           << ", repaired=" << repairedRows;
+    return RepairAction(AH_REPAIR_REPAIRED, repairedRows, detail.str());
 }
 
 static bool ExtractForceForfeitKey(std::string const& mode, std::string& key)
@@ -387,132 +400,171 @@ static bool ExtractForceForfeitKey(std::string const& mode, std::string& key)
     return false;
 }
 
-static void PrintRepairRow(ChatHandler& handler, char const* prefix,
-                            CustodyRow const& row)
+static void PrintRepairFinding(ChatHandler& handler,
+                               CustodyDetailBudget& budget,
+                               char const* mode,
+                               CustodyFinding const& finding)
+{
+    if (!budget.Take())
+    {
+        return;
+    }
+
+    CustodyRow const& row = finding.row;
+    handler.PSendSysMessage(
+        "ah repair detail: mode=%s key=%s auction=%u kind=%s role=%s "
+        "row-state=%u owner=%u amount=%u item=%u reason=%s ownership=%s "
+        "finding-state=%s",
+        mode, row.idemKey.c_str(), row.auctionId,
+        CustodyKindName(row.kind), CustodyRoleName(row.role),
+        uint32(row.state), row.ownerGuid, row.amount, row.itemGuid,
+        CustodyFindingReasonName(finding.reason),
+        CustodyRepairOwnershipName(finding.repairOwnership),
+        CustodyFindingStateName(finding.state));
+}
+
+static void PrintRepairAction(ChatHandler& handler,
+                              CustodyDetailBudget& budget,
+                              AhRepairActionResult const& result)
+{
+    if (budget.Take())
+    {
+        handler.PSendSysMessage("ah repair action: %s", result.detail.c_str());
+    }
+}
+
+static void PrintRepairSuppression(ChatHandler& handler,
+                                   CustodyDetailBudget const& budget)
+{
+    if (budget.Suppressed())
+    {
+        handler.PSendSysMessage("ah repair: %u detail(s) suppressed.",
+                                budget.Suppressed());
+    }
+}
+
+static void PrintRepairSummary(ChatHandler& handler, char const* mode,
+                               CustodyReconcileReport const& report,
+                               uint32 repaired, uint32 skipped, uint32 failed)
 {
     handler.PSendSysMessage(
-        "%s key=%s auction=%u kind=%s role=%s state=%u owner=%u amount=%u item=%u",
-        prefix, row.idemKey.c_str(), row.auctionId,
-        CustodyKindName(row.kind), CustodyRoleName(row.role),
-        uint32(row.state), row.ownerGuid, row.amount, row.itemGuid);
+        "ah repair: complete mode=%s confirmed=%u pending=%u sweep-owned=%u "
+        "repaired=%u skipped=%u failed=%u.",
+        mode, report.confirmedDriftCount, report.pendingBidCount,
+        report.sweepOwnedCount, repaired, skipped, failed);
 }
 
-static bool AuctionAlreadyHandled(std::vector<uint32> const& handled,
-                                  uint32 auctionId)
+bool AhRepairFindingMutationAllowed(CustodyFinding const& finding)
 {
-    for (size_t i = 0; i < handled.size(); ++i)
-    {
-        if (handled[i] == auctionId)
-        {
-            return true;
-        }
-    }
-    return false;
+    CustodyRow const& row = finding.row;
+    return finding.state == CUSTODY_FINDING_CONFIRMED &&
+           finding.repairOwnership == CUSTODY_REPAIR_GENERIC &&
+           !IsBotMarkerKey(row.idemKey) && row.id != 0 &&
+           row.state == CST_RESERVED &&
+           !CustodyLedger::AuctionExists(row.auctionId);
 }
 
-static bool RepairGoldRow(ChatHandler& handler, CustodyRow const& row)
+static AhRepairActionResult RepairGoldRow(CustodyRow const& row)
 {
-    sLog.outError("ah repair: terminalizing orphan gold custody row without disbursement key=%s auction=%u owner=%u amount=%u",
-                  row.idemKey.c_str(), row.auctionId, row.ownerGuid, row.amount);
+    std::ostringstream detail;
     if (!TerminalizeCustodyRow(row, CST_TERMINAL_OK))
     {
-        sLog.outError("ah repair: checked commit failed for gold row key=%s",
-                      row.idemKey.c_str());
-        handler.PSendSysMessage("ah repair: checked commit failed for %s.",
-                                row.idemKey.c_str());
-        return false;
+        detail << "checked commit failed for gold row " << row.idemKey;
+        return RepairAction(AH_REPAIR_FAILED, 0, detail.str());
     }
 
-    handler.PSendSysMessage("ah repair: terminalized gold row %s without disbursing %u copper.",
-                            row.idemKey.c_str(), row.amount);
-    return true;
+    detail << "terminalized gold row " << row.idemKey
+           << " without disbursing " << row.amount << " copper";
+    return RepairAction(AH_REPAIR_REPAIRED, 1, detail.str());
 }
 
-static bool RepairItemRow(ChatHandler& handler, CustodyRow const& row)
+static AhRepairActionResult RepairItemRow(CustodyRow const& row)
 {
-    sLog.outError("ah repair: terminalizing orphan item custody row without re-mailing key=%s auction=%u item=%u owner=%u; manually verify mAitems/item_instance for residual item_guid=%u",
-                  row.idemKey.c_str(), row.auctionId, row.itemGuid,
-                  row.ownerGuid, row.itemGuid);
-
+    std::ostringstream detail;
     if (!TerminalizeCustodyRow(row, CST_TERMINAL_OK))
     {
-        handler.PSendSysMessage("ah repair: failed to terminalize item row %s.",
-                                row.idemKey.c_str());
-        return false;
+        detail << "failed to terminalize item row " << row.idemKey;
+        return RepairAction(AH_REPAIR_FAILED, 0, detail.str());
     }
 
-    handler.PSendSysMessage("ah repair: terminalized item row %s without re-mailing; verify item %u manually.",
-                            row.idemKey.c_str(), row.itemGuid);
-    return true;
+    detail << "terminalized item row " << row.idemKey
+           << " without re-mailing; verify item " << row.itemGuid;
+    return RepairAction(AH_REPAIR_REPAIRED, 1, detail.str());
 }
 
-static bool RepairCustodyRow(ChatHandler& handler, CustodyRow const& row)
+static AhRepairActionResult RepairCustodyRow(CustodyFinding const& finding)
 {
-    if (row.id == 0)
+    CustodyRow const& row = finding.row;
+    std::ostringstream detail;
+    if (!AhRepairFindingMutationAllowed(finding))
     {
-        handler.PSendSysMessage("ah repair: cannot auto-repair synthetic drift %s.",
-                                row.idemKey.c_str());
-        return false;
-    }
-
-    if (row.state != CST_RESERVED)
-    {
-        handler.PSendSysMessage("ah repair: skipping non-reserved row %s state=%u.",
-                                row.idemKey.c_str(), uint32(row.state));
-        return false;
-    }
-
-    if (HasLiveAuction(row.auctionId))
-    {
-        handler.PSendSysMessage("ah repair: skipping live-auction drift %s; use force-forfeit after manual verification.",
-                                row.idemKey.c_str());
-        return false;
+        detail << "skipped ineligible or live custody row " << row.idemKey;
+        return RepairAction(AH_REPAIR_SKIPPED, 0, detail.str());
     }
 
     if (row.kind == CUSTODY_ITEM)
     {
-        return RepairItemRow(handler, row);
+        return RepairItemRow(row);
     }
 
     if (row.kind == CUSTODY_GOLD)
     {
-        return RepairGoldRow(handler, row);
+        return RepairGoldRow(row);
     }
 
-    handler.PSendSysMessage("ah repair: skipping unknown custody kind for %s.",
-                            row.idemKey.c_str());
-    return false;
+    detail << "skipped unknown custody kind for " << row.idemKey;
+    return RepairAction(AH_REPAIR_SKIPPED, 0, detail.str());
 }
 
-static bool ForceForfeitRow(ChatHandler& handler, CustodyRow const& row)
+static AhRepairActionResult ForceForfeitRow(CustodyRow const& row)
 {
+    std::ostringstream detail;
+    if (IsBotMarkerKey(row.idemKey))
+    {
+        detail << "reserved bot marker " << row.idemKey
+               << " cannot be force-forfeited";
+        return RepairAction(AH_REPAIR_SKIPPED, 0, detail.str());
+    }
+
     if (row.id == 0)
     {
-        handler.PSendSysMessage("ah repair: cannot force-forfeit synthetic drift %s.",
-                                row.idemKey.c_str());
-        return false;
+        detail << "cannot force-forfeit synthetic drift " << row.idemKey;
+        return RepairAction(AH_REPAIR_SKIPPED, 0, detail.str());
     }
 
     if (row.state != CST_RESERVED)
     {
-        handler.PSendSysMessage("ah repair: cannot force-forfeit non-reserved row %s state=%u.",
-                                row.idemKey.c_str(), uint32(row.state));
-        return false;
+        detail << "cannot force-forfeit non-reserved row " << row.idemKey;
+        return RepairAction(AH_REPAIR_SKIPPED, 0, detail.str());
     }
 
-    sLog.outError("ah repair: force-forfeit terminalizing custody row without disbursement key=%s auction=%u kind=%u role=%u owner=%u amount=%u item=%u",
-                  row.idemKey.c_str(), row.auctionId, uint32(row.kind),
-                  uint32(row.role), row.ownerGuid, row.amount, row.itemGuid);
     if (!TerminalizeCustodyRow(row, CST_TERMINAL_OK))
     {
-        handler.PSendSysMessage("ah repair: force-forfeit commit failed for %s.",
-                                row.idemKey.c_str());
-        return false;
+        detail << "force-forfeit commit failed for " << row.idemKey;
+        return RepairAction(AH_REPAIR_FAILED, 0, detail.str());
     }
 
-    handler.PSendSysMessage("ah repair: force-forfeit terminalized %s without disbursement or item mail.",
-                            row.idemKey.c_str());
-    return true;
+    detail << "force-forfeit terminalized " << row.idemKey
+           << " without disbursement or item mail";
+    return RepairAction(AH_REPAIR_REPAIRED, 1, detail.str());
+}
+
+static void CountRepairAction(AhRepairActionResult const& result,
+                              uint32& repaired, uint32& skipped,
+                              uint32& failed)
+{
+    switch (result.status)
+    {
+        case AH_REPAIR_REPAIRED:
+            repaired += result.repairedRows;
+            break;
+        case AH_REPAIR_SKIPPED:
+            ++skipped;
+            break;
+        case AH_REPAIR_FAILED:
+            ++failed;
+            break;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -616,93 +668,105 @@ bool ChatHandler::HandleAhRepairCommand(char* args)
         return false;
     }
 
-    std::vector<CustodyRow> drift;
-    CustodyService::ReconcileScan(true, drift);
+    CustodyReconcileReport report;
+    CustodyService::ReconcileScan(static_cast<uint64>(time(NULL)),
+                                  CUSTODY_SCAN_RUNTIME, report);
 
-    PSendSysMessage("ah repair: %u custody-ledger drift row(s) found.",
-                    uint32(drift.size()));
-    SendSysMessage("ah repair: committed cancel journal rows are replayed; other legacy tears are not repaired.");
-
-    if (drift.empty())
-    {
-        if (forceForfeit)
-        {
-            PSendSysMessage("ah repair: force-forfeit key %s is not current drift.",
-                            forceForfeitKey.c_str());
-            SetSentErrorMessage(true);
-            return false;
-        }
-
-        return true;
-    }
+    CustodyDetailBudget budget(100);
+    uint32 repaired = 0;
+    uint32 skipped = 0;
+    uint32 failed = 0;
 
     if (forceForfeit)
     {
-        for (size_t i = 0; i < drift.size(); ++i)
+        AhRepairActionResult result = RepairAction(
+            AH_REPAIR_SKIPPED, 0,
+            "force-forfeit key is not current drift: " + forceForfeitKey);
+        bool found = false;
+        if (IsBotMarkerKey(forceForfeitKey))
         {
-            if (drift[i].idemKey == forceForfeitKey)
+            result = RepairAction(AH_REPAIR_SKIPPED, 0,
+                "reserved bot marker " + forceForfeitKey +
+                " cannot be force-forfeited");
+        }
+        else
+        {
+            for (size_t i = 0; i < report.findings.size(); ++i)
             {
-                return ForceForfeitRow(*this, drift[i]);
+                if (report.findings[i].row.idemKey == forceForfeitKey)
+                {
+                    found = true;
+                    result = ForceForfeitRow(report.findings[i].row);
+                    break;
+                }
             }
         }
 
-        PSendSysMessage("ah repair: force-forfeit key %s is not current drift.",
-                        forceForfeitKey.c_str());
-        SetSentErrorMessage(true);
-        return false;
+        CountRepairAction(result, repaired, skipped, failed);
+        PrintRepairAction(*this, budget, result);
+        PrintRepairSuppression(*this, budget);
+        PrintRepairSummary(*this, "force-forfeit", report,
+                           repaired, skipped, failed);
+        if (!found || result.status != AH_REPAIR_REPAIRED)
+        {
+            SetSentErrorMessage(true);
+            return false;
+        }
+        return true;
     }
 
-    for (size_t i = 0; i < drift.size(); ++i)
+    char const* modeName = apply ? "apply" : "dry-run";
+    for (size_t i = 0; i < report.findings.size(); ++i)
     {
-        PrintRepairRow(*this, apply ? "apply:" : "dry-run:", drift[i]);
+        PrintRepairFinding(*this, budget, modeName, report.findings[i]);
     }
 
     if (!apply)
     {
-        SendSysMessage("ah repair: dry-run only. Use 'ah repair apply' or 'ah repair force-forfeit <key>' to mutate supported rows.");
+        PrintRepairSuppression(*this, budget);
+        PrintRepairSummary(*this, modeName, report, 0, 0, 0);
         return true;
     }
 
-    uint32 repaired = 0;
-    uint32 skipped = 0;
-    std::vector<uint32> handledAuctions;
-    for (size_t i = 0; i < drift.size(); ++i)
+    std::set<uint32> handledJournalAuctions;
+    for (size_t i = 0; i < report.findings.size(); ++i)
     {
-        if (AuctionAlreadyHandled(handledAuctions, drift[i].auctionId))
+        CustodyFinding const& finding = report.findings[i];
+        CustodyRow const& row = finding.row;
+        AhRepairActionResult result;
+
+        if (finding.state != CUSTODY_FINDING_CONFIRMED ||
+            finding.repairOwnership != CUSTODY_REPAIR_GENERIC ||
+            IsBotMarkerKey(row.idemKey))
         {
+            std::ostringstream detail;
+            detail << "skipped " << row.idemKey << " ownership="
+                   << CustodyRepairOwnershipName(finding.repairOwnership)
+                   << " state=" << CustodyFindingStateName(finding.state);
+            result = RepairAction(AH_REPAIR_SKIPPED, 0, detail.str());
+            CountRepairAction(result, repaired, skipped, failed);
+            PrintRepairAction(*this, budget, result);
             continue;
         }
 
-        uint32 replayedRows = 0u;
-        if (AhRepairCommittedCancelAuction(drift[i].auctionId, replayedRows))
+        if (HasCommittedCancelJournal(row.auctionId))
         {
-            handledAuctions.push_back(drift[i].auctionId);
-            repaired += replayedRows;
-            PSendSysMessage("ah repair: replayed committed cancel for auction %u, repaired=%u.",
-                            drift[i].auctionId, replayedRows);
-            continue;
-        }
-
-        if (HasCommittedCancelJournal(drift[i].auctionId))
-        {
-            handledAuctions.push_back(drift[i].auctionId);
-            ++skipped;
-            PSendSysMessage("ah repair: committed cancel replay failed for auction %u; skipped.",
-                            drift[i].auctionId);
-            continue;
-        }
-
-        if (RepairCustodyRow(*this, drift[i]))
-        {
-            ++repaired;
+            if (!handledJournalAuctions.insert(row.auctionId).second)
+            {
+                continue;
+            }
+            result = RepairCommittedCancelAuction(row.auctionId);
         }
         else
         {
-            ++skipped;
+            result = RepairCustodyRow(finding);
         }
+
+        CountRepairAction(result, repaired, skipped, failed);
+        PrintRepairAction(*this, budget, result);
     }
 
-    PSendSysMessage("ah repair: apply complete, repaired=%u skipped=%u.",
-                    repaired, skipped);
-    return true;
+    PrintRepairSuppression(*this, budget);
+    PrintRepairSummary(*this, modeName, report, repaired, skipped, failed);
+    return failed == 0;
 }

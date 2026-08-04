@@ -32,10 +32,33 @@
 bool AhBuildCancelPrepareForward(MutationPendingMap& pending, uint32 playerGuidLow,
                                  uint32 auctionId, uint64 uuid, uint32 sentSec,
                                  IpcMessage& out);
-bool AhRepairCommittedCancelAuction(uint32 auctionId, uint32& repairedRows);
+bool AhRepairFindingMutationAllowed(CustodyFinding const& finding);
 
-static void TestCliPrint(void* /*arg*/, char const* /*text*/)
+struct TestCliCapture
 {
+    std::vector<std::string> chunks;
+};
+
+static void TestCliPrint(void* arg, char const* text)
+{
+    if (arg && text)
+    {
+        static_cast<TestCliCapture*>(arg)->chunks.push_back(text);
+    }
+}
+
+static uint32 CountCliChunks(TestCliCapture const& capture,
+                             std::string const& needle)
+{
+    uint32 count = 0;
+    for (size_t i = 0; i < capture.chunks.size(); ++i)
+    {
+        if (capture.chunks[i].find(needle) != std::string::npos)
+        {
+            ++count;
+        }
+    }
+    return count;
 }
 
 static std::string TestHexEncode(ByteBuffer const& bb)
@@ -1368,6 +1391,241 @@ static int RunCustodyTest()
     CharacterDatabase.CommitTransactionChecked();
     CharacterDatabase.DirectExecute(
         "DELETE FROM `mail` WHERE `receiver`=1 AND `subject`='AH custody repair'");
+
+    // The apply guard must consult the shared auction table at mutation time,
+    // not the local AH map or the auction facts captured by the scan.
+    {
+        uint32 const livenessAuctionId = 970080;
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `auction` WHERE `id`=%u", livenessAuctionId);
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `custody_ledger` WHERE `idem_key`='test:repair:liveness'");
+        CharacterDatabase.DirectPExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('test:repair:liveness',0,1,0,1,0,80,0,%u," UI64FMTD ",0)",
+            livenessAuctionId, oldTime);
+
+        CustodyReconcileReport report;
+        CustodyService::ReconcileScan(now, CUSTODY_SCAN_RUNTIME, report);
+        CustodyFinding scanned = {};
+        bool found = false;
+        for (size_t i = 0; i < report.findings.size(); ++i)
+        {
+            if (report.findings[i].row.idemKey == "test:repair:liveness")
+            {
+                scanned = report.findings[i];
+                found = true;
+                break;
+            }
+        }
+
+        CharacterDatabase.DirectPExecute(
+            "INSERT INTO `auction` "
+            "(`id`,`houseid`,`itemguid`,`item_template`,`item_count`,"
+            "`item_randompropertyid`,`itemowner`,`buyoutprice`,`time`,`buyguid`,"
+            "`lastbid`,`startbid`,`deposit`) "
+            "VALUES (%u,7,880080,25,1,0,1,0," UI64FMTD ",0,0,10,5)",
+            livenessAuctionId, now + HOUR);
+        bool const blockedAfterInsert = found &&
+            !AhRepairFindingMutationAllowed(scanned);
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `auction` WHERE `id`=%u", livenessAuctionId);
+        bool const allowedAfterDelete = found &&
+            AhRepairFindingMutationAllowed(scanned);
+        if (!found || !blockedAfterInsert || !allowedAfterDelete)
+        {
+            printf("custody FAIL: repair liveness guard ignored post-scan DB state\n");
+            pass = false;
+        }
+
+        CharacterDatabase.DirectExecute(
+            "DELETE FROM `custody_ledger` WHERE `idem_key`='test:repair:liveness'");
+    }
+
+    // Generic apply must report but skip pending, manual-only, and bot-sweep
+    // findings. Force-forfeit must reject the reserved bot marker explicitly.
+    {
+        CharacterDatabase.DirectExecute(
+            "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'botlist:test:repair:%'");
+        CharacterDatabase.DirectExecute(
+            "DELETE FROM `auction` WHERE `id` IN (970081,970082)");
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `auction` "
+            "(`id`,`houseid`,`itemguid`,`item_template`,`item_count`,"
+            "`item_randompropertyid`,`itemowner`,`buyoutprice`,`time`,`buyguid`,"
+            "`lastbid`,`startbid`,`deposit`) VALUES "
+            "(970081,7,880081,25,1,0,%u,0," UI64FMTD ",0,0,10,0),"
+            "(970082,7,880082,25,1,0,%u,0," UI64FMTD ",2082,82,10,0)",
+            AHBOT_SYSTEM_OWNER_GUID, now + HOUR,
+            AHBOT_SYSTEM_OWNER_GUID, now + HOUR);
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) VALUES "
+            "('botlist:test:repair:manual',1,3,0,%u,0,0,880081,970081," UI64FMTD ",0),"
+            "('botlist:test:repair:pending',1,4,0,%u,0,0,880082,970082," UI64FMTD ",0),"
+            "('botlist:test:repair:sweep',1,4,0,%u,0,0,880083,970083," UI64FMTD ",0)",
+            AHBOT_SYSTEM_OWNER_GUID, oldTime,
+            AHBOT_SYSTEM_OWNER_GUID, oldTime,
+            AHBOT_SYSTEM_OWNER_GUID, oldTime);
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("custody FAIL: repair ownership fixtures failed to commit\n");
+            pass = false;
+        }
+
+        TestCliCapture applyCapture;
+        CliHandler applyCli(0, SEC_ADMINISTRATOR, &applyCapture, &TestCliPrint);
+        if (!applyCli.ParseCommands("ah repair apply") ||
+            CountCliChunks(applyCapture,
+                "mode=apply confirmed=1 pending=1 sweep-owned=1 repaired=0 skipped=3 failed=0") != 1)
+        {
+            printf("custody FAIL: repair ownership summary mismatch\n");
+            pass = false;
+        }
+
+        char const* markerKeys[] = {
+            "botlist:test:repair:manual",
+            "botlist:test:repair:pending",
+            "botlist:test:repair:sweep",
+        };
+        for (size_t i = 0; i < sizeof(markerKeys) / sizeof(markerKeys[0]); ++i)
+        {
+            CustodyRow markerRow;
+            if (!CustodyLedger::Get(markerKeys[i], markerRow) ||
+                markerRow.state != CST_RESERVED)
+            {
+                printf("custody FAIL: generic apply mutated reserved bot marker %s\n",
+                    markerKeys[i]);
+                pass = false;
+            }
+        }
+
+        TestCliCapture forceCapture;
+        CliHandler forceCli(0, SEC_ADMINISTRATOR, &forceCapture, &TestCliPrint);
+        forceCli.ParseCommands(
+            "ah repair force-forfeit botlist:test:repair:sweep");
+        if (CountCliChunks(forceCapture, "reserved bot marker") != 1)
+        {
+            printf("custody FAIL: force-forfeit did not reject bot marker\n");
+            pass = false;
+        }
+
+        CharacterDatabase.DirectExecute(
+            "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'botlist:test:repair:%'");
+        CharacterDatabase.DirectExecute(
+            "DELETE FROM `auction` WHERE `id` IN (970081,970082)");
+    }
+
+    // Failed journal replay is counted separately and leaves custody reserved.
+    {
+        uint32 const failedAuctionId = 970084;
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `custody_ledger` WHERE `idem_key`='test:repair:failed'");
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `ah_worker_journal` WHERE `auction_id`=%u",
+            failedAuctionId);
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('test:repair:failed',0,1,0,1,0,84,0,%u," UI64FMTD ",0)",
+            failedAuctionId, oldTime);
+        CharacterDatabase.PExecute(
+            "INSERT INTO `ah_worker_journal` "
+            "(`uuid`,`auction_id`,`kind`,`state`,`facts`,`created_time`,`resolved_time`) "
+            "VALUES (970084,%u,%u,1,'00'," UI64FMTD "," UI64FMTD ")",
+            failedAuctionId, uint32(IPC_PLAYER_CANCEL & 0xFFu),
+            oldTime, oldTime);
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("custody FAIL: failed-replay fixtures did not commit\n");
+            pass = false;
+        }
+
+        TestCliCapture failedCapture;
+        CliHandler failedCli(0, SEC_ADMINISTRATOR,
+                             &failedCapture, &TestCliPrint);
+        failedCli.ParseCommands("ah repair apply");
+        CustodyRow failedRow;
+        if (CountCliChunks(failedCapture,
+                "mode=apply confirmed=1 pending=0 sweep-owned=0 repaired=0 skipped=0 failed=1") != 1 ||
+            !CustodyLedger::Get("test:repair:failed", failedRow) ||
+            failedRow.state != CST_RESERVED)
+        {
+            printf("custody FAIL: failed repair summary/state mismatch\n");
+            pass = false;
+        }
+
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `custody_ledger` WHERE `idem_key`='test:repair:failed'");
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `ah_worker_journal` WHERE `auction_id`=%u",
+            failedAuctionId);
+    }
+
+    // One budget spans scan and action details. Exact totals remain uncapped.
+    {
+        CharacterDatabase.DirectExecute(
+            "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:repair:budget:%'");
+        CharacterDatabase.BeginTransaction();
+        for (uint32 i = 0; i < 101; ++i)
+        {
+            CharacterDatabase.PExecute(
+                "INSERT INTO `custody_ledger` "
+                "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+                "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+                "VALUES ('test:repair:budget:%u',0,1,0,1,0,%u,0,%u," UI64FMTD ",0)",
+                i, 100 + i, 974000 + i, oldTime);
+        }
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("custody FAIL: repair budget fixtures failed to commit\n");
+            pass = false;
+        }
+
+        TestCliCapture dryCapture;
+        CliHandler dryCli(0, SEC_ADMINISTRATOR, &dryCapture, &TestCliPrint);
+        if (!dryCli.ParseCommands("ah repair --dry-run") ||
+            CountCliChunks(dryCapture, "ah repair detail:") != 100 ||
+            CountCliChunks(dryCapture, "detail(s) suppressed") != 1 ||
+            CountCliChunks(dryCapture,
+                "mode=dry-run confirmed=101 pending=0 sweep-owned=0 repaired=0 skipped=0 failed=0") != 1)
+        {
+            printf("custody FAIL: dry-run detail cap or totals mismatch\n");
+            pass = false;
+        }
+
+        TestCliCapture boundedApplyCapture;
+        CliHandler boundedApplyCli(0, SEC_ADMINISTRATOR,
+                                   &boundedApplyCapture, &TestCliPrint);
+        if (!boundedApplyCli.ParseCommands("ah repair apply") ||
+            CountCliChunks(boundedApplyCapture, "ah repair detail:") +
+                CountCliChunks(boundedApplyCapture, "ah repair action:") != 100 ||
+            CountCliChunks(boundedApplyCapture, "detail(s) suppressed") != 1 ||
+            CountCliChunks(boundedApplyCapture,
+                "mode=apply confirmed=101 pending=0 sweep-owned=0 repaired=101 skipped=0 failed=0") != 1)
+        {
+            printf("custody FAIL: apply shared detail cap or totals mismatch\n");
+            pass = false;
+        }
+
+        std::unique_ptr<QueryResult> reserved(CharacterDatabase.Query(
+            "SELECT COUNT(*) FROM `custody_ledger` "
+            "WHERE `idem_key` LIKE 'test:repair:budget:%' AND `state`=0"));
+        if (!reserved || reserved->Fetch()[0].GetUInt32() != 0)
+        {
+            printf("custody FAIL: bounded apply did not repair all 101 rows\n");
+            pass = false;
+        }
+
+        CharacterDatabase.DirectExecute(
+            "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:repair:budget:%'");
+    }
 
     // ================================================================ primitive
     // Primitive round-trip: offline owner (no ModifyMoney),
@@ -3412,15 +3670,22 @@ static int RunAhRepairRecoveryTest()
         pass = false;
     }
 
-    uint32 repairedRows = 0u;
-    if (!AhRepairCommittedCancelAuction(auctionId, repairedRows))
+    TestCliCapture repairCapture;
+    CliHandler repairCli(0, SEC_ADMINISTRATOR, &repairCapture, &TestCliPrint);
+    if (!repairCli.ParseCommands("ah repair apply"))
     {
-        printf("ahrepair FAIL: committed cancel repair returned false\n");
+        printf("ahrepair FAIL: committed cancel command was not parsed\n");
         pass = false;
     }
-    if (repairedRows != 2u)
+    if (CountCliChunks(repairCapture,
+            "mode=apply confirmed=2 pending=0 sweep-owned=0 repaired=2 skipped=0 failed=0") != 1u)
     {
-        printf("ahrepair FAIL: committed cancel repairedRows=%u\n", repairedRows);
+        printf("ahrepair FAIL: committed cancel command summary mismatch\n");
+        pass = false;
+    }
+    if (CountCliChunks(repairCapture, "replayed committed cancel") != 1u)
+    {
+        printf("ahrepair FAIL: repeated auction rows replayed journal more than once\n");
         pass = false;
     }
 
@@ -3476,6 +3741,61 @@ static int RunAhRepairRecoveryTest()
             printf("ahrepair FAIL: item should not be placed directly in inventory\n");
             pass = false;
         }
+    }
+
+    // Generic apply and force-forfeit both preserve reserved bot provenance
+    // markers and their materialized item instances.
+    Item* protectedItem = Item::CreateItem(itemId, 1);
+    if (!protectedItem)
+    {
+        printf("ahrepair FAIL: protected marker item creation failed\n");
+        pass = false;
+    }
+    else
+    {
+        protectedItem->SetOwnerGuid(ObjectGuid(HIGHGUID_PLAYER,
+                                               AHBOT_SYSTEM_OWNER_GUID));
+        uint32 const protectedItemGuid = protectedItem->GetGUIDLow();
+        CharacterDatabase.BeginTransaction();
+        protectedItem->SaveToDB();
+        CharacterDatabase.PExecute(
+            "INSERT INTO `custody_ledger` "
+            "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+            "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+            "VALUES ('botlist:test:repair:protected',1,4,0,%u,0,0,%u,992002,"
+            UI64FMTD ",0)",
+            AHBOT_SYSTEM_OWNER_GUID, protectedItemGuid, oldTime);
+        bool const markerSeeded = CharacterDatabase.CommitTransactionChecked();
+        delete protectedItem;
+
+        TestCliCapture markerApplyCapture;
+        CliHandler markerApplyCli(0, SEC_ADMINISTRATOR,
+                                  &markerApplyCapture, &TestCliPrint);
+        markerApplyCli.ParseCommands("ah repair apply");
+        TestCliCapture markerForceCapture;
+        CliHandler markerForceCli(0, SEC_ADMINISTRATOR,
+                                  &markerForceCapture, &TestCliPrint);
+        markerForceCli.ParseCommands(
+            "ah repair force-forfeit botlist:test:repair:protected");
+
+        CustodyRow protectedMarker;
+        std::unique_ptr<QueryResult> protectedItemRow(CharacterDatabase.PQuery(
+            "SELECT 1 FROM `item_instance` WHERE `guid`=%u", protectedItemGuid));
+        if (!markerSeeded ||
+            !CustodyLedger::Get("botlist:test:repair:protected", protectedMarker) ||
+            protectedMarker.state != CST_RESERVED || !protectedItemRow ||
+            CountCliChunks(markerApplyCapture,
+                "mode=apply confirmed=0 pending=0 sweep-owned=1 repaired=0 skipped=1 failed=0") != 1u ||
+            CountCliChunks(markerForceCapture, "reserved bot marker") != 1u)
+        {
+            printf("ahrepair FAIL: apply or force-forfeit mutated bot marker/item\n");
+            pass = false;
+        }
+
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `custody_ledger` WHERE `idem_key`='botlist:test:repair:protected'");
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `item_instance` WHERE `guid`=%u", protectedItemGuid);
     }
 
     CharacterDatabase.DirectPExecute(
