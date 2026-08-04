@@ -1300,15 +1300,18 @@ void World::Update(uint32 diff)
         }
         else if (now >= s_nextCustodyReconcileTime)
         {
-            std::vector<CustodyRow> drift;
-            CustodyService::ReconcileScan(true, drift);
-            if (!drift.empty())
+            CustodyMaintenancePlan const plan =
+                CustodyService::GetMaintenancePlan(IsAhCustodyEnabled(),
+                                                   IsAhWriteAuthority());
+            if (plan.reconcile)
             {
-                sLog.outError("custody reconcile sweep: %u drift row(s) detected",
-                              uint32(drift.size()));
+                CustodyReconcileReport report;
+                CustodyService::ReconcileScan(now, CUSTODY_SCAN_RUNTIME,
+                                              report);
+                CustodyService::LogReconcileReport("hourly", report);
             }
 
-            if (now > custodyTerminalRetention)
+            if (plan.prune && now > custodyTerminalRetention)
             {
                 CustodyLedger::DeleteTerminalOlderThan(now - custodyTerminalRetention);
             }
@@ -1318,7 +1321,7 @@ void World::Update(uint32 diff)
             // between the materialize reply and the book-commit). Only under
             // WriteAuthority -- the legacy in-process bot owns its own book and
             // never mints via this path.
-            if (IsAhWriteAuthority())
+            if (plan.sweepBotMaterializations)
             {
                 sAuctionIntentExecutor.SweepOrphanMaterializations(uint32(now));
             }

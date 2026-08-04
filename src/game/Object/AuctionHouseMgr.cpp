@@ -60,13 +60,15 @@
 
 static void AuditCustodyReconcile(char const* phase)
 {
-    std::vector<CustodyRow> drift;
-    CustodyService::ReconcileScan(false, drift);
-    if (!drift.empty())
+    if (!sWorld.IsAhCustodyEnabled())
     {
-        sLog.outError("custody reconcile %s: %u drift row(s) detected",
-                      phase, uint32(drift.size()));
+        return;
     }
+
+    CustodyReconcileReport report;
+    CustodyService::ReconcileScan(static_cast<uint64>(time(NULL)),
+                                  CUSTODY_SCAN_BOOT, report);
+    CustodyService::LogReconcileReport(phase, report);
 }
 
 /**

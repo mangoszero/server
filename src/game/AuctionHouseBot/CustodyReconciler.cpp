@@ -140,6 +140,63 @@ namespace
     }
 }
 
+CustodyDetailBudget::CustodyDetailBudget(uint32 cap)
+    : m_cap(cap), m_allowed(0), m_suppressed(0)
+{
+}
+
+bool CustodyDetailBudget::Take()
+{
+    if (m_allowed < m_cap)
+    {
+        ++m_allowed;
+        return true;
+    }
+
+    ++m_suppressed;
+    return false;
+}
+
+char const* CustodyFindingReasonName(CustodyFindingReason reason)
+{
+    switch (reason)
+    {
+        case CUSTODY_FINDING_MISSING:            return "missing";
+        case CUSTODY_FINDING_DUPLICATE:          return "duplicate";
+        case CUSTODY_FINDING_MISMATCHED:         return "mismatched";
+        case CUSTODY_FINDING_UNEXPECTED:         return "unexpected";
+        case CUSTODY_FINDING_ORPHAN_PLAYER:      return "orphan-player";
+        case CUSTODY_FINDING_INVALID_MARKER:     return "invalid-marker";
+        case CUSTODY_FINDING_DUPLICATE_MARKER:   return "duplicate-marker";
+        case CUSTODY_FINDING_SWEEP_OWNED_MARKER: return "sweep-owned-marker";
+    }
+
+    return "unknown";
+}
+
+char const* CustodyRepairOwnershipName(CustodyRepairOwnership ownership)
+{
+    switch (ownership)
+    {
+        case CUSTODY_REPAIR_GENERIC:     return "generic";
+        case CUSTODY_REPAIR_MANUAL_ONLY: return "manual-only";
+        case CUSTODY_REPAIR_BOT_SWEEP:   return "bot-sweep";
+    }
+
+    return "unknown";
+}
+
+char const* CustodyFindingStateName(CustodyFindingState state)
+{
+    switch (state)
+    {
+        case CUSTODY_FINDING_CONFIRMED: return "confirmed";
+        case CUSTODY_FINDING_PENDING:   return "pending";
+    }
+
+    return "unknown";
+}
+
 void CustodyReconciler::Scan(std::vector<CustodySnapshotGroup> const& groups,
                              uint64 now, CustodyScanContext context,
                              CustodyReconcileReport& report)

@@ -281,3 +281,44 @@ void CustodyService::ReconcileScan(bool legacyDryRun,
         }
     }
 }
+
+void CustodyService::LogReconcileReport(
+    char const* phase, CustodyReconcileReport const& report)
+{
+    sLog.outString("custody reconcile %s: confirmed=%u pending=%u "
+                   "sweep-owned=%u rows=" UI64FMTD,
+                   phase, report.confirmedDriftCount,
+                   report.pendingBidCount, report.sweepOwnedCount,
+                   report.rowVisits);
+
+    CustodyDetailBudget budget(100);
+    for (size_t i = 0; i < report.findings.size(); ++i)
+    {
+        CustodyFinding const& finding = report.findings[i];
+        if (!budget.Take())
+        {
+            continue;
+        }
+
+        sLog.outError("custody reconcile %s detail: auction=%u key=%s "
+                      "reason=%s", phase, finding.row.auctionId,
+                      finding.row.idemKey.c_str(),
+                      CustodyFindingReasonName(finding.reason));
+    }
+
+    if (budget.Suppressed())
+    {
+        sLog.outString("custody reconcile %s: %u detail(s) suppressed",
+                       phase, budget.Suppressed());
+    }
+}
+
+CustodyMaintenancePlan CustodyService::GetMaintenancePlan(
+    bool custodyEnabled, bool writeAuthorityEnabled)
+{
+    CustodyMaintenancePlan plan;
+    plan.reconcile = custodyEnabled;
+    plan.prune = custodyEnabled;
+    plan.sweepBotMaterializations = writeAuthorityEnabled;
+    return plan;
+}
