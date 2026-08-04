@@ -271,6 +271,12 @@ void CustodyService::ReconcileScan(uint64 now, CustodyScanContext context,
     s_reconciler.Scan(snapshot, now, context, report);
 }
 
+bool CustodyService::ReconcileFindingIsError(CustodyFinding const& finding)
+{
+    return finding.state == CUSTODY_FINDING_CONFIRMED &&
+           finding.repairOwnership != CUSTODY_REPAIR_BOT_SWEEP;
+}
+
 void CustodyService::LogReconcileReport(
     char const* phase, CustodyReconcileReport const& report)
 {
@@ -289,10 +295,20 @@ void CustodyService::LogReconcileReport(
             continue;
         }
 
-        sLog.outError("custody reconcile %s detail: auction=%u key=%s "
-                      "reason=%s", phase, finding.row.auctionId,
-                      finding.row.idemKey.c_str(),
-                      CustodyFindingReasonName(finding.reason));
+        if (ReconcileFindingIsError(finding))
+        {
+            sLog.outError("custody reconcile %s detail: auction=%u key=%s "
+                          "reason=%s", phase, finding.row.auctionId,
+                          finding.row.idemKey.c_str(),
+                          CustodyFindingReasonName(finding.reason));
+        }
+        else
+        {
+            sLog.outString("custody reconcile %s detail: auction=%u key=%s "
+                           "reason=%s", phase, finding.row.auctionId,
+                           finding.row.idemKey.c_str(),
+                           CustodyFindingReasonName(finding.reason));
+        }
     }
 
     if (budget.Suppressed())
