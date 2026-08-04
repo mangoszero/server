@@ -532,6 +532,32 @@ static bool RunPureCustodyReconcilerTests()
         }
     }
 
+    // Expected bot-sweep ownership and transient bid observations are
+    // diagnostics, not errors. Confirmed player/manual drift remains an error.
+    {
+        CustodyFinding confirmed = {};
+        confirmed.repairOwnership = CUSTODY_REPAIR_GENERIC;
+        confirmed.state = CUSTODY_FINDING_CONFIRMED;
+
+        CustodyFinding manual = confirmed;
+        manual.repairOwnership = CUSTODY_REPAIR_MANUAL_ONLY;
+
+        CustodyFinding pending = confirmed;
+        pending.state = CUSTODY_FINDING_PENDING;
+
+        CustodyFinding sweepOwned = confirmed;
+        sweepOwned.repairOwnership = CUSTODY_REPAIR_BOT_SWEEP;
+
+        if (!CustodyService::ReconcileFindingIsError(confirmed) ||
+            !CustodyService::ReconcileFindingIsError(manual) ||
+            CustodyService::ReconcileFindingIsError(pending) ||
+            CustodyService::ReconcileFindingIsError(sweepOwned))
+        {
+            printf("custody FAIL: reconcile finding severity policy mismatch\n");
+            pass = false;
+        }
+    }
+
     // Each automatic/manual operation owns one independent detail budget.
     {
         CustodyDetailBudget budget(100);

@@ -254,6 +254,10 @@ namespace CustodyService
     void LogReconcileReport(char const* phase,
                             CustodyReconcileReport const& report);
 
+    /// True when a reconciliation finding represents confirmed operator-actionable
+    /// drift and should therefore be emitted at error severity.
+    bool ReconcileFindingIsError(CustodyFinding const& finding);
+
     CustodyMaintenancePlan GetMaintenancePlan(bool custodyEnabled,
                                               bool writeAuthorityEnabled);
 }
