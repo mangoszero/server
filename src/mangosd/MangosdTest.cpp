@@ -4617,6 +4617,9 @@ static int RunAhMaterializeTest()
     CharacterDatabase.DirectPExecute(
         "DELETE FROM `custody_ledger` WHERE `idem_key` IN "
         "('%s','botlist:test:orphan','botlist:test:sold')", key.c_str());
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` "
+        "WHERE `idem_key` LIKE 'botlist:test:batch:%'");
     CharacterDatabase.DirectPExecute(
         "DELETE FROM `item_instance` WHERE `owner_guid` IN (%u,%u)",
         botGuid, buyerGuid);
@@ -4812,7 +4815,8 @@ static int RunAhMaterializeTest()
             return 2;
         }
 
-        sAuctionIntentExecutor.SweepOrphanMaterializations(uint32(time(NULL)));
+        sAuctionIntentExecutor.SweepOrphanMaterializations(
+            uint32(time(NULL)), 100u);
 
         std::unique_ptr<QueryResult> qo(CharacterDatabase.PQuery(
             "SELECT 1 FROM `item_instance` WHERE `guid`=%u", orphanItem));
@@ -4843,10 +4847,61 @@ static int RunAhMaterializeTest()
         }
     }
 
+    // ---- Part 4: an outage backlog drains across bounded invocations ----
+    {
+        CharacterDatabase.BeginTransaction();
+        for (uint32 i = 1u; i <= 101u; ++i)
+        {
+            CharacterDatabase.PExecute(
+                "INSERT INTO `custody_ledger` "
+                "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,"
+                "`beneficiary_guid`,`amount`,`item_guid`,`auction_id`,"
+                "`created_time`,`resolved_time`) "
+                "VALUES ('botlist:test:batch:%u',1,4,0,%u,0,0,%u,%u,100,0)",
+                i, botGuid, 99911310u + i, 99900010u + i);
+        }
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahmaterialize FAIL: bounded sweep seed commit\n");
+            return 2;
+        }
+
+        auto countBatchRows = []() -> uint64
+        {
+            std::unique_ptr<QueryResult> rows(CharacterDatabase.PQuery(
+                "SELECT COUNT(*) FROM `custody_ledger` "
+                "WHERE `idem_key` LIKE 'botlist:test:batch:%%'"));
+            return rows ? rows->Fetch()[0].GetUInt64() : 0u;
+        };
+
+        OrphanMaterializationSweepReport const first =
+            sAuctionIntentExecutor.SweepOrphanMaterializations(
+                uint32(time(NULL)), 100u);
+        if (!first.committed || first.selected != 100u || first.swept != 100u ||
+            !first.morePending || countBatchRows() != 1u)
+        {
+            printf("ahmaterialize FAIL: first bounded sweep batch\n");
+            pass = false;
+        }
+
+        OrphanMaterializationSweepReport const second =
+            sAuctionIntentExecutor.SweepOrphanMaterializations(
+                uint32(time(NULL)), 100u);
+        if (!second.committed || second.selected != 1u || second.swept != 1u ||
+            second.morePending || countBatchRows() != 0u)
+        {
+            printf("ahmaterialize FAIL: second bounded sweep batch\n");
+            pass = false;
+        }
+    }
+
     // Clean up (Part-1 minted item survives the sweep; drop it + fixtures).
     CharacterDatabase.DirectPExecute(
         "DELETE FROM `custody_ledger` WHERE `idem_key` IN "
         "('%s','botlist:test:orphan','botlist:test:sold')", key.c_str());
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` "
+        "WHERE `idem_key` LIKE 'botlist:test:batch:%'");
     CharacterDatabase.DirectPExecute(
         "DELETE FROM `item_instance` WHERE `owner_guid` IN (%u,%u)",
         botGuid, buyerGuid);
