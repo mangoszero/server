@@ -418,6 +418,23 @@ static bool RunPureCustodyReconcilerTests()
             pass = false;
         }
 
+        std::vector<CustodyRow> wrongShapeRows;
+        wrongShapeRows.push_back(marker(980017, 880017));
+        wrongShapeRows.push_back(bidRow(2, 980017, 2217, 217));
+        wrongShapeRows[1].itemGuid = 1;
+        std::vector<CustodySnapshotGroup> wrongShapeGroups(1,
+            TestCustodyGroup(980017, 880017, botOwner, 2217, 217, 0,
+                wrongShapeRows));
+        CustodyReconciler rowChanged;
+        rowChanged.Scan(wrongShapeGroups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        wrongShapeGroups[0].rows[1].itemGuid = 2;
+        rowChanged.Scan(wrongShapeGroups, 1060, CUSTODY_SCAN_RUNTIME, report);
+        if (report.pendingBidCount != 1 || report.confirmedDriftCount != 0)
+        {
+            printf("custody FAIL: changed bid-row shape inherited mismatch age\n");
+            pass = false;
+        }
+
         CustodyReconciler fresh;
         fresh.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
         groups[0].rows.push_back(bidRow(2, 980016, 9999, 217, 1100));

@@ -94,11 +94,43 @@ namespace
         {
             return lhs->idemKey < rhs->idemKey;
         }
+        if (lhs->kind != rhs->kind)
+        {
+            return lhs->kind < rhs->kind;
+        }
+        if (lhs->role != rhs->role)
+        {
+            return lhs->role < rhs->role;
+        }
+        if (lhs->state != rhs->state)
+        {
+            return lhs->state < rhs->state;
+        }
         if (lhs->ownerGuid != rhs->ownerGuid)
         {
             return lhs->ownerGuid < rhs->ownerGuid;
         }
-        return lhs->amount < rhs->amount;
+        if (lhs->beneficiaryGuid != rhs->beneficiaryGuid)
+        {
+            return lhs->beneficiaryGuid < rhs->beneficiaryGuid;
+        }
+        if (lhs->amount != rhs->amount)
+        {
+            return lhs->amount < rhs->amount;
+        }
+        if (lhs->itemGuid != rhs->itemGuid)
+        {
+            return lhs->itemGuid < rhs->itemGuid;
+        }
+        if (lhs->auctionId != rhs->auctionId)
+        {
+            return lhs->auctionId < rhs->auctionId;
+        }
+        if (lhs->createdTime != rhs->createdTime)
+        {
+            return lhs->createdTime < rhs->createdTime;
+        }
+        return lhs->resolvedTime < rhs->resolvedTime;
     }
 
     std::string BidFingerprint(CustodyAuctionFacts const& auction,
@@ -117,7 +149,11 @@ namespace
         {
             CustodyRow const& row = *bidRows[i];
             out << ';' << row.id << ',' << row.idemKey << ','
-                << row.ownerGuid << ',' << row.amount;
+                << uint32(row.kind) << ',' << uint32(row.role) << ','
+                << uint32(row.state) << ',' << row.ownerGuid << ','
+                << row.beneficiaryGuid << ',' << row.amount << ','
+                << row.itemGuid << ',' << row.auctionId << ','
+                << row.createdTime << ',' << row.resolvedTime;
         }
         return out.str();
     }
