@@ -228,6 +228,10 @@ namespace CustodyService
     /// (empty = off, "pre-commit", "pre-deferred").  Never set on a live realm.
     std::string CrashPhase();
 
+    /// Pure crash-injection match predicate, exposed for the self-test harness.
+    bool ShouldCrashAtPhase(std::string const& configuredPhase,
+                            std::string const& phase);
+
     /// TEST ONLY. If AH.Service.CustodyCrashAt == @p phase, flush + _exit(3) to
     /// simulate process death at that custody-seam transition. No-op when the
     /// config is empty (the live default), so it is inert on a real realm.
