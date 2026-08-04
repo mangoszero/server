@@ -1061,11 +1061,10 @@ void AuctionHouseObject::Update()
         AuctionEntryMap::iterator old = itr++;
         if (curTime > old->second->expireTime)
         {
-            CustodyRouteState route = {};
-            if (sWorld.IsAhCustodyEnabled())
-            {
-                route = CustodyLedger::GetRouteState(old->second->Id);
-            }
+            // Runtime disable stops config-gated custody entry and maintenance,
+            // not settlement of value already represented by durable rows.
+            CustodyRouteState const route =
+                CustodyLedger::GetRouteState(old->second->Id);
 
             ///- perform the transaction if there was bidder
             if (old->second->bid)
@@ -1752,6 +1751,7 @@ void AuctionEntry::PrepareCancelCustody(Player* seller, CustodyDeferred& def,
     }
 
     Item* item = sAuctionMgr.GetAItem(itemGuidLow);
+    MANGOS_ASSERT(item);
     uint32 const savedItemGuidLow = itemGuidLow;
     def.effects.push_back([savedItemGuidLow]()
     {

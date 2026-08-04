@@ -4216,7 +4216,8 @@ static int RunAhCustodyRouteTest()
     }
 
     // Existing full player seller+bid custody still terminalizes all three
-    // value rows while delivering the same seller and winner mails.
+    // value rows after a runtime custody disable. The flag stops maintenance
+    // and config-gated entry; it must not abandon durable rows already in flight.
     {
         clearFixtureMail();
         uint32 const auctionId = 995123;
@@ -4240,15 +4241,15 @@ static int RunAhCustodyRouteTest()
             seedRow(bidKey, CUSTODY_GOLD, ROLE_BID,
                     bidderGuid, 100, 0, auctionId);
 
-            CustodyDeferred def;
-            CharacterDatabase.BeginTransaction();
-            auction->AuctionBidWinningCustody(NULL, def, true, true, bidKey);
-            bool const committed = CharacterDatabase.CommitTransactionChecked();
-            if (committed)
-            {
-                def.run();
-            }
-            if (!committed || auctionExists(auctionId) ||
+            auction->expireTime = static_cast<time_t>(-1);
+            AuctionHouseObject* houseMap = sAuctionMgr.GetAuctionsMap(&house);
+            houseMap->AddAuction(auction);
+            bool const custodyWasEnabled = sWorld.IsAhCustodyEnabled();
+            sWorld.setConfig(CONFIG_BOOL_AH_CUSTODY, false);
+            houseMap->Update();
+            sWorld.setConfig(CONFIG_BOOL_AH_CUSTODY, custodyWasEnabled);
+
+            if (auctionExists(auctionId) ||
                 rowState(itemKey) != CST_TERMINAL_OK ||
                 rowState(depKey) != CST_TERMINAL_BACK ||
                 rowState(bidKey) != CST_TERMINAL_OK ||
@@ -4256,7 +4257,7 @@ static int RunAhCustodyRouteTest()
                 mailCount(bidderGuid, AUCTION_WON) != 1 ||
                 itemMailCount(bidderGuid, itemGuid) != 1)
             {
-                printf("ahcustodyroute FAIL: full custody winning regression\n");
+                printf("ahcustodyroute FAIL: runtime-disable winning regression\n");
                 pass = false;
             }
         }
