@@ -36,6 +36,14 @@
 /// keeps the ipc header out of every TU that includes this executor.
 struct SellIntent;
 
+struct OrphanMaterializationSweepReport
+{
+    uint32 selected;
+    uint32 swept;
+    bool morePending;
+    bool committed;
+};
+
 /**
  * @file AuctionIntentExecutor.h
  * @brief mangosd-side (authority) executor for AH subprocess intents.
@@ -128,9 +136,16 @@ class AuctionIntentExecutor
          * custody_ledger growth for resolved listings too). Runs on the AHBot
          * update tick under WriteAuthority.
          *
-         * @param nowSec Current game-time second (unix epoch; == time(NULL)).
+         * Work is capped at @p maxRows and ordered deterministically so an
+         * outage backlog can drain across multiple world ticks. All durable
+         * changes commit together; live escrow changes happen only afterward.
+         *
+         * @param nowSec  Current game-time second (unix epoch; == time(NULL)).
+         * @param maxRows Maximum markers to process in this invocation.
+         * @return Batch progress and durable commit status.
          */
-        void SweepOrphanMaterializations(uint32 nowSec);
+        OrphanMaterializationSweepReport SweepOrphanMaterializations(
+            uint32 nowSec, uint32 maxRows);
 
         /**
          * @brief [SP-2] Test-only seam for @c mangosd -t ahmaterialize.

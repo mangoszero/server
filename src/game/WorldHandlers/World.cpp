@@ -1288,21 +1288,23 @@ void World::Update(uint32 diff)
         // WUPDATE_AHBOT tick in either mode is cheap and idempotent.
         sAuctionBot.PurgeMailedItemsTick();
 
-        // Custody drift audit + terminal-row TTL prune. This is intentionally
-        // a fixed retention constant, not a config key, so no mangosd.conf
-        // version bump is required for Task 13.
+        // Custody drift audit + terminal-row TTL prune. Orphan materialization
+        // recovery has a separate adaptive timer so outage backlogs drain in
+        // bounded batches without repeating the full reconciliation scan.
         static uint64 s_nextCustodyReconcileTime = 0;
+        static uint64 s_nextOrphanSweepTime = 0;
         uint64 const now = static_cast<uint64>(GetGameTime());
         uint64 const custodyTerminalRetention = 30 * DAY;
+        uint32 const orphanSweepBatchSize = 100u;
+        CustodyMaintenancePlan const plan =
+            CustodyService::GetMaintenancePlan(IsAhCustodyEnabled(),
+                                               IsAhWriteAuthority());
         if (!s_nextCustodyReconcileTime)
         {
             s_nextCustodyReconcileTime = now + HOUR;
         }
         else if (now >= s_nextCustodyReconcileTime)
         {
-            CustodyMaintenancePlan const plan =
-                CustodyService::GetMaintenancePlan(IsAhCustodyEnabled(),
-                                                   IsAhWriteAuthority());
             if (plan.reconcile)
             {
                 CustodyReconcileReport report;
@@ -1316,17 +1318,30 @@ void World::Update(uint32 diff)
                 CustodyLedger::DeleteTerminalOlderThan(now - custodyTerminalRetention);
             }
 
-            // SP-2 Task 13: reap bot-listing materializations whose auction
-            // never reached the shared `auction` table (a worker that died
-            // between the materialize reply and the book-commit). Only under
-            // WriteAuthority -- the legacy in-process bot owns its own book and
-            // never mints via this path.
+            s_nextCustodyReconcileTime = now + HOUR;
+        }
+
+        if (!s_nextOrphanSweepTime)
+        {
+            s_nextOrphanSweepTime = now + MINUTE;
+        }
+        else if (now >= s_nextOrphanSweepTime)
+        {
+            // Only WriteAuthority materializes bot listings through this path.
+            // A full batch (or failed commit) retries in one minute; a drained
+            // queue returns to a cheap hourly check.
             if (plan.sweepBotMaterializations)
             {
-                sAuctionIntentExecutor.SweepOrphanMaterializations(uint32(now));
+                OrphanMaterializationSweepReport const sweep =
+                    sAuctionIntentExecutor.SweepOrphanMaterializations(
+                        uint32(now), orphanSweepBatchSize);
+                bool const retrySoon = sweep.morePending || !sweep.committed;
+                s_nextOrphanSweepTime = now + (retrySoon ? MINUTE : HOUR);
             }
-
-            s_nextCustodyReconcileTime = now + HOUR;
+            else
+            {
+                s_nextOrphanSweepTime = now + HOUR;
+            }
         }
 
         m_timers[WUPDATE_AHBOT].Reset();
