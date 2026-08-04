@@ -258,6 +258,12 @@ namespace CustodyService
                        CustodyReconcileReport& report);
 
     void ReconcileScan(bool legacyDryRun, std::vector<CustodyRow>& legacyDrift);
+
+    void LogReconcileReport(char const* phase,
+                            CustodyReconcileReport const& report);
+
+    CustodyMaintenancePlan GetMaintenancePlan(bool custodyEnabled,
+                                              bool writeAuthorityEnabled);
 }
 
 #endif // MANGOS_CUSTODY_SERVICE_H

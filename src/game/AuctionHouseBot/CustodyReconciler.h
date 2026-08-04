@@ -71,6 +71,25 @@ struct CustodyMaintenancePlan
     bool sweepBotMaterializations;
 };
 
+class CustodyDetailBudget
+{
+    public:
+        explicit CustodyDetailBudget(uint32 cap);
+
+        bool Take();
+        uint32 Allowed() const { return m_allowed; }
+        uint32 Suppressed() const { return m_suppressed; }
+
+    private:
+        uint32 m_cap;
+        uint32 m_allowed;
+        uint32 m_suppressed;
+};
+
+char const* CustodyFindingReasonName(CustodyFindingReason reason);
+char const* CustodyRepairOwnershipName(CustodyRepairOwnership ownership);
+char const* CustodyFindingStateName(CustodyFindingState state);
+
 class CustodyReconciler
 {
     public:

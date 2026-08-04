@@ -465,6 +465,99 @@ static bool RunPureCustodyReconcilerTests()
         }
     }
 
+    // Automatic custody maintenance gates reconciliation/pruning and the bot
+    // materialization sweep independently.
+    {
+        CustodyMaintenancePlan const disabled =
+            CustodyService::GetMaintenancePlan(false, false);
+        CustodyMaintenancePlan const custodyOnly =
+            CustodyService::GetMaintenancePlan(true, false);
+        CustodyMaintenancePlan const writeOnly =
+            CustodyService::GetMaintenancePlan(false, true);
+        CustodyMaintenancePlan const enabled =
+            CustodyService::GetMaintenancePlan(true, true);
+
+        if (disabled.reconcile || disabled.prune ||
+            disabled.sweepBotMaterializations ||
+            !custodyOnly.reconcile || !custodyOnly.prune ||
+            custodyOnly.sweepBotMaterializations ||
+            writeOnly.reconcile || writeOnly.prune ||
+            !writeOnly.sweepBotMaterializations ||
+            !enabled.reconcile || !enabled.prune ||
+            !enabled.sweepBotMaterializations)
+        {
+            printf("custody FAIL: maintenance gate truth table mismatch\n");
+            pass = false;
+        }
+    }
+
+    // Each automatic/manual operation owns one independent detail budget.
+    {
+        CustodyDetailBudget budget(100);
+        uint32 allowed = 0;
+        for (uint32 i = 0; i < 101; ++i)
+        {
+            if (budget.Take())
+            {
+                ++allowed;
+            }
+        }
+
+        CustodyDetailBudget second(100);
+        if (allowed != 100 || budget.Allowed() != 100 ||
+            budget.Suppressed() != 1 || !second.Take() ||
+            second.Allowed() != 1 || second.Suppressed() != 0)
+        {
+            printf("custody FAIL: detail budget did not cap at 100\n");
+            pass = false;
+        }
+    }
+
+    // Shuffled input yields deterministic sorted detail output without
+    // changing exact category totals when the first 100 details are selected.
+    {
+        std::vector<CustodySnapshotGroup> groups;
+        for (uint32 i = 0; i < 101; ++i)
+        {
+            uint32 const auctionId = 990100 - i;
+            CustodySnapshotGroup group = {};
+            group.auctionId = auctionId;
+            group.rows.push_back(TestCustodyRow(i + 1,
+                "test:budget:" + std::to_string(auctionId), CUSTODY_GOLD,
+                ROLE_BID, 4000000 + i, 100 + i, 0, auctionId));
+            groups.push_back(group);
+        }
+
+        CustodyReconciler reconciler;
+        CustodyReconcileReport report;
+        reconciler.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        CustodyDetailBudget budget(100);
+        uint32 firstAuctionId = 0;
+        uint32 lastAuctionId = 0;
+        for (size_t i = 0; i < report.findings.size(); ++i)
+        {
+            if (!budget.Take())
+            {
+                continue;
+            }
+            if (!firstAuctionId)
+            {
+                firstAuctionId = report.findings[i].row.auctionId;
+            }
+            lastAuctionId = report.findings[i].row.auctionId;
+        }
+
+        if (report.findings.size() != 101 ||
+            report.confirmedDriftCount != 101 ||
+            report.pendingBidCount != 0 || report.sweepOwnedCount != 0 ||
+            firstAuctionId != 990000 || lastAuctionId != 990099 ||
+            budget.Allowed() != 100 || budget.Suppressed() != 1)
+        {
+            printf("custody FAIL: bounded report order/totals mismatch\n");
+            pass = false;
+        }
+    }
+
     return pass;
 }
 
