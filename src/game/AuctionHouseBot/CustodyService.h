@@ -41,6 +41,7 @@
 #include "Platform/Define.h"
 #include "CustodyDeferred.h"
 #include "CustodyLedger.h"
+#include "CustodyReconciler.h"
 
 #include <functional>
 #include <string>
@@ -253,7 +254,10 @@ namespace CustodyService
      * @param dryRun  Audit-only flag; no mutations happen in either mode.
      * @param orphans Destination vector; drift rows are appended.
      */
-    void ReconcileScan(bool dryRun, std::vector<CustodyRow>& orphans);
+    void ReconcileScan(uint64 now, CustodyScanContext context,
+                       CustodyReconcileReport& report);
+
+    void ReconcileScan(bool legacyDryRun, std::vector<CustodyRow>& legacyDrift);
 }
 
 #endif // MANGOS_CUSTODY_SERVICE_H

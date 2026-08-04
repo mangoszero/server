@@ -27,7 +27,6 @@
 
 #include "Config/Config.h"
 #include "CustodyLedger.h"
-#include "AuctionHouseMgr.h"
 #include "Log.h"
 #include "Mail.h"
 #include "Player.h"
@@ -46,180 +45,7 @@
 
 namespace
 {
-    uint64 const CUSTODY_RECONCILE_MIN_ROW_AGE = 60;         // seconds
-
-    bool IsMature(CustodyRow const& row, uint64 now)
-    {
-        return row.createdTime == 0 || row.createdTime + CUSTODY_RECONCILE_MIN_ROW_AGE <= now;
-    }
-
-    AuctionEntry* FindLiveAuction(uint32 auctionId)
-    {
-        for (uint32 i = 0; i < MAX_AUCTION_HOUSE_TYPE; ++i)
-        {
-            AuctionHouseObject* auctions = sAuctionMgr.GetAuctionsMap(AuctionHouseType(i));
-            AuctionEntry* auction = auctions->GetAuction(auctionId);
-            if (auction)
-            {
-                return auction;
-            }
-        }
-
-        return NULL;
-    }
-
-    bool HasMatureCustodyRow(std::vector<CustodyRow> const& rows, uint32 auctionId, uint64 now)
-    {
-        for (size_t i = 0; i < rows.size(); ++i)
-        {
-            if (rows[i].auctionId == auctionId && IsMature(rows[i], now))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    CustodyRow const* FindRowByKey(std::vector<CustodyRow> const& rows,
-                                   std::string const& key)
-    {
-        for (size_t i = 0; i < rows.size(); ++i)
-        {
-            if (rows[i].idemKey == key)
-            {
-                return &rows[i];
-            }
-        }
-
-        return NULL;
-    }
-
-    void CollectLiveBidRows(std::vector<CustodyRow> const& rows, uint32 auctionId,
-                            std::vector<CustodyRow const*>& out)
-    {
-        for (size_t i = 0; i < rows.size(); ++i)
-        {
-            CustodyRow const& row = rows[i];
-            if (row.auctionId == auctionId &&
-                row.kind == CUSTODY_GOLD &&
-                row.role == ROLE_BID &&
-                row.state == CST_RESERVED)
-            {
-                out.push_back(&row);
-            }
-        }
-    }
-
-    CustodyRow ExpectedRow(std::string const& key, uint8 kind, uint8 role,
-                           uint32 ownerGuid, uint32 amount, uint32 itemGuid,
-                           uint32 auctionId)
-    {
-        CustodyRow row;
-        row.id = 0;
-        row.idemKey = key;
-        row.kind = kind;
-        row.role = role;
-        row.state = CST_RESERVED;
-        row.ownerGuid = ownerGuid;
-        row.beneficiaryGuid = 0;
-        row.amount = amount;
-        row.itemGuid = itemGuid;
-        row.auctionId = auctionId;
-        row.createdTime = 0;
-        row.resolvedTime = 0;
-        return row;
-    }
-
-    void AddDrift(std::vector<CustodyRow>& out, CustodyRow const& row,
-                  char const* reason)
-    {
-        out.push_back(row);
-        sLog.outError("custody drift: %s key=%s auction=%u kind=%u role=%u state=%u",
-                      reason, row.idemKey.c_str(), row.auctionId,
-                      uint32(row.kind), uint32(row.role), uint32(row.state));
-    }
-
-    bool MatchesExpected(CustodyRow const& row, uint8 kind, uint8 role,
-                         uint32 ownerGuid, uint32 amount, uint32 itemGuid,
-                         uint32 auctionId)
-    {
-        return row.kind == kind &&
-               row.role == role &&
-               row.state == CST_RESERVED &&
-               row.ownerGuid == ownerGuid &&
-               row.amount == amount &&
-               row.itemGuid == itemGuid &&
-               row.auctionId == auctionId;
-    }
-
-    void CheckExpectedKey(std::vector<CustodyRow> const& rows,
-                          std::vector<CustodyRow>& drift,
-                          std::string const& key,
-                          uint8 kind, uint8 role, uint32 ownerGuid,
-                          uint32 amount, uint32 itemGuid, uint32 auctionId,
-                          char const* reason)
-    {
-        CustodyRow const* row = FindRowByKey(rows, key);
-        if (!row)
-        {
-            AddDrift(drift, ExpectedRow(key, kind, role, ownerGuid, amount, itemGuid, auctionId), reason);
-            return;
-        }
-
-        if (!MatchesExpected(*row, kind, role, ownerGuid, amount, itemGuid, auctionId))
-        {
-            AddDrift(drift, *row, reason);
-        }
-    }
-
-    void CheckAuctionExpectedRows(AuctionEntry const* auction,
-                                  std::vector<CustodyRow> const& rows,
-                                  std::vector<CustodyRow>& drift)
-    {
-        std::string auctionId = std::to_string(auction->Id);
-
-        CheckExpectedKey(rows, drift, "item:" + auctionId, CUSTODY_ITEM, ROLE_ITEM,
-                         auction->owner, 0, auction->itemGuidLow, auction->Id,
-                         "missing or invalid item row");
-
-        CheckExpectedKey(rows, drift, "dep:" + auctionId, CUSTODY_GOLD, ROLE_DEPOSIT,
-                         auction->owner, auction->deposit, 0, auction->Id,
-                         "missing or invalid deposit row");
-
-        std::vector<CustodyRow const*> liveBidRows;
-        CollectLiveBidRows(rows, auction->Id, liveBidRows);
-        if (auction->bidder != 0)
-        {
-            if (liveBidRows.empty())
-            {
-                AddDrift(drift, ExpectedRow("bid:" + auctionId + ":missing",
-                                            CUSTODY_GOLD, ROLE_BID,
-                                            auction->bidder, auction->bid, 0,
-                                            auction->Id),
-                         "missing live bid row");
-            }
-            else if (liveBidRows.size() > 1)
-            {
-                for (size_t i = 0; i < liveBidRows.size(); ++i)
-                {
-                    AddDrift(drift, *liveBidRows[i], "ambiguous live bid row");
-                }
-            }
-            else if (liveBidRows[0]->ownerGuid != auction->bidder ||
-                     liveBidRows[0]->amount != auction->bid)
-            {
-                AddDrift(drift, *liveBidRows[0], "invalid live bid row");
-            }
-        }
-        else
-        {
-            for (size_t i = 0; i < liveBidRows.size(); ++i)
-            {
-                AddDrift(drift, *liveBidRows[i], "unexpected live bid row");
-            }
-        }
-    }
+    CustodyReconciler s_reconciler;
 }
 
 void CustodyService::ReserveGold(CustodyDeferred& d, uint32 ownerGuid,
@@ -431,41 +257,27 @@ bool CustodyService::CommitCheckedOrForcedFail(std::string const& phase)
     return CharacterDatabase.CommitTransactionChecked();
 }
 
-void CustodyService::ReconcileScan(bool dryRun, std::vector<CustodyRow>& orphans)
+void CustodyService::ReconcileScan(uint64 now, CustodyScanContext context,
+                                   CustodyReconcileReport& report)
 {
-    (void)dryRun;
+    std::vector<CustodySnapshotGroup> snapshot;
+    CustodyLedger::LoadReconcileSnapshot(snapshot);
+    s_reconciler.Scan(snapshot, now, context, report);
+}
 
-    uint64 const now = static_cast<uint64>(time(NULL));
-    std::vector<CustodyRow> nonTerminal;
-    CustodyLedger::LoadNonTerminal(nonTerminal);
-
-    for (size_t i = 0; i < nonTerminal.size(); ++i)
+void CustodyService::ReconcileScan(bool legacyDryRun,
+                                   std::vector<CustodyRow>& legacyDrift)
+{
+    CustodyReconcileReport report;
+    ReconcileScan(static_cast<uint64>(time(NULL)),
+        legacyDryRun ? CUSTODY_SCAN_RUNTIME : CUSTODY_SCAN_BOOT, report);
+    for (size_t i = 0; i < report.findings.size(); ++i)
     {
-        CustodyRow const& row = nonTerminal[i];
-        if (!IsMature(row, now))
+        CustodyFinding const& finding = report.findings[i];
+        if (finding.state == CUSTODY_FINDING_CONFIRMED &&
+            finding.repairOwnership == CUSTODY_REPAIR_GENERIC)
         {
-            continue;
-        }
-
-        if (!FindLiveAuction(row.auctionId))
-        {
-            AddDrift(orphans, row, "orphan row");
-        }
-    }
-
-    for (uint32 i = 0; i < MAX_AUCTION_HOUSE_TYPE; ++i)
-    {
-        AuctionHouseObject* auctions = sAuctionMgr.GetAuctionsMap(AuctionHouseType(i));
-        AuctionHouseObject::AuctionEntryMap const& map = auctions->GetAuctions();
-        for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = map.begin(); itr != map.end(); ++itr)
-        {
-            AuctionEntry const* auction = itr->second;
-            if (!HasMatureCustodyRow(nonTerminal, auction->Id, now))
-            {
-                continue;
-            }
-
-            CheckAuctionExpectedRows(auction, nonTerminal, orphans);
+            legacyDrift.push_back(finding.row);
         }
     }
 }

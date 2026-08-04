@@ -12,6 +12,7 @@
 #include "AuctionHouseBot/AuctionIntentExecutor.h"
 #include "AuctionHouseBot/CustodyDeferred.h"
 #include "AuctionHouseBot/CustodyLedger.h"
+#include "AuctionHouseBot/CustodyReconciler.h"
 #include "AuctionHouseBot/CustodyService.h"
 #include "AuctionIntents.h"
 #include "WorkerSupervisor.h"
@@ -49,6 +50,422 @@ static std::string TestHexEncode(ByteBuffer const& bb)
         out.push_back(hex[data[i] & 0x0Fu]);
     }
     return out;
+}
+
+static CustodyRow TestCustodyRow(uint32 id, std::string const& key,
+                                 uint8 kind, uint8 role, uint32 ownerGuid,
+                                 uint32 amount, uint32 itemGuid,
+                                 uint32 auctionId, uint64 createdTime = 0)
+{
+    CustodyRow row = {};
+    row.id = id;
+    row.idemKey = key;
+    row.kind = kind;
+    row.role = role;
+    row.state = CST_RESERVED;
+    row.ownerGuid = ownerGuid;
+    row.amount = amount;
+    row.itemGuid = itemGuid;
+    row.auctionId = auctionId;
+    row.createdTime = createdTime;
+    return row;
+}
+
+static CustodySnapshotGroup TestCustodyGroup(
+    uint32 auctionId, uint32 itemGuid, uint32 ownerGuid,
+    uint32 bidderGuid, uint32 bid, uint32 deposit,
+    std::vector<CustodyRow> const& rows)
+{
+    CustodySnapshotGroup group = {};
+    group.auctionId = auctionId;
+    group.auction.exists = true;
+    group.auction.auctionId = auctionId;
+    group.auction.itemGuid = itemGuid;
+    group.auction.ownerGuid = ownerGuid;
+    group.auction.bidderGuid = bidderGuid;
+    group.auction.bid = bid;
+    group.auction.deposit = deposit;
+    group.rows = rows;
+    return group;
+}
+
+static uint32 CountCustodyFindings(CustodyReconcileReport const& report,
+                                   CustodyFindingReason reason,
+                                   CustodyRepairOwnership ownership,
+                                   CustodyFindingState state)
+{
+    uint32 count = 0;
+    for (size_t i = 0; i < report.findings.size(); ++i)
+    {
+        CustodyFinding const& finding = report.findings[i];
+        if (finding.reason == reason &&
+            finding.repairOwnership == ownership &&
+            finding.state == state)
+        {
+            ++count;
+        }
+    }
+    return count;
+}
+
+static bool RunPureCustodyReconcilerTests()
+{
+    bool pass = true;
+    uint32 const botOwner = AHBOT_SYSTEM_OWNER_GUID;
+
+    auto marker = [botOwner](uint32 auctionId, uint32 itemGuid,
+                             uint64 createdTime = 0) -> CustodyRow
+    {
+        return TestCustodyRow(auctionId, "botlist:test:" + std::to_string(auctionId),
+            CUSTODY_ITEM, ROLE_RESOLUTION, botOwner, 0, itemGuid,
+            auctionId, createdTime);
+    };
+    auto bidRow = [](uint32 id, uint32 auctionId, uint32 bidder,
+                     uint32 amount, uint64 createdTime = 0) -> CustodyRow
+    {
+        return TestCustodyRow(id, "bid:" + std::to_string(auctionId) +
+            ":" + std::to_string(id), CUSTODY_GOLD, ROLE_BID,
+            bidder, amount, 0, auctionId, createdTime);
+    };
+
+    // Marker-owned listings do not invent player seller custody.
+    {
+        CustodyReconciler reconciler;
+        CustodyReconcileReport report;
+        std::vector<CustodySnapshotGroup> groups;
+        groups.push_back(TestCustodyGroup(980001, 880001, botOwner, 0, 0, 0,
+            std::vector<CustodyRow>(1, marker(980001, 880001))));
+        reconciler.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        if (!report.findings.empty() || report.rowVisits != 1)
+        {
+            printf("custody FAIL: valid DB-only bot marker produced drift\n");
+            pass = false;
+        }
+    }
+
+    // Marker plus matching player bid stays clean.
+    {
+        CustodyReconciler reconciler;
+        CustodyReconcileReport report;
+        std::vector<CustodyRow> rows;
+        rows.push_back(marker(980002, 880002));
+        rows.push_back(bidRow(2, 980002, 2202, 202));
+        std::vector<CustodySnapshotGroup> groups(1,
+            TestCustodyGroup(980002, 880002, botOwner, 2202, 202, 0, rows));
+        reconciler.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        if (!report.findings.empty())
+        {
+            printf("custody FAIL: matching bot-listing bid produced drift\n");
+            pass = false;
+        }
+    }
+
+    // A fresh row defers the whole group before and after auction facts change.
+    {
+        CustodyReconciler reconciler;
+        CustodyReconcileReport report;
+        std::vector<CustodyRow> rows;
+        rows.push_back(marker(980003, 880003, 900));
+        rows.push_back(bidRow(3, 980003, 2203, 203, 950));
+        std::vector<CustodySnapshotGroup> groups(1,
+            TestCustodyGroup(980003, 880003, botOwner, 0, 0, 0, rows));
+        reconciler.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        if (!report.findings.empty() || report.pendingBidCount != 0)
+        {
+            printf("custody FAIL: fresh bid was not deferred before auction update\n");
+            pass = false;
+        }
+        groups[0].auction.bidderGuid = 2203;
+        groups[0].auction.bid = 203;
+        reconciler.Scan(groups, 1005, CUSTODY_SCAN_RUNTIME, report);
+        if (!report.findings.empty() || report.pendingBidCount != 0)
+        {
+            printf("custody FAIL: fresh bid was not deferred after auction update\n");
+            pass = false;
+        }
+    }
+
+    // Complete and partial player seller custody.
+    {
+        std::vector<CustodyRow> rows;
+        rows.push_back(TestCustodyRow(1, "item:980004", CUSTODY_ITEM,
+            ROLE_ITEM, 1204, 0, 880004, 980004));
+        rows.push_back(TestCustodyRow(2, "dep:980004", CUSTODY_GOLD,
+            ROLE_DEPOSIT, 1204, 44, 0, 980004));
+        CustodyReconciler reconciler;
+        CustodyReconcileReport report;
+        std::vector<CustodySnapshotGroup> groups(1,
+            TestCustodyGroup(980004, 880004, 1204, 0, 0, 44, rows));
+        reconciler.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        if (!report.findings.empty())
+        {
+            printf("custody FAIL: complete player seller custody produced drift\n");
+            pass = false;
+        }
+
+        groups[0].rows.pop_back();
+        reconciler.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        if (CountCustodyFindings(report, CUSTODY_FINDING_MISSING,
+                CUSTODY_REPAIR_GENERIC, CUSTODY_FINDING_CONFIRMED) != 1)
+        {
+            printf("custody FAIL: partial seller custody did not report one missing row\n");
+            pass = false;
+        }
+    }
+
+    // Resolution-only legacy provenance and a valid bid-only overlay stay clean.
+    {
+        CustodyReconciler reconciler;
+        CustodyReconcileReport report;
+        std::vector<CustodySnapshotGroup> groups;
+        groups.push_back(TestCustodyGroup(980005, 880005, 1205, 0, 0, 55,
+            std::vector<CustodyRow>(1, TestCustodyRow(1, "resolve:test:980005",
+                CUSTODY_GOLD, ROLE_RESOLUTION, 0, 0, 0, 980005))));
+        groups.push_back(TestCustodyGroup(980006, 880006, 1206, 2206, 206, 66,
+            std::vector<CustodyRow>(1, bidRow(1, 980006, 2206, 206))));
+        reconciler.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        if (!report.findings.empty())
+        {
+            printf("custody FAIL: valid legacy provenance or bid overlay produced drift\n");
+            pass = false;
+        }
+    }
+
+    // A future canonical bot item remains marker-owned.
+    {
+        CustodyReconciler reconciler;
+        CustodyReconcileReport report;
+        std::vector<CustodyRow> rows;
+        rows.push_back(marker(980007, 880007));
+        rows.push_back(TestCustodyRow(2, "item:980007", CUSTODY_ITEM,
+            ROLE_ITEM, botOwner, 0, 880007, 980007));
+        std::vector<CustodySnapshotGroup> groups(1,
+            TestCustodyGroup(980007, 880007, botOwner, 0, 0, 0, rows));
+        reconciler.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        if (!report.findings.empty())
+        {
+            printf("custody FAIL: canonical bot item overrode marker provenance\n");
+            pass = false;
+        }
+    }
+
+    // Invalid and duplicate markers are confirmed manual-only findings.
+    {
+        CustodyReconciler reconciler;
+        CustodyReconcileReport report;
+        CustodyRow invalid = marker(980008, 880008);
+        invalid.role = ROLE_ITEM;
+        std::vector<CustodySnapshotGroup> groups(1,
+            TestCustodyGroup(980008, 880008, botOwner, 0, 0, 0,
+                std::vector<CustodyRow>(1, invalid)));
+        reconciler.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        if (CountCustodyFindings(report, CUSTODY_FINDING_INVALID_MARKER,
+                CUSTODY_REPAIR_MANUAL_ONLY, CUSTODY_FINDING_CONFIRMED) != 1)
+        {
+            printf("custody FAIL: invalid marker ownership/reason mismatch\n");
+            pass = false;
+        }
+
+        std::vector<CustodyRow> duplicateRows;
+        duplicateRows.push_back(marker(980009, 880009));
+        CustodyRow second = marker(980009, 880009);
+        second.id += 1;
+        second.idemKey += ":duplicate";
+        duplicateRows.push_back(second);
+        groups[0] = TestCustodyGroup(980009, 880009, botOwner, 0, 0, 0,
+            duplicateRows);
+        reconciler.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        if (CountCustodyFindings(report, CUSTODY_FINDING_DUPLICATE_MARKER,
+                CUSTODY_REPAIR_MANUAL_ONLY, CUSTODY_FINDING_CONFIRMED) != 1)
+        {
+            printf("custody FAIL: duplicate markers did not produce one finding\n");
+            pass = false;
+        }
+    }
+
+    // Orphan marker cleanup belongs to the bot sweep; player rows remain generic.
+    {
+        CustodyReconciler reconciler;
+        CustodyReconcileReport report;
+        CustodySnapshotGroup orphan = {};
+        orphan.auctionId = 980010;
+        orphan.rows.push_back(marker(980010, 880010));
+        orphan.rows.push_back(bidRow(2, 980010, 2210, 210));
+        std::vector<CustodySnapshotGroup> groups(1, orphan);
+        reconciler.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        if (report.sweepOwnedCount != 1 || report.confirmedDriftCount != 1 ||
+            CountCustodyFindings(report, CUSTODY_FINDING_SWEEP_OWNED_MARKER,
+                CUSTODY_REPAIR_BOT_SWEEP, CUSTODY_FINDING_CONFIRMED) != 1 ||
+            CountCustodyFindings(report, CUSTODY_FINDING_ORPHAN_PLAYER,
+                CUSTODY_REPAIR_GENERIC, CUSTODY_FINDING_CONFIRMED) != 1)
+        {
+            printf("custody FAIL: orphan marker/player ownership split is wrong\n");
+            pass = false;
+        }
+    }
+
+    // Missing, duplicate, mismatched, and unexpected bids begin pending.
+    {
+        CustodyReconciler reconciler;
+        CustodyReconcileReport report;
+        std::vector<CustodySnapshotGroup> groups;
+        groups.push_back(TestCustodyGroup(980011, 880011, botOwner, 2211, 211, 0,
+            std::vector<CustodyRow>(1, marker(980011, 880011))));
+        std::vector<CustodyRow> duplicate;
+        duplicate.push_back(bidRow(1, 980012, 2212, 212));
+        duplicate.push_back(bidRow(2, 980012, 2212, 212));
+        groups.push_back(TestCustodyGroup(980012, 880012, 1212, 2212, 212, 0,
+            duplicate));
+        std::vector<CustodyRow> mismatched;
+        mismatched.push_back(marker(980013, 880013));
+        mismatched.push_back(bidRow(2, 980013, 9999, 213));
+        groups.push_back(TestCustodyGroup(980013, 880013, botOwner, 2213, 213, 0,
+            mismatched));
+        std::vector<CustodyRow> unexpected;
+        unexpected.push_back(marker(980014, 880014));
+        unexpected.push_back(bidRow(2, 980014, 2214, 214));
+        groups.push_back(TestCustodyGroup(980014, 880014, botOwner, 0, 0, 0,
+            unexpected));
+        reconciler.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        if (report.pendingBidCount != 5 || report.confirmedDriftCount != 0 ||
+            CountCustodyFindings(report, CUSTODY_FINDING_MISSING,
+                CUSTODY_REPAIR_MANUAL_ONLY, CUSTODY_FINDING_PENDING) != 1 ||
+            CountCustodyFindings(report, CUSTODY_FINDING_DUPLICATE,
+                CUSTODY_REPAIR_MANUAL_ONLY, CUSTODY_FINDING_PENDING) != 2 ||
+            CountCustodyFindings(report, CUSTODY_FINDING_MISMATCHED,
+                CUSTODY_REPAIR_MANUAL_ONLY, CUSTODY_FINDING_PENDING) != 1 ||
+            CountCustodyFindings(report, CUSTODY_FINDING_UNEXPECTED,
+                CUSTODY_REPAIR_MANUAL_ONLY, CUSTODY_FINDING_PENDING) != 1)
+        {
+            printf("custody FAIL: bid mismatch reason or pending counts are wrong\n");
+            pass = false;
+        }
+    }
+
+    // Stable bid mismatch confirmation uses exact 1000/1059/1060 boundaries.
+    {
+        CustodyReconciler reconciler;
+        CustodyReconcileReport report;
+        std::vector<CustodySnapshotGroup> groups(1,
+            TestCustodyGroup(980015, 880015, botOwner, 2215, 215, 0,
+                std::vector<CustodyRow>(1, marker(980015, 880015))));
+        reconciler.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        if (report.pendingBidCount != 1 || report.confirmedDriftCount != 0)
+        {
+            printf("custody FAIL: first bid mismatch was not pending\n");
+            pass = false;
+        }
+        reconciler.Scan(groups, 1059, CUSTODY_SCAN_RUNTIME, report);
+        if (report.pendingBidCount != 1 || report.confirmedDriftCount != 0)
+        {
+            printf("custody FAIL: 59-second bid mismatch did not remain pending\n");
+            pass = false;
+        }
+        reconciler.Scan(groups, 1060, CUSTODY_SCAN_RUNTIME, report);
+        if (report.pendingBidCount != 0 || report.confirmedDriftCount != 1)
+        {
+            printf("custody FAIL: 60-second bid mismatch was not confirmed\n");
+            pass = false;
+        }
+
+        groups[0].rows.push_back(bidRow(2, 980015, 2215, 215));
+        reconciler.Scan(groups, 1061, CUSTODY_SCAN_RUNTIME, report);
+        if (!report.findings.empty())
+        {
+            printf("custody FAIL: matching bid did not clear pending cache\n");
+            pass = false;
+        }
+    }
+
+    // Changed, fresh, removed, and boot observations cannot confirm old state.
+    {
+        CustodyReconcileReport report;
+        std::vector<CustodySnapshotGroup> groups(1,
+            TestCustodyGroup(980016, 880016, botOwner, 2216, 216, 0,
+                std::vector<CustodyRow>(1, marker(980016, 880016))));
+
+        CustodyReconciler changed;
+        changed.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        groups[0].auction.bid = 217;
+        changed.Scan(groups, 1060, CUSTODY_SCAN_RUNTIME, report);
+        if (report.pendingBidCount != 1 || report.confirmedDriftCount != 0)
+        {
+            printf("custody FAIL: changed fingerprint confirmed stale mismatch\n");
+            pass = false;
+        }
+
+        CustodyReconciler fresh;
+        fresh.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        groups[0].rows.push_back(bidRow(2, 980016, 9999, 217, 1100));
+        fresh.Scan(groups, 1060, CUSTODY_SCAN_RUNTIME, report);
+        if (!report.findings.empty())
+        {
+            printf("custody FAIL: fresh group did not clear mismatch observation\n");
+            pass = false;
+        }
+        groups[0].rows.pop_back();
+        fresh.Scan(groups, 1200, CUSTODY_SCAN_RUNTIME, report);
+        if (report.pendingBidCount != 1 || report.confirmedDriftCount != 0)
+        {
+            printf("custody FAIL: fresh-group clear retained old mismatch age\n");
+            pass = false;
+        }
+
+        CustodyReconciler removed;
+        removed.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        removed.Scan(std::vector<CustodySnapshotGroup>(), 1060,
+            CUSTODY_SCAN_RUNTIME, report);
+        removed.Scan(groups, 1120, CUSTODY_SCAN_RUNTIME, report);
+        if (report.pendingBidCount != 1 || report.confirmedDriftCount != 0)
+        {
+            printf("custody FAIL: removed group retained old mismatch age\n");
+            pass = false;
+        }
+
+        CustodyReconciler boot;
+        boot.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        boot.Scan(groups, 1060, CUSTODY_SCAN_BOOT, report);
+        if (report.pendingBidCount != 1 || report.confirmedDriftCount != 0)
+        {
+            printf("custody FAIL: boot scan confirmed prior mismatch\n");
+            pass = false;
+        }
+
+        CustodyReconciler future;
+        groups[0].rows.push_back(bidRow(3, 980016, 9999, 217, 2000));
+        future.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        if (!report.findings.empty())
+        {
+            printf("custody FAIL: future timestamp was treated as mature\n");
+            pass = false;
+        }
+    }
+
+    // A large clean population visits each input row exactly once.
+    {
+        std::vector<CustodySnapshotGroup> groups;
+        groups.reserve(50000);
+        for (uint32 i = 0; i < 50000; ++i)
+        {
+            uint32 const auctionId = 1000000 + i;
+            groups.push_back(TestCustodyGroup(auctionId, 2000000 + i,
+                3000000 + i, 0, 0, 0,
+                std::vector<CustodyRow>(1, TestCustodyRow(i + 1,
+                    "resolve:linear:" + std::to_string(i), CUSTODY_GOLD,
+                    ROLE_RESOLUTION, 0, 0, 0, auctionId))));
+        }
+        CustodyReconciler reconciler;
+        CustodyReconcileReport report;
+        reconciler.Scan(groups, 1000, CUSTODY_SCAN_RUNTIME, report);
+        if (report.rowVisits != 50000 || !report.findings.empty())
+        {
+            printf("custody FAIL: linear scan visits=" UI64FMTD " findings=%u\n",
+                report.rowVisits, uint32(report.findings.size()));
+            pass = false;
+        }
+    }
+
+    return pass;
 }
 
 /// Self-test for Database::CommitTransactionChecked(): proves the runtime
@@ -535,11 +952,14 @@ static int RunCustodyTest()
     CharacterDatabase.DirectPExecute(
         "DELETE FROM `auction` WHERE `id`=%u", snapshotAuctionId);
 
+    if (!RunPureCustodyReconcilerTests())
+    {
+        pass = false;
+    }
+
     // ================================================================ reconcile
     // Task 13: ReconcileScan flags custody drift and DeleteTerminalOlderThan
     // prunes only old terminal rows.
-    static AuctionHouseEntry testHouse = { 7, 0, 0, 0 };
-    AuctionHouseObject* testAuctions = sAuctionMgr.GetAuctionsMap(AUCTION_HOUSE_NEUTRAL);
     uint32 const liveAuctionId = 970002;
     uint32 const missingItemAuctionId = 970003;
     uint32 const duplicateBidAuctionId = 970006;
@@ -552,59 +972,19 @@ static int RunCustodyTest()
         "DELETE FROM `custody_ledger` WHERE `idem_key` IN "
         "('item:970002','dep:970002','item:970003','dep:970003',"
         "'item:970006','dep:970006','bid:970006:1','bid:970006:2')");
-    testAuctions->RemoveAuction(liveAuctionId);
-    testAuctions->RemoveAuction(missingItemAuctionId);
-    testAuctions->RemoveAuction(duplicateBidAuctionId);
-
-    AuctionEntry* liveAuction = new AuctionEntry;
-    liveAuction->Id = liveAuctionId;
-    liveAuction->itemGuidLow = 880002;
-    liveAuction->itemTemplate = 25;
-    liveAuction->itemCount = 1;
-    liveAuction->itemRandomPropertyId = 0;
-    liveAuction->owner = 1001;
-    liveAuction->startbid = 10;
-    liveAuction->bid = 0;
-    liveAuction->buyout = 0;
-    liveAuction->expireTime = time(NULL) + HOUR;
-    liveAuction->bidder = 0;
-    liveAuction->deposit = 5;
-    liveAuction->auctionHouseEntry = &testHouse;
-    testAuctions->AddAuction(liveAuction);
-
-    AuctionEntry* missingItemAuction = new AuctionEntry;
-    missingItemAuction->Id = missingItemAuctionId;
-    missingItemAuction->itemGuidLow = 880003;
-    missingItemAuction->itemTemplate = 25;
-    missingItemAuction->itemCount = 1;
-    missingItemAuction->itemRandomPropertyId = 0;
-    missingItemAuction->owner = 1002;
-    missingItemAuction->startbid = 10;
-    missingItemAuction->bid = 0;
-    missingItemAuction->buyout = 0;
-    missingItemAuction->expireTime = time(NULL) + HOUR;
-    missingItemAuction->bidder = 0;
-    missingItemAuction->deposit = 5;
-    missingItemAuction->auctionHouseEntry = &testHouse;
-    testAuctions->AddAuction(missingItemAuction);
-
-    AuctionEntry* duplicateBidAuction = new AuctionEntry;
-    duplicateBidAuction->Id = duplicateBidAuctionId;
-    duplicateBidAuction->itemGuidLow = 880006;
-    duplicateBidAuction->itemTemplate = 25;
-    duplicateBidAuction->itemCount = 1;
-    duplicateBidAuction->itemRandomPropertyId = 0;
-    duplicateBidAuction->owner = 1006;
-    duplicateBidAuction->startbid = 10;
-    duplicateBidAuction->bid = 77;
-    duplicateBidAuction->buyout = 0;
-    duplicateBidAuction->expireTime = time(NULL) + HOUR;
-    duplicateBidAuction->bidder = 2006;
-    duplicateBidAuction->deposit = 5;
-    duplicateBidAuction->auctionHouseEntry = &testHouse;
-    testAuctions->AddAuction(duplicateBidAuction);
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `auction` WHERE `id` IN (970002,970003,970006)");
 
     CharacterDatabase.BeginTransaction();
+    CharacterDatabase.PExecute(
+        "INSERT INTO `auction` "
+        "(`id`,`houseid`,`itemguid`,`item_template`,`item_count`,"
+        "`item_randompropertyid`,`itemowner`,`buyoutprice`,`time`,`buyguid`,"
+        "`lastbid`,`startbid`,`deposit`) VALUES "
+        "(970002,7,880002,25,1,0,1001,0," UI64FMTD ",0,0,10,5),"
+        "(970003,7,880003,25,1,0,1002,0," UI64FMTD ",0,0,10,5),"
+        "(970006,7,880006,25,1,0,1006,0," UI64FMTD ",2006,77,10,5)",
+        now + HOUR, now + HOUR, now + HOUR);
     CharacterDatabase.PExecute(
         "INSERT INTO `custody_ledger` "
         "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
@@ -672,34 +1052,35 @@ static int RunCustodyTest()
     }
 
     {
-        std::vector<CustodyRow> drift;
-        CustodyService::ReconcileScan(true, drift);
+        CustodyReconcileReport report;
+        CustodyService::ReconcileScan(now, CUSTODY_SCAN_RUNTIME, report);
         bool sawOrphan = false;
         bool sawCleanLive = false;
         bool sawMissingItem = false;
-        bool sawDuplicateBid1 = false;
-        bool sawDuplicateBid2 = false;
-        for (size_t i = 0; i < drift.size(); ++i)
+        uint32 pendingDuplicateBids = 0;
+        for (size_t i = 0; i < report.findings.size(); ++i)
         {
-            if (drift[i].idemKey == "test:recon:orphan")
+            CustodyFinding const& finding = report.findings[i];
+            if (finding.row.idemKey == "test:recon:orphan" &&
+                finding.reason == CUSTODY_FINDING_ORPHAN_PLAYER &&
+                finding.repairOwnership == CUSTODY_REPAIR_GENERIC)
             {
                 sawOrphan = true;
             }
-            if (drift[i].auctionId == liveAuctionId)
+            if (finding.row.auctionId == liveAuctionId)
             {
                 sawCleanLive = true;
             }
-            if (drift[i].idemKey == "item:970003")
+            if (finding.row.idemKey == "item:970003" &&
+                finding.reason == CUSTODY_FINDING_MISSING)
             {
                 sawMissingItem = true;
             }
-            if (drift[i].idemKey == "bid:970006:1" && drift[i].id != 0)
+            if (finding.row.auctionId == duplicateBidAuctionId &&
+                finding.reason == CUSTODY_FINDING_DUPLICATE &&
+                finding.state == CUSTODY_FINDING_PENDING)
             {
-                sawDuplicateBid1 = true;
-            }
-            if (drift[i].idemKey == "bid:970006:2" && drift[i].id != 0)
-            {
-                sawDuplicateBid2 = true;
+                ++pendingDuplicateBids;
             }
         }
         if (!sawOrphan)
@@ -717,9 +1098,10 @@ static int RunCustodyTest()
             printf("custody FAIL: reconcile did not flag live auction missing item row\n");
             pass = false;
         }
-        if (!sawDuplicateBid1 || !sawDuplicateBid2)
+        if (pendingDuplicateBids != 2)
         {
-            printf("custody FAIL: reconcile did not surface duplicate live bid rows\n");
+            printf("custody FAIL: reconcile duplicate bid pending count expected 2 got %u\n",
+                pendingDuplicateBids);
             pass = false;
         }
     }
@@ -746,13 +1128,9 @@ static int RunCustodyTest()
         }
     }
 
-    testAuctions->RemoveAuction(liveAuctionId);
-    testAuctions->RemoveAuction(missingItemAuctionId);
-    testAuctions->RemoveAuction(duplicateBidAuctionId);
-    delete liveAuction;
-    delete missingItemAuction;
-    delete duplicateBidAuction;
     CharacterDatabase.BeginTransaction();
+    CharacterDatabase.PExecute(
+        "DELETE FROM `auction` WHERE `id` IN (970002,970003,970006)");
     CharacterDatabase.PExecute(
         "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:recon:%%'");
     CharacterDatabase.PExecute(
