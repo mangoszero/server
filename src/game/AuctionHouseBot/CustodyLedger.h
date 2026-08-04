@@ -95,6 +95,30 @@ struct CustodyRow
     uint64      resolvedTime;     ///< Unix timestamp at resolution (0 = unresolved).
 };
 
+struct CustodyAuctionFacts
+{
+    bool exists;
+    uint32 auctionId;
+    uint32 itemGuid;
+    uint32 ownerGuid;
+    uint32 bidderGuid;
+    uint32 bid;
+    uint32 deposit;
+};
+
+struct CustodySnapshotGroup
+{
+    uint32 auctionId;
+    CustodyAuctionFacts auction;
+    std::vector<CustodyRow> rows;
+};
+
+struct CustodyRouteState
+{
+    bool usesPlayerSellerCustody;
+    bool hasLiveBidCustody;
+};
+
 /**
  * @brief Persistent CRUD namespace for the custody_ledger table.
  *
@@ -103,6 +127,12 @@ struct CustodyRow
  */
 namespace CustodyLedger
 {
+    CustodyRouteState GetRouteState(uint32 auctionId);
+
+    void LoadReconcileSnapshot(std::vector<CustodySnapshotGroup>& out);
+
+    bool AuctionExists(uint32 auctionId);
+
     /**
      * @brief Append an INSERT for @p row to the caller's open transaction.
      *

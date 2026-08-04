@@ -396,6 +396,145 @@ static int RunCustodyTest()
         "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:crud%%'");
     CharacterDatabase.CommitTransactionChecked();
 
+    // =================================================== authoritative reads
+    // These rows exercise route provenance independently from local AH maps.
+    uint32 const routeBase = 973100;
+    uint32 const snapshotAuctionId = routeBase + 7;
+    uint32 const orphanAuctionId = routeBase + 8;
+    uint64 const routeNow = static_cast<uint64>(time(NULL));
+
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `custody_ledger` WHERE `auction_id` BETWEEN %u AND %u",
+        routeBase + 1, orphanAuctionId);
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `auction` WHERE `id`=%u", snapshotAuctionId);
+
+    CharacterDatabase.BeginTransaction();
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) VALUES "
+        "('item:973101',1,3,0,1101,0,0,883101,973101," UI64FMTD ",0),"
+        "('dep:973101',0,0,0,1101,0,31,0,973101," UI64FMTD ",0),"
+        "('bid:973102:1',0,1,0,2102,0,102,0,973102," UI64FMTD ",0),"
+        "('resolve:test:973103',0,4,0,0,0,0,0,973103," UI64FMTD ",0),"
+        "('botlist:test:973104',1,3,0,4294967294,0,0,883104,973104," UI64FMTD ",0),"
+        "('botlist:test:973105',1,3,0,4294967294,0,0,883105,973105," UI64FMTD ",0),"
+        "('bid:973105:1',0,1,0,2105,0,105,0,973105," UI64FMTD ",0),"
+        "('botlist:test:973106',1,3,0,4294967294,0,0,883106,973106," UI64FMTD ",0),"
+        "('item:973106',1,3,0,4294967294,0,0,883106,973106," UI64FMTD ",0),"
+        "('test:snapshot:live',0,4,0,0,0,0,0,973107," UI64FMTD ",0),"
+        "('test:snapshot:orphan',0,1,0,2208,0,208,0,973108," UI64FMTD ",0)",
+        routeNow, routeNow, routeNow, routeNow, routeNow, routeNow,
+        routeNow, routeNow, routeNow, routeNow, routeNow);
+    CharacterDatabase.PExecute(
+        "INSERT INTO `auction` "
+        "(`id`,`houseid`,`itemguid`,`item_template`,`item_count`,"
+        "`item_randompropertyid`,`itemowner`,`buyoutprice`,`time`,`buyguid`,"
+        "`lastbid`,`startbid`,`deposit`) "
+        "VALUES (%u,7,883107,25,2,0,1234,500," UI64FMTD ",2345,3456,100,77)",
+        snapshotAuctionId, routeNow + HOUR);
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        printf("custody FAIL: authoritative-read seed commit returned false\n");
+        pass = false;
+    }
+
+    struct RouteExpectation
+    {
+        uint32 auctionId;
+        bool seller;
+        bool bid;
+        char const* label;
+    };
+    RouteExpectation const routeExpectations[] =
+    {
+        { routeBase + 1, true,  false, "player seller" },
+        { routeBase + 2, false, true,  "bid only" },
+        { routeBase + 3, false, false, "resolution only" },
+        { routeBase + 4, false, false, "bot marker only" },
+        { routeBase + 5, false, true,  "bot marker plus bid" },
+        { routeBase + 6, false, false, "bot marker plus canonical item" },
+    };
+    for (size_t i = 0; i < sizeof(routeExpectations) / sizeof(routeExpectations[0]); ++i)
+    {
+        RouteExpectation const& expected = routeExpectations[i];
+        CustodyRouteState const route = CustodyLedger::GetRouteState(expected.auctionId);
+        if (route.usesPlayerSellerCustody != expected.seller ||
+            route.hasLiveBidCustody != expected.bid)
+        {
+            printf("custody FAIL: route %s expected seller=%u bid=%u got seller=%u bid=%u\n",
+                expected.label, uint32(expected.seller), uint32(expected.bid),
+                uint32(route.usesPlayerSellerCustody), uint32(route.hasLiveBidCustody));
+            pass = false;
+        }
+    }
+
+    AuctionHouseObject* authoritativeMap =
+        sAuctionMgr.GetAuctionsMap(AUCTION_HOUSE_NEUTRAL);
+    authoritativeMap->RemoveAuction(snapshotAuctionId);
+    if (authoritativeMap->GetAuction(snapshotAuctionId))
+    {
+        printf("custody FAIL: snapshot fixture unexpectedly exists in local AH map\n");
+        pass = false;
+    }
+
+    std::vector<CustodySnapshotGroup> snapshot;
+    CustodyLedger::LoadReconcileSnapshot(snapshot);
+    bool sawSnapshotAuction = false;
+    bool sawSnapshotOrphan = false;
+    for (size_t i = 0; i < snapshot.size(); ++i)
+    {
+        CustodySnapshotGroup const& group = snapshot[i];
+        if (group.auctionId == snapshotAuctionId)
+        {
+            sawSnapshotAuction = true;
+            if (!group.auction.exists || group.auction.auctionId != snapshotAuctionId ||
+                group.auction.itemGuid != 883107 || group.auction.ownerGuid != 1234 ||
+                group.auction.bidderGuid != 2345 || group.auction.bid != 3456 ||
+                group.auction.deposit != 77 || group.rows.size() != 1)
+            {
+                printf("custody FAIL: joined live auction facts do not match DB fixture\n");
+                pass = false;
+            }
+        }
+        else if (group.auctionId == orphanAuctionId)
+        {
+            sawSnapshotOrphan = true;
+            if (group.auction.exists || group.rows.size() != 1 ||
+                group.rows[0].idemKey != "test:snapshot:orphan")
+            {
+                printf("custody FAIL: joined orphan facts do not match DB fixture\n");
+                pass = false;
+            }
+        }
+    }
+    if (!sawSnapshotAuction || !sawSnapshotOrphan)
+    {
+        printf("custody FAIL: authoritative snapshot omitted live=%u orphan=%u\n",
+            uint32(sawSnapshotAuction), uint32(sawSnapshotOrphan));
+        pass = false;
+    }
+
+    if (!CustodyLedger::AuctionExists(snapshotAuctionId))
+    {
+        printf("custody FAIL: AuctionExists did not see shared auction row\n");
+        pass = false;
+    }
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `auction` WHERE `id`=%u", snapshotAuctionId);
+    if (CustodyLedger::AuctionExists(snapshotAuctionId))
+    {
+        printf("custody FAIL: AuctionExists retained deleted shared auction row\n");
+        pass = false;
+    }
+
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `custody_ledger` WHERE `auction_id` BETWEEN %u AND %u",
+        routeBase + 1, orphanAuctionId);
+    CharacterDatabase.DirectPExecute(
+        "DELETE FROM `auction` WHERE `id`=%u", snapshotAuctionId);
+
     // ================================================================ reconcile
     // Task 13: ReconcileScan flags custody drift and DeleteTerminalOlderThan
     // prunes only old terminal rows.
