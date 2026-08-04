@@ -92,6 +92,98 @@ void CustodyLedger::SetAmount(std::string const& idemKey, uint32 newAmount)
         newAmount, key.c_str());
 }
 
+CustodyRouteState CustodyLedger::GetRouteState(uint32 auctionId)
+{
+    CustodyRouteState route = {};
+    QueryResult* result = CharacterDatabase.PQuery(
+        "SELECT "
+        "COALESCE(MAX(`idem_key` LIKE 'botlist:%%'),0),"
+        "COALESCE(MAX(`idem_key` IN ('item:%u','dep:%u') "
+        "OR `role` IN (%u,%u)),0),"
+        "COALESCE(MAX(`role`=%u),0) "
+        "FROM `custody_ledger` WHERE `auction_id`=%u AND `state`=%u",
+        auctionId, auctionId, uint32(ROLE_ITEM), uint32(ROLE_DEPOSIT),
+        uint32(ROLE_BID), auctionId, uint32(CST_RESERVED));
+    if (!result)
+    {
+        return route;
+    }
+
+    Field* fields = result->Fetch();
+    bool const hasMarker = fields[0].GetUInt32() != 0;
+    bool const hasSellerCandidate = fields[1].GetUInt32() != 0;
+    route.usesPlayerSellerCustody = hasSellerCandidate && !hasMarker;
+    route.hasLiveBidCustody = fields[2].GetUInt32() != 0;
+    delete result;
+    return route;
+}
+
+void CustodyLedger::LoadReconcileSnapshot(std::vector<CustodySnapshotGroup>& out)
+{
+    out.clear();
+    QueryResult* result = CharacterDatabase.Query(
+        "SELECT c.`id`,c.`idem_key`,c.`kind`,c.`role`,c.`state`,"
+        "c.`owner_guid`,c.`beneficiary_guid`,c.`amount`,c.`item_guid`,"
+        "c.`auction_id`,c.`created_time`,c.`resolved_time`,"
+        "a.`id`,a.`itemguid`,a.`itemowner`,a.`buyguid`,a.`lastbid`,a.`deposit` "
+        "FROM `custody_ledger` c "
+        "LEFT JOIN `auction` a ON a.`id`=c.`auction_id` "
+        "WHERE c.`state`=0 ORDER BY c.`auction_id`,c.`id`");
+    if (!result)
+    {
+        return;
+    }
+
+    CustodySnapshotGroup group = {};
+    do
+    {
+        Field* fields = result->Fetch();
+        CustodyRow row;
+        FillRow(fields, row);
+
+        if (!group.rows.empty() && group.auctionId != row.auctionId)
+        {
+            out.push_back(group);
+            group = CustodySnapshotGroup();
+        }
+
+        if (group.rows.empty())
+        {
+            group.auctionId = row.auctionId;
+            group.auction.exists = fields[12].GetUInt32() != 0;
+            if (group.auction.exists)
+            {
+                group.auction.auctionId = fields[12].GetUInt32();
+                group.auction.itemGuid = fields[13].GetUInt32();
+                group.auction.ownerGuid = fields[14].GetUInt32();
+                group.auction.bidderGuid = fields[15].GetUInt32();
+                group.auction.bid = fields[16].GetUInt32();
+                group.auction.deposit = fields[17].GetUInt32();
+            }
+        }
+        group.rows.push_back(row);
+    }
+    while (result->NextRow());
+
+    if (!group.rows.empty())
+    {
+        out.push_back(group);
+    }
+    delete result;
+}
+
+bool CustodyLedger::AuctionExists(uint32 auctionId)
+{
+    QueryResult* result = CharacterDatabase.PQuery(
+        "SELECT 1 FROM `auction` WHERE `id`=%u LIMIT 1", auctionId);
+    if (!result)
+    {
+        return false;
+    }
+    delete result;
+    return true;
+}
+
 bool CustodyLedger::HasRows(uint32 auctionId)
 {
     // Only match active (CST_RESERVED) rows so terminal leftovers from a
