@@ -242,22 +242,10 @@ namespace CustodyService
     /// CommitTransactionChecked(). Inert when the config is empty (live default).
     bool CommitCheckedOrForcedFail(std::string const& phase);
 
-    /**
-     * @brief Audit custody-ledger drift.
-     *
-     * Scans non-terminal custody rows and loaded auction maps. Drift means a
-     * non-terminal row with no live auction, or a live custody auction missing
-     * one of its required non-terminal rows (`item:<id>`, `dep:<id>`, and a
-     * live bid row when `bidder != 0`). This is audit-only: @p dryRun is kept
-     * for the repair command's interface but this function never mutates state.
-     *
-     * @param dryRun  Audit-only flag; no mutations happen in either mode.
-     * @param orphans Destination vector; drift rows are appended.
-     */
+    /// Classify one authoritative reserved-custody/shared-auction snapshot.
+    /// This audit-only operation never mutates custody or auction state.
     void ReconcileScan(uint64 now, CustodyScanContext context,
                        CustodyReconcileReport& report);
-
-    void ReconcileScan(bool legacyDryRun, std::vector<CustodyRow>& legacyDrift);
 
     void LogReconcileReport(char const* phase,
                             CustodyReconcileReport const& report);

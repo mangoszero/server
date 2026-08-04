@@ -265,23 +265,6 @@ void CustodyService::ReconcileScan(uint64 now, CustodyScanContext context,
     s_reconciler.Scan(snapshot, now, context, report);
 }
 
-void CustodyService::ReconcileScan(bool legacyDryRun,
-                                   std::vector<CustodyRow>& legacyDrift)
-{
-    CustodyReconcileReport report;
-    ReconcileScan(static_cast<uint64>(time(NULL)),
-        legacyDryRun ? CUSTODY_SCAN_RUNTIME : CUSTODY_SCAN_BOOT, report);
-    for (size_t i = 0; i < report.findings.size(); ++i)
-    {
-        CustodyFinding const& finding = report.findings[i];
-        if (finding.state == CUSTODY_FINDING_CONFIRMED &&
-            finding.repairOwnership == CUSTODY_REPAIR_GENERIC)
-        {
-            legacyDrift.push_back(finding.row);
-        }
-    }
-}
-
 void CustodyService::LogReconcileReport(
     char const* phase, CustodyReconcileReport const& report)
 {
