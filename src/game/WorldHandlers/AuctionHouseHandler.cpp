@@ -1105,10 +1105,15 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         newOutbid = 1;
     }
 
-    // Buyout now goes through custody too (Task 10): UpdateBidCustody caps the
-    // bid at buyout, reserves/refunds as a normal bid, then routes to
-    // AuctionBidWinningCustody, all on the handler's single open transaction.
-    if (sWorld.IsAhCustodyEnabled() && CustodyLedger::HasRows(auction->Id))
+    CustodyRouteState route = {};
+    if (sWorld.IsAhCustodyEnabled())
+    {
+        route = CustodyLedger::GetRouteState(auction->Id);
+    }
+
+    // A player-seller row or a player-bid row selects the combined transaction.
+    // Marker-only bot listings remain entirely on the legacy path.
+    if (route.usesPlayerSellerCustody || route.hasLiveBidCustody)
     {
         // Custody co-commit path. The success-path SendAuctionCommandResult is
         // deferred and appended FIRST (its legacy position :507 precedes
@@ -1116,15 +1121,15 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         // buyout route deletes the AuctionEntry in the same deferred run (I5).
         uint32 const capId = auction->Id;
 
-        // FIX I1: validated, fail-closed live-bid lookup BEFORE the txn (it is a
-        // read; no live mutation has happened yet). When the auction already has
-        // a bidder (same-bidder raise OR outbid), there MUST be exactly one live
-        // bid row matching the current auction state; otherwise fail closed.
+        // A route that claims live bid custody must have exactly one row matching
+        // the current auction state. Seller custody may legitimately coexist with
+        // a legacy standing bid and therefore does not imply this validation.
         std::string liveBidKey;
-        if (auction->bidder != 0)
+        if (route.hasLiveBidCustody)
         {
             CustodyRow liveRow;
-            if (!CustodyLedger::GetSingleLiveBidRow(capId, liveRow) ||
+            if (auction->bidder == 0 ||
+                !CustodyLedger::GetSingleLiveBidRow(capId, liveRow) ||
                 liveRow.ownerGuid != auction->bidder ||
                 liveRow.amount != auction->bid)
             {
@@ -1171,7 +1176,9 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         // paths -> proceed to the checked commit. On the buyout path the auction is
         // NOT deleted until def.run(), so the X6 restore below is still safe to
         // reference auction on a commit FAILURE (def.run() did not execute).
-        bool const stillActive = auction->UpdateBidCustody(price, pl, def, liveBidKey);
+        bool const stillActive = auction->UpdateBidCustody(
+            price, pl, def, route.usesPlayerSellerCustody,
+            route.hasLiveBidCustody, liveBidKey);
         (void)stillActive;
 
         CustodyService::MaybeCrash("pre-commit");
@@ -1287,7 +1294,13 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
         return;
     }
 
-    if (sWorld.IsAhCustodyEnabled() && CustodyLedger::HasRows(auction->Id))
+    CustodyRouteState route = {};
+    if (sWorld.IsAhCustodyEnabled())
+    {
+        route = CustodyLedger::GetRouteState(auction->Id);
+    }
+
+    if (route.usesPlayerSellerCustody || route.hasLiveBidCustody)
     {
         // -------------------------------------------------------------------
         // Custody co-commit path (per-auction drain, X3). One checked txn:
@@ -1306,17 +1319,15 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
         }
 
         uint32 const capId = auction->Id;
-        uint32 const itemGuidLow = auction->itemGuidLow;
 
-        // (2) I1 fail-closed live-bid lookup BEFORE the txn (it is a read; no
-        //     mutation yet). When the auction has a real bidder there MUST be
-        //     exactly one live bid row matching the current auction state;
-        //     otherwise fail closed (no txn, no mutation).
+        // A bid-custody route must match exactly one current live bid row.
+        // Seller custody alone may legitimately contain a legacy standing bid.
         std::string liveBidKey;
-        if (auction->bidder != 0)
+        if (route.hasLiveBidCustody)
         {
             CustodyRow liveRow;
-            if (!CustodyLedger::GetSingleLiveBidRow(capId, liveRow) ||
+            if (auction->bidder == 0 ||
+                !CustodyLedger::GetSingleLiveBidRow(capId, liveRow) ||
                 liveRow.ownerGuid != auction->bidder ||
                 liveRow.amount != auction->bid)
             {
@@ -1328,10 +1339,7 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
             liveBidKey = liveRow.idemKey;
         }
 
-        // (3) X6 snapshot. The ONLY synchronous in-memory mutation S5 makes is
-        //     the cut debit; capture it for restore-on-failure. (cutDebited == 0
-        //     when there is no bid -- nothing to restore in that case.)
-        uint32 const cutDebited = auctionCut;
+        uint32 const cutDebited = auction->bid ? auctionCut : 0;
 
         // Capture the seller's low GUID so the deferred command-result closure
         // holds only uint32 scalars; re-resolving at run-time avoids a dangling
@@ -1339,50 +1347,10 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
         uint32 const sellerGuidLow = pl->GetGUIDLow();
 
         CustodyDeferred def;
-
-        // -- in-memory mutation BEFORE the txn (SaveInventoryAndGoldToDB persists
-        //    current memory) --
-        if (auction->bid)
-        {
-            pl->ModifyMoney(-int32(auctionCut));
-        }
-
         CharacterDatabase.BeginTransaction();
-
-        // (a) Bidder refund: pushes the removed-notify THEN the refund-mail push
-        //     into def (legacy notify-before-mail, :334-339). Only for a REAL
-        //     bidder; a bot-bid auction (bidder==0) charges the cut but sends no
-        //     refund (spec R2). Terminalize the validated live bid row (ledger
-        //     only -- the refund coin rides the mail above).
-        if (auction->bid && auction->bidder != 0)
-        {
-            CustodyService::RollbackGoldLedgerOnly(liveBidKey);
-            SendAuctionCancelledToBidderMailInTransaction(auction, def);
-        }
-
-        // Deposit FORFEIT to the house on cancel (spec 4.2 / S5): flip the
-        // deposit row to TERMINAL_OK ledger-only -- house sink, no money, no mail.
-        CustodyService::CommitGoldLedgerOnly("dep:" + std::to_string(capId));
-
-        // (b) Seller item-return. Build the return mail exactly like legacy
-        //     (:848-854) and co-commit it. Push the seam RemoveAItem FIRST so it
-        //     runs BEFORE the item-mail's disposal closure (RemoveAItem-first,
-        //     the corrected lifecycle); DeliverItem appends the mail push (and the
-        //     online seller's AddMItem disposal) AFTER. On rollback neither runs
-        //     and the item survives in mAitems for re-resolution.
-        std::ostringstream msgAuctionCanceledOwner;
-        msgAuctionCanceledOwner << auction->itemTemplate << ":" << auction->itemRandomPropertyId << ":" << AUCTION_CANCELED;
-
-        def.effects.push_back([itemGuidLow]()
-        {
-            sAuctionMgr.RemoveAItem(itemGuidLow);
-        });
-
-        MailDraft itemReturn(msgAuctionCanceledOwner.str(), "");
-        itemReturn.AddItem(pItem);
-        CustodyService::DeliverItem(def, "item:" + std::to_string(capId), itemReturn,
-                                    MailReceiver(pl), MailSender(auction),
-                                    MAIL_CHECK_MASK_COPIED);
+        auction->PrepareCancelCustody(
+            pl, def, route.usesPlayerSellerCustody,
+            route.hasLiveBidCustody, liveBidKey, auctionCut);
 
         // (c) Command-result to the SELLER, deferred LAST (legacy :857 fires it
         //     after the item mail). Scalar-only closure: re-resolve the seller by
@@ -1396,10 +1364,6 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
                 p->GetSession()->SendAuctionCommandResultData(capId, AUCTION_REMOVED, AUCTION_OK, EQUIP_ERR_OK, 0);
             }
         });
-
-        // Persist the cut debit + delete the auction row, both IN-TXN.
-        pl->SaveInventoryAndGoldToDB();
-        auction->DeleteFromDB();
 
         // Defer the AH-map erase + Eluna OnRemove hook + object delete LAST, in
         // the exact legacy order of the non-custody branch (RemoveAuction

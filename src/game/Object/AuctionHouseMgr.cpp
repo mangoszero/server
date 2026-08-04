@@ -1061,19 +1061,45 @@ void AuctionHouseObject::Update()
         AuctionEntryMap::iterator old = itr++;
         if (curTime > old->second->expireTime)
         {
+            CustodyRouteState route = {};
+            if (sWorld.IsAhCustodyEnabled())
+            {
+                route = CustodyLedger::GetRouteState(old->second->Id);
+            }
+
             ///- perform the transaction if there was bidder
             if (old->second->bid)
             {
-                // Custody co-commit path (per-auction drain, X3): only auctions
-                // carrying live custody rows resolve through the ledger; legacy
-                // (pre-gate / bot-created) auctions fall through unchanged.
+                // Seller and bid custody are independent. A worker/bot listing
+                // can carry only a player bid row; a player listing can still
+                // carry a legacy bid with no bid row.
                 // `old = itr++` already advanced the iterator, so the deferred
                 // RemoveAuction(Id) erase of `old`'s slot does NOT invalidate itr.
-                if (sWorld.IsAhCustodyEnabled() && CustodyLedger::HasRows(old->second->Id))
+                if (route.usesPlayerSellerCustody || route.hasLiveBidCustody)
                 {
+                    std::string liveBidKey;
+                    if (route.hasLiveBidCustody)
+                    {
+                        CustodyRow liveRow;
+                        if (old->second->bidder == 0 ||
+                            !CustodyLedger::GetSingleLiveBidRow(old->second->Id, liveRow) ||
+                            liveRow.ownerGuid != old->second->bidder ||
+                            liveRow.amount != old->second->bid)
+                        {
+                            sLog.outError("custody S4: live bid row validation failed for auction %u "
+                                          "(bidder %u, bid %u); failing closed",
+                                          old->second->Id, old->second->bidder,
+                                          old->second->bid);
+                            continue;
+                        }
+                        liveBidKey = liveRow.idemKey;
+                    }
+
                     CustodyDeferred def;
                     CharacterDatabase.BeginTransaction();
-                    old->second->AuctionBidWinningCustody(NULL, def);
+                    old->second->AuctionBidWinningCustody(
+                        NULL, def, route.usesPlayerSellerCustody,
+                        route.hasLiveBidCustody, liveBidKey);
                     CustodyService::MaybeCrash("pre-commit");
                     if (CharacterDatabase.CommitTransactionChecked())
                     {
@@ -1098,13 +1124,12 @@ void AuctionHouseObject::Update()
             ///- cancel the auction if there was no bidder and clear the auction
             else   // no bidder -> unsold expiry
             {
-                // Custody co-commit path (per-auction drain, X3): only auctions
-                // carrying live custody rows resolve through the ledger; legacy
-                // (pre-gate / bot-created) auctions fall through unchanged.
+                // Unsold expiry has no bid value to settle, so only player
+                // seller custody selects the custody transaction.
                 // `old = itr++` already advanced the iterator, so the deferred
                 // RemoveAuction(Id) erase of `old`'s slot does NOT invalidate itr
                 // (same reasoning as the win-branch comment at :887-889).
-                if (sWorld.IsAhCustodyEnabled() && CustodyLedger::HasRows(old->second->Id))
+                if (route.usesPlayerSellerCustody)
                 {
                     CustodyDeferred def;
                     CharacterDatabase.BeginTransaction();
@@ -1594,11 +1619,9 @@ void AuctionEntry::AuctionBidWinning(Player* newbidder)
  * RemoveAuction + `delete this`, so the in-memory auction survives until the very
  * end of def.run() (earlier closures that read auction fields snapshot by value).
  *
- * Netting (Sec 5.4): the seller is paid bid + deposit - cut by the single legacy
- * seller mail (step 1); the deposit + bid ledger rows are flipped LEDGER-ONLY
- * (no second mail, no released coin). The deposit row "dep:<Id>" returns; the live
- * bid row commits -- UNLESS bidder == 0 (bot-displaced win), where no bid row
- * exists so the commit is skipped and the item destroys (winner guid 0).
+ * The seller payout and winner item delivery always retain legacy behavior.
+ * Seller item/deposit rows and the bidder row are terminalized independently,
+ * according to the route facts validated by the caller.
  *
  * Gold note: do NOT re-save newbidder's gold here. On a buyout it was already
  * saved by ReserveGold/TopUpBid in UpdateBidCustody; on the expiry path newbidder
@@ -1608,6 +1631,8 @@ void AuctionEntry::AuctionBidWinning(Player* newbidder)
  * @param def       Ordered deferred-effects queue for this co-commit.
  */
 void AuctionEntry::AuctionBidWinningCustody(Player* newbidder, CustodyDeferred& def,
+                                           bool usesPlayerSellerCustody,
+                                           bool hasLiveBidCustody,
                                            std::string const& knownBidKey)
 {
     // (void) newbidder: its gold is already persisted by the bid seam (buyout) or
@@ -1618,38 +1643,18 @@ void AuctionEntry::AuctionBidWinningCustody(Player* newbidder, CustodyDeferred& 
     //    deferred BEFORE the mail push by the co-commit core).
     sAuctionMgr.SendAuctionSuccessfulMailInTransaction(this, def);
 
-    // 2) Netting (Sec 5.4, ledger-only -- the seller mail above already carries
-    //    both the deposit return and the proceeds, so flip the rows WITHOUT mail
-    //    or coin to avoid double-crediting).
-    CustodyService::RollbackGoldLedgerOnly("dep:" + std::to_string(Id));
-    if (bidder != 0)
+    // 2) Net player-seller custody only. The seller mail above already carries
+    //    the deposit return and proceeds, so these are ledger-only transitions.
+    if (usesPlayerSellerCustody)
     {
-        // Commit the live bid row. A bot-displaced win (bidder == 0) carried no bid
-        // custody row -> skip (spec R2/X3).
-        if (!knownBidKey.empty())
-        {
-            // Buyout path: the bid row was RESERVED in this same still-open txn, so
-            // a synchronous SELECT cannot see it yet -- use the key the bid seam
-            // just reserved.
-            CustodyService::CommitGoldLedgerOnly(knownBidKey);
-        }
-        else
-        {
-            // Expiry path: the bid row is committed -> fetch + validate it.
-            CustodyRow liveBidRow;
-            if (CustodyLedger::GetSingleLiveBidRow(Id, liveBidRow))
-            {
-                CustodyService::CommitGoldLedgerOnly(liveBidRow.idemKey);
-            }
-            else
-            {
-                // Fail-soft: a real bidder with no single live bid row is a custody
-                // drift (logged for ah repair). The seller is still paid and the
-                // item still delivers; only the bid row's terminal flip is skipped.
-                sLog.outError("custody S4: no single live bid row for auction %u (bidder %u); "
-                              "skipping bid commit", Id, bidder);
-            }
-        }
+        CustodyService::RollbackGoldLedgerOnly("dep:" + std::to_string(Id));
+    }
+
+    // The caller either validated this existing key before BeginTransaction or
+    // created it in this same transaction while processing a buyout.
+    if (hasLiveBidCustody)
+    {
+        CustodyService::CommitGoldLedgerOnly(knownBidKey);
     }
 
     // 3) Item to winner (receiver-exists owner UPDATE) or destroy (bidder == 0 ->
@@ -1657,13 +1662,10 @@ void AuctionEntry::AuctionBidWinningCustody(Player* newbidder, CustodyDeferred& 
     //    (destroy: delete pItem) are deferred by the co-commit core.
     sAuctionMgr.SendAuctionWonMailInTransaction(this, def);
 
-    // Terminalize the item escrow row: on a win the item always resolves
-    // (delivered to the winner or destroyed by SendAuctionWonMailInTransaction
-    // above), so flip "item:<Id>" -> TERMINAL_OK ledger-only. In-txn, so on
-    // rollback the flip rolls back with everything else (no orphan). Without
-    // this the "item:" row stays CST_RESERVED after the auction row is deleted
-    // -> orphaned non-terminal row (breaks reconciliation / ah repair).
-    CustodyService::CommitGoldLedgerOnly("item:" + std::to_string(Id));
+    if (usesPlayerSellerCustody)
+    {
+        CustodyService::CommitGoldLedgerOnly("item:" + std::to_string(Id));
+    }
 
     // 4) Delete the auction row IN-TXN (appends to the caller's open transaction).
     this->DeleteFromDB();
@@ -1722,6 +1724,58 @@ void AuctionEntry::ExpireUnsoldCustody(CustodyDeferred& def)
         houseMap->RemoveAuction(aucId);
         delete self;
     });
+}
+
+void AuctionEntry::PrepareCancelCustody(Player* seller, CustodyDeferred& def,
+                                        bool usesPlayerSellerCustody,
+                                        bool hasLiveBidCustody,
+                                        std::string const& liveBidKey,
+                                        uint32 auctionCut)
+{
+    if (bid)
+    {
+        seller->ModifyMoney(-int32(auctionCut));
+    }
+
+    if (bidder != 0)
+    {
+        if (hasLiveBidCustody)
+        {
+            CustodyService::RollbackGoldLedgerOnly(liveBidKey);
+        }
+        WorldSession::SendAuctionCancelledToBidderMailInTransaction(this, def);
+    }
+
+    if (usesPlayerSellerCustody)
+    {
+        CustodyService::CommitGoldLedgerOnly("dep:" + std::to_string(Id));
+    }
+
+    Item* item = sAuctionMgr.GetAItem(itemGuidLow);
+    uint32 const savedItemGuidLow = itemGuidLow;
+    def.effects.push_back([savedItemGuidLow]()
+    {
+        sAuctionMgr.RemoveAItem(savedItemGuidLow);
+    });
+
+    std::ostringstream subject;
+    subject << itemTemplate << ":" << itemRandomPropertyId << ":" << AUCTION_CANCELED;
+    MailDraft itemReturn(subject.str(), "");
+    itemReturn.AddItem(item);
+    if (usesPlayerSellerCustody)
+    {
+        CustodyService::DeliverItem(def, "item:" + std::to_string(Id), itemReturn,
+                                    MailReceiver(seller), MailSender(this),
+                                    MAIL_CHECK_MASK_COPIED);
+    }
+    else
+    {
+        itemReturn.SendMailToInTransaction(MailReceiver(seller), MailSender(this),
+                                           def, MAIL_CHECK_MASK_COPIED);
+    }
+
+    seller->SaveInventoryAndGoldToDB();
+    DeleteFromDB();
 }
 
 /**
@@ -1803,6 +1857,8 @@ bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=NULL*/)
  * @return true if the auction remains active (normal bid); false on buyout.
  */
 bool AuctionEntry::UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDeferred& def,
+                                   bool usesPlayerSellerCustody,
+                                   bool hadLiveBidCustody,
                                    std::string const& liveBidKey)
 {
     // Cap the bid at buyout FIRST, mirroring UpdateBid (:1055-1058). A buyout bid
@@ -1823,12 +1879,22 @@ bool AuctionEntry::UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDef
 
     if (newbidder && newbidder->GetGUIDLow() == bidder)
     {
-        // same-bidder raise: debit the DELTA and bump the live bid row amount.
-        // The full-price affordability guard in the handler already gated this
-        // (spec I1). Mirrors UpdateBid's ModifyMoney(-(newbid - bid)). The live
-        // bid key was pre-fetched and VALIDATED by the handler (spec I1).
-        CustodyService::TopUpBid(liveBidKey, newbid, newbid - bid, newbidder);
-        winningBidKey = liveBidKey;
+        if (hadLiveBidCustody)
+        {
+            CustodyService::TopUpBid(liveBidKey, newbid, newbid - bid, newbidder);
+            winningBidKey = liveBidKey;
+        }
+        else
+        {
+            // Seller custody can meet a legacy standing bid. Preserve the
+            // legacy delta debit, then establish custody at the full new amount.
+            newbidder->ModifyMoney(-int32(newbid - bid));
+            newbidder->SaveInventoryAndGoldToDB();
+            winningBidKey = "bid:" + std::to_string(Id) + ":" +
+                            std::to_string(CustodyLedger::NextBidSeq(Id));
+            CustodyService::ReserveGoldAlreadyDebited(
+                newbidder->GetGUIDLow(), newbid, winningBidKey, Id, ROLE_BID);
+        }
     }
     else
     {
@@ -1838,10 +1904,10 @@ bool AuctionEntry::UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDef
         // (matches UpdateBid's `if (bidder)` skipping the refund -- spec R2).
         if (bidder != 0)
         {
-            // liveBidKey was pre-fetched and VALIDATED by the handler (owner_guid
-            // == bidder, amount == bid, exactly one live row) before the txn
-            // opened (spec I1), so terminalize exactly that verified row.
-            CustodyService::RollbackGoldLedgerOnly(liveBidKey);
+            if (hadLiveBidCustody)
+            {
+                CustodyService::RollbackGoldLedgerOnly(liveBidKey);
+            }
             WorldSession::SendAuctionOutbiddedMailInTransaction(this, def);
         }
 
@@ -1875,7 +1941,8 @@ bool AuctionEntry::UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDef
     // SELECT for the uncommitted row (bidder==0 cannot happen here: a player buyout
     // always has a live newbidder). The auction is deleted in a deferred closure
     // run only after the caller's checked commit succeeds.
-    AuctionBidWinningCustody(newbidder, def, winningBidKey);
+    AuctionBidWinningCustody(newbidder, def, usesPlayerSellerCustody,
+                             true, winningBidKey);
     return false;
 }
 

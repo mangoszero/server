@@ -184,23 +184,6 @@ bool CustodyLedger::AuctionExists(uint32 auctionId)
     return true;
 }
 
-bool CustodyLedger::HasRows(uint32 auctionId)
-{
-    // Only match active (CST_RESERVED) rows so terminal leftovers from a
-    // deleted-and-reused auction_id do not falsely open the custody path.
-    // A live custody auction always has at least one RESERVED row; a fully
-    // resolved or cancelled auction's rows are all terminal -> returns false.
-    QueryResult* res = CharacterDatabase.PQuery(
-        "SELECT 1 FROM `custody_ledger` WHERE `auction_id`=%u AND `state`=%u LIMIT 1",
-        auctionId, uint32(CST_RESERVED));
-    if (!res)
-    {
-        return false;
-    }
-    delete res;
-    return true;
-}
-
 void CustodyLedger::LoadNonTerminal(std::vector<CustodyRow>& out)
 {
     QueryResult* result = CharacterDatabase.Query(
