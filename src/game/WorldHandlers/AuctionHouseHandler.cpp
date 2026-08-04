@@ -1105,11 +1105,9 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         newOutbid = 1;
     }
 
-    CustodyRouteState route = {};
-    if (sWorld.IsAhCustodyEnabled())
-    {
-        route = CustodyLedger::GetRouteState(auction->Id);
-    }
+    // A reload may disable config-gated custody entry and maintenance, but
+    // durable rows already in flight remain authoritative until terminal.
+    CustodyRouteState const route = CustodyLedger::GetRouteState(auction->Id);
 
     // A player-seller row or a player-bid row selects the combined transaction.
     // Marker-only bot listings remain entirely on the legacy path.
@@ -1294,11 +1292,9 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
         return;
     }
 
-    CustodyRouteState route = {};
-    if (sWorld.IsAhCustodyEnabled())
-    {
-        route = CustodyLedger::GetRouteState(auction->Id);
-    }
+    // A reload may disable config-gated custody entry and maintenance, but
+    // durable rows already in flight remain authoritative until terminal.
+    CustodyRouteState const route = CustodyLedger::GetRouteState(auction->Id);
 
     if (route.usesPlayerSellerCustody || route.hasLiveBidCustody)
     {
