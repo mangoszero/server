@@ -161,6 +161,7 @@ static void usage(const char* prog)
         "    -v, --version              print version and exist\n\r"
         "    -c <config_file>           use config_file as configuration file\n\r"
         "    -a, --ahbot <config_file>  use config_file as ahbot configuration file\n\r"
+        "    -t <test_name>             run an in-process self-test and exit\n\r"
 #ifdef WIN32
         "    Running as service functions:\n\r"
         "    -s run                     run as service\n\r"
@@ -204,6 +205,7 @@ int main(int argc, char** argv)
     char const* cfg_file = MANGOSD_CONFIG_LOCATION;
 
     char serviceDaemonMode = '\0';
+    std::string testMode;
 
     // Walked by hand rather than with ACE_Get_Opt (gone with the rest of ACE) or
     // getopt (absent on MSVC). Four options do not justify a dependency.
@@ -224,6 +226,10 @@ int main(int argc, char** argv)
         else if ((arg == "-a" || arg == "--ahbot") && hasValue)
         {
             sAuctionBotConfig.SetConfigFileName(argv[++i]);
+        }
+        else if (arg == "-t" && hasValue)
+        {
+            testMode = argv[++i];
         }
         else if (arg == "-s" && hasValue)
         {
@@ -376,7 +382,7 @@ int main(int argc, char** argv)
     // runs the world loop on this thread and returns once the world has stopped
     // and every service has been joined.
     Master master;
-    const int runCode = master.Run();
+    const int runCode = master.Run(testMode);
 
     ///- Remove signal handling before leaving
     unhook_signals();
