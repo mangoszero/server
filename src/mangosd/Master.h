@@ -31,6 +31,7 @@
 #include "Platform/Define.h"
 
 #include <memory>
+#include <string>
 #include <vector>
 
 /**
@@ -63,7 +64,7 @@ class Master
          *
          * @return The process exit code.
          */
-        int Run();
+        int Run(std::string const& testMode = "");
 
     private:
 
