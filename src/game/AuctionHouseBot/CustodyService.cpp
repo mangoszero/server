@@ -228,9 +228,15 @@ std::string CustodyService::CrashPhase()
     return sConfig.GetStringDefault("AH.Service.CustodyCrashAt", "");
 }
 
+bool CustodyService::ShouldCrashAtPhase(std::string const& configuredPhase,
+                                        std::string const& phase)
+{
+    return !phase.empty() && configuredPhase == phase;
+}
+
 void CustodyService::MaybeCrash(std::string const& phase)
 {
-    if (CrashPhase() == phase)
+    if (ShouldCrashAtPhase(CrashPhase(), phase))
     {
         sLog.outError("custody crash-injection: _exit(3) at phase '%s' (TEST ONLY)", phase.c_str());
         fflush(NULL);                                       // flush ALL stdio streams (incl. the log FILE*) -- _exit skips cleanup

@@ -786,6 +786,16 @@ static int RunCustodyTest()
 {
     bool pass = true;
 
+    if (CustodyService::ShouldCrashAtPhase("", "") ||
+        CustodyService::ShouldCrashAtPhase("pre-commit", "") ||
+        CustodyService::ShouldCrashAtPhase("", "pre-commit") ||
+        CustodyService::ShouldCrashAtPhase("pre-commit", "pre-deferred") ||
+        !CustodyService::ShouldCrashAtPhase("pre-commit", "pre-commit"))
+    {
+        printf("custody FAIL: crash phase predicate mismatch\n");
+        pass = false;
+    }
+
     CharacterDatabase.AllowAsyncTransactions();
 
     // Clean slate from any prior aborted run.
