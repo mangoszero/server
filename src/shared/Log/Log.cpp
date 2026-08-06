@@ -1225,7 +1225,7 @@ void Log::outErrorScriptLib(const char* err, ...)
     }
 }
 
-void Log::outWorldPacketDump(uint32 socket, uint32 opcode, char const* opcodeName, ByteBuffer const* packet, bool incoming)
+void Log::outWorldPacketDump(uint32 session, uint32 opcode, char const* opcodeName, ByteBuffer const* packet, bool incoming)
 {
     if (!worldLogfile)
     {
@@ -1237,18 +1237,19 @@ void Log::outWorldPacketDump(uint32 socket, uint32 opcode, char const* opcodeNam
     outTimestamp(worldLogfile);
 
     // Build the whole hex dump into one buffer and emit it with a single
-    // fwrite, instead of one fprintf PER BYTE (16+ stdio calls per row). Output
-    // is byte-identical to the previous format. Durability via Flush()/shutdown.
+    // fwrite, instead of one fprintf PER BYTE (16+ stdio calls per row). The hex
+    // body is byte-identical to that format. Durability via Flush()/shutdown.
     std::string out;
     out.reserve(packet->size() * 3 + packet->size() / 16 + 128);
 
-    // header[512] is ample for the fixed text plus a (short, compile-time)
-    // opcode-name constant; snprintf is bounded, so output stays byte-identical
-    // to the previous fprintf for every real opcode name.
+    // SESSION, not SOCKET: the field carried a hardcoded 0 for every packet of every
+    // client, so two clients logged as one interleaved stream that could not be taken
+    // apart. header[512] is ample for the fixed text plus a (short, compile-time)
+    // opcode-name constant, and snprintf is bounded.
     char header[512];
-    snprintf(header, sizeof(header), "\n%s:\nSOCKET: %u\nLENGTH: %zu\nOPCODE: %s (0x%.4X)\nDATA:\n",
+    snprintf(header, sizeof(header), "\n%s:\nSESSION: %u\nLENGTH: %zu\nOPCODE: %s (0x%.4X)\nDATA:\n",
         incoming ? "CLIENT" : "SERVER",
-        socket, packet->size(), opcodeName, opcode);
+        session, packet->size(), opcodeName, opcode);
     out += header;
 
     char hexbuf[4];

@@ -95,7 +95,11 @@ class IWorldGateway
 public:
     virtual ~IWorldGateway() = default;
     virtual bool FilterAuthPacket(WorldPacket& packet) = 0;
-    virtual void TracePacket(WorldPacket const& packet, bool incoming) = 0;
+
+    /// `session` is INVALID_SESSION_ID for the pre-auth handshake only. Without it a dump
+    /// cannot say which of several connected clients a packet belongs to, which is most of
+    /// what a packet dump is for.
+    virtual void TracePacket(SessionId session, WorldPacket const& packet, bool incoming) = 0;
     virtual AuthLookup LookupAccount(AuthRequest const& request) = 0;
     virtual SessionId Attach(AuthRequest const& request,
         std::shared_ptr<IClientLink> const& link,

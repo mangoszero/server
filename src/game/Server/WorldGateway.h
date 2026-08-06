@@ -38,7 +38,7 @@ class WorldGateway final : public proto::IWorldGateway
 {
 public:
     bool FilterAuthPacket(WorldPacket& packet) override;
-    void TracePacket(WorldPacket const& packet, bool incoming) override;
+    void TracePacket(proto::SessionId session, WorldPacket const& packet, bool incoming) override;
     proto::AuthLookup LookupAccount(proto::AuthRequest const& request) override;
     proto::SessionId Attach(proto::AuthRequest const& request,
         std::shared_ptr<proto::IClientLink> const& link,
