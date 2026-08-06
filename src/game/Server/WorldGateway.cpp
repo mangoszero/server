@@ -85,11 +85,11 @@ bool WorldGateway::FilterAuthPacket(WorldPacket& packet)
     return true;
 }
 
-void WorldGateway::TracePacket(WorldPacket const& packet, bool incoming)
+void WorldGateway::TracePacket(proto::SessionId session, WorldPacket const& packet, bool incoming)
 {
     if (sLog.IsPacketLoggingEnabled())
     {
-        sLog.outWorldPacketDump(0, packet.GetOpcode(),
+        sLog.outWorldPacketDump(session, packet.GetOpcode(),
             LookupOpcodeName(packet.GetOpcode()), &packet, incoming);
     }
 }

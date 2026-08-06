@@ -311,16 +311,16 @@ class Log : public MaNGOS::Singleton<Log>
         /**
          * @brief any log level
          *
-         * Called from WorldGateway::Deliver (incoming) and WorldSession::SendPacket
-         * (outgoing) -- see IsPacketLoggingEnabled()'s comment below.
+         * Called from WorldGateway::TracePacket, i.e. from ClientConnection on the
+         * network thread in both directions -- see IsPacketLoggingEnabled() below.
          *
-         * @param socket
+         * @param session which client stream the packet belongs to; 0 pre-auth
          * @param opcode
          * @param opcodeName
          * @param packet
          * @param incoming
          */
-        void outWorldPacketDump(uint32 socket, uint32 opcode, char const* opcodeName, ByteBuffer const* packet, bool incoming);
+        void outWorldPacketDump(uint32 session, uint32 opcode, char const* opcodeName, ByteBuffer const* packet, bool incoming);
         /**
          * @brief any log level
          *

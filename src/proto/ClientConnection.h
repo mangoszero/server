@@ -79,6 +79,11 @@ private:
     std::mutex m_sessionLock;
     uint32 m_seed;
     SessionId m_session = INVALID_SESSION_ID;
+
+    /// The same id, readable without m_sessionLock: SendPacket traces while holding
+    /// m_sendOrderLock, and taking m_sessionLock under it would invert the order
+    /// HandleAuthSession uses. Tracing only -- m_session stays the authority.
+    std::atomic<SessionId> m_traceSession{INVALID_SESSION_ID};
     bool m_authStarted = false;
     std::atomic<bool> m_closed{false};
     net::Sender m_sender;
