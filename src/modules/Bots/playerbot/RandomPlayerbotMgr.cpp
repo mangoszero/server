@@ -356,6 +356,29 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
         return true;
     }
 
+    // A resident that has outgrown the band is put back to the start here, before
+    // anything else can move it. IncreaseLevel already does this, but IncreaseLevel only
+    // runs when the randomize event lapses, which is somewhere between two hours and a
+    // fortnight away -- so it never governs real levelling. Bots earn ordinary kill,
+    // quest and exploration experience, and Player::GiveXP calls GiveLevel straight out
+    // on the map worker without consulting this manager at all. A resident rolled to 10
+    // therefore reaches 11 by simply playing, and at 11 both home-confinement tests stop
+    // applying, so the very next eviction or teleport event sends it off to a
+    // level-appropriate zone somewhere else entirely. That is the drain: not the manager
+    // levelling residents out, but residents levelling themselves out from underneath it.
+    //
+    // Repaired on the world thread, where the roster is owned, rather than by hooking the
+    // level-up on the map worker.
+    if (IsStarterZoneResident(player) &&
+        sPlayerbotAIConfig.randomBotHomeZoneMaxLevel &&
+        player->getLevel() > sPlayerbotAIConfig.randomBotHomeZoneMaxLevel)
+    {
+        sLog.outDetail("Resident bot %d outgrew the starting band at level %u; returning it",
+            bot, player->getLevel());
+        RandomizeStarterResident(player);
+        return true;
+    }
+
     // No timer gates this check, so a bot with nowhere valid to go re-ran the whole
     // search on every pass: a hundred game_tele draws and a GetZoneLevel query apiece,
     // once a minute, for as long as it stood there. Only a failure needs the backoff --
@@ -784,9 +807,10 @@ void RandomPlayerbotMgr::IncreaseLevel(Player* bot)
     }
 
     // A resident that has outgrown the starting band goes back to the beginning rather
-    // than graduating out of the zone. Otherwise this is the slow leak that empties the
-    // starting zones anyway: residency survives the level-up, but the bot does not stay
-    // in the band that keeps it at home, so it drifts out one level at a time.
+    // than graduating out of the zone. This only governs the manager's own slow
+    // increment; it is not the real guard, because it runs only when the randomize event
+    // lapses. Levelling through ordinary play is caught by the equivalent check in
+    // ProcessBot, which runs every pass.
     if (IsStarterZoneResident(bot) &&
         sPlayerbotAIConfig.randomBotHomeZoneMaxLevel &&
         bot->getLevel() >= sPlayerbotAIConfig.randomBotHomeZoneMaxLevel)
