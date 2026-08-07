@@ -485,6 +485,21 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
         return false;
     }
 
+    // Nothing below this line may move a bot that is fighting. Every branch that follows
+    // can teleport, re-level or re-gear, and all of them run on the world thread while a
+    // map worker has the bot mid-swing -- so a passer-by watched bots blink out of a fight
+    // and reappear across the zone. Only IsBeingTeleported was ever checked, which catches
+    // a teleport already in flight and says nothing about combat.
+    //
+    // The dead branch above is deliberately before this: a dead bot is not in combat in any
+    // sense worth protecting, and reviving in place is the one relocation that has to
+    // happen regardless. Reading IsInCombat from this thread is a stale read at worst, and
+    // the cost of being one pass late is a bot that moves a minute later than it might have.
+    if (player->IsInCombat())
+    {
+        return false;
+    }
+
     uint32 randomize = GetEventValue(bot, "randomize");
     if (!randomize)
     {
