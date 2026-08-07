@@ -247,10 +247,21 @@ namespace ai
             virtual bool isUseful()
             {
                 Unit* target = AI_VALUE(Unit*, "current target");
-                if (!target || !target->IsAlive() || (target->getVictim() == bot))
+                if (!target || !target->IsAlive())
                 {
                     return false;
                 }
+
+                // "target->getVictim() == bot" used to disqualify this outright, which
+                // switched off the only action that can restore range at precisely the
+                // moment a hunter needs it. With the mob on the hunter and between seven
+                // and fifteen yards away, every other option in the cascade is out of
+                // reach too: wing clip, mongoose bite, disengage and the melee fallback
+                // all want five yards or less, flee wants seven, and auto shot is refused
+                // by the core with SPELL_FAILED_TOO_CLOSE inside eight. So the hunter
+                // stood in its own dead zone doing nothing at all until the mob closed to
+                // melee. Walking while being hit costs some casting pushback and is
+                // plainly better than that.
                 float distance = CombatDistanceBetween(*bot, *target, false);
                 return distance < GetMinShootDistance() || distance > sPlayerbotAIConfig.spellDistance;
             }
