@@ -250,6 +250,25 @@ bool PlayerbotAIConfig::Initialize()
     randomBotHomeZoneMaxLevel = config.GetIntDefault("AiPlayerbot.RandomBotHomeZoneMaxLevel", 10);
     randomBotHomeAreaMaxLevel = config.GetIntDefault("AiPlayerbot.RandomBotHomeAreaMaxLevel", 5);
     randomBotStarterZonePct = config.GetIntDefault("AiPlayerbot.RandomBotStarterZonePct", 15);
+    // Residency is decided by (guid % 100) < pct, so anything over 100 quietly makes the
+    // entire roster resident and a negative in the file arrives here as an enormous
+    // unsigned. Clamp rather than trust the file.
+    if (randomBotStarterZonePct > 100)
+    {
+        sLog.outError("AiPlayerbot.RandomBotStarterZonePct is %u; clamping to 100", randomBotStarterZonePct);
+        randomBotStarterZonePct = 100;
+    }
+
+    // The two settings only mean something together: residency puts a bot in the starting
+    // band, and the home-zone limit is what keeps it there. With residency on and the
+    // limit at zero a bot is placed at home once and then confined by nothing, which
+    // looks like the feature working and then silently failing.
+    if (randomBotStarterZonePct && !randomBotHomeZoneMaxLevel)
+    {
+        sLog.outError("AiPlayerbot.RandomBotStarterZonePct is set but RandomBotHomeZoneMaxLevel is 0, "
+            "so residents would not be kept at home; disabling starting-zone residency");
+        randomBotStarterZonePct = 0;
+    }
 
     randomChangeMultiplier = config.GetFloatDefault("AiPlayerbot.RandomChangeMultiplier", 1.0);
 
@@ -545,8 +564,24 @@ void PlayerbotAIConfig::CreateRandomBots()
 
         randomBotAccounts.push_back(accountId);
 
+        // Count the classes this loop will actually create rather than assuming ten. It
+        // creates one per playable class, and vanilla has nine -- 6 and 10 do not exist
+        // here -- so an account that was already full at nine looked incomplete against a
+        // threshold of ten and got a second full set. Every restart without a wipe
+        // therefore doubled the roster, 450 characters to 900 at eighteen per account,
+        // until the count finally cleared ten. CreateRandomBot bypasses the normal
+        // per-account character limit, so nothing else stopped it.
+        uint32 expectedChars = 0;
+        for (uint8 cls = CLASS_WARRIOR; cls < MAX_CLASSES; ++cls)
+        {
+            if (cls != 10 && cls != 6)
+            {
+                ++expectedChars;
+            }
+        }
+
         int count = sAccountMgr.GetCharactersCount(accountId);
-        if (count >= 10)
+        if (count >= (int)expectedChars)
         {
             totalRandomBotChars += count;
             continue;

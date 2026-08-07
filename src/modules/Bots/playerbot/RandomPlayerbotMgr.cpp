@@ -2132,14 +2132,20 @@ void RandomPlayerbotMgr::HandleMeetingStoneClick(Player* player, GameObject* obj
     for (Group::member_citerator citr = grp->GetMemberSlots().begin(); citr != grp->GetMemberSlots().end(); ++citr)
     {
         Player* member = sObjectMgr.GetPlayer(citr->guid);
-        if(member)
+        // A member slot survives its player logging out, so GetPlayer returns NULL for
+        // anyone offline. The null test below used to guard only the role tally, and the
+        // very next line dereferenced the same pointer regardless -- so one offline member
+        // in the leader's group crashed the server on a meeting-stone click.
+        if (!member)
         {
-            ClassRoles role = FillRoleMap(member, healers, dpses, tanks);
-            auto it = find(missingRoles.begin(), missingRoles.end(), role);
-            if (it != missingRoles.end())
-            {
-                missingRoles.erase(it);
-            }
+            continue;
+        }
+
+        ClassRoles role = FillRoleMap(member, healers, dpses, tanks);
+        auto it = find(missingRoles.begin(), missingRoles.end(), role);
+        if (it != missingRoles.end())
+        {
+            missingRoles.erase(it);
         }
 
         if (!member->GetPlayerbotAI() || member == player)
