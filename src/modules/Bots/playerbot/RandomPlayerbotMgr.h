@@ -352,6 +352,8 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         std::map<uint32, RacialStart> m_racialStarts; ///< race -> where that race begins, resolved once from playercreateinfo
         std::map<uint32, uint32> m_raceStartZones;    ///< race -> starting zone, for candidates with no loaded Player
         std::map<uint32, uint32> m_botStartZones;     ///< bot guid -> starting zone, filled while listing free bots
+        std::vector<uint32> m_freeBotsCache[2];       ///< free bot guids per faction, rebuilt once per pass
+        int m_freeBotsPass;                           ///< the pass m_freeBotsCache was built for
         std::map<uint32, uint32> m_starterZoneCounts; ///< starting zone -> active residents, rebuilt once per pass
         int m_starterZoneCountsPass;                  ///< the pass m_starterZoneCounts was built for
         std::unordered_map<uint32, bool> m_randomBotCache;

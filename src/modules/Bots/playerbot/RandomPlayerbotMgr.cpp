@@ -27,7 +27,7 @@
  * It handles the creation, updating, and processing of these bots, ensuring they
  * behave in a way that simulates real player activity.
  */
-RandomPlayerbotMgr::RandomPlayerbotMgr() : PlayerbotHolder(), processTicks(0), m_processBotCursor(0), m_starterZoneCountsPass(-1)
+RandomPlayerbotMgr::RandomPlayerbotMgr() : PlayerbotHolder(), processTicks(0), m_processBotCursor(0), m_starterZoneCountsPass(-1), m_freeBotsPass(-1)
 {
 }
 
@@ -373,7 +373,26 @@ uint32 RandomPlayerbotMgr::PickForStarterZoneQuota(vector<uint32>& bots)
 
 uint32 RandomPlayerbotMgr::AddRandomBot(bool alliance)
 {
-    vector<uint32> bots = GetFreeBots(alliance);
+    // Built once per pass, not once per admission. GetFreeBots is a scan of every bot
+    // character -- around 200ms at nine thousand of them -- and this is called for each
+    // bot admitted, so a pass adding fifty spent ten seconds in synchronous database work.
+    // That is the same shape as the per-account query it just replaced, one level up.
+    // Admitted bots are struck from the vector below so the list stays correct within the
+    // pass without being rebuilt, the way the starter-zone tally already works.
+    int idx = alliance ? 0 : 1;
+    if (m_freeBotsPass != processTicks)
+    {
+        m_freeBotsPass = processTicks;
+        m_freeBotsCache[0].clear();
+        m_freeBotsCache[1].clear();
+    }
+
+    if (m_freeBotsCache[idx].empty())
+    {
+        m_freeBotsCache[idx] = GetFreeBots(alliance);
+    }
+
+    vector<uint32>& bots = m_freeBotsCache[idx];
     if (bots.size() == 0)
     {
         sLog.outBasic("No free %s bots to add (%u bot accounts known)",
@@ -387,6 +406,18 @@ uint32 RandomPlayerbotMgr::AddRandomBot(bool alliance)
     {
         int index = urand(0, bots.size() - 1);
         bot = bots[index];
+    }
+
+    // Strike it from the cached list: it is about to hold an "add" event, so a rebuild
+    // would exclude it anyway, and leaving it in lets the same bot be drawn twice in one
+    // pass.
+    for (vector<uint32>::iterator i = bots.begin(); i != bots.end(); ++i)
+    {
+        if (*i == bot)
+        {
+            bots.erase(i);
+            break;
+        }
     }
     SetEventValue(bot, "add", 1, urand(sPlayerbotAIConfig.minRandomBotInWorldTime, sPlayerbotAIConfig.maxRandomBotInWorldTime));
     uint32 randomTime = 30 + urand(sPlayerbotAIConfig.randomBotUpdateInterval, sPlayerbotAIConfig.randomBotUpdateInterval * 3);
