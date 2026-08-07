@@ -233,8 +233,8 @@ class RandomPlayerbotMgr : public PlayerbotHolder
          * @param time The time to schedule the randomization.
          */
         void ScheduleRandomize(uint32 bot, uint32 time);
-        void RandomTeleport(Player* bot, uint32 mapId, float teleX, float teleY, float teleZ);
-        void RandomTeleportForLevel(Player* bot);
+        bool RandomTeleport(Player* bot, uint32 mapId, float teleX, float teleY, float teleZ);
+        bool RandomTeleportForLevel(Player* bot);
         void EnsureGroupedBotsOnline();
         void LoadGroupedBots();
         QueryResult* QueryGroupedBots();
@@ -244,7 +244,7 @@ class RandomPlayerbotMgr : public PlayerbotHolder
          * @param bot Pointer to the player bot.
          * @param locs The list of possible locations.
          */
-        void RandomTeleport(Player* bot, vector<WorldLocation> &locs);
+        bool RandomTeleport(Player* bot, vector<WorldLocation> &locs);
 
         /**
          * @brief Gets the level of a zone based on its coordinates.

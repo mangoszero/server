@@ -80,6 +80,8 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
 
     list<uint32> bots = GetBots();
     int botCount = bots.size();
+    sLog.outBasic("Random bot roster %d, target %d (config %d-%d)", botCount, maxAllowedBotCount,
+        sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots);
     int allianceNewBots = 0, hordeNewBots = 0;
     int randomBotsPerInterval = (int)urand(sPlayerbotAIConfig.minRandomBotsPerInterval, sPlayerbotAIConfig.maxRandomBotsPerInterval);
     if (!processTicks)
@@ -192,6 +194,8 @@ uint32 RandomPlayerbotMgr::AddRandomBot(bool alliance)
     vector<uint32> bots = GetFreeBots(alliance);
     if (bots.size() == 0)
     {
+        sLog.outBasic("No free %s bots to add (%u bot accounts known)",
+            alliance ? "alliance" : "horde", (uint32)sPlayerbotAIConfig.randomBotAccounts.size());
         return 0;
     }
 
@@ -307,18 +311,24 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
         return true;
     }
 
-    // No timer gates this check, so a bot with nowhere valid to go used to re-run the
-    // whole search on every pass: a hundred game_tele draws and a GetZoneLevel query
-    // apiece, once a minute, for as long as it stood there. Back off either way -- if
-    // the eviction worked the bot is somewhere safe and the check would pass anyway.
+    // No timer gates this check, so a bot with nowhere valid to go re-ran the whole
+    // search on every pass: a hundred game_tele draws and a GetZoneLevel query apiece,
+    // once a minute, for as long as it stood there. Only a failure needs the backoff --
+    // an eviction that worked leaves the bot somewhere this same check accepts, so
+    // holding a cooldown over it would only delay the next legitimate move.
     if (!GetEventValue(bot, "evictcheck") &&
         !IsZoneSafeForBot(player, player->GetMapId(), player->GetPositionX(),
         player->GetPositionY(), player->GetPositionZ()))
     {
         sLog.outDetail("Bot %d is in unsafe zone, forcing teleport", bot);
-        RandomTeleportForLevel(player);
-        SetEventValue(bot, "teleport", 1, sPlayerbotAIConfig.maxRandomBotInWorldTime);
-        SetEventValue(bot, "evictcheck", 1, 10 * sPlayerbotAIConfig.randomBotUpdateInterval);
+        if (RandomTeleportForLevel(player))
+        {
+            SetEventValue(bot, "teleport", 1, sPlayerbotAIConfig.maxRandomBotInWorldTime);
+        }
+        else
+        {
+            SetEventValue(bot, "evictcheck", 1, 10 * sPlayerbotAIConfig.randomBotUpdateInterval);
+        }
         return true;
     }
 
@@ -349,17 +359,17 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
     return false;
 }
 
-void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs)
+bool RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs)
 {
     if (bot->IsBeingTeleported())
     {
-        return;
+        return false;
     }
 
     if (locs.empty())
     {
         sLog.outError("Cannot teleport bot %s - no locations available", bot->GetName());
-        return;
+        return false;
     }
 
     for (int attemtps = 0; attemtps < 10; ++attemtps)
@@ -415,13 +425,14 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
 
         bot->GetMotionMaster()->Clear();
         bot->TeleportTo(loc.mapid, x, y, z, 0);
-        return;
+        return true;
     }
 
     sLog.outError("Cannot teleport bot %s - no locations available", bot->GetName());
+    return false;
 }
 
-void RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
+bool RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
 {
     for (int attempt = 0; attempt < 100; ++attempt)
     {
@@ -447,7 +458,7 @@ void RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
         index = urand(0, locs.size() - 1);
         if (index >= locs.size())
         {
-            return;
+            return false;
         }
 
         GameTele const* tele = locs[index];
@@ -467,14 +478,17 @@ void RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
             continue;
         }
 
-        RandomTeleport(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z);
-        return;
+        if (RandomTeleport(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z))
+        {
+            return true;
+        }
     }
 
     sLog.outError("Cannot teleport bot %s - no locations available", bot->GetName());
+    return false;
 }
 
-void RandomPlayerbotMgr::RandomTeleport(Player* bot, uint32 mapId, float teleX, float teleY, float teleZ)
+bool RandomPlayerbotMgr::RandomTeleport(Player* bot, uint32 mapId, float teleX, float teleY, float teleZ)
 {
     vector<WorldLocation> locs;
     QueryResult* results = WorldDatabase.PQuery("SELECT `position_x`, `position_y`, `position_z` FROM `creature` WHERE `map` = '%u' AND ABS(`position_x` - '%f') < '%u' AND ABS(`position_y` - '%f') < '%u'",
@@ -500,8 +514,11 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, uint32 mapId, float teleX, 
         delete results;
     }
 
-    RandomTeleport(bot, locs);
+    // Refresh regardless: the dead-bot path calls this to revive in place, and a bot
+    // that could not be relocated still has to come back alive where it stands.
+    bool moved = RandomTeleport(bot, locs);
     Refresh(bot);
+    return moved;
 }
 
 void RandomPlayerbotMgr::Randomize(Player* bot)
@@ -607,8 +624,13 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
 
         PlayerbotFactory factory(bot, level);
         factory.CleanRandomize();
-        RandomTeleport(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z);
-        break;
+        // Only stop once the bot is actually somewhere. Breaking regardless left it
+        // freshly levelled but standing where it was created, which is how the fleet
+        // ended up sitting in starting zones at every level.
+        if (RandomTeleport(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z))
+        {
+            break;
+        }
     }
 
     if (bot->getLevel() > maxLevel)
