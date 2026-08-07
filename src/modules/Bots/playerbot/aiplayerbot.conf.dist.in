@@ -194,6 +194,13 @@ AiPlayerbot.RandomBotHomeAreaMaxLevel = 5
 # Set to 0 to disable and let every bot roam.
 AiPlayerbot.RandomBotStarterZonePct = 15
 
+# How many residents each starting zone should hold before the roster is filled at random.
+# The percentage above decides who MAY live in a starting zone; this decides who actually
+# does. Without it admission draws uniformly from every free character of a faction, so
+# which zones end up populated is luck -- entire starting zones came up empty. Set to 0 to
+# admit purely at random.
+AiPlayerbot.RandomBotStarterZoneQuota = 5
+
 # Intervals
 #AiPlayerbot.RandomBotUpdateInterval = 60
 #AiPlayerbot.RandomBotCountChangeMinInterval = 86400

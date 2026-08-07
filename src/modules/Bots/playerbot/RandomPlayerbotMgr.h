@@ -351,6 +351,8 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         std::map<uint32, RacialStart> m_racialStarts; ///< race -> where that race begins, resolved once from playercreateinfo
         std::map<uint32, uint32> m_raceStartZones;    ///< race -> starting zone, for candidates with no loaded Player
         std::map<uint32, uint32> m_botStartZones;     ///< bot guid -> starting zone, filled while listing free bots
+        std::map<uint32, uint32> m_starterZoneCounts; ///< starting zone -> active residents, rebuilt once per pass
+        int m_starterZoneCountsPass;                  ///< the pass m_starterZoneCounts was built for
         std::unordered_map<uint32, bool> m_randomBotCache;
         std::unordered_map<uint32, uint32> m_playerZoneCounts; ///< zone_id -> real player count, for O(1) bot tick gating.
         struct EventValueEntry {

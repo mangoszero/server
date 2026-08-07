@@ -27,7 +27,7 @@
  * It handles the creation, updating, and processing of these bots, ensuring they
  * behave in a way that simulates real player activity.
  */
-RandomPlayerbotMgr::RandomPlayerbotMgr() : PlayerbotHolder(), processTicks(0), m_processBotCursor(0)
+RandomPlayerbotMgr::RandomPlayerbotMgr() : PlayerbotHolder(), processTicks(0), m_processBotCursor(0), m_starterZoneCountsPass(-1)
 {
 }
 
@@ -104,6 +104,21 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
     }
 
     list<uint32> bots = GetBots();
+
+    // Seed the random-bot cache here, on the world thread, for every bot this pass knows
+    // about. IsRandomBot is reached from map workers -- PlayerbotAI::UpdateAI, the trade
+    // and grind values, AiFactory -- and on a miss it both queries the database and
+    // inserts into this unordered_map. Two threads inserting, or one reading through
+    // another's rehash, is undefined behaviour rather than a stale read. Making the world
+    // thread fill it first means the map-worker path only ever finds, never writes.
+    for (list<uint32>::const_iterator i = bots.begin(); i != bots.end(); ++i)
+    {
+        if (m_randomBotCache.find(*i) == m_randomBotCache.end())
+        {
+            m_randomBotCache[*i] = true;
+        }
+    }
+
     int botCount = bots.size();
     sLog.outBasic("Random bot roster %d, target %d (config %d-%d)", botCount, maxAllowedBotCount,
         sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots);
@@ -255,27 +270,41 @@ uint32 RandomPlayerbotMgr::PickForStarterZoneQuota(vector<uint32>& bots)
     // 450 with 101 active, that left Teldrassil and Mulgore with none at all -- not
     // because placement failed, but because no qualifying night elf or tauren was ever
     // selected to log in.
-    std::map<uint32, uint32> present;
-    QueryResult* results = CharacterDatabase.PQuery(
-        "SELECT `c`.`race`, COUNT(*) FROM `ai_playerbot_random_bots` `e` "
-        "JOIN `characters` `c` ON `c`.`guid` = `e`.`bot` "
-        "WHERE `e`.`event` = 'add' AND `e`.`owner` = 0 AND (`e`.`bot` %% 100) < '%u' "
-        "GROUP BY `c`.`race`",
-        sPlayerbotAIConfig.randomBotStarterZonePct);
-
-    if (results)
+    // Recomputed at most once per pass rather than once per admission: a pass that adds
+    // several bots was otherwise running this same aggregate for each of them. The tally
+    // is then kept current in memory as bots are chosen, so a pass admitting several
+    // still spreads them across zones instead of sending them all to the same one.
+    if (m_starterZoneCountsPass != processTicks || m_starterZoneCounts.empty())
     {
-        do
+        m_starterZoneCounts.clear();
+        m_starterZoneCountsPass = processTicks;
+
+        std::map<uint32, uint32> present;
+        QueryResult* results = CharacterDatabase.PQuery(
+            "SELECT `c`.`race`, COUNT(*) FROM `ai_playerbot_random_bots` `e` "
+            "JOIN `characters` `c` ON `c`.`guid` = `e`.`bot` "
+            "WHERE `e`.`event` = 'add' AND `e`.`owner` = 0 AND (`e`.`bot` %% 100) < '%u' "
+            "GROUP BY `c`.`race`",
+            sPlayerbotAIConfig.randomBotStarterZonePct);
+
+        if (results)
         {
-            Field* fields = results->Fetch();
-            uint32 zone = GetStartZoneForRace(fields[0].GetUInt32());
-            if (zone)
+            do
             {
-                present[zone] += fields[1].GetUInt32();
-            }
-        } while (results->NextRow());
-        delete results;
+                Field* fields = results->Fetch();
+                uint32 zone = GetStartZoneForRace(fields[0].GetUInt32());
+                if (zone)
+                {
+                    present[zone] += fields[1].GetUInt32();
+                }
+            } while (results->NextRow());
+            delete results;
+        }
+
+        m_starterZoneCounts = present;
     }
+
+    std::map<uint32, uint32>& present = m_starterZoneCounts;
 
     // Take the emptiest zone that this candidate pool can actually fill, so the six
     // starting zones fill evenly rather than whichever race happens to be drawn first.
@@ -312,6 +341,10 @@ uint32 RandomPlayerbotMgr::PickForStarterZoneQuota(vector<uint32>& bots)
 
     if (bestBot)
     {
+        // Count it immediately. The caller is about to admit this bot, and the next call
+        // in the same pass must see the zone as one fuller or it would keep choosing the
+        // same one until the tally is rebuilt next pass.
+        ++present[m_botStartZones[bestBot]];
         sLog.outDetail("Starter-zone quota short by %u; admitting resident bot %u", bestShortfall, bestBot);
     }
 
