@@ -1859,9 +1859,30 @@ void PlayerbotFactory::InitAmmo()
  */
 void PlayerbotFactory::InitMounts()
 {
+    // This used to group every SPELL_AURA_MOUNTED spell by speed and then learn one from
+    // EVERY group, twice over, with no check of level, class, race or riding skill. Two
+    // consequences, both confirmed against the live character_spell table: all 200 bots
+    // knew 3363 Summon Riding Gryphon -- a 499% flyer, the sole member of its speed group,
+    // on characters as low as level 1 -- and class mounts leaked across classes, with the
+    // Paladin Warhorse and Warlock Felsteed turning up on priests, rogues and druids.
+    //
+    // Riding skill is the real gate and InitSkills has already set it from the bot's level:
+    // 75 buys the 60% mount at 40, 150 buys the 100% mount at 60.
+    uint32 riding = bot->GetSkillValue(SKILL_RIDING);
+    if (riding < 75)
+    {
+        return;
+    }
+
+    // Effect base points carry speed-minus-one, so a 60% mount reads 59 and a 100% reads 99.
+    // Anything above that is a flying mount, which 1.12 does not have.
+    const int32 maxIncrease = (riding >= 150) ? 99 : 59;
+
+    const uint32 raceMask = bot->getRaceMask();
+    const uint32 classMask = bot->getClassMask();
+
     map<int32, vector<uint32> > spells;
 
-    // Iterate through all spell entries and find mount spells
     for (uint32 spellId = 0; spellId < sSpellStore.GetNumRows(); ++spellId)
     {
         SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
@@ -1876,7 +1897,41 @@ void PlayerbotFactory::InitMounts()
         }
 
         int32 effect = max(spellInfo->EffectBasePoints[1], spellInfo->EffectBasePoints[2]);
-        if (effect < 50)
+        if (effect < 50 || effect > maxIncrease)
+        {
+            continue;
+        }
+
+        // Class mounts carry a SkillLineAbility row that names the class -- Warhorse is
+        // classMask 2, Felsteed is 256 -- so where one exists it must be honoured. Racial
+        // and vendor mounts have no row at all in 1.12 (Brown Horse 458 and the rest), so
+        // an absent row cannot mean "forbidden" or every bot would end up on foot.
+        SkillLineAbilityMapBounds bounds = sSpellMgr.GetSkillLineAbilityMapBounds(spellId);
+        bool restricted = false;
+        bool permitted = false;
+        for (SkillLineAbilityMap::const_iterator i = bounds.first; i != bounds.second; ++i)
+        {
+            SkillLineAbilityEntry const* ability = i->second;
+            if (!ability->RaceMask && !ability->ClassMask)
+            {
+                continue;
+            }
+
+            restricted = true;
+            if (ability->RaceMask && !(ability->RaceMask & raceMask))
+            {
+                continue;
+            }
+            if (ability->ClassMask && !(ability->ClassMask & classMask))
+            {
+                continue;
+            }
+
+            permitted = true;
+            break;
+        }
+
+        if (restricted && !permitted)
         {
             continue;
         }
@@ -1884,21 +1939,16 @@ void PlayerbotFactory::InitMounts()
         spells[effect].push_back(spellId);
     }
 
-    // Learn a random mount spell for each type of mount
-    for (uint32 type = 0; type < 2; ++type)
+    // One mount, at the best speed this bot has the skill for -- not one from every tier.
+    if (spells.empty())
     {
-        for (map<int32, vector<uint32> >::iterator i = spells.begin(); i != spells.end(); ++i)
-        {
-            int32 effect = i->first;
-            vector<uint32>& ids = i->second;
-            uint32 index = urand(0, ids.size() - 1);
-            if (index >= ids.size())
-            {
-                continue;
-            }
+        return;
+    }
 
-            bot->learnSpell(ids[index], false);
-        }
+    vector<uint32>& ids = spells.rbegin()->second;
+    if (!ids.empty())
+    {
+        bot->learnSpell(ids[urand(0, ids.size() - 1)], false);
     }
 }
 
