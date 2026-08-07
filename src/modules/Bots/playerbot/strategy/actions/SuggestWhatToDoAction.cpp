@@ -272,6 +272,17 @@ void SuggestWhatToDoAction::spam(string msg)
         return;
     }
 
+    // Faction is checked here rather than left to the security level, because that level
+    // deliberately hands a GM everything: LevelFor returns ALLOW_ALL on its first line for
+    // anyone at SEC_GAMEMASTER, before the opposing-faction test it would otherwise fail.
+    // That is correct for COMMANDING a bot -- a GM should be able to drive any of them --
+    // and wrong for letting one strike up a conversation, so a Horde bot was cheerfully
+    // whispering an Alliance GM about instance runs it could never join them for.
+    if (ai->IsOpposing(player))
+    {
+        return;
+    }
+
     if (!ai->GetSecurity()->CheckLevelFor(PLAYERBOT_SECURITY_TALK, true, player))
     {
         return;
