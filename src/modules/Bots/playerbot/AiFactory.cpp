@@ -372,7 +372,16 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
         // Apply it only where it agrees with the build already selected. A tank or a
         // healer keeps what GetPlayerSpecTab picked for it, which is the same rule the
         // player-owned branch above follows.
-        if (!engine->ContainsStrategy(STRATEGY_TYPE_TANK) && !engine->ContainsStrategy(STRATEGY_TYPE_HEAL))
+        // Ranged is in that list for a reason the first version of this missed. The name
+        // "dps" is resolved per class, and for a druid it creates CatDpsDruidStrategy and
+        // for a shaman MeleeShamanStrategy -- both melee. So a Balance druid or an
+        // Elemental shaman, having correctly been given its caster strategy above, then had
+        // a feral or melee one bolted on beside it. Skipping any build that already chose a
+        // ranged strategy leaves casters alone; a melee dps build still takes the config,
+        // where "dps" resolves to what it already has and costs nothing.
+        if (!engine->ContainsStrategy(STRATEGY_TYPE_TANK) &&
+            !engine->ContainsStrategy(STRATEGY_TYPE_HEAL) &&
+            !engine->ContainsStrategy(STRATEGY_TYPE_RANGED))
         {
             engine->ChangeStrategy(sPlayerbotAIConfig.randomBotCombatStrategies);
         }
