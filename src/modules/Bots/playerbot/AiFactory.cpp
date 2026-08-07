@@ -276,6 +276,14 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
             {
                 engine->addStrategies("tank", "tank aoe", "barmor", NULL);
             }
+            else if (tab == 0)
+            {
+                // Holy. There was no branch for it and no paladin heal strategy to send it
+                // to, so every Holy build fell through to dps -- about a fifth of paladin
+                // bots by the shipped spec probabilities, running a damage rotation on a
+                // healing build, and a standing shortfall of healers in any bot group.
+                engine->addStrategies("heal", "bmana", NULL);
+            }
             else
             {
                 engine->addStrategies("dps", "bdps", "threat", NULL);
@@ -321,14 +329,11 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
             engine->addStrategies("dps", "threat", NULL);
             break;
         case CLASS_WARLOCK:
-            if (tab == 1)
-            {
-                engine->addStrategies("tank", "threat", NULL);
-            }
-            else
-            {
-                engine->addStrategies("dps", "threat", NULL);
-            }
+            // Demonology used to map to the tank strategy. In 1.12 that tree makes the
+            // PET durable, not the warlock, so a third of warlocks by the configured
+            // probabilities were running a tank rotation they cannot perform. Every
+            // warlock spec is a damage build here.
+            engine->addStrategies("dps", "threat", NULL);
 
             if (player->getLevel() > 19)
             {

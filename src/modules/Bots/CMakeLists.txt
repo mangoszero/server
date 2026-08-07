@@ -380,6 +380,8 @@ set(BOT_SRCS
     playerbot/strategy/paladin/GenericPaladinStrategy.cpp
     playerbot/strategy/paladin/GenericPaladinStrategy.h
     playerbot/strategy/paladin/GenericPaladinStrategyActionNodeFactory.h
+    playerbot/strategy/paladin/HealPaladinStrategy.cpp
+    playerbot/strategy/paladin/HealPaladinStrategy.h
     playerbot/strategy/paladin/PaladinActions.cpp
     playerbot/strategy/paladin/PaladinActions.h
     playerbot/strategy/paladin/PaladinAiObjectContext.cpp
