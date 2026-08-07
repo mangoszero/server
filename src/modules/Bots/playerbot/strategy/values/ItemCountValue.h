@@ -18,7 +18,11 @@ namespace ai
     class ItemCountValue : public Uint8CalculatedValue, public Qualified, InventoryItemValueBase
     {
         public:
-            ItemCountValue(PlayerbotAI* ai) : Uint8CalculatedValue(ai), InventoryItemValueBase(ai) {}
+            // Every read walked the whole of the bot's bags and equipment. Food, drink, soul
+            // shard and reagent triggers all consult this, so at checkInterval 1 it was tens of
+            // thousands of item-visitor passes a second across the fleet. Inventory does not
+            // change inside a quarter of a second in any way a bot needs to react to.
+            ItemCountValue(PlayerbotAI* ai) : Uint8CalculatedValue(ai, "item count", 5), InventoryItemValueBase(ai) {}
 
         public:
             virtual uint8 Calculate();
@@ -27,7 +31,7 @@ namespace ai
     class InventoryItemValue : public CalculatedValue<list<Item*> >, public Qualified, InventoryItemValueBase
     {
         public:
-            InventoryItemValue(PlayerbotAI* ai) : CalculatedValue<list<Item*> >(ai), InventoryItemValueBase(ai) {}
+            InventoryItemValue(PlayerbotAI* ai) : CalculatedValue<list<Item*> >(ai, "inventory items", 5), InventoryItemValueBase(ai) {}
 
         public:
             virtual list<Item*> Calculate();
