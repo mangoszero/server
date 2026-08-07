@@ -30,9 +30,20 @@ void DeadStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     // at PlayerbotChatHandler::revive, which is the GM .revive command. Preferring the
     // corpse is therefore about behaving like a player where the body is actually
     // reclaimable, not about avoiding a penalty.
+    // Release first, and this is the step the whole chain was missing. A dead bot that has
+    // not released has no corpse at all -- the corpse table held zero rows for the entire
+    // realm -- so "revive from corpse" returned on its first line and the spirit healer
+    // fallback was the only thing left, which helps only when one happens to be in sight.
+    // Nothing released an ungrouped random bot: "release spirit with master" waits on the
+    // master's CMSG_REPOP_REQUEST, and the bare "release" action was reachable only as a
+    // typed chat command. The core's own auto-release eventually fires, but minutes later.
+    //
+    // ReleaseSpiritAction refuses once a corpse exists, so it stops being chosen the moment
+    // it has done its job and the two recovery actions below take over.
     triggers.push_back(new TriggerNode(
         "bot dead",
         NextAction::array(0,
+            new NextAction("release", relevance + 1.0f),
             new NextAction("revive from corpse", relevance),
             new NextAction("spirit healer", relevance - 1.0f),
             NULL)));
