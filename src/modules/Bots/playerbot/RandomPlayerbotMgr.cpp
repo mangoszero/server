@@ -879,15 +879,33 @@ bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, fl
         return true;
     }
 
-    if (area->FactionGroupMask != AREATEAM_NONE)
+    // GetAreaId answers with the most specific area, and in AreaTable.dbc it is the
+    // parent zone that carries the faction, not the sub-area a bot actually stands in:
+    // Teldrassil is 2, but Shadowglen, Dolanaar and Aldrassil inside it are all 0.
+    // The same holds for Northshire Valley, Coldridge Valley, Valley of Trials, Camp
+    // Narache and Deathknell. Reading only the leaf therefore skipped the faction test
+    // exactly where new players are, so a level 5 Horde bot in Shadowglen came back
+    // perfectly safe. Walk up to the first ancestor that declares an owner.
+    uint32 factionMask = area->FactionGroupMask;
+    for (AreaTableEntry const* scope = area;
+         factionMask == AREATEAM_NONE && scope && scope->ParentAreaID; )
+    {
+        scope = sAreaStore.LookupEntry(scope->ParentAreaID);
+        if (scope)
+        {
+            factionMask = scope->FactionGroupMask;
+        }
+    }
+
+    if (factionMask != AREATEAM_NONE)
     {
         bool botIsAlliance = IsAlliance(bot->getRace());
-        if (botIsAlliance && area->FactionGroupMask != AREATEAM_ALLY)
+        if (botIsAlliance && factionMask != AREATEAM_ALLY)
         {
             return false;
         }
 
-        if (!botIsAlliance && area->FactionGroupMask != AREATEAM_HORDE)
+        if (!botIsAlliance && factionMask != AREATEAM_HORDE)
         {
             return false;
         }
