@@ -68,12 +68,99 @@
  *
  * Initializes the Windows-specific Warden implementation.
  */
-WardenWin::WardenWin() : Warden(), _serverTicks(0) {}
+WardenWin::WardenWin() : Warden(), _serverTicks(0), _pointerChainActive(false)
+{
+    _pointerChainInFlight.checkId = 0;
+    _pointerChainInFlight.hopIndex = 0;
+    _pointerChainInFlight.currentAddress = 0;
+    _pointerChainInFlight.finalLength = 0;
+    _pointerChainInFlight.invertMatch = false;
+}
 
 /**
  * @brief WardenWin destructor
  */
 WardenWin::~WardenWin() {}
+
+bool WardenWin::ParseChainOffsets(const std::string& str, std::vector<uint32>& out)
+{
+    out.clear();
+
+    std::string s;
+    s.reserve(str.size());
+    for (char c : str)
+    {
+        if (c != ' ' && c != '\t' && c != '\r' && c != '\n')
+            s.push_back(c);
+    }
+
+    if (s.empty())
+        return true; // zero-hop chain is legal
+
+    size_t pos = 0;
+    while (pos <= s.size())
+    {
+        size_t comma = s.find(',', pos);
+        std::string token = s.substr(pos, (comma == std::string::npos) ? std::string::npos : comma - pos);
+        if (token.empty())
+            return false;
+
+        const char* cstr = token.c_str();
+        int base = 10;
+        if (token.size() > 2 && token[0] == '0' && (token[1] == 'x' || token[1] == 'X'))
+        {
+            base = 16;
+            cstr += 2;
+            if (*cstr == '\0')
+                return false;
+        }
+
+        char* endp = nullptr;
+        unsigned long val = strtoul(cstr, &endp, base);
+        if (!endp || *endp != '\0')
+            return false;
+
+        out.push_back(static_cast<uint32>(val));
+
+        if (comma == std::string::npos)
+            break;
+        pos = comma + 1;
+    }
+
+    return true;
+}
+
+void WardenWin::StartPointerChain(WardenCheck* wd)
+{
+    _pointerChainInFlight.checkId = wd->CheckId;
+    _pointerChainInFlight.offsets.clear();
+    _pointerChainInFlight.hopIndex = 0;
+    _pointerChainInFlight.currentAddress = wd->Address;
+    _pointerChainInFlight.finalLength = wd->Length;
+    _pointerChainInFlight.invertMatch = false;
+
+    // Optional leading '!' on the offset string flips the terminal compare from
+    // "fail on mismatch" (verify expected bytes) to "fail on match" (detect a
+    // forbidden cheat-signature pattern, e.g. PQR landing in a dynamically
+    // resolved memory region).
+    std::string chain = wd->Str;
+    size_t firstNonSpace = chain.find_first_not_of(" \t\r\n");
+    if (firstNonSpace != std::string::npos && chain[firstNonSpace] == '!')
+    {
+        _pointerChainInFlight.invertMatch = true;
+        chain.erase(0, firstNonSpace + 1);
+    }
+
+    if (!ParseChainOffsets(chain, _pointerChainInFlight.offsets))
+    {
+        sLog.outWarden("POINTER_CHAIN_CHECK CheckId %u has malformed offset chain '%s'; skipping",
+                       wd->CheckId, wd->Str.c_str());
+        _pointerChainActive = false;
+        return;
+    }
+
+    _pointerChainActive = true;
+}
 
 /**
  * @brief Initialize Windows Warden
@@ -247,15 +334,35 @@ void WardenWin::RequestData()
     // Build check request
     for (uint16 i = 0; i < sWorld.getConfig(CONFIG_UINT32_WARDEN_NUM_MEM_CHECKS); ++i)
     {
+        // If a POINTER_CHAIN_CHECK chain is mid-walk, consume one slot for it (do not pop a new id).
+        if (_pointerChainActive)
+        {
+            _currentChecks.push_back(_pointerChainInFlight.checkId);
+            continue;
+        }
+
         // If todo list is done break loop (will be filled on next Update() run)
         if (_memChecksTodo.empty())
         {
             break;
         }
 
-        // Get check id from the end and remove it from todo
+        // Peek the next id; if it's a POINTER_CHAIN_CHECK and a chain is already active, defer it.
         id = _memChecksTodo.back();
+        WardenCheck* peek = sWardenCheckMgr->GetWardenDataById(build, id);
+
+        // Pop and schedule.
         _memChecksTodo.pop_back();
+
+        if (peek && peek->Type == POINTER_CHAIN_CHECK)
+        {
+            StartPointerChain(peek);
+            if (!_pointerChainActive)
+            {
+                // Malformed chain; loader should have filtered it. Skip without scheduling.
+                continue;
+            }
+        }
 
         // Add the id to the list sent in this cycle
         _currentChecks.push_back(id);
@@ -311,7 +418,9 @@ void WardenWin::RequestData()
         wd = sWardenCheckMgr->GetWardenDataById(build, *itr);
 
         type = wd->Type;
-        buff << uint8(type ^ xorByte);
+        // POINTER_CHAIN_CHECK is server-only; emit it on the wire as a MEM_CHECK so the client module accepts it.
+        uint8 wireType = (type == POINTER_CHAIN_CHECK) ? uint8(MEM_CHECK) : type;
+        buff << uint8(wireType ^ xorByte);
         switch (type)
         {
             case MEM_CHECK:
@@ -319,6 +428,17 @@ void WardenWin::RequestData()
                 buff << uint8(0x00);
                 buff << uint32(wd->Address);
                 buff << uint8(wd->Length);
+                break;
+            }
+            case POINTER_CHAIN_CHECK:
+            {
+                uint32 addr = _pointerChainInFlight.currentAddress;
+                uint8  len  = (_pointerChainInFlight.hopIndex < _pointerChainInFlight.offsets.size())
+                                ? uint8(4)                              // intermediate pointer hop
+                                : _pointerChainInFlight.finalLength;     // terminal hop
+                buff << uint8(0x00);
+                buff << uint32(addr);
+                buff << uint8(len);
                 break;
             }
             case PAGE_CHECK_A:
@@ -464,6 +584,79 @@ void WardenWin::HandleData(ByteBuffer &buff)
 
                 buff.rpos(buff.rpos() + rd->Length);
                 sLog.outWarden("RESULT MEM_CHECK passed CheckId %u account Id %u", *itr, _session->GetAccountId());
+                break;
+            }
+            case POINTER_CHAIN_CHECK:
+            {
+                uint8 status;
+                buff >> status;
+
+                if (status != 0)
+                {
+                    sLog.outWarden("RESULT POINTER_CHAIN_CHECK status not 0x00, CheckId %u account Id %u (hop %zu)",
+                                   *itr, _session->GetAccountId(), _pointerChainInFlight.hopIndex);
+                    checkFailed = *itr;
+                    _pointerChainActive = false;
+                    continue;
+                }
+
+                if (!_pointerChainActive || _pointerChainInFlight.checkId != *itr)
+                {
+                    sLog.outWarden("POINTER_CHAIN_CHECK response for CheckId %u with no active chain", *itr);
+                    checkFailed = *itr;
+                    _pointerChainActive = false;
+                    buff.rpos(buff.wpos());     // can't safely know read length; drain to avoid desync
+                    return;
+                }
+
+                if (_pointerChainInFlight.hopIndex < _pointerChainInFlight.offsets.size())
+                {
+                    // Intermediate hop: read 4-byte LE pointer, advance chain, await next cycle.
+                    uint32 ptr;
+                    memcpy(&ptr, buff.contents() + buff.rpos(), sizeof(uint32));
+                    buff.rpos(buff.rpos() + sizeof(uint32));
+
+                    if (ptr == 0)
+                    {
+                        sLog.outWarden("RESULT POINTER_CHAIN_CHECK NULL deref at hop %zu, CheckId %u account Id %u",
+                                       _pointerChainInFlight.hopIndex, *itr, _session->GetAccountId());
+                        checkFailed = *itr;
+                        _pointerChainActive = false;
+                        continue;
+                    }
+
+                    _pointerChainInFlight.currentAddress = ptr + _pointerChainInFlight.offsets[_pointerChainInFlight.hopIndex];
+                    ++_pointerChainInFlight.hopIndex;
+                    sLog.outWarden("POINTER_CHAIN_CHECK hop advanced to %zu (next addr 0x%08X), CheckId %u",
+                                   _pointerChainInFlight.hopIndex, _pointerChainInFlight.currentAddress, *itr);
+                    break;
+                }
+
+                // Terminal hop: memcmp the bytes at the resolved address against the expected
+                // result. Two interpretations driven by invertMatch:
+                //   invertMatch == false : verify-clean       — fail on mismatch
+                //   invertMatch == true  : signature detect   — fail on match
+                int cmp = memcmp(buff.contents() + buff.rpos(), rs->Result.AsByteArray(0, false),
+                                 _pointerChainInFlight.finalLength);
+                bool matched = (cmp == 0);
+                bool failed  = _pointerChainInFlight.invertMatch ? matched : !matched;
+
+                if (failed)
+                {
+                    sLog.outWarden("RESULT POINTER_CHAIN_CHECK fail CheckId %u account Id %u (%s)",
+                                   *itr, _session->GetAccountId(),
+                                   _pointerChainInFlight.invertMatch ? "signature matched" : "bytes mismatch");
+                    checkFailed = *itr;
+                    buff.rpos(buff.rpos() + _pointerChainInFlight.finalLength);
+                    _pointerChainActive = false;
+                    continue;
+                }
+
+                buff.rpos(buff.rpos() + _pointerChainInFlight.finalLength);
+                sLog.outWarden("RESULT POINTER_CHAIN_CHECK passed CheckId %u account Id %u (%s)",
+                               *itr, _session->GetAccountId(),
+                               _pointerChainInFlight.invertMatch ? "no signature" : "bytes match");
+                _pointerChainActive = false;
                 break;
             }
             case PAGE_CHECK_A:
