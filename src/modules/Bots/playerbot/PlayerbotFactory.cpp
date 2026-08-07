@@ -829,6 +829,58 @@ bool PlayerbotFactory::CanEquipItem(ItemPrototype const* proto, uint32 desiredQu
  * Initializes the player bot's equipment.
  * @param incremental Whether to apply incremental changes.
  */
+namespace
+{
+    typedef std::vector<ItemPrototype const*> ProtoList;
+
+    /**
+     * Every item prototype that could ever be equipped, resolved once.
+     *
+     * InitEquipment used to iterate 0..sItemStorage.GetMaxEntry() -- 24,283 ids -- calling
+     * sObjectMgr.GetItemPrototype on each, for every equipment slot and again for every
+     * quality tier it fell back through. Only 14,422 of those ids exist, so two in five
+     * lookups returned nothing, and only 8,923 belong to a class that can be equipped.
+     *
+     * None of that filtering depends on the bot, and item prototypes are fixed once the
+     * world has loaded, so it is answered once for the process and shared. What remains in
+     * the per-bot loop is the part that genuinely varies: level, quality, armour type,
+     * weapon type and the final CanEquipUnseenItem check.
+     */
+    ProtoList const& GetEquippableProtos()
+    {
+        static ProtoList equippable;
+        static bool built = false;
+
+        if (!built)
+        {
+            built = true;
+            for (uint32 itemId = 0; itemId < sItemStorage.GetMaxEntry(); ++itemId)
+            {
+                ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
+                if (!proto)
+                {
+                    continue;
+                }
+
+                if (proto->Class != ITEM_CLASS_WEAPON &&
+                    proto->Class != ITEM_CLASS_ARMOR &&
+                    proto->Class != ITEM_CLASS_CONTAINER &&
+                    proto->Class != ITEM_CLASS_PROJECTILE)
+                {
+                    continue;
+                }
+
+                equippable.push_back(proto);
+            }
+
+            sLog.outString(">> [Playerbots] %u equippable item prototypes indexed for bot gearing",
+                (uint32)equippable.size());
+        }
+
+        return equippable;
+    }
+}
+
 void PlayerbotFactory::InitEquipment(bool incremental)
 {
     DestroyItemsVisitor visitor(bot);
@@ -850,19 +902,18 @@ void PlayerbotFactory::InitEquipment(bool incremental)
 
         do
         {
-            for (uint32 itemId = 0; itemId < sItemStorage.GetMaxEntry(); ++itemId)
+            // Walk the pre-built list of equippable prototypes rather than every id from 0
+            // to GetMaxEntry(). The bound is 24,283 but only 14,422 of those ids exist, so
+            // two in five iterations resolved to nothing, and only 8,923 are of a class
+            // that can be equipped at all -- and this loop runs once per slot and again per
+            // quality tier, so the waste was multiplied roughly sixty-four times over. The
+            // list is bot-independent and the prototypes do not change at runtime, so it is
+            // built once for the process and shared by every bot.
+            ProtoList const& equippable = GetEquippableProtos();
+            for (ProtoList::const_iterator protoItr = equippable.begin(); protoItr != equippable.end(); ++protoItr)
             {
-                ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
-                if (!proto)
-                {
-                    continue;
-                }
-
-                if (proto->Class != ITEM_CLASS_WEAPON &&
-                    proto->Class != ITEM_CLASS_ARMOR &&
-                    proto->Class != ITEM_CLASS_CONTAINER &&
-                    proto->Class != ITEM_CLASS_PROJECTILE)
-                    continue;
+                ItemPrototype const* proto = *protoItr;
+                uint32 itemId = proto->ItemId;
 
                 if (!CanEquipItem(proto, desiredQuality))
                 {
