@@ -83,19 +83,36 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
     uint32 cachedMin = GetEventValue(0, "config_min");
     uint32 cachedMax = GetEventValue(0, "config_max");
 
+    int maxAllowedBotCount = 0;
+
     if (cachedMin != sPlayerbotAIConfig.minRandomBots ||
         cachedMax != sPlayerbotAIConfig.maxRandomBots)
     {
-        sLog.outString("Bot count range changed from %d-%d to %d-%d, regenerating target...",
-            cachedMin, cachedMax,
-            sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots);
+        // Draw the new target here rather than writing a zero and reading it back. That
+        // round trip did not work: SetEventValue writes through PExecute, which is
+        // asynchronous, so the GetEventValue immediately below reached the database before
+        // the invalidating write landed and returned the OLD target. It was then re-cached
+        // with the old row's validity, and RandomBotCountChangeMinInterval is a day -- so
+        // raising MinRandomBots from 50-200 to 500-1000 left the server pinned at a target
+        // of 166 until that lapsed, with the log cheerfully reporting the new range beside
+        // the old target.
+        maxAllowedBotCount = urand(sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots);
 
-        SetEventValue(0, "bot_count", 0, 0);  // Invalidate
+        sLog.outString("Bot count range changed from %d-%d to %d-%d, new target %d",
+            cachedMin, cachedMax,
+            sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots,
+            maxAllowedBotCount);
+
+        SetEventValue(0, "bot_count", maxAllowedBotCount,
+            urand(sPlayerbotAIConfig.randomBotCountChangeMinInterval, sPlayerbotAIConfig.randomBotCountChangeMaxInterval));
         SetEventValue(0, "config_min", sPlayerbotAIConfig.minRandomBots, 999999);
         SetEventValue(0, "config_max", sPlayerbotAIConfig.maxRandomBots, 999999);
     }
+    else
+    {
+        maxAllowedBotCount = GetEventValue(0, "bot_count");
+    }
 
-    int maxAllowedBotCount = GetEventValue(0, "bot_count");
     if (!maxAllowedBotCount)
     {
         maxAllowedBotCount = urand(sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots);
