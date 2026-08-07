@@ -53,6 +53,15 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         LoadGroupedBots();
     }
 
+    if (!processTicks)
+    {
+        // The eviction backoff is a runtime throttle, not durable state, and persisting
+        // it means a bot that had nowhere to go before a restart is still serving its
+        // cooldown afterwards -- including across the very restart that installed the
+        // fix for whatever stranded it. A fresh start is a fresh chance.
+        CharacterDatabase.Execute("DELETE FROM `ai_playerbot_random_bots` WHERE `event` = 'evictcheck'");
+    }
+
     sLog.outBasic("Processing random bots...");
 
     uint32 cachedMin = GetEventValue(0, "config_min");
