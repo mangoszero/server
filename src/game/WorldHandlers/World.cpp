@@ -1911,6 +1911,21 @@ void World::SendDefenseMessage(uint32 zoneId, int32 textId)
 /// Kick (and save) all players
 void World::KickAll()
 {
+#ifdef ENABLE_PLAYERBOTS
+    // Bots are players too, and this runs while their maps are still loaded. Bot sessions
+    // are created by the playerbot module and never registered in m_sessions -- see the
+    // note in CharacterHandler's bot login callback -- so the loop below cannot see them.
+    // Without this they survived until ~PlayerbotHolder ran during static destruction, by
+    // which point Master::ShutdownWorld had already called sMapMgr.UnloadAll().
+    // LogoutPlayerBot then reached Player::SaveToDB -> Map::GetEluna with a null map and
+    // took the process down: an access violation on every shutdown, with the save it was
+    // in the middle of abandoned, which is why bot state never persisted.
+    //
+    // ShutdownServ also logs them out on the .server shutdown path; LogoutAllBots is
+    // idempotent, so covering the whole of ShutdownWorld here is the belt to that brace.
+    sRandomPlayerbotMgr.LogoutAllBots();
+#endif
+
     m_QueuedSessions.clear();                               // prevent send queue update packet and login queued sessions
 
     // session not removed at kick and will removed in next update tick

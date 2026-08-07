@@ -26,7 +26,23 @@ PlayerbotHolder::PlayerbotHolder() : PlayerbotAIBase()
  */
 PlayerbotHolder::~PlayerbotHolder()
 {
-    LogoutAllBots();
+    // Two very different objects share this destructor. A PlayerbotMgr belongs to a real
+    // player and is destroyed while the world is running, where logging its bots out is
+    // exactly right. RandomPlayerbotMgr is a singleton, so this also runs during static
+    // destruction at process exit -- long after Master::ShutdownWorld unloaded the maps.
+    // Taking that path meant LogoutPlayerBot -> WorldSession::LogoutPlayer ->
+    // Player::SaveToDB -> Map::GetEluna on a null map: an access violation on every
+    // shutdown, with the save that was in progress abandoned half-done.
+    //
+    // World::KickAll now logs the random bots out at the proper moment, while their maps
+    // are still alive, so by the time this runs there is nothing left to do. Skipping it
+    // once the world has stopped leaves the remaining Player objects for process teardown
+    // to reclaim, which is the correct trade: a save is impossible at this point anyway,
+    // and attempting one is what crashed.
+    if (!World::IsStopped())
+    {
+        LogoutAllBots();
+    }
 }
 
 /**
