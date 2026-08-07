@@ -289,7 +289,13 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
             sLog.outDetail("Setting dead flag for bot %d", bot);
             uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotReviveTime, sPlayerbotAIConfig.maxRandomBotReviveTime);
             SetEventValue(bot, "dead", 1, randomTime);
-            SetEventValue(bot, "revive", 1, randomTime - 60);
+            // "Revive a minute before the dead flag lapses" -- but both are uint32, so any
+            // revive time under 60 wrapped this to about 136 years. The revive event then
+            // never expired, the branch below never ran, and the bot stayed a ghost until
+            // the dead flag lapsed and reset the pair, forever. Nobody hit it because the
+            // shipped minimum is exactly 60; anyone lowering it to get bots back on their
+            // feet sooner would have got the precise opposite.
+            SetEventValue(bot, "revive", 1, randomTime > 60 ? randomTime - 60 : 0);
             return false;
         }
 
