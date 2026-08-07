@@ -167,7 +167,40 @@ bool PlayerbotAIConfig::Initialize()
 
     // Load lists of values from the configuration file
     randomBotMapsAsString = config.GetStringDefault("AiPlayerbot.RandomBotMaps", "0,1,530,571");
-    LoadList<vector<uint32> >(randomBotMapsAsString, randomBotMaps);
+    // Deliberately not LoadList. That helper drops every entry whose atoi is zero, which
+    // is correct for the spell and item ids it was written for and wrong for a map id:
+    // map 0 is Eastern Kingdoms. With the shipped default the list therefore came out as
+    // {1, 530, 571} -- Kalimdor plus two maps that do not exist on a 1.12 core -- so no
+    // random bot could ever be placed anywhere in Eastern Kingdoms. Confirmed against
+    // three 200-bot runs: every one of the top thirty landing areas was on Kalimdor.
+    randomBotMaps.clear();
+    {
+        vector<string> mapTokens = split(randomBotMapsAsString, ',');
+        for (vector<string>::iterator i = mapTokens.begin(); i != mapTokens.end(); ++i)
+        {
+            string token = *i;
+            size_t begin = token.find_first_not_of(" \t");
+            if (begin == string::npos)
+            {
+                continue;
+            }
+            token = token.substr(begin, token.find_last_not_of(" \t") - begin + 1);
+            if (token.find_first_not_of("0123456789") != string::npos)
+            {
+                continue;
+            }
+            randomBotMaps.push_back((uint32)atoi(token.c_str()));
+        }
+    }
+    if (randomBotMaps.empty())
+    {
+        // Both callers pick with urand(0, randomBotMaps.size() - 1). On an empty vector
+        // that subtraction underflows and the index comes back out of bounds, so a
+        // mistyped config line would be a crash rather than a complaint.
+        sLog.outError("AiPlayerbot.RandomBotMaps parsed to nothing from \"%s\"; falling back to map 0",
+            randomBotMapsAsString.c_str());
+        randomBotMaps.push_back(0);
+    }
     LoadList<list<uint32> >(config.GetStringDefault("AiPlayerbot.RandomBotQuestItems", "6948,5175,5176,5177,5178"), randomBotQuestItems);
     LoadList<list<uint32> >(config.GetStringDefault("AiPlayerbot.RandomBotSpellIds", "54197"), randomBotSpellIds);
 
@@ -175,6 +208,17 @@ bool PlayerbotAIConfig::Initialize()
     minRandomBots = config.GetIntDefault("AiPlayerbot.MinRandomBots", 50);
     maxRandomBots = config.GetIntDefault("AiPlayerbot.MaxRandomBots", 200);
     randomBotUpdateInterval = config.GetIntDefault("AiPlayerbot.RandomBotUpdateInterval", 60);
+    if (randomBotUpdateInterval < 1)
+    {
+        // Three separate throttles are derived from this: the pass reschedule, the
+        // negative event-cache TTL, and the eviction backoff (10x). At zero each of them
+        // becomes a no-op -- a zero TTL can never satisfy its own freshness test, so every
+        // event lookup falls back to a synchronous query and the eviction search re-runs
+        // every tick. Nothing warns; the fixes just quietly stop working.
+        sLog.outError("AiPlayerbot.RandomBotUpdateInterval must be at least 1 second; %d given, using 1",
+            randomBotUpdateInterval);
+        randomBotUpdateInterval = 1;
+    }
     randomBotCountChangeMinInterval = config.GetIntDefault("AiPlayerbot.RandomBotCountChangeMinInterval", 24 * 3600);
     randomBotCountChangeMaxInterval = config.GetIntDefault("AiPlayerbot.RandomBotCountChangeMaxInterval", 3 * 24 * 3600);
     minRandomBotInWorldTime = config.GetIntDefault("AiPlayerbot.MinRandomBotInWorldTime", 2 * 3600);
