@@ -379,8 +379,17 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
         // a feral or melee one bolted on beside it. Skipping any build that already chose a
         // ranged strategy leaves casters alone; a melee dps build still takes the config,
         // where "dps" resolves to what it already has and costs nothing.
+        //
+        // Healers are deliberately NOT excluded, which the first version got wrong in the
+        // other direction. This branch is only reached when the bot has no group, and a
+        // healer alone has nothing to heal: a level 1 Discipline priest was given "heal"
+        // and "flee" and literally nothing else, so it stood beside its target and never
+        // acted. Every non-shadow priest and every untalented one lands there, because
+        // GetPlayerSpecTab answers 0 when no points are spent. Solo, a damage build is the
+        // only useful build. Nothing is lost by it either: the grouped branch above hands a
+        // HEAL build botHealStrategies, and AcceptInvitationAction calls ResetStrategies, so
+        // joining a party rebuilds the healer it was meant to be.
         if (!engine->ContainsStrategy(STRATEGY_TYPE_TANK) &&
-            !engine->ContainsStrategy(STRATEGY_TYPE_HEAL) &&
             !engine->ContainsStrategy(STRATEGY_TYPE_RANGED))
         {
             engine->ChangeStrategy(sPlayerbotAIConfig.randomBotCombatStrategies);
