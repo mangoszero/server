@@ -21,13 +21,17 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
         return PLAYERBOT_SECURITY_ALLOW_ALL;
     }
 
+    // These returned only when the caller wanted a reason string. Called with reason == NULL
+    // -- which CheckLevelFor does for every silent check -- the condition was evaluated and
+    // then fallen straight past, so "is a bot" and "is the other faction" denied nothing at
+    // all on the silent path.
     if (from->GetPlayerbotAI())
     {
         if (reason)
         {
             *reason = PLAYERBOT_DENY_IS_BOT;
-            return PLAYERBOT_SECURITY_DENY_ALL;
         }
+        return PLAYERBOT_SECURITY_DENY_ALL;
     }
 
     if (bot->GetPlayerbotAI()->IsOpposing(from))
@@ -35,8 +39,8 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
         if (reason)
         {
             *reason = PLAYERBOT_DENY_OPPOSING;
-            return PLAYERBOT_SECURITY_DENY_ALL;
         }
+        return PLAYERBOT_SECURITY_DENY_ALL;
     }
 
     if (sPlayerbotAIConfig.IsInRandomAccountList(account))
@@ -124,11 +128,30 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
         if (reason)
         {
             *reason = PLAYERBOT_DENY_INVITE;
-            return PLAYERBOT_SECURITY_INVITE;
         }
+        return PLAYERBOT_SECURITY_INVITE;
     }
 
-    return PLAYERBOT_SECURITY_ALLOW_ALL;
+    // Everything above this point applies only to bots on a random-bot account. A
+    // player-owned bot skipped the entire block and fell out here, so this return handed
+    // ALLOW_ALL -- full control -- to any same-faction player who could reach the bot at
+    // all: a whisper, a party, a raid. That is sell, destroy, bank, repair, equip, unequip,
+    // trade, teleport and strategy changes on a bot belonging to somebody else.
+    //
+    // A player-owned bot answers to its master and to nobody else. Anyone else may talk to
+    // it, which is what TALK is for, and gets the "not yours" refusal the enum already
+    // carries a message for.
+    Player* master = bot->GetPlayerbotAI() ? bot->GetPlayerbotAI()->GetMaster() : NULL;
+    if (master && from == master)
+    {
+        return PLAYERBOT_SECURITY_ALLOW_ALL;
+    }
+
+    if (reason)
+    {
+        *reason = PLAYERBOT_DENY_NOT_YOURS;
+    }
+    return PLAYERBOT_SECURITY_TALK;
 }
 
 bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent, Player* from, bool ignoreGroup)

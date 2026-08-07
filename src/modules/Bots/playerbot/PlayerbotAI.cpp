@@ -512,7 +512,18 @@ void PlayerbotAI::HandleCommand(uint32 type, const string& text, Player& fromPla
         return;
     }
 
-    if (filtered.find("who") != 0 && !GetSecurity()->CheckLevelFor(PLAYERBOT_SECURITY_ALLOW_ALL, type != CHAT_MSG_WHISPER, &fromPlayer))
+    // "who" used to skip the security check entirely, and it answers with the bot's class,
+    // level, spec and gear. On a random bot that meant anyone at all could interrogate it,
+    // and because a channel line is fanned out to every random bot in the world, one "~who"
+    // in trade chat returned a whisper from each of them at once -- disclosure and a
+    // whisper flood from a single message. It now needs TALK, the level the module already
+    // uses to mean "may hold a conversation with this bot"; everything else still needs
+    // full control.
+    PlayerbotSecurityLevel required = (filtered.find("who") == 0)
+        ? PLAYERBOT_SECURITY_TALK
+        : PLAYERBOT_SECURITY_ALLOW_ALL;
+
+    if (!GetSecurity()->CheckLevelFor(required, type != CHAT_MSG_WHISPER, &fromPlayer))
     {
         return;
     }
