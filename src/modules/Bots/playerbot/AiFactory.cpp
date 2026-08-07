@@ -361,7 +361,21 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
     }
     else if (sRandomPlayerbotMgr.IsRandomBot(player))
     {
-        engine->ChangeStrategy(sPlayerbotAIConfig.randomBotCombatStrategies);
+        // randomBotCombatStrategies defaults to "+dps,+attack weak", and dps is a sibling
+        // of the tank and heal strategies chosen just above, so adding it evicted whatever
+        // the talents had selected. That made the whole RandomClassSpecProbability roll
+        // decorative for random bots: a Protection warrior or a Restoration shaman was
+        // given its spec strategy and then had it taken away again a few lines later,
+        // leaving every random bot a damage build whatever its talents said. Mages were
+        // the accidental exception, having no dps sibling to be replaced by.
+        //
+        // Apply it only where it agrees with the build already selected. A tank or a
+        // healer keeps what GetPlayerSpecTab picked for it, which is the same rule the
+        // player-owned branch above follows.
+        if (!engine->ContainsStrategy(STRATEGY_TYPE_TANK) && !engine->ContainsStrategy(STRATEGY_TYPE_HEAL))
+        {
+            engine->ChangeStrategy(sPlayerbotAIConfig.randomBotCombatStrategies);
+        }
     }
 }
 
