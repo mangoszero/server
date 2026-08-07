@@ -13,8 +13,12 @@ int NextAction::size(NextAction** actions)
         return 0;
     }
 
+    // NextAction arrays are NULL-terminated by array(), clone() and merge() alike, so the
+    // terminator is the length -- the old `size < 10` cap was not a safety bound, it just
+    // stopped counting. Anything past the tenth entry was invisible to size(), and
+    // therefore truncated by clone() and merge() and leaked by destroy().
     int size;
-    for (size=0; size<10 && actions[size]; )
+    for (size=0; actions[size]; )
     {
         size++;
     }
@@ -95,7 +99,9 @@ void NextAction::destroy(NextAction** actions)
         return;
     }
 
-    for (int i=0; i<10 && actions[i]; i++)
+    // Run to the terminator rather than stopping at ten: the array itself was always freed,
+    // but every NextAction past the tenth was left allocated.
+    for (int i=0; actions[i]; i++)
     {
         delete actions[i];
     }

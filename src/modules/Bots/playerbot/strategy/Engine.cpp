@@ -301,7 +301,10 @@ bool Engine::MultiplyAndPush(NextAction** actions, float forceRelevance, bool sk
     bool pushed = false;
     if (actions)
     {
-        for (int j=0; j<10; j++) // TODO: remove 10
+        // Was `j < 10` with a TODO to remove it. The arrays are NULL-terminated, so the
+        // terminator is the bound; the cap meant an eleventh alternative was never pushed
+        // and never freed.
+        for (int j=0; actions[j]; j++)
         {
             NextAction* nextAction = actions[j];
             if (nextAction)
