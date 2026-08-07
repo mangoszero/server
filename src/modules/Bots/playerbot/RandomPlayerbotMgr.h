@@ -273,6 +273,23 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         void CalculateAreaCreatureStats();
 
         /**
+         * @brief Where a race begins the game, at both granularities.
+         */
+        struct RacialStart
+        {
+            RacialStart() : zoneId(0), areaId(0) {}
+            uint32 zoneId; ///< Teldrassil, Dun Morogh, ... straight from playercreateinfo
+            uint32 areaId; ///< Shadowglen, Coldridge Valley, ... resolved from the create position; 0 if unresolved
+        };
+
+        /**
+         * @brief The zone and sub-area a bot's own race starts the game in.
+         * @param bot Pointer to the player bot.
+         * @return The pair, zeroed if the race has no create info.
+         */
+        RacialStart GetRacialStart(Player* bot);
+
+        /**
          * @brief The zone a bot's own race starts the game in, from playercreateinfo.
          * @param bot Pointer to the player bot.
          * @return The zone ID, or 0 if the race has no create info.
@@ -295,8 +312,8 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         std::set<uint32> m_allianceGuardAreas; ///< Areas with guards hostile to Horde (Alliance-guarded)
         std::set<uint32> m_hordeGuardAreas;    ///< Areas with guards hostile to Alliance (Horde-guarded)
         std::set<uint32> m_neutralHubAreas;    ///< Areas held by a contested-guard faction: open to both sides, so they never inherit a parent zone's owner
-        std::map<uint32, std::vector<WorldLocation> > m_homeZoneAnchors; ///< Spawn positions inside each racial starting zone, the only anchors a bot under RandomBotHomeZoneMaxLevel may be sent to
-        std::map<uint32, uint32> m_racialStartZones; ///< race -> starting zone ID, resolved once from playercreateinfo
+        std::map<uint32, std::vector<WorldLocation> > m_homeZoneAnchors; ///< Spawn positions keyed by racial starting zone AND starting sub-area, the only anchors a bot under RandomBotHomeZoneMaxLevel may be sent to
+        std::map<uint32, RacialStart> m_racialStarts; ///< race -> where that race begins, resolved once from playercreateinfo
         std::unordered_map<uint32, bool> m_randomBotCache;
         std::unordered_map<uint32, uint32> m_playerZoneCounts; ///< zone_id -> real player count, for O(1) bot tick gating.
         struct EventValueEntry {

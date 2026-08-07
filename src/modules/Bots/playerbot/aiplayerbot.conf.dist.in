@@ -178,6 +178,13 @@ AiPlayerbot.RandomBotTeleLevel = 3
 # Set to 0 to disable and let low-level bots be scattered anywhere level-appropriate.
 #AiPlayerbot.RandomBotHomeZoneMaxLevel = 10
 
+# Tighter still for the first few levels: bots at or below this level stay inside the
+# starting SUB-AREA rather than the whole zone -- Shadowglen rather than all of
+# Teldrassil, Northshire rather than all of Elwynn, Coldridge Valley rather than all of
+# Dun Morogh. This is where a real character's first few levels happen. Must be less than
+# RandomBotHomeZoneMaxLevel to have any effect. Set to 0 to disable.
+#AiPlayerbot.RandomBotHomeAreaMaxLevel = 5
+
 # Intervals
 #AiPlayerbot.RandomBotUpdateInterval = 60
 #AiPlayerbot.RandomBotCountChangeMinInterval = 86400

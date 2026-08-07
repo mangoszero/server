@@ -451,35 +451,58 @@ bool RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
     return false;
 }
 
-uint32 RandomPlayerbotMgr::GetRacialStartZone(Player* bot)
+RandomPlayerbotMgr::RacialStart RandomPlayerbotMgr::GetRacialStart(Player* bot)
 {
     uint32 race = bot->getRace();
 
-    std::map<uint32, uint32>::const_iterator cached = m_racialStartZones.find(race);
-    if (cached != m_racialStartZones.end())
+    std::map<uint32, RacialStart>::const_iterator cached = m_racialStarts.find(race);
+    if (cached != m_racialStarts.end())
     {
         return cached->second;
     }
 
-    // playercreateinfo is per race AND class, but the starting zone is a property of the
-    // race: all eight of them agree across every class they can be. Take the bot's own
-    // class and fall back to scanning for any class the race has, so a race whose create
-    // info is incomplete for one class still resolves.
+    // playercreateinfo is per race AND class, but the starting position is a property of
+    // the race: all eight agree across every class they can be. Take the bot's own class
+    // and fall back to scanning for any class the race has, so a race whose create info is
+    // incomplete for one class still resolves.
     PlayerInfo const* info = sObjectMgr.GetPlayerInfo(race, bot->getClass());
     for (uint32 cls = 1; !info && cls < MAX_CLASSES; ++cls)
     {
         info = sObjectMgr.GetPlayerInfo(race, cls);
     }
 
-    uint32 zoneId = info ? info->areaId : 0;
-    m_racialStartZones[race] = zoneId;
-    return zoneId;
+    RacialStart start;
+    start.zoneId = info ? info->areaId : 0;
+    start.areaId = 0;
+
+    // playercreateinfo's zone column is the zone, not the sub-area a new character
+    // actually opens their eyes in: a night elf gets Teldrassil, not Shadowglen. The
+    // sub-area is not stored anywhere, so resolve it from the create position itself,
+    // which is the only record of where the race really starts. Leaving it 0 when the map
+    // is not loaded is deliberate -- the caller then falls back to zone granularity
+    // rather than confining the bot to an area nobody has resolved.
+    if (info)
+    {
+        Map* map = const_cast<Map*>(sMapMgr.FindMap(info->mapId));
+        if (map && map->GetTerrain())
+        {
+            start.areaId = map->GetTerrain()->GetAreaId(info->positionX, info->positionY, info->positionZ);
+        }
+    }
+
+    m_racialStarts[race] = start;
+    return start;
+}
+
+uint32 RandomPlayerbotMgr::GetRacialStartZone(Player* bot)
+{
+    return GetRacialStart(bot).zoneId;
 }
 
 bool RandomPlayerbotMgr::RandomTeleportHome(Player* bot)
 {
-    uint32 homeZone = GetRacialStartZone(bot);
-    if (!homeZone)
+    RacialStart start = GetRacialStart(bot);
+    if (!start.zoneId)
     {
         return false;
     }
@@ -489,7 +512,18 @@ bool RandomPlayerbotMgr::RandomTeleportHome(Player* bot)
         CalculateAreaCreatureStats();
     }
 
-    std::map<uint32, std::vector<WorldLocation> >::iterator anchors = m_homeZoneAnchors.find(homeZone);
+    // The tightest confinement the bot's level still earns. A brand new character spends
+    // its first few levels inside the one sub-area -- Shadowglen, Northshire, Coldridge
+    // Valley -- and only then works outward into the zone around it, so the pool it draws
+    // from narrows the same way.
+    uint32 target = start.zoneId;
+    if (start.areaId && sPlayerbotAIConfig.randomBotHomeAreaMaxLevel &&
+        bot->getLevel() <= sPlayerbotAIConfig.randomBotHomeAreaMaxLevel)
+    {
+        target = start.areaId;
+    }
+
+    std::map<uint32, std::vector<WorldLocation> >::iterator anchors = m_homeZoneAnchors.find(target);
     if (anchors == m_homeZoneAnchors.end() || anchors->second.empty())
     {
         return false;
@@ -967,8 +1001,19 @@ bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, fl
     if (sPlayerbotAIConfig.randomBotHomeZoneMaxLevel &&
         bot->getLevel() <= sPlayerbotAIConfig.randomBotHomeZoneMaxLevel)
     {
-        uint32 homeZone = GetRacialStartZone(bot);
-        if (homeZone && zoneId != homeZone)
+        RacialStart start = GetRacialStart(bot);
+        if (start.zoneId && zoneId != start.zoneId)
+        {
+            return false;
+        }
+
+        // Tighter still for the first few levels. A level 1 has no business out in the
+        // wider zone: the whole of its content is inside the one sub-area it woke up in,
+        // and walking out of Shadowglen into Teldrassil proper is something a real
+        // character does once the starting quests are done, not before starting them.
+        if (start.areaId && sPlayerbotAIConfig.randomBotHomeAreaMaxLevel &&
+            bot->getLevel() <= sPlayerbotAIConfig.randomBotHomeAreaMaxLevel &&
+            areaId != start.areaId)
         {
             return false;
         }
@@ -1198,22 +1243,37 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
     m_neutralHubAreas.clear();
     m_homeZoneAnchors.clear();
 
-    // The eight playable races start in six zones. Collecting them up front means the
-    // spawn loop below can decide in one set lookup whether a spawn is worth remembering
-    // as a landing site, instead of keeping positions for all 4000-odd areas.
+    // The eight playable races start in six zones, and inside those, six sub-areas.
+    // Collecting both up front means the spawn loop below can decide in one set lookup
+    // whether a spawn is worth remembering as a landing site, instead of keeping
+    // positions for all 4000-odd areas. Both granularities go into the same set: a spawn
+    // is recorded against whichever of the two its own area matches, and a spawn inside
+    // Shadowglen matches the sub-area while one in Teldrassil proper matches the zone.
     std::set<uint32> startZones;
     for (uint32 race = 1; race < MAX_RACES; ++race)
     {
         for (uint32 cls = 1; cls < MAX_CLASSES; ++cls)
         {
-            if (PlayerInfo const* info = sObjectMgr.GetPlayerInfo(race, cls))
+            PlayerInfo const* info = sObjectMgr.GetPlayerInfo(race, cls);
+            if (!info)
             {
-                if (info->areaId)
-                {
-                    startZones.insert(info->areaId);
-                }
-                break;
+                continue;
             }
+
+            if (info->areaId)
+            {
+                startZones.insert(info->areaId);
+            }
+
+            Map* startMap = const_cast<Map*>(sMapMgr.FindMap(info->mapId));
+            if (startMap && startMap->GetTerrain())
+            {
+                if (uint32 startArea = startMap->GetTerrain()->GetAreaId(info->positionX, info->positionY, info->positionZ))
+                {
+                    startZones.insert(startArea);
+                }
+            }
+            break;
         }
     }
 
@@ -1259,9 +1319,23 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
         // somewhere the terrain will actually hold a player. Elites are excluded for the
         // same reason they are excluded from the level band below -- landing a level 4
         // beside one is not a place a bot should be put.
-        if (zoneId && cInfo->Rank <= CREATURE_ELITE_NORMAL && startZones.find(zoneId) != startZones.end())
+        if (cInfo->Rank <= CREATURE_ELITE_NORMAL)
         {
-            m_homeZoneAnchors[zoneId].push_back(WorldLocation(data.mapid, data.posX, data.posY, data.posZ, 0.0f));
+            WorldLocation site(data.mapid, data.posX, data.posY, data.posZ, 0.0f);
+
+            // Recorded against both granularities where they differ. A spawn in
+            // Shadowglen belongs to the Shadowglen pool a level 1 draws from AND to the
+            // Teldrassil pool a level 8 draws from, because Shadowglen is part of
+            // Teldrassil; a spawn out in Teldrassil proper belongs only to the latter.
+            if (zoneId && startZones.find(zoneId) != startZones.end())
+            {
+                m_homeZoneAnchors[zoneId].push_back(site);
+            }
+
+            if (areaId != zoneId && startZones.find(areaId) != startZones.end())
+            {
+                m_homeZoneAnchors[areaId].push_back(site);
+            }
         }
 
         // A contested-guard faction is how the world data marks a hub both sides may
@@ -1347,7 +1421,8 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
          itr != m_homeZoneAnchors.end(); ++itr)
     {
         AreaTableEntry const* zone = sAreaStore.LookupEntry(itr->first);
-        sLog.outString(">> [Playerbots] Starting zone %s (%u): %u landing sites",
+        sLog.outString(">> [Playerbots] Starting %s %s (%u): %u landing sites",
+            (zone && zone->ParentAreaID) ? "sub-area" : "zone",
             zone ? zone->AreaName_lang[0] : "?", itr->first, (uint32)itr->second.size());
     }
 }
