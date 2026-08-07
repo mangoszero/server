@@ -457,6 +457,67 @@ bool RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
     return false;
 }
 
+uint32 RandomPlayerbotMgr::FindStartSubArea(uint32 mapId, uint32 zoneId, float x, float y, float z)
+{
+    if (!zoneId)
+    {
+        return 0;
+    }
+
+    Map* map = const_cast<Map*>(sMapMgr.FindMap(mapId));
+    if (!map || !map->GetTerrain())
+    {
+        return 0;
+    }
+
+    // The newbie sub-area is whichever one holds the ordinary creatures closest to where
+    // the race begins. Elites are excluded for the same reason they are excluded
+    // everywhere else here: a level 1 is not going to be fighting them, so an area known
+    // only by its elites is not the area we are looking for.
+    uint32 best = 0;
+    float bestDist = 0.0f;
+
+    CreatureDataMap const* creatureDataMap = sObjectMgr.GetCreatureDataMap();
+    for (CreatureDataMap::const_iterator itr = creatureDataMap->begin(); itr != creatureDataMap->end(); ++itr)
+    {
+        CreatureData const& data = itr->second;
+        if (data.mapid != mapId)
+        {
+            continue;
+        }
+
+        CreatureInfo const* cInfo = sObjectMgr.GetCreatureTemplate(data.id);
+        if (!cInfo || cInfo->Rank > CREATURE_ELITE_NORMAL)
+        {
+            continue;
+        }
+
+        float dx = data.posX - x;
+        float dy = data.posY - y;
+        float dist = dx * dx + dy * dy;
+        if (best && dist >= bestDist)
+        {
+            continue;
+        }
+
+        uint32 spawnArea = 0;
+        uint32 spawnZone = 0;
+        map->GetTerrain()->GetZoneAndAreaId(spawnZone, spawnArea, data.posX, data.posY, data.posZ);
+
+        // Only a genuine sub-area of the race's own starting zone qualifies. A spawn out
+        // in the open zone answers with the zone itself and tells us nothing new.
+        if (spawnZone != zoneId || spawnArea == zoneId || !spawnArea)
+        {
+            continue;
+        }
+
+        best = spawnArea;
+        bestDist = dist;
+    }
+
+    return best;
+}
+
 RandomPlayerbotMgr::RacialStart RandomPlayerbotMgr::GetRacialStart(Player* bot)
 {
     uint32 race = bot->getRace();
@@ -482,17 +543,31 @@ RandomPlayerbotMgr::RacialStart RandomPlayerbotMgr::GetRacialStart(Player* bot)
     start.areaId = 0;
 
     // playercreateinfo's zone column is the zone, not the sub-area a new character
-    // actually opens their eyes in: a night elf gets Teldrassil, not Shadowglen. The
-    // sub-area is not stored anywhere, so resolve it from the create position itself,
-    // which is the only record of where the race really starts. Leaving it 0 when the map
-    // is not loaded is deliberate -- the caller then falls back to zone granularity
-    // rather than confining the bot to an area nobody has resolved.
+    // actually opens their eyes in: a night elf gets Teldrassil, not Shadowglen, and the
+    // sub-area is recorded nowhere.
+    //
+    // Asking the create position alone is not enough, and that cost a run. The undead
+    // start at 1676,1678 inside the Deathknell crypt, and that point answers Tirisfal
+    // Glades rather than Deathknell, so the sub-area came back equal to the zone and no
+    // Deathknell landing pool was ever built. Take the position's own answer when it
+    // names a genuine sub-area, and otherwise ask which sub-area the nearest newbie
+    // creatures actually stand in -- which is the better question regardless, because a
+    // landing site is a creature spawn.
     if (info)
     {
         Map* map = const_cast<Map*>(sMapMgr.FindMap(info->mapId));
         if (map && map->GetTerrain())
         {
-            start.areaId = map->GetTerrain()->GetAreaId(info->positionX, info->positionY, info->positionZ);
+            uint32 atPoint = map->GetTerrain()->GetAreaId(info->positionX, info->positionY, info->positionZ);
+            if (atPoint && atPoint != start.zoneId)
+            {
+                start.areaId = atPoint;
+            }
+            else
+            {
+                start.areaId = FindStartSubArea(info->mapId, start.zoneId,
+                    info->positionX, info->positionY, info->positionZ);
+            }
         }
     }
 
@@ -518,18 +593,30 @@ bool RandomPlayerbotMgr::RandomTeleportHome(Player* bot)
         CalculateAreaCreatureStats();
     }
 
-    // The tightest confinement the bot's level still earns. A brand new character spends
-    // its first few levels inside the one sub-area -- Shadowglen, Northshire, Coldridge
-    // Valley -- and only then works outward into the zone around it, so the pool it draws
-    // from narrows the same way.
-    uint32 target = start.zoneId;
+    // A brand new character spends its first few levels inside the one sub-area --
+    // Shadowglen, Northshire, Coldridge Valley -- and only then works outward into the
+    // zone around it, so the pool it draws from narrows the same way. Preference, not
+    // requirement: if the sub-area cannot take the bot, the zone still can, and a bot
+    // placed slightly too far out is enormously better than one that cannot be placed at
+    // all. Camp Narache carries 17 landing sites against Mulgore's 1779, so a sub-area
+    // running out of usable ground is the ordinary case rather than the exotic one.
+    uint32 tightest = 0;
     if (start.areaId && sPlayerbotAIConfig.randomBotHomeAreaMaxLevel &&
         bot->getLevel() <= sPlayerbotAIConfig.randomBotHomeAreaMaxLevel)
     {
-        target = start.areaId;
+        tightest = start.areaId;
     }
 
-    std::map<uint32, std::vector<WorldLocation> >::iterator anchors = m_homeZoneAnchors.find(target);
+    if (tightest)
+    {
+        std::map<uint32, std::vector<WorldLocation> >::iterator sub = m_homeZoneAnchors.find(tightest);
+        if (sub != m_homeZoneAnchors.end() && !sub->second.empty() && RandomTeleport(bot, sub->second))
+        {
+            return true;
+        }
+    }
+
+    std::map<uint32, std::vector<WorldLocation> >::iterator anchors = m_homeZoneAnchors.find(start.zoneId);
     if (anchors == m_homeZoneAnchors.end() || anchors->second.empty())
     {
         return false;
@@ -1013,16 +1100,18 @@ bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, fl
             return false;
         }
 
-        // Tighter still for the first few levels. A level 1 has no business out in the
-        // wider zone: the whole of its content is inside the one sub-area it woke up in,
-        // and walking out of Shadowglen into Teldrassil proper is something a real
-        // character does once the starting quests are done, not before starting them.
-        if (start.areaId && sPlayerbotAIConfig.randomBotHomeAreaMaxLevel &&
-            bot->getLevel() <= sPlayerbotAIConfig.randomBotHomeAreaMaxLevel &&
-            areaId != start.areaId)
-        {
-            return false;
-        }
+        // The sub-area preference deliberately does NOT appear here. It belongs in
+        // RandomTeleportHome, which chooses where to put a bot, and not in the test that
+        // decides whether where a bot already stands is acceptable. Making it a rejection
+        // criterion stranded 30 of 127 bots on the first run that used it: a level 1
+        // undead could not be placed in Deathknell, because the racial start position
+        // resolves to Tirisfal rather than to the sub-area and so no Deathknell pool was
+        // ever built, and could not be placed anywhere else in Tirisfal either, because
+        // the open zone's creature band starts around level 5 and the tolerance is 3. With
+        // nowhere to go it re-ran the whole hundred-attempt search every pass and logged
+        // "Cannot teleport bot" 56 times. Tauren hit the same wall against Camp Narache.
+        // A confinement that can leave a bot with no legal position anywhere must be a
+        // preference expressed when placing, never an invariant enforced by eviction.
     }
 
     // GetAreaId answers with the most specific area, and in AreaTable.dbc it is the

@@ -290,6 +290,14 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         RacialStart GetRacialStart(Player* bot);
 
         /**
+         * @brief The sub-area of a starting zone holding the ordinary creatures nearest a
+         *        race's create position, for races whose create point answers with the
+         *        zone rather than the sub-area it sits in.
+         * @return The sub-area ID, or 0 if none qualifies.
+         */
+        uint32 FindStartSubArea(uint32 mapId, uint32 zoneId, float x, float y, float z);
+
+        /**
          * @brief The zone a bot's own race starts the game in, from playercreateinfo.
          * @param bot Pointer to the player bot.
          * @return The zone ID, or 0 if the race has no create info.
