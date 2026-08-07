@@ -1091,8 +1091,17 @@ bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, fl
     // to the zone its own race actually starts in. Compared against the zone rather than
     // the leaf area, so Coldridge Valley, Shadowglen, Deathknell and the rest all resolve
     // to the parent the racial start position names.
+    // Judged at useLevel when the caller supplied one, exactly as the creature band below
+    // is. That is not a detail: RandomizeFirst picks a destination, derives the level the
+    // bot is ABOUT to be set to, and only then runs CleanRandomize to grant that level
+    // with its talents, trainer spells and gear. Asking bot->getLevel() there asks about a
+    // freshly created level 1, so every destination outside its racial start zone was
+    // refused, all hundred attempts failed, and CleanRandomize never ran at all -- leaving
+    // the entire roster stuck at level 1 with no gear and nothing but its create-info
+    // spells. 840 of 900 bots sat at level 1 because of it.
+    uint32 homeLevel = useLevel ? useLevel : bot->getLevel();
     if (sPlayerbotAIConfig.randomBotHomeZoneMaxLevel &&
-        bot->getLevel() <= sPlayerbotAIConfig.randomBotHomeZoneMaxLevel)
+        homeLevel <= sPlayerbotAIConfig.randomBotHomeZoneMaxLevel)
     {
         RacialStart start = GetRacialStart(bot);
         if (start.zoneId && zoneId != start.zoneId)
