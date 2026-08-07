@@ -364,8 +364,14 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
     if (!teleport)
     {
         sLog.outDetail("Random teleporting bot %d", bot);
-        RandomTeleportForLevel(ai->GetBot());
-        SetEventValue(bot, "teleport", 1, sPlayerbotAIConfig.maxRandomBotInWorldTime);
+        // ee37c57e made the eviction branch above wait for a successful teleport before
+        // recording one, and left this branch still banking it either way -- so a bot
+        // that could not be placed had its next move suppressed for maxRandomBotInWorldTime
+        // anyway. Same rule here: only spend the event if the bot actually moved.
+        if (RandomTeleportForLevel(ai->GetBot()))
+        {
+            SetEventValue(bot, "teleport", 1, sPlayerbotAIConfig.maxRandomBotInWorldTime);
+        }
         return true;
     }
 
@@ -635,15 +641,25 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
             continue;
         }
 
+        // Everything above is a cheap check, so the search costs little however many
+        // attempts it takes. CleanRandomize is the opposite -- talents, spells, inventory,
+        // equipment and four SaveToDB -- so it runs exactly once, after a destination has
+        // passed every test, and the loop ends whether or not the move then succeeds.
+        //
+        // It sat inside the retry until now, which meant a teleport that returned false
+        // re-randomized the bot and went round again: up to a hundred full re-gears for
+        // one bot inside a single pass, and the 50ms budget is only checked between bots,
+        // so the tail was a multi-second stall of the world thread. RandomTeleport
+        // returning false for something as ordinary as an in-flight IsBeingTeleported made
+        // that reachable, not theoretical.
+        //
+        // If the placement does fail the bot keeps its new level and stays put; the
+        // eviction branch in ProcessBot will judge it and move it on a later pass, which
+        // is the same mechanism that handles every other badly-placed bot.
         PlayerbotFactory factory(bot, level);
         factory.CleanRandomize();
-        // Only stop once the bot is actually somewhere. Breaking regardless left it
-        // freshly levelled but standing where it was created, which is how the fleet
-        // ended up sitting in starting zones at every level.
-        if (RandomTeleport(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z))
-        {
-            break;
-        }
+        RandomTeleport(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z);
+        break;
     }
 
     if (bot->getLevel() > maxLevel)
@@ -676,21 +692,8 @@ uint32 RandomPlayerbotMgr::GetZoneLevel(uint32 mapId, float teleX, float teleY, 
     const TerrainInfo* terrain = map ? map->GetTerrain() : NULL;
     if (terrain)
     {
-        CellPair cell_pair = MaNGOS::ComputeCellPair(teleX, teleY);
-        uint32 cell_id = (cell_pair.y_coord * TOTAL_NUMBER_OF_CELLS_PER_MAP) + cell_pair.x_coord;
-        std::pair<uint32, uint32> mapCell = std::make_pair(mapId, cell_id);
-
-        uint32 areaId = 0;
-        std::map<std::pair<uint32, uint32>, uint32>::iterator cacheItr = m_cellToAreaCache.find(mapCell);
-        if (cacheItr != m_cellToAreaCache.end())
-        {
-            areaId = cacheItr->second;
-        }
-        else
-        {
-            areaId = terrain->GetAreaId(teleX, teleY, teleZ);
-            m_cellToAreaCache[mapCell] = areaId;
-        }
+        // Per position, not per grid cell -- see the note in IsZoneSafeForBot.
+        uint32 areaId = terrain->GetAreaId(teleX, teleY, teleZ);
 
         std::map<uint32, AreaCreatureStats>::const_iterator statsItr = m_areaCreatureStatsMap.find(areaId);
         if (statsItr != m_areaCreatureStatsMap.end() && statsItr->second.creatureCount > 0)
@@ -866,21 +869,15 @@ bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, fl
         return false;
     }
 
-    CellPair cell_pair = MaNGOS::ComputeCellPair(x, y);
-    uint32 cell_id = (cell_pair.y_coord * TOTAL_NUMBER_OF_CELLS_PER_MAP) + cell_pair.x_coord;
-    std::pair<uint32, uint32> mapCell = std::make_pair(mapId, cell_id);
-
-    uint32 areaId = 0;
-    std::map<std::pair<uint32, uint32>, uint32>::iterator cacheItr = m_cellToAreaCache.find(mapCell);
-    if (cacheItr != m_cellToAreaCache.end())
-    {
-        areaId = cacheItr->second;
-    }
-    else
-    {
-        areaId = terrain->GetAreaId(x, y, z);
-        m_cellToAreaCache[mapCell] = areaId;
-    }
+    // Resolved per position rather than cached per grid cell. A cell is SIZE_OF_GRID_CELL
+    // wide -- about 33 yards -- and area borders do not follow the grid, so a cell can
+    // straddle two areas. Caching by cell let whichever position happened to be asked
+    // first decide the area for every later position in it, which is harmless for a
+    // rough level band and actively wrong for a faction or neutral-hub decision: it can
+    // hand a border cell of the Barrens to Ratchet's neutrality, or hide Ratchet behind
+    // the Barrens' owner. GetAreaId is a terrain lookup, and now that this path no longer
+    // issues SQL it is not worth trading correctness to skip it.
+    uint32 areaId = terrain->GetAreaId(x, y, z);
 
     AreaTableEntry const* area = sAreaStore.LookupEntry(areaId);
     if (!area)
@@ -900,13 +897,20 @@ bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, fl
     // below -- where its bruisers, being hostile to neither side, exclude nobody.
     uint32 factionMask = area->FactionGroupMask;
     bool neutralHub = m_neutralHubAreas.find(area->ID) != m_neutralHubAreas.end();
-    for (AreaTableEntry const* scope = area;
-         !neutralHub && factionMask == AREATEAM_NONE && scope && scope->ParentAreaID; )
+    // The depth cap is a guard against a cyclic ParentAreaID, not a real limit: the
+    // shipped 1.12 AreaTable has no self-references and a longest chain of two. A modded
+    // or corrupt DBC could otherwise spin this loop forever on the world thread.
     {
-        scope = sAreaStore.LookupEntry(scope->ParentAreaID);
-        if (scope)
+        AreaTableEntry const* scope = area;
+        for (int depth = 0;
+             !neutralHub && factionMask == AREATEAM_NONE && scope && scope->ParentAreaID && depth < 8;
+             ++depth)
         {
-            factionMask = scope->FactionGroupMask;
+            scope = sAreaStore.LookupEntry(scope->ParentAreaID);
+            if (scope)
+            {
+                factionMask = scope->FactionGroupMask;
+            }
         }
     }
 
@@ -1098,7 +1102,6 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
 {
     sLog.outString(">> [Playerbots] Calculating area creature statistics...");
 
-    std::map<std::pair<uint32, uint32>, uint32> cellToAreaCache; // (mapId, cellId) -> areaId
     std::map<uint32, std::vector<uint8>> areaLevels;
 
     m_allianceGuardAreas.clear();
@@ -1121,29 +1124,18 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
 
         totalCreatures++;
 
-        CellPair cell_pair = MaNGOS::ComputeCellPair(data.posX, data.posY);
-        uint32 cell_id = (cell_pair.y_coord * TOTAL_NUMBER_OF_CELLS_PER_MAP) + cell_pair.x_coord;
-        std::pair<uint32, uint32> mapCell = std::make_pair(data.mapid, cell_id);
-
-        uint32 areaId = 0;
-
-        std::map<std::pair<uint32, uint32>, uint32>::iterator cacheItr = cellToAreaCache.find(mapCell);
-        if (cacheItr != cellToAreaCache.end())
+        // Per spawn, not per grid cell. This pass is what decides which area owns a guard,
+        // a neutral hub and a level band, so a cell that straddles a border must not have
+        // its first-asked creature answer for the rest. One extra terrain lookup per spawn,
+        // once at boot, is a fair price for classifying the right area.
+        Map* map = const_cast<Map*>(sMapMgr.FindMap(data.mapid));
+        if (!map || !map->GetTerrain())
         {
-            areaId = cacheItr->second;
+            continue;
         }
-        else
-        {
-            Map* map = const_cast<Map*>(sMapMgr.FindMap(data.mapid));
-            if (!map || !map->GetTerrain())
-            {
-                continue;
-            }
 
-            areaId = map->GetTerrain()->GetAreaId(data.posX, data.posY, data.posZ);
-            cellToAreaCache[mapCell] = areaId; // Cache for future lookups
-            getAreaIdCalls++;
-        }
+        uint32 areaId = map->GetTerrain()->GetAreaId(data.posX, data.posY, data.posZ);
+        getAreaIdCalls++;
 
         if (areaId == 0)
         {
