@@ -146,7 +146,8 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         }
     }
 
-    for (size_t examined = 0; examined < bots.size(); ++examined)
+    size_t examined = 0;
+    for (; examined < bots.size(); ++examined)
     {
         if (budgetMs && getMSTimeDiff(passStart, getMSTime()) >= budgetMs)
         {
@@ -179,8 +180,11 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         SetNextCheckDelay(sPlayerbotAIConfig.randomBotCatchupInterval * 1000);
     }
 
-    sLog.outString("%d bots processed%s. %d alliance and %d horde bots added. %d bots online. Next check in %d seconds",
-        botProcessed, overBudget ? " (budget reached, more pending)" : "", allianceNewBots, hordeNewBots, playerBots.size(),
+    // Report examined as well as processed: every bot the pass walks past pays for its
+    // event lookups whether or not it turns out to have work, so "processed" alone hides
+    // most of what the budget actually went on.
+    sLog.outString("%d bots processed, %u examined%s. %d alliance and %d horde bots added. %d bots online. Next check in %d seconds",
+        botProcessed, (uint32)examined, overBudget ? " (budget reached, more pending)" : "", allianceNewBots, hordeNewBots, playerBots.size(),
         overBudget ? sPlayerbotAIConfig.randomBotCatchupInterval : sPlayerbotAIConfig.randomBotUpdateInterval);
 
     if (processTicks++ == 1)
@@ -1022,6 +1026,18 @@ uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event)
         }
         m_eventValueCache[key] = {value, lastChangeTime, validIn};
         delete results;
+    }
+
+    if (!value)
+    {
+        // Record the miss. A row that does not exist never reached the line above at
+        // all, and one that has already expired can never satisfy the freshness test
+        // again because its stored timestamp does not move -- so either way every
+        // later call fell through to a fresh synchronous SELECT. Most events are
+        // absent for a healthy bot, and ProcessBot asks after several of them per bot
+        // per pass, so that was the bulk of what the update budget was buying. Any
+        // SetEventValue overwrites this entry, so a real value is never masked.
+        m_eventValueCache[key] = {0, (uint32)time(0), sPlayerbotAIConfig.randomBotUpdateInterval};
     }
 
     return value;
