@@ -437,7 +437,35 @@ void PlayerbotFactory::InitTalents()
     uint32 p2 = p1 + sPlayerbotAIConfig.specProbability[cls][1];
 
     uint32 specNo = (point < p1 ? 0 : (point < p2 ? 1 : 2));
-    InitTalents(specNo);
+
+    // One pass cannot spend a full budget: InitTalents(specNo) caps itself at five points
+    // and three attempts per talent row, so a level 60 with 51 points always came back with
+    // most of them unspent. Those leftovers used to be poured into a DIFFERENT tree --
+    // literally 2 - specNo -- and since GetPlayerSpecTab later reads whichever tree holds
+    // the most points, the bot ended up being whatever the leftovers landed in rather than
+    // what was rolled.
+    //
+    // That is why no Holy paladin has ever existed here despite a 20% roll. Two live
+    // examples at the time of writing, both level 52: Lyneat and Mikkileay, each holding
+    // 2 points in Holy and 11 in Retribution -- rolled Holy, spent what one pass allowed,
+    // and had the rest tipped into Retribution, which is then the spec the AI honours.
+    //
+    // So keep filling the tree that was actually chosen, stopping when a pass places
+    // nothing more, and only spill into another tree once this one genuinely cannot take
+    // any more points.
+    uint32 remaining = bot->GetFreeTalentPoints();
+    while (remaining)
+    {
+        InitTalents(specNo);
+
+        uint32 afterPass = bot->GetFreeTalentPoints();
+        if (afterPass == remaining)
+        {
+            break;
+        }
+
+        remaining = afterPass;
+    }
 
     if (bot->GetFreeTalentPoints())
     {
