@@ -14,7 +14,17 @@ ShadowPriestStrategy::ShadowPriestStrategy(PlayerbotAI* ai) : GenericPriestStrat
 
 NextAction** ShadowPriestStrategy::getDefaultActions()
 {
-    return NextAction::array(0, new NextAction("mind blast", 30.0f), NULL);
+    // Smite behind mind blast, because mind blast is level 10 and this was the only
+    // default action: a shadow priest below that level cast Shadow Word: Pain once from
+    // its trigger and then had nothing left to do, which is exactly what watching one
+    // looked like -- a single pull and then a bot standing beside its target for good.
+    // Everything else the strategy offers is out of reach too: shadowform and vampiric
+    // embrace are 40-point talents, and dispersion is a Wrath spell that does not exist
+    // on this core at all. Smite is level 1 and is the filler Holy already falls back on.
+    return NextAction::array(0,
+        new NextAction("mind blast", 30.0f),
+        new NextAction("smite", 10.0f),
+        NULL);
 }
 
 void ShadowPriestStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
