@@ -466,27 +466,39 @@ bool RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
             continue;
         }
 
-        AreaTableEntry const* area = sAreaStore.LookupEntry(terrain->GetAreaId(x, y, z));
-        if (!area)
-        {
-            continue;
-        }
-
-        if (!terrain->IsOutdoors(x, y, z) ||
-            +terrain->IsUnderWater(x, y, z) ||
-            +terrain->IsInWater(x, y, z))
-        {
-            continue;
-        }
-
-        sLog.outDetail("Random teleporting bot %s to %s %f,%f,%f", bot->GetName(), area->AreaName_lang[0], x, y, z);
-        std::optional<float> floor = map->GetTerrain()->StaticFloor(x, y, 0.5f + z);
+        // Snap before judging, not after. x and y have just been jittered by up to half a
+        // grindDistance -- fifty yards with the shipped setting -- while z is still the
+        // height of an anchor that far away, so every test run against it was asking about
+        // a point in mid-air or underground. StaticFloor then searched a column centred on
+        // that same wrong height and returned whatever surface it found there, which under
+        // a building is the ground beneath it. That is how a bot ends up inside a structure
+        // or below one, and it is what a player teleporting to it falls through.
+        std::optional<float> floor = terrain->StaticFloor(x, y, 0.5f + z);
         if (!floor)
         {
             continue;
         }
 
         z = 0.05f + *floor;
+
+        AreaTableEntry const* area = sAreaStore.LookupEntry(terrain->GetAreaId(x, y, z));
+        if (!area)
+        {
+            continue;
+        }
+
+        // Now that z is where the bot would actually stand. IsOutdoors reads the WMO group
+        // flags at the point given, so asking it here is what rejects a floor inside a
+        // building or the ground under one -- the previous order asked it about the sky
+        // above the roof and was satisfied.
+        if (!terrain->IsOutdoors(x, y, z) ||
+            terrain->IsUnderWater(x, y, z) ||
+            terrain->IsInWater(x, y, z))
+        {
+            continue;
+        }
+
+        sLog.outDetail("Random teleporting bot %s to %s %f,%f,%f", bot->GetName(), area->AreaName_lang[0], x, y, z);
 
         // ProcessBot judges the spot the bot is standing on, not the anchor it was
         // sampled around, and the two are up to randomBotTeleportDistance/2 plus a
