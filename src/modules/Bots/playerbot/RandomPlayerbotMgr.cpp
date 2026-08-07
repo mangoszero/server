@@ -111,11 +111,14 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
     // inserts into this unordered_map. Two threads inserting, or one reading through
     // another's rehash, is undefined behaviour rather than a stale read. Making the world
     // thread fill it first means the map-worker path only ever finds, never writes.
-    for (list<uint32>::const_iterator i = bots.begin(); i != bots.end(); ++i)
     {
-        if (m_randomBotCache.find(*i) == m_randomBotCache.end())
+        std::lock_guard<std::mutex> guard(m_cacheMutex);
+        for (list<uint32>::const_iterator i = bots.begin(); i != bots.end(); ++i)
         {
-            m_randomBotCache[*i] = true;
+            if (m_randomBotCache.find(*i) == m_randomBotCache.end())
+            {
+                m_randomBotCache[*i] = true;
+            }
         }
     }
 
@@ -1272,10 +1275,13 @@ bool RandomPlayerbotMgr::IsRandomBot(Player* bot)
 
 bool RandomPlayerbotMgr::IsRandomBot(uint32 bot)
 {
-    std::unordered_map<uint32, bool>::iterator it = m_randomBotCache.find(bot);
-    if (it != m_randomBotCache.end())
     {
-        return it->second;
+        std::lock_guard<std::mutex> guard(m_cacheMutex);
+        std::unordered_map<uint32, bool>::iterator it = m_randomBotCache.find(bot);
+        if (it != m_randomBotCache.end())
+        {
+            return it->second;
+        }
     }
 
     // This is the one entry point map workers reach -- PlayerbotAI::UpdateAI, the trade
@@ -1286,7 +1292,10 @@ bool RandomPlayerbotMgr::IsRandomBot(uint32 bot)
     // writing at the same time, and a concurrent rebalance is a crash rather than a stale
     // read. Both reviewers flagged this independently.
     bool value = (GetEventValue(bot, "add", false) != 0);
-    m_randomBotCache[bot] = value;
+    {
+        std::lock_guard<std::mutex> guard(m_cacheMutex);
+        m_randomBotCache[bot] = value;
+    }
     return value;
 }
 
@@ -1587,12 +1596,15 @@ uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event, bool cacheMis
 {
     uint32 value = 0;
     auto key = std::make_pair(bot, event);
-    auto it = m_eventValueCache.find(key);
-    if (it != m_eventValueCache.end())
     {
-        if ((time(0) - it->second.lastChangeTime) < it->second.validIn)
+        std::lock_guard<std::mutex> guard(m_cacheMutex);
+        auto it = m_eventValueCache.find(key);
+        if (it != m_eventValueCache.end())
         {
-            return it->second.value;
+            if ((time(0) - it->second.lastChangeTime) < it->second.validIn)
+            {
+                return it->second.value;
+            }
         }
     }
 
@@ -1611,7 +1623,10 @@ uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event, bool cacheMis
         {
             value = 0;
         }
-        m_eventValueCache[key] = {value, lastChangeTime, validIn};
+        {
+            std::lock_guard<std::mutex> guard(m_cacheMutex);
+            m_eventValueCache[key] = {value, lastChangeTime, validIn};
+        }
         delete results;
     }
 
@@ -1624,6 +1639,7 @@ uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event, bool cacheMis
         // absent for a healthy bot, and ProcessBot asks after several of them per bot
         // per pass, so that was the bulk of what the update budget was buying. Any
         // SetEventValue overwrites this entry, so a real value is never masked.
+        std::lock_guard<std::mutex> guard(m_cacheMutex);
         m_eventValueCache[key] = {0, (uint32)time(0), sPlayerbotAIConfig.randomBotUpdateInterval};
     }
 
@@ -1643,10 +1659,17 @@ uint32 RandomPlayerbotMgr::SetEventValue(uint32 bot, string event, uint32 value,
             0, bot, (uint32)time(0), validIn, event.c_str(), value);
     }
 
-    if (event == "add")
-        m_randomBotCache[bot] = (value != 0);
+    {
+        std::lock_guard<std::mutex> guard(m_cacheMutex);
 
-    m_eventValueCache[std::make_pair(bot, event)] = {value, (uint32)time(0), validIn};
+        if (event == "add")
+        {
+            m_randomBotCache[bot] = (value != 0);
+        }
+
+        m_eventValueCache[std::make_pair(bot, event)] = {value, (uint32)time(0), validIn};
+    }
+
     return value;
 }
 

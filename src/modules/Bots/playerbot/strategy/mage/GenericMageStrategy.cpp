@@ -49,8 +49,12 @@ class GenericMageStrategyActionNodeFactory : public NamedObjectFactory<ActionNod
             return new ActionNode ("frost nova",
                 /*P*/ NULL,
                 /*A*/ NextAction::array(0, new NextAction("flee"), NULL),
+                // ACTION_MOVE, not ACTION_NORMAL. "Nova, then run" is the whole point of
+                // the sequence, and once "set facing" moved into CombatStrategy at
+                // ACTION_NORMAL + 7 it outranked this and spent the mage's tick turning to
+                // face the thing it had just frozen and meant to escape.
                 /*C*/ NextAction::array(0,
-                    new NextAction("flee", ACTION_NORMAL), NULL));
+                    new NextAction("flee", ACTION_MOVE), NULL));
         }
         static ActionNode* icy_veins(PlayerbotAI* ai)
         {

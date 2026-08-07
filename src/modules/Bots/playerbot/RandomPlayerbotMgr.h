@@ -10,6 +10,7 @@
 #include "LFGMgr.h"
 #include <set>
 #include <unordered_map>
+#include <mutex>
 
 class WorldPacket;
 class Player;
@@ -354,6 +355,14 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         std::map<uint32, uint32> m_starterZoneCounts; ///< starting zone -> active residents, rebuilt once per pass
         int m_starterZoneCountsPass;                  ///< the pass m_starterZoneCounts was built for
         std::unordered_map<uint32, bool> m_randomBotCache;
+        // Both caches are read from map worker threads -- PlayerbotAI::UpdateAI, the trade
+        // and grind values, AiFactory -- and written from the world thread. Concurrent
+        // access to std::map/unordered_map is undefined behaviour rather than a stale
+        // read: a reader traversing during another thread's rehash or rebalance can walk
+        // a dangling node. Seeding the cache in advance narrows the window and does not
+        // close it, so both are guarded. The critical sections are a find and an assign,
+        // and IsRandomBot at roughly a thousand calls a second is nowhere near contended.
+        mutable std::mutex m_cacheMutex;
         std::unordered_map<uint32, uint32> m_playerZoneCounts; ///< zone_id -> real player count, for O(1) bot tick gating.
         struct EventValueEntry {
             uint32 value;
