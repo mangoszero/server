@@ -2116,6 +2116,18 @@ void World::ShutdownServ(uint32 time, uint32 options, uint8 exitcode)
         if (!(options & SHUTDOWN_MASK_IDLE) || GetActiveAndQueuedSessionCount() == 0)
         {
             sPlayerRegistry.SaveAll();        // save all players.
+
+#ifdef ENABLE_PLAYERBOTS
+            // Only once the shutdown is actually going through. This used to sit below,
+            // outside the branch, so ".server shutdown 3600" emptied the world of bots the
+            // moment it was typed and left the real players alone with an hour still on
+            // the countdown. The same applied to an idle shutdown that then declined to
+            // stop because sessions were still connected: the bots were gone and did not
+            // come back. LogoutAllBots is idempotent and ShutdownWorld calls it again, so
+            // deferring it costs nothing.
+            sRandomPlayerbotMgr.LogoutAllBots();
+#endif
+
             m_stopEvent = true;                                // exist code already set
         }
         else
@@ -2129,10 +2141,6 @@ void World::ShutdownServ(uint32 time, uint32 options, uint8 exitcode)
         m_ShutdownTimer = time;
         ShutdownMsg(true);
     }
-
-#ifdef ENABLE_PLAYERBOTS
-    sRandomPlayerbotMgr.LogoutAllBots();
-#endif
 
     ///- Used by Eluna
 #ifdef ENABLE_ELUNA

@@ -402,10 +402,38 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
         // only useful build. Nothing is lost by it either: the grouped branch above hands a
         // HEAL build botHealStrategies, and AcceptInvitationAction calls ResetStrategies, so
         // joining a party rebuilds the healer it was meant to be.
-        if (!engine->ContainsStrategy(STRATEGY_TYPE_TANK) &&
-            !engine->ContainsStrategy(STRATEGY_TYPE_RANGED))
+        // Skipping the whole ChangeStrategy was too blunt. The setting is a list, and only
+        // the entries that resolve per class to a damage build are the problem; an operator
+        // who adds anything else to randomBotCombatStrategies -- and "+attack weak" is in
+        // the shipped default -- lost it entirely on every tank and every caster. Drop only
+        // the offending entry for those builds and apply the rest.
+        bool keepSpec = engine->ContainsStrategy(STRATEGY_TYPE_TANK) ||
+                        engine->ContainsStrategy(STRATEGY_TYPE_RANGED);
+
+        if (!keepSpec)
         {
             engine->ChangeStrategy(sPlayerbotAIConfig.randomBotCombatStrategies);
+        }
+        else
+        {
+            vector<string> parts = split(sPlayerbotAIConfig.randomBotCombatStrategies, ',');
+            for (vector<string>::iterator i = parts.begin(); i != parts.end(); ++i)
+            {
+                string entry = *i;
+                entry.erase(0, entry.find_first_not_of(" \t"));
+                size_t last = entry.find_last_not_of(" \t");
+                if (last != string::npos)
+                {
+                    entry.erase(last + 1);
+                }
+
+                if (entry.empty() || entry == "+dps" || entry == "dps")
+                {
+                    continue;
+                }
+
+                engine->ChangeStrategy(entry);
+            }
         }
     }
 }

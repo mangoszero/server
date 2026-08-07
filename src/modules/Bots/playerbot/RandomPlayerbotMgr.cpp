@@ -661,6 +661,7 @@ bool RandomPlayerbotMgr::RandomTeleportHome(Player* bot)
         std::map<uint32, std::vector<WorldLocation> >::iterator sub = m_homeZoneAnchors.find(tightest);
         if (sub != m_homeZoneAnchors.end() && !sub->second.empty() && RandomTeleport(bot, sub->second))
         {
+            Refresh(bot);
             return true;
         }
     }
@@ -677,7 +678,17 @@ bool RandomPlayerbotMgr::RandomTeleportHome(Player* bot)
     // to one zone the odds of hitting it are poor enough that a run of a hundred attempts
     // can still come up empty -- which is how the last over-strict filter produced
     // "Cannot teleport bot" for every bot on the roster.
-    return RandomTeleport(bot, anchors->second);
+    //
+    // Refresh on success for the same reason the generic teleport path does it: a bot
+    // arrives with whatever health, mana, durability and combat references it had where it
+    // left, and without this the home path was the one route that skipped the cleanup.
+    if (RandomTeleport(bot, anchors->second))
+    {
+        Refresh(bot);
+        return true;
+    }
+
+    return false;
 }
 
 bool RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
@@ -1116,7 +1127,15 @@ bool RandomPlayerbotMgr::IsRandomBot(uint32 bot)
     {
         return it->second;
     }
-    bool value = (GetEventValue(bot, "add") != 0);
+
+    // This is the one entry point map workers reach -- PlayerbotAI::UpdateAI, the trade
+    // and grind values, AiFactory -- so it must not leave a new entry behind in
+    // m_eventValueCache. Recording the miss there is a world-thread optimisation for
+    // ProcessBot, which asks after several events per bot per pass; from here it would
+    // add unsynchronised writes to a std::map that the world thread is reading and
+    // writing at the same time, and a concurrent rebalance is a crash rather than a stale
+    // read. Both reviewers flagged this independently.
+    bool value = (GetEventValue(bot, "add", false) != 0);
     m_randomBotCache[bot] = value;
     return value;
 }
@@ -1411,7 +1430,7 @@ void RandomPlayerbotMgr::EnsureGroupedBotsOnline()
     }
 }
 
-uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event)
+uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event, bool cacheMisses)
 {
     uint32 value = 0;
     auto key = std::make_pair(bot, event);
@@ -1443,7 +1462,7 @@ uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event)
         delete results;
     }
 
-    if (!value)
+    if (!value && cacheMisses)
     {
         // Record the miss. A row that does not exist never reached the line above at
         // all, and one that has already expired can never satisfy the freshness test

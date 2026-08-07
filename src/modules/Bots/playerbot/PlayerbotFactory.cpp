@@ -467,9 +467,23 @@ void PlayerbotFactory::InitTalents()
         remaining = afterPass;
     }
 
-    if (bot->GetFreeTalentPoints())
+    // "2 - specNo" reads like the opposite tree and is not: for specNo 1 it evaluates to 1,
+    // the tree the loop above has just finished filling and which therefore cannot take
+    // another point, so a middle-spec bot kept its leftovers forever. Walk the other two
+    // trees instead, and stop as soon as one of them accepts something.
+    for (uint32 other = 0; other < 3 && bot->GetFreeTalentPoints(); ++other)
     {
-        InitTalents(2 - specNo);
+        if (other == specNo)
+        {
+            continue;
+        }
+
+        uint32 before = bot->GetFreeTalentPoints();
+        InitTalents(other);
+        if (bot->GetFreeTalentPoints() != before)
+        {
+            break;
+        }
     }
 }
 

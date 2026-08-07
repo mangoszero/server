@@ -211,7 +211,7 @@ class RandomPlayerbotMgr : public PlayerbotHolder
          * @param event The event name.
          * @return The event value.
          */
-        uint32 GetEventValue(uint32 bot, string event);
+        uint32 GetEventValue(uint32 bot, string event, bool cacheMisses = true);
 
         /**
          * @brief Sets the event value for a given player bot and event.

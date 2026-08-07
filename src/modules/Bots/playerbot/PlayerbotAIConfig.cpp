@@ -169,7 +169,7 @@ bool PlayerbotAIConfig::Initialize()
     allowGuildBots = config.GetBoolDefault("AiPlayerbot.AllowGuildBots", true);
 
     // Load lists of values from the configuration file
-    randomBotMapsAsString = config.GetStringDefault("AiPlayerbot.RandomBotMaps", "0,1,530,571");
+    randomBotMapsAsString = config.GetStringDefault("AiPlayerbot.RandomBotMaps", "0,1");
     // Deliberately not LoadList. That helper drops every entry whose atoi is zero, which
     // is correct for the spell and item ids it was written for and wrong for a map id:
     // map 0 is Eastern Kingdoms. With the shipped default the list therefore came out as
@@ -205,7 +205,7 @@ bool PlayerbotAIConfig::Initialize()
         randomBotMaps.push_back(0);
     }
     LoadList<list<uint32> >(config.GetStringDefault("AiPlayerbot.RandomBotQuestItems", "6948,5175,5176,5177,5178"), randomBotQuestItems);
-    LoadList<list<uint32> >(config.GetStringDefault("AiPlayerbot.RandomBotSpellIds", "54197"), randomBotSpellIds);
+    LoadList<list<uint32> >(config.GetStringDefault("AiPlayerbot.RandomBotSpellIds", ""), randomBotSpellIds);
 
     randomBotAutologin = config.GetBoolDefault("AiPlayerbot.RandomBotAutologin", true);
     minRandomBots = config.GetIntDefault("AiPlayerbot.MinRandomBots", 50);
