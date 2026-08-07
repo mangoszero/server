@@ -895,9 +895,13 @@ bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, fl
     // Narache and Deathknell. Reading only the leaf therefore skipped the faction test
     // exactly where new players are, so a level 5 Horde bot in Shadowglen came back
     // perfectly safe. Walk up to the first ancestor that declares an owner.
+    // A hub both sides may use keeps its own answer of "nobody owns this" rather than
+    // inheriting the zone around it, so it falls through to the guard-presence test
+    // below -- where its bruisers, being hostile to neither side, exclude nobody.
     uint32 factionMask = area->FactionGroupMask;
+    bool neutralHub = m_neutralHubAreas.find(area->ID) != m_neutralHubAreas.end();
     for (AreaTableEntry const* scope = area;
-         factionMask == AREATEAM_NONE && scope && scope->ParentAreaID; )
+         !neutralHub && factionMask == AREATEAM_NONE && scope && scope->ParentAreaID; )
     {
         scope = sAreaStore.LookupEntry(scope->ParentAreaID);
         if (scope)
@@ -1099,6 +1103,7 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
 
     m_allianceGuardAreas.clear();
     m_hordeGuardAreas.clear();
+    m_neutralHubAreas.clear();
 
     uint32 getAreaIdCalls = 0;
     uint32 totalCreatures = 0;
@@ -1143,6 +1148,22 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
         if (areaId == 0)
         {
             continue;
+        }
+
+        // A contested-guard faction is how the world data marks a hub both sides may
+        // use: the Steamwheedle bruisers in Ratchet, Booty Bay, Gadgetzan and Everlook
+        // carry it and are hostile to neither player faction, while no faction guard
+        // does -- 8 of 314 faction templates have the flag at all. Recording the area
+        // stops it inheriting an owner from the zone around it, which is what would
+        // otherwise hand Ratchet to the Horde along with the rest of the Barrens.
+        // Deliberately not gated on CREATURE_FLAG_EXTRA_GUARD: Ratchet's and
+        // Gadgetzan's bruisers carry that flag but Booty Bay's and Everlook's do not.
+        if (FactionTemplateEntry const* hubFaction = sFactionTemplateStore.LookupEntry(cInfo->FactionAlliance))
+        {
+            if (hubFaction->IsContestedGuardFaction())
+            {
+                m_neutralHubAreas.insert(areaId);
+            }
         }
 
         // Guard area detection: classify guards by faction hostility
