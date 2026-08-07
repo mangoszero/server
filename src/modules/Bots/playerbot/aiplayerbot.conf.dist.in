@@ -185,6 +185,15 @@ AiPlayerbot.RandomBotHomeZoneMaxLevel = 10
 # RandomBotHomeZoneMaxLevel to have any effect. Set to 0 to disable.
 AiPlayerbot.RandomBotHomeAreaMaxLevel = 5
 
+# Percent of the roster that LIVES in its racial starting zone rather than passing
+# through it. Without this the starting zones drain within minutes: the rules above hold
+# a bot at home only while it is low level, and every bot is promptly rolled to a level
+# drawn from a random destination and teleported there. Residency is decided from the
+# bot's guid, so it is stable across randomizes, relogs and restarts, and a resident that
+# outgrows RandomBotHomeZoneMaxLevel is returned to the start rather than graduating out.
+# Set to 0 to disable and let every bot roam.
+AiPlayerbot.RandomBotStarterZonePct = 15
+
 # Intervals
 #AiPlayerbot.RandomBotUpdateInterval = 60
 #AiPlayerbot.RandomBotCountChangeMinInterval = 86400

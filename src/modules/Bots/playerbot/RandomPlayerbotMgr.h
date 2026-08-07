@@ -77,6 +77,18 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         bool RandomizeFirst(Player* bot);
 
         /**
+         * @brief Whether this bot is one of the share that lives in its racial starting
+         *        zone permanently. Derived from the guid so the answer never changes.
+         */
+        bool IsStarterZoneResident(Player* bot);
+
+        /**
+         * @brief Randomizes a starting-zone resident: a level inside the home band, and a
+         *        placement in its own racial starting zone.
+         */
+        bool RandomizeStarterResident(Player* bot);
+
+        /**
          * @brief Increases the level of the given player bot.
          * @param bot Pointer to the player bot.
          */

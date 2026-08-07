@@ -782,6 +782,19 @@ void RandomPlayerbotMgr::IncreaseLevel(Player* bot)
     {
         botCap = maxLevel;
     }
+
+    // A resident that has outgrown the starting band goes back to the beginning rather
+    // than graduating out of the zone. Otherwise this is the slow leak that empties the
+    // starting zones anyway: residency survives the level-up, but the bot does not stay
+    // in the band that keeps it at home, so it drifts out one level at a time.
+    if (IsStarterZoneResident(bot) &&
+        sPlayerbotAIConfig.randomBotHomeZoneMaxLevel &&
+        bot->getLevel() >= sPlayerbotAIConfig.randomBotHomeZoneMaxLevel)
+    {
+        RandomizeStarterResident(bot);
+        return;
+    }
+
     if (bot->getLevel() >= botCap)
     {
         RandomizeFirst(bot);
@@ -801,8 +814,58 @@ void RandomPlayerbotMgr::IncreaseLevel(Player* bot)
     RandomTeleportForLevel(bot);
 }
 
+bool RandomPlayerbotMgr::IsStarterZoneResident(Player* bot)
+{
+    if (!sPlayerbotAIConfig.randomBotStarterZonePct)
+    {
+        return false;
+    }
+
+    // Decided from the bot's own guid rather than rolled, so it is the same answer every
+    // time it is asked -- across a randomize, a relog and a restart. A rolled residency
+    // would move a bot in and out of its starting zone every time it levelled, which is
+    // the opposite of the point. It also needs no storage and no extra event.
+    return (bot->GetGUIDLow() % 100) < sPlayerbotAIConfig.randomBotStarterZonePct;
+}
+
+bool RandomPlayerbotMgr::RandomizeStarterResident(Player* bot)
+{
+    uint32 band = sPlayerbotAIConfig.randomBotHomeZoneMaxLevel;
+    if (!band)
+    {
+        band = 10;
+    }
+
+    uint32 level = urand(1, band);
+    sLog.outDetail("Bot %s is a starting-zone resident; randomizing at level %u",
+        bot->GetName(), level);
+
+    PlayerbotFactory factory(bot, level);
+    factory.CleanRandomize();
+
+    // Home first, because that is the whole intent. The generic search is the fallback
+    // and, being level-banded, it lands them somewhere a bot of this level belongs anyway.
+    if (!RandomTeleportHome(bot))
+    {
+        RandomTeleportForLevel(bot);
+    }
+
+    return true;
+}
+
 bool RandomPlayerbotMgr::RandomizeFirst(Player* bot)
 {
+    // A share of the roster lives in the zone its race starts in and stays there. Without
+    // this the starting zones drain within minutes of a restart: the confinement rules
+    // hold a bot in its home zone only while it IS low level, and RandomizeFirst rolls a
+    // level from a randomly chosen destination, so every bot promptly levels out of the
+    // band and leaves. Watched happen on a fresh roster -- Teldrassil emptied as its bots
+    // were levelled and teleported away one after another.
+    if (IsStarterZoneResident(bot))
+    {
+        return RandomizeStarterResident(bot);
+    }
+
     bool randomized = false;
     uint32 maxLevel = sPlayerbotAIConfig.randomBotMaxLevel;
     if (maxLevel > sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
