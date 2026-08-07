@@ -60,6 +60,22 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         // cooldown afterwards -- including across the very restart that installed the
         // fix for whatever stranded it. A fresh start is a fresh chance.
         CharacterDatabase.Execute("DELETE FROM `ai_playerbot_random_bots` WHERE `event` = 'evictcheck'");
+
+        // A bot still sitting at level 1 with its randomize event banked never got through
+        // RandomizeFirst: that is the one path which grants a level, and a bot that has it
+        // has left level 1 behind. The banked event then suppresses every retry for as
+        // long as MaxRandomRandomizeTime, which defaults to fourteen days, so an install
+        // that hit this stays broken long after the code that caused it is gone -- naked
+        // level 1 bots with no talents and no trainer spells, and no way back on their own.
+        //
+        // Dropping just those events lets the next pass randomize them properly. It is
+        // safe to run every start: a healthy roster has almost nothing at level 1 holding
+        // a banked event, and the worst case for one that does is being randomized sooner
+        // than scheduled, which is the intended treatment anyway.
+        CharacterDatabase.Execute(
+            "DELETE `e` FROM `ai_playerbot_random_bots` `e` "
+            "JOIN `characters` `c` ON `c`.`guid` = `e`.`bot` "
+            "WHERE `e`.`event` = 'randomize' AND `e`.`owner` = 0 AND `c`.`level` = 1");
     }
 
     sLog.outBasic("Processing random bots...");
@@ -315,7 +331,17 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
     if (!randomize)
     {
         sLog.outDetail("Randomizing bot %d", bot);
-        Randomize(player);
+        // Bank the event only when the bot was actually randomized. Spending it either way
+        // is what let one failed pass cost a bot its level, gear, talents and trainer
+        // spells for up to a fortnight, because nothing looks at it again until the event
+        // lapses. Same rule the teleport branches already follow: only spend the event if
+        // the thing it records really happened.
+        if (!Randomize(player))
+        {
+            sLog.outDetail("Randomizing bot %d did not take; will retry", bot);
+            return true;
+        }
+
         uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotRandomizeTime, sPlayerbotAIConfig.maxRandomBotRandomizeTime);
         ScheduleRandomize(bot, randomTime);
         return true;
@@ -737,16 +763,15 @@ bool RandomPlayerbotMgr::RandomTeleport(Player* bot, uint32 mapId, float teleX, 
     return moved;
 }
 
-void RandomPlayerbotMgr::Randomize(Player* bot)
+bool RandomPlayerbotMgr::Randomize(Player* bot)
 {
     if (bot->getLevel() == 1)
     {
-        RandomizeFirst(bot);
+        return RandomizeFirst(bot);
     }
-    else
-    {
-        IncreaseLevel(bot);
-    }
+
+    IncreaseLevel(bot);
+    return true;
 }
 
 void RandomPlayerbotMgr::IncreaseLevel(Player* bot)
@@ -776,8 +801,9 @@ void RandomPlayerbotMgr::IncreaseLevel(Player* bot)
     RandomTeleportForLevel(bot);
 }
 
-void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
+bool RandomPlayerbotMgr::RandomizeFirst(Player* bot)
 {
+    bool randomized = false;
     uint32 maxLevel = sPlayerbotAIConfig.randomBotMaxLevel;
     if (maxLevel > sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
     {
@@ -807,7 +833,9 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
         index = urand(0, locs.size() - 1);
         if (index >= locs.size())
         {
-            return;
+            // Leaves the loop rather than the function, so the bot still reaches the
+            // randomize-in-place fallback below instead of walking away untouched.
+            break;
         }
         GameTele const* tele = locs[index];
         uint32 level = GetZoneLevel(tele->mapId, tele->position_x, tele->position_y, tele->position_z);
@@ -856,7 +884,32 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
         PlayerbotFactory factory(bot, level);
         factory.CleanRandomize();
         RandomTeleport(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z);
+        randomized = true;
         break;
+    }
+
+    // The search is allowed to find nothing, and when it does the bot must still be
+    // given a level, talents, spells and gear. Leaving without randomizing is how an
+    // entire roster ended up at level 1 wearing its create-info shirt: the loop failed a
+    // hundred times, fell out here, and the caller banked the "randomize" event anyway,
+    // so nothing tried again for up to a fortnight. A bot that cannot be placed somewhere
+    // chosen is still randomized where it stands, and the eviction branch in ProcessBot
+    // moves it later like any other badly-placed bot.
+    if (!randomized)
+    {
+        uint32 level = urand(sPlayerbotAIConfig.randomBotMinLevel, maxLevel);
+        if (!level)
+        {
+            level = 1;
+        }
+
+        sLog.outDetail("No destination passed for bot %s; randomizing in place at level %u",
+            bot->GetName(), level);
+
+        PlayerbotFactory factory(bot, level);
+        factory.CleanRandomize();
+        RandomTeleportForLevel(bot);
+        randomized = true;
     }
 
     if (bot->getLevel() > maxLevel)
@@ -866,6 +919,8 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
         factory.CleanRandomize();
         RandomTeleportForLevel(bot);
     }
+
+    return randomized;
 }
 
 uint32 RandomPlayerbotMgr::GetZoneLevel(uint32 mapId, float teleX, float teleY, float teleZ)

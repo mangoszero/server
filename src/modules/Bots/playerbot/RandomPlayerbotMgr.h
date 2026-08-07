@@ -63,14 +63,18 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         /**
          * @brief Randomizes the given player bot.
          * @param bot Pointer to the player bot.
+         * @return True if the bot was actually randomized. The caller must not bank the
+         *         "randomize" event otherwise, or a single failed pass suppresses every
+         *         retry until the event lapses.
          */
-        void Randomize(Player* bot);
+        bool Randomize(Player* bot);
 
         /**
          * @brief Randomizes the given player bot for the first time.
          * @param bot Pointer to the player bot.
+         * @return True if the bot was actually randomized.
          */
-        void RandomizeFirst(Player* bot);
+        bool RandomizeFirst(Player* bot);
 
         /**
          * @brief Increases the level of the given player bot.
