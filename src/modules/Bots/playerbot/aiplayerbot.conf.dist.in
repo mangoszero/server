@@ -171,6 +171,13 @@ AiPlayerbot.CommandPrefix = ~
 # Level diff between random bots and nearby creatures for random teleports
 AiPlayerbot.RandomBotTeleLevel = 3
 
+# Bots at or below this level are confined to the zone their own race starts in:
+# Elwynn Forest, Dun Morogh, Teldrassil, Durotar, Mulgore or Tirisfal Glades. Without it
+# a level 6 gnome can be placed in Teldrassil, which the game permits but no player does
+# at that level without being escorted across a continent.
+# Set to 0 to disable and let low-level bots be scattered anywhere level-appropriate.
+#AiPlayerbot.RandomBotHomeZoneMaxLevel = 10
+
 # Intervals
 #AiPlayerbot.RandomBotUpdateInterval = 60
 #AiPlayerbot.RandomBotCountChangeMinInterval = 86400

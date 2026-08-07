@@ -70,6 +70,7 @@ PlayerbotAIConfig::PlayerbotAIConfig()
     randomBotKeepGroups(false),
     randomBotActiveZoneOnly(false),
     randomBotTeleLevel(0),
+    randomBotHomeZoneMaxLevel(0),
     logInGroupOnly(false),
     logValuesPerTick(false),
     fleeingEnabled(false),
@@ -244,6 +245,7 @@ bool PlayerbotAIConfig::Initialize()
     randomBotKeepGroups = config.GetBoolDefault("AiPlayerbot.RandomBotKeepGroups", false);
     randomBotActiveZoneOnly = config.GetBoolDefault("AiPlayerbot.RandomBotActiveZoneOnly", false);
     randomBotTeleLevel = config.GetIntDefault("AiPlayerbot.RandomBotTeleLevel", 3);
+    randomBotHomeZoneMaxLevel = config.GetIntDefault("AiPlayerbot.RandomBotHomeZoneMaxLevel", 10);
 
     randomChangeMultiplier = config.GetFloatDefault("AiPlayerbot.RandomChangeMultiplier", 1.0);
 

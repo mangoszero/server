@@ -451,8 +451,78 @@ bool RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
     return false;
 }
 
+uint32 RandomPlayerbotMgr::GetRacialStartZone(Player* bot)
+{
+    uint32 race = bot->getRace();
+
+    std::map<uint32, uint32>::const_iterator cached = m_racialStartZones.find(race);
+    if (cached != m_racialStartZones.end())
+    {
+        return cached->second;
+    }
+
+    // playercreateinfo is per race AND class, but the starting zone is a property of the
+    // race: all eight of them agree across every class they can be. Take the bot's own
+    // class and fall back to scanning for any class the race has, so a race whose create
+    // info is incomplete for one class still resolves.
+    PlayerInfo const* info = sObjectMgr.GetPlayerInfo(race, bot->getClass());
+    for (uint32 cls = 1; !info && cls < MAX_CLASSES; ++cls)
+    {
+        info = sObjectMgr.GetPlayerInfo(race, cls);
+    }
+
+    uint32 zoneId = info ? info->areaId : 0;
+    m_racialStartZones[race] = zoneId;
+    return zoneId;
+}
+
+bool RandomPlayerbotMgr::RandomTeleportHome(Player* bot)
+{
+    uint32 homeZone = GetRacialStartZone(bot);
+    if (!homeZone)
+    {
+        return false;
+    }
+
+    if (m_areaCreatureStatsMap.empty())
+    {
+        CalculateAreaCreatureStats();
+    }
+
+    std::map<uint32, std::vector<WorldLocation> >::iterator anchors = m_homeZoneAnchors.find(homeZone);
+    if (anchors == m_homeZoneAnchors.end() || anchors->second.empty())
+    {
+        return false;
+    }
+
+    // Drawing from a pool that is already confined to the right zone, rather than sifting
+    // the whole game_tele list for the handful of entries that happen to land in it. The
+    // generic search draws blind from a map's worth of anchors, so once a bot is confined
+    // to one zone the odds of hitting it are poor enough that a run of a hundred attempts
+    // can still come up empty -- which is how the last over-strict filter produced
+    // "Cannot teleport bot" for every bot on the roster.
+    return RandomTeleport(bot, anchors->second);
+}
+
 bool RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
 {
+    // A bot young enough to still be in its own newbie zone never gets sent anywhere
+    // else. The generic search below would happily draw an anchor on the far continent,
+    // and IsZoneSafeForBot would then reject it for exactly this reason, so going
+    // straight to the home pool saves the wasted attempts as well as getting it right.
+    if (sPlayerbotAIConfig.randomBotHomeZoneMaxLevel &&
+        bot->getLevel() <= sPlayerbotAIConfig.randomBotHomeZoneMaxLevel)
+    {
+        if (RandomTeleportHome(bot))
+        {
+            return true;
+        }
+        // Falling through on failure is deliberate: a missing pool must not strand the
+        // bot where it is. The generic search still applies the same home-zone rule
+        // through IsZoneSafeForBot, so it cannot place the bot outside its zone -- it
+        // just costs more attempts to find a spot.
+    }
+
     for (int attempt = 0; attempt < 100; ++attempt)
     {
         int index = urand(0, sPlayerbotAIConfig.randomBotMaps.size() - 1);
@@ -877,12 +947,31 @@ bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, fl
     // hand a border cell of the Barrens to Ratchet's neutrality, or hide Ratchet behind
     // the Barrens' owner. GetAreaId is a terrain lookup, and now that this path no longer
     // issues SQL it is not worth trading correctness to skip it.
-    uint32 areaId = terrain->GetAreaId(x, y, z);
+    uint32 areaId = 0;
+    uint32 zoneId = 0;
+    terrain->GetZoneAndAreaId(zoneId, areaId, x, y, z);
 
     AreaTableEntry const* area = sAreaStore.LookupEntry(areaId);
     if (!area)
     {
         return true;
+    }
+
+    // A level 6 gnome standing in Teldrassil is a thing the game permits and a thing no
+    // player does: reaching another race's starting zone at that level means crossing a
+    // continent, which in practice meant being dragged there by somebody higher. The
+    // random manager has no such story to tell, so below the threshold a bot is confined
+    // to the zone its own race actually starts in. Compared against the zone rather than
+    // the leaf area, so Coldridge Valley, Shadowglen, Deathknell and the rest all resolve
+    // to the parent the racial start position names.
+    if (sPlayerbotAIConfig.randomBotHomeZoneMaxLevel &&
+        bot->getLevel() <= sPlayerbotAIConfig.randomBotHomeZoneMaxLevel)
+    {
+        uint32 homeZone = GetRacialStartZone(bot);
+        if (homeZone && zoneId != homeZone)
+        {
+            return false;
+        }
     }
 
     // GetAreaId answers with the most specific area, and in AreaTable.dbc it is the
@@ -1107,6 +1196,26 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
     m_allianceGuardAreas.clear();
     m_hordeGuardAreas.clear();
     m_neutralHubAreas.clear();
+    m_homeZoneAnchors.clear();
+
+    // The eight playable races start in six zones. Collecting them up front means the
+    // spawn loop below can decide in one set lookup whether a spawn is worth remembering
+    // as a landing site, instead of keeping positions for all 4000-odd areas.
+    std::set<uint32> startZones;
+    for (uint32 race = 1; race < MAX_RACES; ++race)
+    {
+        for (uint32 cls = 1; cls < MAX_CLASSES; ++cls)
+        {
+            if (PlayerInfo const* info = sObjectMgr.GetPlayerInfo(race, cls))
+            {
+                if (info->areaId)
+                {
+                    startZones.insert(info->areaId);
+                }
+                break;
+            }
+        }
+    }
 
     uint32 getAreaIdCalls = 0;
     uint32 totalCreatures = 0;
@@ -1134,12 +1243,25 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
             continue;
         }
 
-        uint32 areaId = map->GetTerrain()->GetAreaId(data.posX, data.posY, data.posZ);
+        uint32 areaId = 0;
+        uint32 zoneId = 0;
+        map->GetTerrain()->GetZoneAndAreaId(zoneId, areaId, data.posX, data.posY, data.posZ);
         getAreaIdCalls++;
 
         if (areaId == 0)
         {
             continue;
+        }
+
+        // Landing sites for the home-zone rule. A creature spawn is a better anchor than
+        // a game_tele: there are thousands of them spread through the zone rather than a
+        // handful clustered on the roads, and being a spawn point it is by construction
+        // somewhere the terrain will actually hold a player. Elites are excluded for the
+        // same reason they are excluded from the level band below -- landing a level 4
+        // beside one is not a place a bot should be put.
+        if (zoneId && cInfo->Rank <= CREATURE_ELITE_NORMAL && startZones.find(zoneId) != startZones.end())
+        {
+            m_homeZoneAnchors[zoneId].push_back(WorldLocation(data.mapid, data.posX, data.posY, data.posZ, 0.0f));
         }
 
         // A contested-guard faction is how the world data marks a hub both sides may
@@ -1217,6 +1339,17 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
     }
 
     sLog.outString(">> [Playerbots] Calculated spawn stats for %u areas", statsCount);
+
+    // Worth saying out loud at boot: an empty pool silently sends every low-level bot
+    // down the generic search path instead, which still confines it correctly but is
+    // slower and can fail. If a starting zone reports 0 here, the rule is not working.
+    for (std::map<uint32, std::vector<WorldLocation> >::const_iterator itr = m_homeZoneAnchors.begin();
+         itr != m_homeZoneAnchors.end(); ++itr)
+    {
+        AreaTableEntry const* zone = sAreaStore.LookupEntry(itr->first);
+        sLog.outString(">> [Playerbots] Starting zone %s (%u): %u landing sites",
+            zone ? zone->AreaName_lang[0] : "?", itr->first, (uint32)itr->second.size());
+    }
 }
 
 bool ChatHandler::HandlePlayerbotConsoleCommand(char* args)

@@ -272,6 +272,20 @@ class RandomPlayerbotMgr : public PlayerbotHolder
          */
         void CalculateAreaCreatureStats();
 
+        /**
+         * @brief The zone a bot's own race starts the game in, from playercreateinfo.
+         * @param bot Pointer to the player bot.
+         * @return The zone ID, or 0 if the race has no create info.
+         */
+        uint32 GetRacialStartZone(Player* bot);
+
+        /**
+         * @brief Teleports a bot somewhere inside its own racial starting zone.
+         * @param bot Pointer to the player bot.
+         * @return true if the bot was teleported.
+         */
+        bool RandomTeleportHome(Player* bot);
+
     private:
         vector<Player*> players; ///< List of players.
         int processTicks; ///< Number of process ticks.
@@ -281,6 +295,8 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         std::set<uint32> m_allianceGuardAreas; ///< Areas with guards hostile to Horde (Alliance-guarded)
         std::set<uint32> m_hordeGuardAreas;    ///< Areas with guards hostile to Alliance (Horde-guarded)
         std::set<uint32> m_neutralHubAreas;    ///< Areas held by a contested-guard faction: open to both sides, so they never inherit a parent zone's owner
+        std::map<uint32, std::vector<WorldLocation> > m_homeZoneAnchors; ///< Spawn positions inside each racial starting zone, the only anchors a bot under RandomBotHomeZoneMaxLevel may be sent to
+        std::map<uint32, uint32> m_racialStartZones; ///< race -> starting zone ID, resolved once from playercreateinfo
         std::unordered_map<uint32, bool> m_randomBotCache;
         std::unordered_map<uint32, uint32> m_playerZoneCounts; ///< zone_id -> real player count, for O(1) bot tick gating.
         struct EventValueEntry {
