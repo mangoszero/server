@@ -3,7 +3,7 @@
 ##########################################
 
 [AiPlayerbotConf]
-ConfVersion=2026061600
+ConfVersion=2026080700
 
 # Enable or disable AI Playerbot
 AiPlayerbot.Enabled = 1
@@ -141,7 +141,7 @@ AiPlayerbot.CommandPrefix = ~
 #AiPlayerbot.DeleteRandomBotAccounts = 0
 
 # Maps to teleport random bots
-#AiPlayerbot.RandomBotMaps = 0,1,530,571
+AiPlayerbot.RandomBotMaps = 0,1
 
 # Change random bot has lower gear
 #AiPlayerbot.RandomGearLoweringChance = 0.15
@@ -153,7 +153,7 @@ AiPlayerbot.CommandPrefix = ~
 #AiPlayerbot.RandomBotQuestItems = 6948,5175,5176,5177,5178
 
 # Spells every random bot will learn on randomize (54197 - cold weather flying)
-#AiPlayerbot.RandomBotSpellIds = 54197
+AiPlayerbot.RandomBotSpellIds =
 
 # Enable LFG for random bots
 #AiPlayerbot.RandomBotJoinLfg = 1
@@ -176,14 +176,14 @@ AiPlayerbot.RandomBotTeleLevel = 3
 # a level 6 gnome can be placed in Teldrassil, which the game permits but no player does
 # at that level without being escorted across a continent.
 # Set to 0 to disable and let low-level bots be scattered anywhere level-appropriate.
-#AiPlayerbot.RandomBotHomeZoneMaxLevel = 10
+AiPlayerbot.RandomBotHomeZoneMaxLevel = 10
 
 # Tighter still for the first few levels: bots at or below this level stay inside the
 # starting SUB-AREA rather than the whole zone -- Shadowglen rather than all of
 # Teldrassil, Northshire rather than all of Elwynn, Coldridge Valley rather than all of
 # Dun Morogh. This is where a real character's first few levels happen. Must be less than
 # RandomBotHomeZoneMaxLevel to have any effect. Set to 0 to disable.
-#AiPlayerbot.RandomBotHomeAreaMaxLevel = 5
+AiPlayerbot.RandomBotHomeAreaMaxLevel = 5
 
 # Intervals
 #AiPlayerbot.RandomBotUpdateInterval = 60
