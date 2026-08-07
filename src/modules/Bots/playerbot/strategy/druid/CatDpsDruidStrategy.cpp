@@ -102,8 +102,16 @@ CatDpsDruidStrategy::CatDpsDruidStrategy(PlayerbotAI* ai) : FeralDruidStrategy(a
 
 NextAction** CatDpsDruidStrategy::getDefaultActions()
 {
+    // Mangle is a Burning Crusade ability and does not exist on this core, so the only
+    // default action a cat druid had could never be cast: it fell through to nothing every
+    // tick. Claw is the vanilla equivalent and is learned at level 10; melee sits behind it
+    // so a druid that is not in cat form, or has not learned claw, still swings rather than
+    // standing there. This matters more since solo healers were given a damage build --
+    // a Restoration druid becomes a cat without having spent a point in Feral.
     return NextAction::array(0,
         new NextAction("mangle (cat)", ACTION_NORMAL + 1),
+        new NextAction("claw", ACTION_NORMAL),
+        new NextAction("melee", ACTION_NORMAL - 1),
         NULL);
 }
 

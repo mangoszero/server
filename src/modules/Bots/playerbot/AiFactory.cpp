@@ -281,7 +281,11 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
             }
             else
             {
-                engine->addStrategies("dps", "melee aoe", "bdps", "threat", NULL);
+                // "flee" to match the other two shaman branches, which both have it. An
+                // Enhancement shaman -- and every untalented one, since GetPlayerSpecTab
+                // answers -1 and lands here -- had no escape at low health and simply
+                // fought until it died.
+                engine->addStrategies("dps", "melee aoe", "bdps", "threat", "flee", NULL);
             }
             break;
         case CLASS_PALADIN:
