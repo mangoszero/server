@@ -73,6 +73,7 @@ PlayerbotAIConfig::PlayerbotAIConfig()
     randomBotHomeZoneMaxLevel(0),
     randomBotHomeAreaMaxLevel(0),
     randomBotStarterZonePct(0),
+    randomBotStarterZoneQuota(0),
     logInGroupOnly(false),
     logValuesPerTick(false),
     fleeingEnabled(false),
@@ -250,6 +251,7 @@ bool PlayerbotAIConfig::Initialize()
     randomBotHomeZoneMaxLevel = config.GetIntDefault("AiPlayerbot.RandomBotHomeZoneMaxLevel", 10);
     randomBotHomeAreaMaxLevel = config.GetIntDefault("AiPlayerbot.RandomBotHomeAreaMaxLevel", 5);
     randomBotStarterZonePct = config.GetIntDefault("AiPlayerbot.RandomBotStarterZonePct", 15);
+    randomBotStarterZoneQuota = config.GetIntDefault("AiPlayerbot.RandomBotStarterZoneQuota", 5);
     // Residency is decided by (guid % 100) < pct, so anything over 100 quietly makes the
     // entire roster resident and a negative in the file arrives here as an enormous
     // unsigned. Clamp rather than trust the file.

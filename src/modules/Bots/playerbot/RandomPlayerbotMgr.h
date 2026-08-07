@@ -237,6 +237,17 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         uint32 AddRandomBot(bool alliance);
 
         /**
+         * @brief The zone a race starts in, without needing a loaded Player.
+         */
+        uint32 GetStartZoneForRace(uint32 race);
+
+        /**
+         * @brief Picks a free bot that would fill the emptiest under-quota starting zone.
+         * @return The bot guid, or 0 when every zone is at quota or the feature is off.
+         */
+        uint32 PickForStarterZoneQuota(vector<uint32>& bots);
+
+        /**
          * @brief Processes the given player bot.
          * @param bot The player ID.
          * @return True if the bot is processed successfully, false otherwise.
@@ -338,6 +349,8 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         std::set<uint32> m_neutralHubAreas;    ///< Areas held by a contested-guard faction: open to both sides, so they never inherit a parent zone's owner
         std::map<uint32, std::vector<WorldLocation> > m_homeZoneAnchors; ///< Spawn positions keyed by racial starting zone AND starting sub-area, the only anchors a bot under RandomBotHomeZoneMaxLevel may be sent to
         std::map<uint32, RacialStart> m_racialStarts; ///< race -> where that race begins, resolved once from playercreateinfo
+        std::map<uint32, uint32> m_raceStartZones;    ///< race -> starting zone, for candidates with no loaded Player
+        std::map<uint32, uint32> m_botStartZones;     ///< bot guid -> starting zone, filled while listing free bots
         std::unordered_map<uint32, bool> m_randomBotCache;
         std::unordered_map<uint32, uint32> m_playerZoneCounts; ///< zone_id -> real player count, for O(1) bot tick gating.
         struct EventValueEntry {

@@ -57,10 +57,20 @@ void GenericHunterStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     RangedCombatStrategy::InitTriggers(triggers);
 
+    // Concussive Shot and Scatter Shot are both registered actions that nothing ever
+    // triggered. They matter because this cascade fires at fifteen yards while everything
+    // in it that could act needed five or fewer -- wing clip, mongoose bite, disengage and
+    // the melee fallback -- so the whole eight-to-fifteen yard band had no answer at all.
+    // A snare at range is what a hunter actually does there: slow the thing down, then use
+    // the reposition below to open the distance again. Concussive Shot is level 6 and
+    // available to every hunter; Scatter Shot is a Marksmanship talent, so it sits behind
+    // it and simply fails to cast for a hunter that has not taken it.
     triggers.push_back(new TriggerNode(
             "enemy too close for spell",
         NextAction::array(0,
         new NextAction("intimidation", 52.0f),
+        new NextAction("concussive shot", 51.6f),
+        new NextAction("scatter shot", 51.3f),
         new NextAction("wing clip", 51.0f),
         new NextAction("hunter ensure ranged position", 50.0f),
         new NextAction("mongoose bite", 49.5f),

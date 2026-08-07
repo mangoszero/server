@@ -218,6 +218,106 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
     }
 }
 
+uint32 RandomPlayerbotMgr::GetStartZoneForRace(uint32 race)
+{
+    std::map<uint32, uint32>::const_iterator cached = m_raceStartZones.find(race);
+    if (cached != m_raceStartZones.end())
+    {
+        return cached->second;
+    }
+
+    uint32 zoneId = 0;
+    for (uint32 cls = 1; cls < MAX_CLASSES; ++cls)
+    {
+        if (PlayerInfo const* info = sObjectMgr.GetPlayerInfo(race, cls))
+        {
+            zoneId = info->areaId;
+            break;
+        }
+    }
+
+    m_raceStartZones[race] = zoneId;
+    return zoneId;
+}
+
+uint32 RandomPlayerbotMgr::PickForStarterZoneQuota(vector<uint32>& bots)
+{
+    uint32 quota = sPlayerbotAIConfig.randomBotStarterZoneQuota;
+    if (!quota || !sPlayerbotAIConfig.randomBotStarterZonePct)
+    {
+        return 0;
+    }
+
+    // How many residents each starting zone currently has in the ACTIVE roster. A
+    // percentage decides who MAY live in a starting zone; only this decides who actually
+    // does, because admission draws uniformly from every free character of a faction and
+    // nothing made it prefer the ones that would populate an empty zone. On a roster of
+    // 450 with 101 active, that left Teldrassil and Mulgore with none at all -- not
+    // because placement failed, but because no qualifying night elf or tauren was ever
+    // selected to log in.
+    std::map<uint32, uint32> present;
+    QueryResult* results = CharacterDatabase.PQuery(
+        "SELECT `c`.`race`, COUNT(*) FROM `ai_playerbot_random_bots` `e` "
+        "JOIN `characters` `c` ON `c`.`guid` = `e`.`bot` "
+        "WHERE `e`.`event` = 'add' AND `e`.`owner` = 0 AND (`e`.`bot` %% 100) < '%u' "
+        "GROUP BY `c`.`race`",
+        sPlayerbotAIConfig.randomBotStarterZonePct);
+
+    if (results)
+    {
+        do
+        {
+            Field* fields = results->Fetch();
+            uint32 zone = GetStartZoneForRace(fields[0].GetUInt32());
+            if (zone)
+            {
+                present[zone] += fields[1].GetUInt32();
+            }
+        } while (results->NextRow());
+        delete results;
+    }
+
+    // Take the emptiest zone that this candidate pool can actually fill, so the six
+    // starting zones fill evenly rather than whichever race happens to be drawn first.
+    uint32 bestBot = 0;
+    uint32 bestShortfall = 0;
+
+    for (vector<uint32>::const_iterator i = bots.begin(); i != bots.end(); ++i)
+    {
+        uint32 guid = *i;
+        if ((guid % 100) >= sPlayerbotAIConfig.randomBotStarterZonePct)
+        {
+            continue;   // not a resident, cannot help a quota
+        }
+
+        uint32 zone = m_botStartZones.count(guid) ? m_botStartZones[guid] : 0;
+        if (!zone)
+        {
+            continue;
+        }
+
+        uint32 have = present.count(zone) ? present[zone] : 0;
+        if (have >= quota)
+        {
+            continue;
+        }
+
+        uint32 shortfall = quota - have;
+        if (shortfall > bestShortfall)
+        {
+            bestShortfall = shortfall;
+            bestBot = guid;
+        }
+    }
+
+    if (bestBot)
+    {
+        sLog.outDetail("Starter-zone quota short by %u; admitting resident bot %u", bestShortfall, bestBot);
+    }
+
+    return bestBot;
+}
+
 uint32 RandomPlayerbotMgr::AddRandomBot(bool alliance)
 {
     vector<uint32> bots = GetFreeBots(alliance);
@@ -228,8 +328,13 @@ uint32 RandomPlayerbotMgr::AddRandomBot(bool alliance)
         return 0;
     }
 
-    int index = urand(0, bots.size() - 1);
-    uint32 bot = bots[index];
+    // Fill a starving starting zone before drawing at random, and only then.
+    uint32 bot = PickForStarterZoneQuota(bots);
+    if (!bot)
+    {
+        int index = urand(0, bots.size() - 1);
+        bot = bots[index];
+    }
     SetEventValue(bot, "add", 1, urand(sPlayerbotAIConfig.minRandomBotInWorldTime, sPlayerbotAIConfig.maxRandomBotInWorldTime));
     uint32 randomTime = 30 + urand(sPlayerbotAIConfig.randomBotUpdateInterval, sPlayerbotAIConfig.randomBotUpdateInterval * 3);
     ScheduleRandomize(bot, randomTime);
@@ -1216,6 +1321,9 @@ vector<uint32> RandomPlayerbotMgr::GetFreeBots(bool alliance)
                 ((alliance && IsAlliance(race)) || ((!alliance && !IsAlliance(race)))))
             {
                 guids.push_back(guid);
+                // Remembered here because the race is already in hand; the quota pass
+                // would otherwise have to query it back per candidate.
+                m_botStartZones[guid] = GetStartZoneForRace(race);
             }
         } while (result->NextRow());
         delete result;
