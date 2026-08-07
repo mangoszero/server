@@ -1179,6 +1179,17 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
             continue;
         }
 
+        // And skip elites, for the same reason GrindTargetValue refuses to attack them.
+        // This map decides whether an area suits a bot's level; that one decides what the
+        // bot may then fight. While the two disagreed, an area could be judged safe on the
+        // strength of creatures the bot is forbidden to touch -- a solo bot placed among a
+        // camp of level 54 elites, which it cannot pull and which are perfectly willing to
+        // pull it. Judge an area by the content a bot can actually take on.
+        if (cInfo->Rank > CREATURE_ELITE_NORMAL)
+        {
+            continue;
+        }
+
         uint8 avgLevel = (cInfo->MinLevel + cInfo->MaxLevel) / 2;
         areaLevels[areaId].push_back(avgLevel);
     }
@@ -1303,6 +1314,16 @@ bool ChatHandler::HandlePlayerbotConsoleCommand(char* args)
 
 void RandomPlayerbotMgr::HandleCommand(uint32 type, const string& text, Player& fromPlayer)
 {
+    // A public channel line arrives here once and is then handed to every random bot in the
+    // world. That is a fan-out of one message to the whole fleet, so anything that answers
+    // replies once per bot: a single "~who" in trade chat returned two hundred whispers to
+    // whoever typed it. Per-bot security still applies underneath, but a broadcast is the
+    // wrong shape for a public channel however well each bot behaves individually.
+    if (type == CHAT_MSG_CHANNEL)
+    {
+        return;
+    }
+
     // Handle commands for all player bots
     for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
     {
