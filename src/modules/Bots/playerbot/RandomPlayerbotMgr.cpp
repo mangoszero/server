@@ -1360,10 +1360,18 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
                 startZones.insert(info->areaId);
             }
 
+            // Must resolve the sub-area exactly as GetRacialStart does, or the pool is
+            // built for one area while bots are sent to another. That mismatch is what
+            // left Deathknell with no landing sites: this side asked the create position
+            // and got Tirisfal, so no undead pool was ever built.
             Map* startMap = const_cast<Map*>(sMapMgr.FindMap(info->mapId));
             if (startMap && startMap->GetTerrain())
             {
-                if (uint32 startArea = startMap->GetTerrain()->GetAreaId(info->positionX, info->positionY, info->positionZ))
+                uint32 atPoint = startMap->GetTerrain()->GetAreaId(info->positionX, info->positionY, info->positionZ);
+                uint32 startArea = (atPoint && atPoint != info->areaId)
+                    ? atPoint
+                    : FindStartSubArea(info->mapId, info->areaId, info->positionX, info->positionY, info->positionZ);
+                if (startArea)
                 {
                     startZones.insert(startArea);
                 }

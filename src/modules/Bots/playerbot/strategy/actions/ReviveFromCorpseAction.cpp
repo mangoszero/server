@@ -34,8 +34,14 @@ bool ReviveFromCorpseAction::Execute(Event event)
 
 bool SpiritHealerAction::Execute(Event event)
 {
-    Corpse* corpse = bot->GetCorpse();
-    if (!corpse)
+    // Being dead is the whole precondition. This used to require a corpse as well, which
+    // is backwards: the spirit healer is precisely what you use when there is no corpse to
+    // go back to. A bot that dies and is still dead across a restart comes back as a ghost
+    // with nothing in the corpse table -- observed with every dead bot on the server at
+    // once, the table holding zero rows -- so the corpse test rejected exactly the bots
+    // that had no other way up, and they stood at the graveyard as wisps until the random
+    // manager's timer resurrected them minutes later.
+    if (!bot->IsDead())
     {
         return false;
     }
