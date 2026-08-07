@@ -307,12 +307,18 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
         return true;
     }
 
-    if (!IsZoneSafeForBot(player, player->GetMapId(), player->GetPositionX(),
+    // No timer gates this check, so a bot with nowhere valid to go used to re-run the
+    // whole search on every pass: a hundred game_tele draws and a GetZoneLevel query
+    // apiece, once a minute, for as long as it stood there. Back off either way -- if
+    // the eviction worked the bot is somewhere safe and the check would pass anyway.
+    if (!GetEventValue(bot, "evictcheck") &&
+        !IsZoneSafeForBot(player, player->GetMapId(), player->GetPositionX(),
         player->GetPositionY(), player->GetPositionZ()))
     {
         sLog.outDetail("Bot %d is in unsafe zone, forcing teleport", bot);
         RandomTeleportForLevel(player);
         SetEventValue(bot, "teleport", 1, sPlayerbotAIConfig.maxRandomBotInWorldTime);
+        SetEventValue(bot, "evictcheck", 1, 10 * sPlayerbotAIConfig.randomBotUpdateInterval);
         return true;
     }
 
@@ -398,6 +404,15 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
 
         z = 0.05f + *floor;
 
+        // ProcessBot judges the spot the bot is standing on, not the anchor it was
+        // sampled around, and the two are up to randomBotTeleportDistance/2 plus a
+        // grindDistance/2 jitter apart. Vetting only the anchor lets an eviction drop
+        // the bot somewhere the next pass evicts it from again, a minute later.
+        if (!IsZoneSafeForBot(bot, loc.mapid, x, y, z))
+        {
+            continue;
+        }
+
         bot->GetMotionMaster()->Clear();
         bot->TeleportTo(loc.mapid, x, y, z, 0);
         return;
@@ -437,7 +452,15 @@ void RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
 
         GameTele const* tele = locs[index];
         uint32 level = GetZoneLevel(tele->mapId, tele->position_x, tele->position_y, tele->position_z);
+        // The zone has to suit the bot from both directions. Only the upper bound was
+        // checked, so a level 52 bot could be anchored in Elwynn and then be evicted
+        // from it on the next pass for sitting outside the level band. Bound the zone
+        // level itself rather than vetting the anchor against the bot's level: almost
+        // no game_tele sits in an area whose creature stats bracket a given bot, so
+        // doing it there rejects every one of the 100 attempts and costs a
+        // GetZoneLevel query each time. The landing point is the authoritative check.
         if ((level > bot->getLevel() + sPlayerbotAIConfig.randomBotTeleLevel) ||
+          (level + sPlayerbotAIConfig.randomBotTeleLevel < bot->getLevel()) ||
           (level < sPlayerbotAIConfig.randomBotMinLevel) ||
           (!IsZoneSafeForBot(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z, level)))
         {
@@ -464,6 +487,13 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, uint32 mapId, float teleX, 
             float x = fields[0].GetFloat();
             float y = fields[1].GetFloat();
             float z = fields[2].GetFloat();
+            // Offer the sampler none but safe candidates, as this did before the
+            // spawn-query rewrite. Rejecting after the draw instead gives the ten
+            // attempts nothing to find when the anchor sits near a band edge.
+            if (!IsZoneSafeForBot(bot, mapId, x, y, z))
+            {
+                continue;
+            }
             WorldLocation loc(mapId, x, y, z, 0);
             locs.push_back(loc);
         } while (results->NextRow());
@@ -594,27 +624,56 @@ uint32 RandomPlayerbotMgr::GetZoneLevel(uint32 mapId, float teleX, float teleY, 
 {
     uint32 maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
 
-    uint32 level;
-    QueryResult *results = WorldDatabase.PQuery("SELECT AVG(`t`.`minlevel`) `minlevel`, AVG(`t`.`maxlevel`) `maxlevel` FROM `creature` `c` "
-        "INNER JOIN `creature_template` `t` ON `c`.`id` = `t`.`entry` "
-        "WHERE `map` = '%u' AND `minlevel` > 1 AND ABS(`position_x` - '%f') < '%u' AND ABS(`position_y` - '%f') < '%u'",
-        mapId, teleX, sPlayerbotAIConfig.randomBotTeleportDistance / 2, teleY, sPlayerbotAIConfig.randomBotTeleportDistance / 2);
-
-    if (results)
+    // This was an AVG() over a creature x creature_template join whose ABS() predicates
+    // no index can serve, so it scanned every spawn on the continent -- and
+    // RandomTeleportForLevel calls it once per attempt, up to a hundred times for a
+    // single teleport. CalculateAreaCreatureStats already holds the same levels per area
+    // in memory, built once from the object manager without touching the database. It is
+    // also the map IsZoneSafeForBot judges by, so sourcing both from it makes the anchor
+    // filter and the safety check agree instead of measuring two different things.
+    if (m_areaCreatureStatsMap.empty())
     {
-        Field* fields = results->Fetch();
-        uint32 minLevel = fields[0].GetUInt32();
-        uint32 maxLevel = fields[1].GetUInt32();
-        level = urand(minLevel, maxLevel);
-        if (level > maxLevel)
-        {
-            level = maxLevel;
-        }
-        delete results;
+        CalculateAreaCreatureStats();
     }
-    else
+
+    uint32 level = 0;
+    Map* map = sMapMgr.FindMap(mapId);
+    const TerrainInfo* terrain = map ? map->GetTerrain() : NULL;
+    if (terrain)
     {
+        CellPair cell_pair = MaNGOS::ComputeCellPair(teleX, teleY);
+        uint32 cell_id = (cell_pair.y_coord * TOTAL_NUMBER_OF_CELLS_PER_MAP) + cell_pair.x_coord;
+        std::pair<uint32, uint32> mapCell = std::make_pair(mapId, cell_id);
+
+        uint32 areaId = 0;
+        std::map<std::pair<uint32, uint32>, uint32>::iterator cacheItr = m_cellToAreaCache.find(mapCell);
+        if (cacheItr != m_cellToAreaCache.end())
+        {
+            areaId = cacheItr->second;
+        }
+        else
+        {
+            areaId = terrain->GetAreaId(teleX, teleY, teleZ);
+            m_cellToAreaCache[mapCell] = areaId;
+        }
+
+        std::map<uint32, AreaCreatureStats>::const_iterator statsItr = m_areaCreatureStatsMap.find(areaId);
+        if (statsItr != m_areaCreatureStatsMap.end() && statsItr->second.creatureCount > 0)
+        {
+            level = urand(statsItr->second.minLevel, statsItr->second.maxLevel);
+        }
+    }
+
+    if (!level)
+    {
+        // What the query path did when it had nothing to average. An area with no stats
+        // is one IsZoneSafeForBot rejects anyway, so this only costs a wasted attempt.
         level = urand(1, maxLevel);
+    }
+
+    if (level > maxLevel)
+    {
+        level = maxLevel;
     }
 
     return level;
