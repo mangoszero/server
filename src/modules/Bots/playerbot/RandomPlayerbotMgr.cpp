@@ -685,19 +685,45 @@ bool RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
 
         z = 0.05f + *floor;
 
-        // Reject a landing that dropped a long way below the spawn it was sampled from.
-        // IsOutdoors below catches a floor INSIDE a structure, and cannot catch the ground
-        // UNDERNEATH one: below Stormwind you are in open terrain by every test the core
-        // offers, on solid ground, correctly in the Stormwind City area -- and forty yards
-        // under the streets. Two bots turned up there together at z 59.5 where the roads
-        // are around 90, both perfectly valid and both unreachable.
+        // Is there a building over this spot? IsOutdoors below catches a floor INSIDE a
+        // structure and structurally cannot catch the ground UNDERNEATH one: below
+        // Stormwind a bot is outdoors, on solid ground, correctly inside the Stormwind
+        // City area, and forty yards under the streets. Every predicate the core offers
+        // answers truthfully about a position no player would ever occupy.
         //
-        // The anchor is a creature spawn, so it is by construction somewhere the world
-        // expects a body to stand. Falling well below it means the column search found a
-        // different surface, not the one the spawn is on. The tolerance has to survive real
-        // terrain -- the jitter is up to half a grindDistance sideways and hills are steep
-        // in places -- so this only rejects a drop far beyond what a slope explains.
-        if (loc.coord_z - z > 25.0f)
+        // The column is the thing that knows. Surfaces carry their kind, so a baked model
+        // overhead -- a city, a bridge, a pier -- is Static, while a hillside overhead is
+        // Terrain. Asking only about Static is what separates "under the streets of
+        // Stormwind" from "at the foot of a cliff in Winterspring", which no comparison of
+        // heights can do: a scalar drop bound cannot tell a valid steep slope from an
+        // under-structure fall, and 6.6% of the world's spawns live where drops of that
+        // size are the normal ground.
+        {
+            world::terrain::Column column = terrain->ColumnAt(x, y, z + 60.0f, z - 2.0f);
+            std::optional<float> ceiling;
+            for (world::terrain::Surface const& surface : column.Surfaces())
+            {
+                if (surface.kind == world::terrain::SurfaceKind::Static && surface.z > z + 2.0f)
+                {
+                    if (!ceiling || surface.z < *ceiling)
+                    {
+                        ceiling = surface.z;
+                    }
+                }
+            }
+
+            if (ceiling)
+            {
+                continue;
+            }
+        }
+
+        // A loose bound either way as a backstop, well above the p99 of real spawn spread,
+        // so a landing that lands somewhere wildly unrelated to its anchor is still thrown
+        // out even where no model is involved -- a mesa edge, a ravine. Deliberately not
+        // the primary defence: at 25 yards it rejected legitimate ground in Winterspring,
+        // the Badlands and the Wailing Caverns ravine.
+        if (fabs(loc.coord_z - z) > 50.0f)
         {
             continue;
         }
