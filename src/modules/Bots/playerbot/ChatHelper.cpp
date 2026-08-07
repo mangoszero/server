@@ -447,10 +447,30 @@ string ChatHelper::formatClass(Player* player, int spec)
     ostringstream out;
     out << specs[cls][spec] << " (";
 
+    // GetPlayerSpecTabs counts into TalentTab DBC ids -- 161/164/163 for a warrior -- and
+    // the keys 0, 1 and 2 it seeds are left untouched. Reading those three directly meant
+    // every bot reported "0/0/0" however many points it had actually spent: a level 22
+    // restoration druid included, which is exactly how this was noticed. Fold each real
+    // key onto its tree position instead.
+    int counts[3] = { 0, 0, 0 };
     map<uint32, int32> tabs = AiFactory::GetPlayerSpecTabs(player);
-    int c0 = (int)tabs[0];
-    int c1 = (int)tabs[1];
-    int c2 = (int)tabs[2];
+    for (map<uint32, int32>::const_iterator itr = tabs.begin(); itr != tabs.end(); ++itr)
+    {
+        if (!itr->second)
+        {
+            continue;
+        }
+
+        int index = AiFactory::TalentTabToIndex(cls, itr->first);
+        if (index >= 0 && index < 3)
+        {
+            counts[index] += itr->second;
+        }
+    }
+
+    int c0 = counts[0];
+    int c1 = counts[1];
+    int c2 = counts[2];
 
     out << (c0 ? "|h|cff00ff00" : "") << c0 << "|h|cffffffff/";
     out << (c1 ? "|h|cff00ff00" : "") << c1 << "|h|cffffffff/";

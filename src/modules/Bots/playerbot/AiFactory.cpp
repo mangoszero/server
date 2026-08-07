@@ -71,23 +71,29 @@ int AiFactory::GetPlayerSpecTab(Player* bot)
         return -1;
     }
 
-    // Convert TalentTabID to a tabpage (0, 1, or 2).
-    switch (bot->getClass())
+    return TalentTabToIndex(bot->getClass(), (uint32)bestId);
+}
+
+int AiFactory::TalentTabToIndex(uint8 cls, uint32 talentTabId)
+{
+    switch (cls)
     {
         case CLASS_MAGE:
-            // Arcane(81)=tab 0, Fire(41)=tab 1, Frost(61)=tab 2
-            if (bestId == 41)
+            // The shipped 1.12 TalentTab.dbc gives Fire (41) OrderIndex 0, the same as
+            // Arcane (81), so the data cannot separate them and the mapping is done by
+            // hand: Arcane(81)=0, Fire(41)=1, Frost(61)=2.
+            if (talentTabId == 41)
             {
-                return 1;     // Fire
+                return 1;
             }
-            if (bestId == 61)
+            if (talentTabId == 61)
             {
-                return 2;     // Frost
+                return 2;
             }
-            return 0;                       // Arcane or fallback
+            return 0;
         default:
         {
-            TalentTabEntry const* tabEntry = sTalentTabStore.LookupEntry(bestId);
+            TalentTabEntry const* tabEntry = sTalentTabStore.LookupEntry(talentTabId);
             if (tabEntry)
             {
                 return (int)tabEntry->OrderIndex;
@@ -143,6 +149,13 @@ map<uint32, int32> AiFactory::GetPlayerSpecTabs(Player* bot)
             uint32 spellid = talentInfo->RankID[rank];
             if (spellid && bot->HasSpell(spellid))
             {
+                // Keyed by TalentTab ID, not OrderIndex, and deliberately so: the shipped
+                // 1.12 TalentTab.dbc gives mage Fire (41) the same OrderIndex 0 as Arcane
+                // (81), so keying by OrderIndex would merge two specs into one bucket.
+                // GetPlayerSpecTab converts the winning ID to a 0/1/2 index and fixes the
+                // mage row up by hand. The seeded keys 0/1/2 below are therefore never
+                // incremented -- which is a display trap, not a behaviour one; see
+                // ChatHelper::formatClass.
                 tabs[talentTabInfo->ID]++;
                 found++;
             }

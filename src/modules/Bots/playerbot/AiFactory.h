@@ -18,5 +18,11 @@ class AiFactory
     public:
         static int GetPlayerSpecTab(Player* player);
         static map<uint32, int32> GetPlayerSpecTabs(Player* player);
+
+        /**
+         * @brief Folds a TalentTab DBC id onto its 0/1/2 position in the class's trees.
+         * @return The tree index, or -1 if the id is not a tab of that class.
+         */
+        static int TalentTabToIndex(uint8 cls, uint32 talentTabId);
         static bool IsFeralCatSpec(Player* player);
 };
