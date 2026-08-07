@@ -1355,6 +1355,31 @@ list<uint32> RandomPlayerbotMgr::GetBots()
 
 vector<uint32> RandomPlayerbotMgr::GetFreeBots(bool alliance)
 {
+    // One query for the whole roster, not one per account. This used to issue a SELECT for
+    // every configured bot account and is called on every admission, so at the shipped 50
+    // accounts it cost 50 synchronous queries a time and nobody noticed. At 1000 accounts
+    // it costs 1000, which consumed the entire per-pass budget before a single bot could be
+    // processed: the roster crept up by about one admission a second while "0 bots
+    // processed, 0 examined (budget reached)" repeated and nothing ever logged in.
+    //
+    // The account list is also joined in SQL rather than walked, so a character belonging
+    // to a real player's account can never be picked up.
+    if (sPlayerbotAIConfig.randomBotAccounts.empty())
+    {
+        return vector<uint32>();
+    }
+
+    ostringstream accountList;
+    for (list<uint32>::const_iterator i = sPlayerbotAIConfig.randomBotAccounts.begin();
+         i != sPlayerbotAIConfig.randomBotAccounts.end(); ++i)
+    {
+        if (i != sPlayerbotAIConfig.randomBotAccounts.begin())
+        {
+            accountList << ",";
+        }
+        accountList << *i;
+    }
+
     set<uint32> bots;
     QueryResult* results = CharacterDatabase.PQuery(
             "SELECT `bot` FROM `ai_playerbot_random_bots` WHERE `event` = 'add'"
@@ -1365,43 +1390,36 @@ vector<uint32> RandomPlayerbotMgr::GetFreeBots(bool alliance)
         do
         {
             Field* fields = results->Fetch();
-            uint32 bot = fields[0].GetUInt32();
-            bots.insert(bot);
+            bots.insert(fields[0].GetUInt32());
         } while (results->NextRow());
         delete results;
     }
 
     vector<uint32> guids;
-    for (list<uint32>::iterator i = sPlayerbotAIConfig.randomBotAccounts.begin(); i != sPlayerbotAIConfig.randomBotAccounts.end(); i++)
+    QueryResult* result = CharacterDatabase.PQuery(
+        "SELECT `guid`, `race` FROM `characters` WHERE `account` IN (%s)",
+        accountList.str().c_str());
+
+    if (!result)
     {
-        uint32 accountId = *i;
-        if (!sAccountMgr.GetCharactersCount(accountId))
-        {
-            continue;
-        }
-
-        QueryResult *result = CharacterDatabase.PQuery("SELECT `guid`, `race` FROM `characters` WHERE `account` = '%u'", accountId);
-        if (!result)
-        {
-            continue;
-        }
-
-        do
-        {
-            Field* fields = result->Fetch();
-            uint32 guid = fields[0].GetUInt32();
-            uint32 race = fields[1].GetUInt32();
-            if (bots.find(guid) == bots.end() &&
-                ((alliance && IsAlliance(race)) || ((!alliance && !IsAlliance(race)))))
-            {
-                guids.push_back(guid);
-                // Remembered here because the race is already in hand; the quota pass
-                // would otherwise have to query it back per candidate.
-                m_botStartZones[guid] = GetStartZoneForRace(race);
-            }
-        } while (result->NextRow());
-        delete result;
+        return guids;
     }
+
+    do
+    {
+        Field* fields = result->Fetch();
+        uint32 guid = fields[0].GetUInt32();
+        uint32 race = fields[1].GetUInt32();
+        if (bots.find(guid) == bots.end() &&
+            ((alliance && IsAlliance(race)) || ((!alliance && !IsAlliance(race)))))
+        {
+            guids.push_back(guid);
+            // Remembered here because the race is already in hand; the quota pass
+            // would otherwise have to query it back per candidate.
+            m_botStartZones[guid] = GetStartZoneForRace(race);
+        }
+    } while (result->NextRow());
+    delete result;
 
     return guids;
 }
