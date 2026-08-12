@@ -200,8 +200,7 @@ bool PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admin,
             return false;
         }
 
-        AddPlayerBot(guid.GetRawValue(), masterAccountId);
-        return true;
+        return AddPlayerBot(guid.GetRawValue(), masterAccountId);
     }
     else if (cmd == "remove" || cmd == "logout" || cmd == "rm")
     {

@@ -102,7 +102,7 @@ PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL)
  */
 PlayerbotAI::PlayerbotAI(Player* bot)
     : PlayerbotAIBase(), chatHelper(this), chatFilter(this), security(bot), master(NULL),
-    m_eatingUntil(0), m_drinkingUntil(0),
+    m_eatingUntil(0), m_drinkingUntil(0), m_wasDead(false),
     m_isJumping(false), m_jumpStartTime(0),
     m_jumpStartX(0.f), m_jumpStartY(0.f), m_jumpStartZ(0.f),
     m_jumpSinAngle(0.f), m_jumpCosAngle(1.f), m_jumpXYSpeed(0.f),
@@ -393,6 +393,27 @@ void PlayerbotAI::UpdateAI(uint32 elapsed)
 
 void PlayerbotAI::UpdateAIInternal(uint32 elapsed)
 {
+    // Repair the strategy set on the dead->alive transition FIRST, before anything else this
+    // tick can run. Releasing applies "+stay", which evicts whichever movement sibling the bot
+    // held, and nothing else puts it back -- so a bot that misses this repair is alive and
+    // permanently parked.
+    //
+    // This was previously a test of `currentEngine == engines[BOT_STATE_DEAD]` performed AFTER
+    // the engine had already executed, and that is bypassable: a queued master command drained
+    // below is handled by the dead engine's chat strategy, an "attack" switches the current
+    // engine to combat, and the later predicate then reads false. The repair never happened and
+    // the bot kept the stale "stay" once combat ended. Latching the bot's OWN death state is
+    // independent of which engine is current and of anything that mutates it later in the tick.
+    if (!bot->IsAlive())
+    {
+        m_wasDead = true;
+    }
+    else if (m_wasDead)
+    {
+        m_wasDead = false;
+        ResetStrategies();
+    }
+
     ExternalEventHelper helper(aiObjectContext);
     while (!chatCommands.empty())
     {
@@ -775,6 +796,10 @@ void PlayerbotAI::DoNextAction()
 
     if (currentEngine == engines[BOT_STATE_DEAD] && bot->IsAlive())
     {
+        // Engine selection only. The strategy repair that coming back to life requires is done
+        // at the top of UpdateAIInternal against a latched death state, because this predicate
+        // reads the current engine pointer AFTER the engine has run and can be bypassed by
+        // anything that switches engines earlier in the tick.
         ChangeEngine(BOT_STATE_NON_COMBAT);
     }
 

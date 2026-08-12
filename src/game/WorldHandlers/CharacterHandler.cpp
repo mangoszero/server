@@ -224,8 +224,9 @@ class CharacterHandler
             uint32 masterAccount = lqh->GetMasterAccountId();
             WorldSession* masterSession = masterAccount ? sWorld.FindSession(masterAccount) : NULL;
 
-            // The bot's WorldSession is owned by the bot's Player object
-            // The bot's WorldSession is deleted by PlayerbotMgr::LogoutPlayerBot
+            // The bot's WorldSession is owned by the bot's Player object. It is deleted by
+            // PlayerbotMgr::LogoutPlayerBot for a bot that reached playerBots, and directly
+            // below for one that logged in but was never authorised.
             uint32 botAccountId = lqh->GetAccountId();
             WorldSession *botSession = new WorldSession(
                 botAccountId, nullptr, nullptr, SEC_PLAYER, 0, LOCALE_enUS);
@@ -234,6 +235,10 @@ class CharacterHandler
             Player* bot = botSession->GetPlayer();
             if (!bot)
             {
+                // HandlePlayerLogin failed to produce a Player (LoadFromDB failure), so
+                // nothing owns this session and nothing will ever come back for it. Without
+                // this the session leaks on every failed bot login.
+                delete botSession;
                 return;
             }
 
@@ -255,11 +260,35 @@ class CharacterHandler
             {
                 playerbotHolder->OnBotLogin(bot);
             }
-            else if (masterSession)
+            else
             {
-                ChatHandler ch(masterSession);
-                ch.PSendSysMessage("You are not allowed to control bot %s...", bot->GetName());
-                playerbotHolder->LogoutPlayerBot(bot->GetObjectGuid().GetRawValue());
+                // HandlePlayerLogin above has already put this character into the world.
+                // Logging it out is therefore not optional: skipping it -- as this did
+                // whenever there was no master session, which is every masterless random
+                // bot -- leaves a Player in the world with no PlayerbotAI attached and no
+                // session owner. It cannot move, fight, answer a whisper or accept an
+                // invite, yet it is saved, visible and attackable, and its WorldSession is
+                // never freed. Only the notification to the master is conditional.
+                if (masterSession)
+                {
+                    ChatHandler ch(masterSession);
+                    ch.PSendSysMessage("You are not allowed to control bot %s...", bot->GetName());
+                }
+                else
+                {
+                    sLog.outError("Bot %s (account %u) logged in but is not authorised; logging it out. "
+                                  "A masterless bot must belong to the random bot account list.",
+                                  bot->GetName(), botAccountId);
+                }
+
+                // NOT LogoutPlayerBot. That resolves the bot through playerBots, and the
+                // only thing that ever writes to playerBots is OnBotLogin -- which is the
+                // branch we did not take. It would find nothing, skip its whole body, and
+                // leave the Player in the world with its WorldSession leaked, while looking
+                // like cleanup. The session is right here; log it out through that instead.
+                // Nothing may touch `bot` after this: LogoutPlayer destroys the Player.
+                botSession->LogoutPlayer(true);
+                delete botSession;
             }
         }
 #endif
@@ -273,30 +302,52 @@ class CharacterHandler
  * @param playerGuid The bot player guid.
  * @param masterAccountId The controlling master account id.
  */
-void PlayerbotHolder::AddPlayerBot(uint64 playerGuid, uint32 masterAccountId)
+bool PlayerbotHolder::AddPlayerBot(uint64 playerGuid, uint32 masterAccountId)
 {
     // has bot already been added?
     if (sObjectMgr.GetPlayer(ObjectGuid(playerGuid)))
     {
-        return;
+        return true;
     }
 
     uint32 accountId = sObjectMgr.GetPlayerAccountIdByGUID(ObjectGuid(playerGuid));
     if (accountId == 0)
     {
-        return;
+        return false;
+    }
+
+    // Refuse before the character is loaded, not after. A masterless bot is a random bot,
+    // and the only thing that can authorise one is membership of the random account list.
+    // The login callback re-tests that below, but by then HandlePlayerLogin has already put
+    // the character into the world -- so failing it there leaves a live Player with no AI.
+    // Lowering RandomBotAccountCount after a stress test is enough to reach this: the
+    // 'add' events persist in ai_playerbot_random_bots for accounts that are no longer in
+    // the list, and every one of them logs in and is abandoned.
+    // An empty list is a configuration or login-database failure, not a verdict on any
+    // individual bot. Refusing on it would retire the whole roster on a single bad boot,
+    // which is far worse than the problem being solved -- so treat it as "cannot judge"
+    // and let the callback decide, as GetFreeBots already does for admissions.
+    if (!masterAccountId && !sPlayerbotAIConfig.randomBotAccounts.empty() &&
+        !sPlayerbotAIConfig.IsInRandomAccountList(accountId))
+    {
+        sLog.outError("Refusing to log in bot %u: account %u is not one of the %u accounts loaded "
+                      "from RandomBotAccountCount. Its roster entry will be retired.",
+                      ObjectGuid(playerGuid).GetCounter(), accountId,
+                      uint32(sPlayerbotAIConfig.randomBotAccounts.size()));
+        return false;
     }
 
     PlayerbotLoginQueryHolder *holder = new PlayerbotLoginQueryHolder(this, masterAccountId, accountId, ObjectGuid(playerGuid));
     if (!holder->Initialize())
     {
         delete holder;                                      // delete all unprocessed queries
-        return;
+        return false;
     }
     CharacterDatabase.DelayQueryHolder([](QueryResult* result, SqlQueryHolder* h)
                                        {
                                            chrHandler.HandlePlayerBotLoginCallback(result, h);
                                        }, holder);
+    return true;
 }
 #endif
 

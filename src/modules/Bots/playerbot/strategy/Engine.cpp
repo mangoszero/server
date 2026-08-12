@@ -387,6 +387,20 @@ void Engine::addStrategy(string name)
         LogAction("S:+%s", strategy->getName().c_str());
         strategies[strategy->getName()] = strategy;
     }
+    else if (loggedUnresolved.insert(name).second)
+    {
+        // A name that does not resolve is silent otherwise, and the silence is worse than a
+        // missing strategy: the sibling eviction above lives inside the if, so a failed add
+        // also skips the removal it was supposed to perform, and the bot keeps a strategy it
+        // was meant to lose. Report it -- but once per name per engine. ResetStrategies runs
+        // on login, master change, group join/leave, death/resurrection and explicit reset,
+        // so across a large roster a name that is simply not implemented for this class (the
+        // generic combat set adds "aoe", which only four classes register) otherwise produced
+        // hundreds of identical lines a minute.
+        sLog.outError("Playerbot %s: strategy '%s' did not resolve and was not added; "
+                      "any sibling it would have replaced is still active",
+                      ai && ai->GetBot() ? ai->GetBot()->GetName() : "<unknown>", name.c_str());
+    }
     Init();
 }
 

@@ -2,6 +2,7 @@
 
 #include <string>
 #include <map>
+#include <set>
 #include <list>
 #include <unordered_map>
 #include "Action.h"
@@ -159,6 +160,7 @@ namespace ai
             std::unordered_map<string, ActionNode*> actionNodeCache; /**< Cache of action nodes by name */
             float lastRelevance; /**< Last relevance value */
             std::string lastAction; /**< Last executed action */
+            std::set<string> loggedUnresolved; /**< Strategy names already reported as unresolvable, to log each once */
             bool strategiesDirty; /**< True when strategies changed and ActualInit() is pending */
 
         public:

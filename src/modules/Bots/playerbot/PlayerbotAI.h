@@ -264,6 +264,7 @@ class PlayerbotAI : public PlayerbotAIBase
         PlayerbotSecurity security;
         time_t m_eatingUntil;
         time_t m_drinkingUntil;
+        bool m_wasDead; ///< Latches the bot's own death state so the dead->alive repair cannot be bypassed.
 
         bool   m_isJumping;
         uint32 m_jumpStartTime;
