@@ -7,6 +7,11 @@ using namespace std;
 
 #define MAX_LOOT_OBJECT_COUNT 10
 
+// How long a loot target the bot could not open stays refused. Long enough that the bot
+// walks away and gets on with something else, short enough that a genuine change -- a skill
+// trained, an owner releasing a corpse -- is picked up again within a couple of minutes.
+#define LOOT_BLACKLIST_SECONDS 120
+
 LootTarget::LootTarget(ObjectGuid guid) : guid(guid), asOfTime(time(0))
 {
 }
@@ -207,6 +212,15 @@ bool LootObject::IsLootPossible(Player* bot)
 
 bool LootObjectStack::Add(ObjectGuid guid)
 {
+    // Refuse anything still serving a blacklist cooldown. This is the only place that can
+    // hold the line, because every re-add path -- the two in AddLootAction and the one in
+    // AttackAction -- funnels through here.
+    blacklistedLoot.shrink(time(0) - LOOT_BLACKLIST_SECONDS);
+    if (blacklistedLoot.find(guid) != blacklistedLoot.end())
+    {
+        return false;
+    }
+
     if (!availableLoot.insert(guid).second)
     {
         return false;
@@ -235,9 +249,16 @@ void LootObjectStack::Remove(ObjectGuid guid)
     }
 }
 
+void LootObjectStack::Blacklist(ObjectGuid guid)
+{
+    Remove(guid);
+    blacklistedLoot.insert(guid);
+}
+
 void LootObjectStack::Clear()
 {
     availableLoot.clear();
+    blacklistedLoot.clear();
 }
 
 bool LootObjectStack::CanLoot(float maxDistance)
