@@ -85,6 +85,69 @@ class AssistanceMovementGenerator final : public PointMovementGenerator
 };
 
 /**
+ * @brief A point move that refuses to cheat: if the router cannot actually route it,
+ *        no leg is laid and the mover stays put.
+ *
+ * A plain point move takes PathFinder's straight-line fallback silently. That is fine for
+ * a short hop, and wrong for anything long: an unloaded destination tile comes back as
+ * PATHFIND_NORMAL | PATHFIND_NOT_USING_PATH, and the "path" is then a terrain-clamped line
+ * drawn through cliffs, walls and buildings for the whole distance. MOVE_REQUIRE_PATH does
+ * not catch that -- it tests NOPATH only -- so this asks for MOVE_REQUIRE_ROUTE instead.
+ *
+ * The caller must have somewhere else to go when the leg is refused, because it will be.
+ */
+class RoutedPointMovementGenerator final : public PointMovementGenerator
+{
+    public:
+        RoutedPointMovementGenerator(uint32 id, float x, float y, float z)
+            : PointMovementGenerator(id, x, y, z, true), m_arrived(false) {}
+
+        void Initialize(Unit& owner) override
+        {
+            m_arrived = false;
+            PointMovementGenerator::Initialize(owner);
+        }
+
+        /// Reports arrival only when the mover actually arrived.
+        ///
+        /// The base tests movespline->Finalized(), which is also true when no leg was ever
+        /// laid -- Initialize stops the mover, so a refused route leaves a finalized spline
+        /// that never went anywhere, and the point would be reported as reached. A Player
+        /// caller never notices (MovementInform ignores non-creatures), but a creature one
+        /// would advance its AI or script on an arrival that did not happen.
+        void Finalize(Unit& owner) override;
+
+    protected:
+        uint32 LegFlags() const override { return Motion::MOVE_REQUIRE_ROUTE; }
+
+        Motion::MoveIntent Intent(Unit& owner, Motion::MoveStatus const& status,
+                                  uint32 diff) override
+        {
+            // Latch arrival POSITIVELY, the same way HomeMovementGenerator does, rather than
+            // latching refusal. Refusal is only delivered on the tick after the driver rejects
+            // the leg, so an external Clear() or MovementExpired() in between calls Finalize()
+            // directly and a "was it refused" flag would still read false -- reporting an
+            // arrival that never happened, which is the bug this class exists to avoid.
+            //
+            // status.arrived alone is not enough to prove it, though: the driver derives it from
+            // "was travelling, spline is now finalized", and StopMoving() finalizes the spline
+            // wherever the mover is standing -- so a root or a stun mid-route produces it too.
+            // Hence the proximity test. The tolerance is deliberately loose, because a spline
+            // ends near the goal rather than exactly on it and a missed inform would stall a
+            // creature's AI; it only has to be tight enough to reject a mover frozen partway.
+            if (status.arrived && owner.GetDistance(m_dest.x, m_dest.y, m_dest.z) < 10.0f)
+            {
+                m_arrived = true;
+            }
+
+            return PointMovementGenerator::Intent(owner, status, diff);
+        }
+
+    private:
+        bool m_arrived; ///< A leg actually completed; cleared on Initialize/Reset.
+};
+
+/**
  * @brief A straight line through the air, with the flying animation along it.
  */
 class FlyOrLandMovementGenerator final : public PointMovementGenerator

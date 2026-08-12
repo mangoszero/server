@@ -454,6 +454,21 @@ void MotionMaster::MovePoint(uint32 id, float x, float y, float z, bool generate
 }
 
 /**
+ * @brief Move to a point, but only along a route the pathfinder genuinely laid.
+ *
+ * Unlike MovePoint, this never falls back to a straight line through geometry. If the goal
+ * cannot be routed -- most often because its mmap tile is not resident -- no leg is laid and
+ * the mover stays where it is. Use it where cutting through the world would be worse than
+ * not moving, and where the caller has a fallback for standing still.
+ */
+void MotionMaster::MovePointRouted(uint32 id, float x, float y, float z)
+{
+    DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "%s targeted point, routed only (Id: %u X: %f Y: %f Z: %f)", m_owner->GetGuidStr().c_str(), id, x, y, z);
+
+    Mutate(new RoutedPointMovementGenerator(id, x, y, z));
+}
+
+/**
  * @brief Makes the unit seek assistance at a specific point.
  * @param x X-coordinate of the assistance point.
  * @param y Y-coordinate of the assistance point.

@@ -213,6 +213,7 @@ class MotionMaster : private std::stack<MovementGenerator*>
          * @param generatePath Whether to generate a path to the destination.
          */
         void MovePoint(uint32 id, float x, float y, float z, bool generatePath = true);
+        void MovePointRouted(uint32 id, float x, float y, float z);
 
         /**
          * @brief Makes the unit seek assistance at a specific point.

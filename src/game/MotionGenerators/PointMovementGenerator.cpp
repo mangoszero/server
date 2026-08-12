@@ -70,6 +70,18 @@ void PointMovementGenerator::Finalize(Unit& owner)
     }
 }
 
+void RoutedPointMovementGenerator::Finalize(Unit& owner)
+{
+    owner.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+
+    // Same rule as the base, plus the one this generator adds: a leg the router refused was
+    // never laid, so reaching the point is not something that happened. See the header.
+    if (m_arrived && owner.movespline->Finalized())
+    {
+        MovementInform(owner);
+    }
+}
+
 void PointMovementGenerator::MovementInform(Unit& owner) const
 {
     if (owner.GetTypeId() != TYPEID_UNIT)
