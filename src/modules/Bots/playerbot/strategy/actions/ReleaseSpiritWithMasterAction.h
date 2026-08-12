@@ -23,7 +23,9 @@ namespace ai
                     return false;
                 }
 
-                ai->ChangeStrategy("-follow,+stay", BOT_STATE_NON_COMBAT);
+                // See ReleaseSpiritAction: "follow" is not a registered strategy name, so the
+                // removal silently did nothing. The correct name is "follow master".
+                ai->ChangeStrategy("-follow master,+stay", BOT_STATE_NON_COMBAT);
 
                 WorldPacket* packet = new WorldPacket(CMSG_REPOP_REQUEST);
                 bot->GetSession()->QueuePacket(packet);

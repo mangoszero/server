@@ -52,10 +52,10 @@ bool MovementAction::MoveNear(WorldObject* target, float distance)
     return false;
 }
 
-bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool unsafe)
+bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool unsafe, bool ignoreReactDistance, bool requireRoute)
 {
     bot->UpdateGroundPositionZ(x, y, z);
-    if (!IsMovingAllowed(mapId, x, y, z))
+    if (!IsMovingAllowed(mapId, x, y, z, ignoreReactDistance))
     {
         return false;
     }
@@ -91,7 +91,14 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool unsafe
         mm.Clear();
 
         float botZ = bot->GetPositionZ();
-        mm.MovePoint(mapId, x, y, z);
+        if (requireRoute)
+        {
+            mm.MovePointRouted(mapId, x, y, z);
+        }
+        else
+        {
+            mm.MovePoint(mapId, x, y, z);
+        }
     }
 
     AI_VALUE(LastMovement&, "last movement").Set(x, y, z, bot->GetOrientation());
@@ -211,12 +218,15 @@ bool MovementAction::IsMovingAllowed(Unit* target)
     return IsMovingAllowed();
 }
 
-bool MovementAction::IsMovingAllowed(uint32 mapId, float x, float y, float z)
+bool MovementAction::IsMovingAllowed(uint32 mapId, float x, float y, float z, bool ignoreReactDistance)
 {
-    float distance = bot->GetDistance(x, y, z);
-    if (distance > sPlayerbotAIConfig.reactDistance)
+    if (!ignoreReactDistance)
     {
-        return false;
+        float distance = bot->GetDistance(x, y, z);
+        if (distance > sPlayerbotAIConfig.reactDistance)
+        {
+            return false;
+        }
     }
 
     return IsMovingAllowed();

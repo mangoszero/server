@@ -15,7 +15,15 @@ namespace ai
 
         protected:
             bool MoveNear(uint32 mapId, float x, float y, float z, float distance = sPlayerbotAIConfig.followDistance);
-            bool MoveTo(uint32 mapId, float x, float y, float z, bool unsafe = false);
+            // ignoreReactDistance exists for the corpse run and nothing else. ReactDistance is a
+            // sensible bound on "should I walk over to that" for ordinary decisions, but a ghost
+            // heading back to its body is not making that decision -- a player runs the whole
+            // zone -- and capping it at 150 yards meant every long corpse run was refused on
+            // every tick, which is the wedge this exists to remove.
+            // requireRoute: refuse to move at all rather than let the pathfinder substitute a
+            // straight line through geometry when it cannot route the goal. See
+            // RoutedPointMovementGenerator. Callers that set it must handle "did not move".
+            bool MoveTo(uint32 mapId, float x, float y, float z, bool unsafe = false, bool ignoreReactDistance = false, bool requireRoute = false);
             bool MoveTo(Unit* target, float distance = 0.0f);
             bool MoveNear(WorldObject* target, float distance = sPlayerbotAIConfig.followDistance);
             float GetFollowAngle();
@@ -25,7 +33,7 @@ namespace ai
             bool FollowOffTransport(Unit* target, Player* master);
             void WaitForReach(float distance);
             bool IsMovingAllowed(Unit* target);
-            bool IsMovingAllowed(uint32 mapId, float x, float y, float z);
+            bool IsMovingAllowed(uint32 mapId, float x, float y, float z, bool ignoreReactDistance = false);
             bool IsMovingAllowed();
             bool Flee(Unit *target);
             float CalculateAggroFreeDistance(float bx, float by, float angle, float maxDist);
