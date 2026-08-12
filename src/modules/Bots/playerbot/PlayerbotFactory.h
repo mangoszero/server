@@ -241,6 +241,8 @@ class PlayerbotFactory : public InventoryAction
         /**
          * @brief Initializes the trade inventory for the player bot.
          */
+        void InitInventoryReagents();
+        bool ProvisionSpellReagent(uint32 spellId, uint32 desiredStock);
         void InitInventoryTrade();
 
         /**

@@ -147,6 +147,18 @@ void PlayerbotFactory::Randomize(bool incremental)
     sLog.outDetail("Initializing Quest Spells...");
     InitQuestSpells();
 
+    // A third trainer pass, and it has to be here rather than folded into the two above.
+    //
+    // Quest wrappers teach rank ONE of several abilities -- Sunder Armor, Intercept, Maul,
+    // Searing Totem, Healing Stream Totem -- and a trainer refuses to sell rank two while
+    // rank one is missing (GetTrainerSpellState rejects it on the spell_chain predecessor).
+    // Both passes above ran before those quest leaves existed, so a level 60 warrior sat on
+    // Sunder Armor rank 1 with ranks 2-5 available at 22/34/46/58 and unreachable, and a
+    // level 60 druid on Maul rank 1 out of seven. Running the trainer once more, after the
+    // quest spells are in, is what lets those chains climb.
+    sLog.outDetail("Initializing spells (step 3, post-quest ranks)...");
+    InitAvailableSpells();
+
     sLog.outDetail("Initializing mounts...");
     InitMounts();
 
@@ -177,6 +189,29 @@ void PlayerbotFactory::Randomize(bool incremental)
 
     sLog.outDetail("Initializing pet...");
     InitPet();
+
+    // Rebuild the strategy set now that the bot is a different character than when its AI
+    // was created.
+    //
+    // CONTRACT: this DISCARDS deliberate per-bot strategy overrides -- a master's "+stay",
+    // "+runaway" or "+passive" does not survive a randomize. That is intended rather than
+    // overlooked: randomizing re-rolls the bot's level, talents, spellbook and gear, so it
+    // is not the character those commands were given to, and carrying the old set forward is
+    // what left a shaman playing a caster it no longer was. No current caller applies an
+    // override adjacent to this call. If overrides ever need to survive, store them as a
+    // delta and re-apply AFTER the fresh defaults -- do not restore the whole stale set.
+    //
+    // AiFactory picks strategies from talents and known spells, and it ran BEFORE this
+    // function cleared the spellbook, re-rolled talents and re-learned everything. Without
+    // this the choice is a snapshot of the bot's previous life: a shaman randomized into
+    // Enhancement keeps the caster set it was given while untalented, and a druid that has
+    // just learned Bear Form keeps the caster set chosen when it had none. PlayerbotAI::Reset
+    // is NOT enough -- it re-initialises the existing strategies rather than re-asking
+    // AiFactory which ones to have; only ResetStrategies does that.
+    if (PlayerbotAI* ai = bot->GetPlayerbotAI())
+    {
+        ai->ResetStrategies();
+    }
 
     sLog.outDetail("Saving to DB...");
     bot->SetMoney(urand(level * 1000, level * 5 * 1000));
@@ -1562,6 +1597,26 @@ void PlayerbotFactory::InitAvailableSpells()
                 continue;
             }
 
+            // Bots already carrying a half-learned wrapper are NOT repaired here, and this is
+            // deliberate. Accepting TRAINER_SPELL_GRAY was tried and removed. Gray is certainly
+            // reachable -- Randomize runs this twice and ClearSpells keeps passives, so the
+            // second pass sees what the first learned -- but by then the pass above has already
+            // learned every effect, so handling gray repairs nothing. What it cannot do is fix
+            // damage a bot arrived with: no reachable caller reaches this code without
+            // ClearSpells first (InitSpells, which would be non-destructive, has no caller in
+            // the repository at all). It also would not have been safe if wired up:
+            // GetTrainerSpellState returns gray on EffectTriggerSpell[0] alone, BEFORE the
+            // class, level, rank, skill and profession-cap checks, so gray is not proof of
+            // eligibility to learn the rest.
+            //
+            // Existing damage repairs itself instead through the normal randomisation cycle,
+            // which rebuilds spells from scratch and now learns every effect. Measured on this
+            // server: 41 paladins missing 21084, 3 characters missing 13240, 0 bots in guilds.
+            // The normal IncreaseLevel guild branch takes Refresh instead of Randomize, and the
+            // `update` command calls Refresh for any bot; neither path reaches this function.
+            // Guild bots do still reach it through the level-one, starter-resident and level-cap
+            // paths, which run CleanRandomize. If a non-destructive repair is ever wanted, it
+            // needs its own bounded entry point and its own eligibility check, not this loop.
             ai->CastSpell(tSpell->spell, bot);
             const SpellEntry* spellInfo = sSpellStore.LookupEntry(tSpell->spell);
             if (spellInfo)
@@ -1572,8 +1627,21 @@ void PlayerbotFactory::InitAvailableSpells()
                         spellInfo->EffectTriggerSpell[ei] &&
                         !bot->HasSpell(spellInfo->EffectTriggerSpell[ei]))
                     {
+                        // Every learn effect, not just the first. A trainer entry is a wrapper
+                        // spell and several teach more than one thing; breaking here learned the
+                        // first and silently dropped the rest, leaving a half-trained bot the
+                        // trainer would never revisit -- GetTrainerSpellState only tests
+                        // EffectTriggerSpell[0], so the wrapper reads as already known.
+                        //
+                        // Observed on paladins: wrapper 10321 at level 4 teaches Judgement
+                        // (20271) AND the judgement-capable Seal of Righteousness (21084). Only
+                        // Judgement was learned, so the bot kept casting it over the level-1
+                        // "Non Judgement" seal 20154, whose CalculateSimpleValue carries no
+                        // derived spell -- the core then reached CastSpell(..., 0, true) and
+                        // logged "unknown spell id 0", 736 times across 32 bots in half an hour,
+                        // each one spending Judgement's mana and 10-second cooldown for nothing.
+                        // 41 paladins had 20271; not one had 21084.
                         bot->learnSpell(spellInfo->EffectTriggerSpell[ei], false);
-                        break;
                     }
                 }
             }
@@ -1591,6 +1659,37 @@ void PlayerbotFactory::InitSpecialSpells()
     {
         uint32 spellId = *i;
         bot->learnSpell(spellId, false);
+    }
+}
+
+/**
+ * Learn everything a wrapper spell teaches, rather than the one leaf someone remembered.
+ *
+ * A quest that rewards an ability rewards a WRAPPER spell, and several teach more than one
+ * thing. Listing the leaves by hand here is how bots ended up with Bear Form but no Growl
+ * and no Maul -- a druid that shapeshifted and then had no attack in the form. Asking the
+ * wrapper what it teaches cannot drift from the data the way a hand-kept list does, and it
+ * picks up any leaf a future data change adds.
+ *
+ * This is the same defect, and the same shape of fix, as the trainer loop in
+ * InitAvailableSpells: both learned only the first SPELL_EFFECT_LEARN_SPELL and stopped.
+ */
+static void LearnWrapperSpells(Player* bot, uint32 wrapperId)
+{
+    const SpellEntry* wrapper = sSpellStore.LookupEntry(wrapperId);
+    if (!wrapper)
+    {
+        return;
+    }
+
+    for (int ei = 0; ei < MAX_EFFECT_INDEX; ++ei)
+    {
+        if (wrapper->Effect[ei] == SPELL_EFFECT_LEARN_SPELL &&
+            wrapper->EffectTriggerSpell[ei] &&
+            !bot->HasSpell(wrapper->EffectTriggerSpell[ei]))
+        {
+            bot->learnSpell(wrapper->EffectTriggerSpell[ei], false);
+        }
     }
 }
 
@@ -1642,10 +1741,17 @@ void PlayerbotFactory::InitQuestSpells()
         case CLASS_WARRIOR:
             if (level >= 10)
             {
+                // Wrapper 8121 teaches Defensive Stance (71), Sunder Armor (7386) AND
+                // Taunt (355). Only the stance was learned, so a protection warrior held
+                // no threat abilities whatsoever -- and its Devastate -> Sunder Armor
+                // fallback resolved to nothing, leaving white attacks as its only damage.
+                LearnWrapperSpells(bot, 8121);
                 if (!bot->HasSpell(71))    bot->learnSpell(71, false);    // Defensive Stance
             }
             if (level >= 30)
             {
+                // Wrapper 8616 teaches Berserker Stance (2458) and Intercept (20252).
+                LearnWrapperSpells(bot, 8616);
                 if (!bot->HasSpell(2458))  bot->learnSpell(2458, false);  // Berserker Stance
             }
             break;
@@ -1653,6 +1759,10 @@ void PlayerbotFactory::InitQuestSpells()
         case CLASS_DRUID:
             if (level >= 10)
             {
+                // Wrapper 19179 teaches Bear Form (5487), Growl (6795) AND Maul (6807).
+                // Learning only the form is why bears had no attack and no taunt: the bot
+                // shapeshifted correctly and then had nothing to do in the form.
+                LearnWrapperSpells(bot, 19179);
                 if (!bot->HasSpell(5487))  bot->learnSpell(5487, false);  // Bear Form
             }
             if (level >= 16)
@@ -1701,6 +1811,19 @@ void PlayerbotFactory::InitQuestSpells()
                 {
                     bot->learnSpell(8012, false);  // Purge (often quest)
                 }
+
+                // Wrapper 2075 teaches Searing Totem (3599), which no code path learned at
+                // all -- so a shaman's damage totem simply never existed. spell_chain makes
+                // 3599 the first rank, so without it no later rank can be trained either.
+                LearnWrapperSpells(bot, 2075);
+                if (!bot->HasSpell(3599))  bot->learnSpell(3599, false);  // Searing Totem
+            }
+            if (level >= 20)
+            {
+                // Wrapper 5396 teaches Healing Stream Totem (5394), likewise never learned,
+                // and likewise the first rank of its chain.
+                LearnWrapperSpells(bot, 5396);
+                if (!bot->HasSpell(5394))  bot->learnSpell(5394, false);  // Healing Stream Totem
             }
             break;
         case CLASS_PRIEST:
@@ -2201,9 +2324,117 @@ void PlayerbotFactory::CancelAuras()
  */
 void PlayerbotFactory::InitInventory()
 {
+    // Reagents first, so a full bag of random trade goods cannot crowd out the one item that
+    // makes a wired-up ability actually castable.
+    InitInventoryReagents();
     InitInventoryTrade();
     InitInventoryEquip();
     InitInventorySkill();
+}
+
+/**
+ * @brief Supplies the reagents a bot's own spells require.
+ *
+ * A registered action whose spell needs an item the bot never receives is only a quieter kind
+ * of dead end: it resolves, passes its usefulness test, and is then refused by CanCastSpell
+ * every time. Druid Rebirth is the case that prompted this -- "party member dead" routes to
+ * it correctly, but a factory-built druid carried none of the seeds it consumes, so no bot
+ * druid could resurrect anyone.
+ *
+ * The reagent is read from the spell the bot ACTUALLY knows rather than mapped from its
+ * level. Rank and level are not interchangeable here: a bot can be past a rank's level and
+ * still not know it, and the DBC is the only thing that knows which seed a given rank eats.
+ */
+bool PlayerbotFactory::ProvisionSpellReagent(uint32 spellId, uint32 desiredStock)
+{
+    if (!bot->HasSpell(spellId))
+    {
+        return false;
+    }
+
+    const SpellEntry* spellInfo = sSpellStore.LookupEntry(spellId);
+    if (!spellInfo)
+    {
+        return false;
+    }
+
+    // Known, but consumes nothing. Still counts as handled so the caller stops looking at
+    // weaker ranks.
+    if (!spellInfo->Reagent[0] || !spellInfo->ReagentCount[0])
+    {
+        return true;
+    }
+
+    // Never fewer than one cast's worth, and normally a working stock. TakeReagents consumes
+    // the item on every successful cast and Refresh does not replenish, so provisioning the
+    // DBC quantity alone buys exactly one use for the bot's entire life. StoreItem clamps to
+    // the item's own maximum stack size.
+    const uint32 count = std::max(desiredStock, (uint32)spellInfo->ReagentCount[0]);
+
+    if (!bot->HasItemCount(spellInfo->Reagent[0], count))
+    {
+        StoreItem(spellInfo->Reagent[0], count);
+    }
+
+    return true;
+}
+
+void PlayerbotFactory::InitInventoryReagents()
+{
+    // Highest known rank first: that is the one the bot will actually cast, and its reagent
+    // is read from the DBC rather than guessed from the bot's level. Rank and level are not
+    // interchangeable -- a bot can be past a rank's level and still not know it.
+    static const uint32 rebirthRanks[]  = { 20748, 20747, 20742, 20739, 20484 };
+    static const uint32 vanishRanks[]   = { 1857, 1856 };
+    static const uint32 arcaneBrill[]   = { 23028 };
+    static const uint32 gBlessMight[]   = { 25916, 25782 };
+    static const uint32 gBlessWisdom[]  = { 25918, 25894 };
+    static const uint32 waterBreathing[] = { 131 };
+    static const uint32 waterWalking[]   = { 546 };
+
+    struct ReagentSpell
+    {
+        uint8 cls;
+        const uint32* ranks;
+        size_t count;
+        uint32 stock;
+    };
+
+    // Stock reflects how the ability is used. Vanish and Rebirth are consumed in ordinary
+    // play and are wired into combat and party behaviour, so they carry a working stack;
+    // the group buffs are cast rarely and degrade to their lesser versions, so they carry
+    // fewer.
+    static const ReagentSpell reagentSpells[] =
+    {
+        { CLASS_DRUID,   rebirthRanks, sizeof(rebirthRanks) / sizeof(uint32), 20 },
+        { CLASS_ROGUE,   vanishRanks,  sizeof(vanishRanks)  / sizeof(uint32), 20 },
+        { CLASS_MAGE,    arcaneBrill,  sizeof(arcaneBrill)  / sizeof(uint32), 10 },
+        { CLASS_PALADIN, gBlessMight,  sizeof(gBlessMight)  / sizeof(uint32), 10 },
+        { CLASS_PALADIN, gBlessWisdom, sizeof(gBlessWisdom) / sizeof(uint32), 10 },
+        // Shaman utility. Both are registered actions with live triggers, and both consume
+        // class-15 reagent items that InitInventoryTrade cannot supply, so without this they
+        // were wired up and permanently uncastable.
+        { CLASS_SHAMAN,  waterBreathing, sizeof(waterBreathing) / sizeof(uint32), 10 },
+        { CLASS_SHAMAN,  waterWalking,   sizeof(waterWalking)   / sizeof(uint32), 10 }
+    };
+
+    const uint8 cls = bot->getClass();
+
+    for (size_t i = 0; i < sizeof(reagentSpells) / sizeof(reagentSpells[0]); ++i)
+    {
+        if (reagentSpells[i].cls != cls)
+        {
+            continue;
+        }
+
+        for (size_t r = 0; r < reagentSpells[i].count; ++r)
+        {
+            if (ProvisionSpellReagent(reagentSpells[i].ranks[r], reagentSpells[i].stock))
+            {
+                break;
+            }
+        }
+    }
 }
 
 /**
