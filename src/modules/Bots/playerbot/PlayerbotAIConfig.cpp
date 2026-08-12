@@ -275,7 +275,12 @@ bool PlayerbotAIConfig::Initialize()
     randomChangeMultiplier = config.GetFloatDefault("AiPlayerbot.RandomChangeMultiplier", 1.0);
 
     randomBotCombatStrategies = config.GetStringDefault("AiPlayerbot.RandomBotCombatStrategies", "+dps,+attack weak");
-    randomBotNonCombatStrategies = config.GetStringDefault("AiPlayerbot.RandomBotNonCombatStrategies", "+grind,+move random,+loot");
+    // "-stay" leads deliberately. The default non-combat set includes "stay", and the only
+    // thing that removed it was the sibling eviction triggered by adding "move random" --
+    // which does nothing if that name fails to resolve. A live roster had bots holding
+    // "stay" and no "move random", parked indefinitely, while their engines ticked
+    // normally. Removing it explicitly does not depend on another strategy resolving.
+    randomBotNonCombatStrategies = config.GetStringDefault("AiPlayerbot.RandomBotNonCombatStrategies", "-stay,+grind,+move random,+loot");
     botTankStrategies = config.GetStringDefault("AiPlayerbot.BotTankStrategies", "+tank aoe");
     botDpsStrategies = config.GetStringDefault("AiPlayerbot.BotDpsStrategies", "+dps assist");
     botHealStrategies = config.GetStringDefault("AiPlayerbot.BotHealStrategies", "");

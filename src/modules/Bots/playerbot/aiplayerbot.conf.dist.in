@@ -116,7 +116,10 @@ AiPlayerbot.CommandPrefix = ~
 
 # Random bot default strategies (applied after defaults)
 #AiPlayerbot.RandomBotCombatStrategies = +dps,+attack weak
-#AiPlayerbot.RandomBotNonCombatStrategies = +grind,+move random,+loot
+# Keep the leading "-stay". The default non-combat set contains "stay", whose action stops
+# the bot dead, and it is only removed as a side effect of "move random" being added. If
+# that name ever fails to resolve the bot is parked permanently.
+#AiPlayerbot.RandomBotNonCombatStrategies = -stay,+grind,+move random,+loot
 
 # Group strategies (applied by role to all bots when in a group, replacing solo strategies)
 #AiPlayerbot.BotTankStrategies = +tank aoe
