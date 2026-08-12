@@ -27,6 +27,7 @@ namespace ai
             {
                 creators["attack"] = &ActionContext::melee;
                 creators["melee"] = &ActionContext::melee;
+                creators["melee in range"] = &ActionContext::melee_in_range;
                 creators["reach spell"] = &ActionContext::ReachSpell;
                 creators["reach melee"] = &ActionContext::ReachMelee;
                 creators["ranged pull"] = &ActionContext::ranged_pull;
@@ -106,6 +107,7 @@ namespace ai
             static Action* shoot_crossbow(PlayerbotAI* ai) { return new CastSpellAction(ai, "shoot crossbow"); }
             static Action* throw_action(PlayerbotAI* ai) { return new CastSpellAction(ai, "throw"); }
             static Action* melee(PlayerbotAI* ai) { return new MeleeAction(ai); }
+            static Action* melee_in_range(PlayerbotAI* ai) { return new MeleeInRangeAction(ai); }
             static Action* ReachSpell(PlayerbotAI* ai) { return new ReachSpellAction(ai); }
             static Action* ReachMelee(PlayerbotAI* ai) { return new ReachMeleeAction(ai); }
             static Action* back_off(PlayerbotAI* ai) { return new BackOffAction(ai); }

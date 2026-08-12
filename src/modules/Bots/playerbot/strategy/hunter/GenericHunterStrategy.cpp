@@ -36,7 +36,14 @@ class GenericHunterStrategyActionNodeFactory : public NamedObjectFactory<ActionN
         {
             return new ActionNode ("feign death",
                 /*P*/ NULL,
-                /*A*/ NextAction::array(0, new NextAction("flee"), NULL),
+                // Feign Death is level 30, and until then this node's only alternative was
+                // "flee" -- so every threat spike on a hunter below 30 became running away
+                // rather than doing something about it. Shed threat the way a young hunter
+                // actually can: slow the thing down, or hit it, before resorting to flight.
+                /*A*/ NextAction::array(0,
+                    new NextAction("concussive shot"),
+                    new NextAction("hunter melee"),
+                    new NextAction("flee"), NULL),
                 /*C*/ NULL);
         }
         static ActionNode* wing_clip(PlayerbotAI* ai)
@@ -62,9 +69,30 @@ void GenericHunterStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     // in it that could act needed five or fewer -- wing clip, mongoose bite, disengage and
     // the melee fallback -- so the whole eight-to-fifteen yard band had no answer at all.
     // A snare at range is what a hunter actually does there: slow the thing down, then use
-    // the reposition below to open the distance again. Concussive Shot is level 6 and
+    // the reposition below to open the distance again. Concussive Shot is level 8 and
     // available to every hunter; Scatter Shot is a Marksmanship talent, so it sits behind
     // it and simply fails to cast for a hunter that has not taken it.
+    //
+    // Melee now sits ABOVE the reposition, and that ordering is the point.
+    //
+    // Everything above the reposition is level- or talent-gated -- Intimidation is a
+    // Beast Mastery talent, Scatter Shot is Marksmanship, Concussive Shot is level 8,
+    // Wing Clip level 12 -- so a young hunter reached "hunter ensure ranged position" at
+    // 50.0 as the first thing it could actually do, every single tick. Since backing away
+    // never stops being possible, it outranked "hunter melee" at 48.5 forever: the hunter
+    // shot once, was closed on, and then ran for the rest of the fight without firing.
+    // Observed live on a petless hunter that never attacked again after its opener.
+    //
+    // Putting melee above the reposition costs nothing when the ranged options work,
+    // because they all outrank both, and an out-of-range melee action declines on its own
+    // in the five-to-eight yard band. What it buys is a hunter that hits back.
+    //
+    // This ordering is only safe because HunterMeleeAction::Execute reports whether it
+    // actually started the attack. It used to return true unconditionally, and a successful
+    // action ends the engine tick -- so melee sitting above the reposition would simply have
+    // reversed the starvation, leaving the hunter white-swinging forever and never opening
+    // range again. It now succeeds once, on the engage, and declines while auto-attack runs.
+    // Do not raise anything else above the reposition without checking it can decline.
     triggers.push_back(new TriggerNode(
             "enemy too close for spell",
         NextAction::array(0,
@@ -72,10 +100,10 @@ void GenericHunterStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         new NextAction("concussive shot", 51.6f),
         new NextAction("scatter shot", 51.3f),
         new NextAction("wing clip", 51.0f),
+        new NextAction("mongoose bite", 50.5f),
+        new NextAction("hunter melee", 50.1f),
         new NextAction("hunter ensure ranged position", 50.0f),
-        new NextAction("mongoose bite", 49.5f),
         new NextAction("disengage", 49.0f),
-        new NextAction("hunter melee", 48.5f),
         new NextAction("flee", 48.0f),
         NULL)));
 

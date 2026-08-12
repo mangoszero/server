@@ -86,7 +86,7 @@ namespace ai
                     creators["strength of earth totem"] = &TriggerFactoryInternal::strength_of_earth_totem;
                     creators["magma totem"] = &TriggerFactoryInternal::magma_totem;
                     creators["searing totem"] = &TriggerFactoryInternal::searing_totem;
-                    creators["wind shear"] = &TriggerFactoryInternal::wind_shear;
+                    creators["earth shock"] = &TriggerFactoryInternal::earth_shock_interrupt;
                     creators["purge"] = &TriggerFactoryInternal::purge;
                     creators["shaman weapon"] = &TriggerFactoryInternal::shaman_weapon;
                     creators["water shield"] = &TriggerFactoryInternal::water_shield;
@@ -106,7 +106,7 @@ namespace ai
                     creators["heroism"] = &TriggerFactoryInternal::heroism;
                     creators["bloodlust"] = &TriggerFactoryInternal::bloodlust;
                     creators["maelstrom weapon"] = &TriggerFactoryInternal::maelstrom_weapon;
-                    creators["wind shear on enemy healer"] = &TriggerFactoryInternal::wind_shear_on_enemy_healer;
+                    creators["earth shock on enemy healer"] = &TriggerFactoryInternal::earth_shock_on_enemy_healer;
                     creators["ghost wolf"] = &TriggerFactoryInternal::ghost_wolf;
                     creators["tremor totem"] = &TriggerFactoryInternal::tremor_totem; // unwired intentionally
                 }
@@ -133,14 +133,14 @@ namespace ai
                 static Trigger* strength_of_earth_totem(PlayerbotAI* ai) { return new StrengthOfEarthTotemTrigger(ai); }
                 static Trigger* magma_totem(PlayerbotAI* ai) { return new MagmaTotemTrigger(ai); }
                 static Trigger* searing_totem(PlayerbotAI* ai) { return new SearingTotemTrigger(ai); }
-                static Trigger* wind_shear(PlayerbotAI* ai) { return new WindShearInterruptSpellTrigger(ai); }
+                static Trigger* earth_shock_interrupt(PlayerbotAI* ai) { return new EarthShockInterruptSpellTrigger(ai); }
                 static Trigger* purge(PlayerbotAI* ai) { return new PurgeTrigger(ai); }
                 static Trigger* shaman_weapon(PlayerbotAI* ai) { return new ShamanWeaponTrigger(ai); }
                 static Trigger* water_shield(PlayerbotAI* ai) { return new WaterShieldTrigger(ai); }
                 static Trigger* lightning_shield(PlayerbotAI* ai) { return new LightningShieldTrigger(ai); }
                 static Trigger* shock(PlayerbotAI* ai) { return new ShockTrigger(ai); }
                 static Trigger* frost_shock_snare(PlayerbotAI* ai) { return new FrostShockSnareTrigger(ai); }
-                static Trigger* wind_shear_on_enemy_healer(PlayerbotAI* ai) { return new WindShearInterruptEnemyHealerSpellTrigger(ai); }
+                static Trigger* earth_shock_on_enemy_healer(PlayerbotAI* ai) { return new EarthShockInterruptEnemyHealerSpellTrigger(ai); }
         };
     };
 };
@@ -183,6 +183,7 @@ namespace ai
                     creators["water breathing on party"] = &AiObjectContextInternal::water_breathing_on_party;
                     creators["flame shock"] = &AiObjectContextInternal::flame_shock;
                     creators["earth shock"] = &AiObjectContextInternal::earth_shock;
+                    creators["earth shock on enemy healer"] = &AiObjectContextInternal::earth_shock_on_enemy_healer_action;
                     creators["frost shock"] = &AiObjectContextInternal::frost_shock;
                     creators["chain lightning"] = &AiObjectContextInternal::chain_lightning;
                     creators["lightning bolt"] = &AiObjectContextInternal::lightning_bolt;
@@ -221,6 +222,7 @@ namespace ai
                 static Action* chain_lightning(PlayerbotAI* ai) { return new CastChainLightningAction(ai); }
                 static Action* frost_shock(PlayerbotAI* ai) { return new CastFrostShockAction(ai); }
                 static Action* earth_shock(PlayerbotAI* ai) { return new CastEarthShockAction(ai); }
+                static Action* earth_shock_on_enemy_healer_action(PlayerbotAI* ai) { return new CastEarthShockOnEnemyHealerAction(ai); }
                 static Action* flame_shock(PlayerbotAI* ai) { return new CastFlameShockAction(ai); }
                 static Action* water_walking(PlayerbotAI* ai) { return new CastWaterWalkingAction(ai); }
                 static Action* water_breathing(PlayerbotAI* ai) { return new CastWaterBreathingAction(ai); }

@@ -71,3 +71,49 @@ bool CastRainOfFireAction::isUseful()
     }
     return true;
 }
+
+/**
+ * @brief The best Create Healthstone rank this warlock actually knows.
+ *
+ * Walked strongest first, so a level 58 warlock makes a Major and a level 10 one makes a
+ * Minor. Falls back to the unsuffixed name, which is what the whole action used to be.
+ */
+string CastCreateHealthstoneAction::BestKnownRank()
+{
+    static const char* ranks[] =
+    {
+        "create healthstone (major)",
+        "create healthstone (greater)",
+        "create healthstone",
+        "create healthstone (lesser)",
+        "create healthstone (minor)"
+    };
+
+    for (size_t i = 0; i < sizeof(ranks) / sizeof(ranks[0]); ++i)
+    {
+        if (AI_VALUE2(uint32, "spell id", ranks[i]))
+        {
+            return ranks[i];
+        }
+    }
+
+    return "create healthstone";
+}
+
+bool CastCreateHealthstoneAction::isPossible()
+{
+    // CanCastSpell, not merely "is the rank known".
+    //
+    // The base class runs a full preflight -- cooldown, power, reagents, free bag space --
+    // and checking only that the spell exists throws all of that away. A warlock out of mana
+    // or with full bags would then report this relevance-15 action as possible on every
+    // tick, delaying or suppressing the lower-priority non-combat work it actually needed,
+    // such as sitting down to drink. The range check the base also performs is immaterial
+    // here because the target is the caster.
+    return ai->CanCastSpell(BestKnownRank(), bot);
+}
+
+bool CastCreateHealthstoneAction::Execute(Event event)
+{
+    return ai->CastSpell(BestKnownRank(), bot);
+}

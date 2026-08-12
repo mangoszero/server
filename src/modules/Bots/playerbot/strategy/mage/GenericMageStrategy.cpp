@@ -27,7 +27,13 @@ class GenericMageStrategyActionNodeFactory : public NamedObjectFactory<ActionNod
         {
             return new ActionNode ("frostbolt",
                 /*P*/ NULL,
-                /*A*/ NextAction::array(0, new NextAction("shoot"), NULL),
+                // Fireball, not shoot. An impossible action's alternative is pushed at
+                // relevance + 0.03, which put wand-dependent "shoot" ABOVE the fireball floor
+                // in the default array -- so a mage with a wand shot instead of casting, and a
+                // wandless one only reached fireball after shoot had failed. Fireball is level 1
+                // for every mage and needs no equipment, so it is the correct alternative; shoot
+                // remains in the default arrays below it for mages that have a wand.
+                /*A*/ NextAction::array(0, new NextAction("fireball"), NULL),
                 /*C*/ NULL);
         }
         static ActionNode* fire_blast(PlayerbotAI* ai)
@@ -41,7 +47,11 @@ class GenericMageStrategyActionNodeFactory : public NamedObjectFactory<ActionNod
         {
             return new ActionNode ("scorch",
                 /*P*/ NULL,
-                /*A*/ NextAction::array(0, new NextAction("shoot"), NULL),
+                // Fireball, not shoot -- the same correction as the frostbolt node above,
+                // for the same reason. Scorch is level 22, so every fire mage below that
+                // walked this alternative, and at relevance + 0.03 a wand outranked the
+                // level-1 spell the mage was built around.
+                /*A*/ NextAction::array(0, new NextAction("fireball"), NULL),
                 /*C*/ NULL);
         }
         static ActionNode* frost_nova(PlayerbotAI* ai)
@@ -143,7 +153,15 @@ void GenericMageStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 
     triggers.push_back(new TriggerNode(
             "medium threat",
-        NextAction::array(0, new NextAction("invisibility", 60.0f), NULL)));
+        // "invisibility" is not a registered action and never was, so this trigger resolved
+        // to a silent NULL: a mage pulling threat had no threat response at all. Vanilla
+        // Invisibility is also not the TBC threat-drop -- the DBC rows of that name are
+        // obsolete or NPC-only. Frost Nova then distance is what a 1.12 mage actually does,
+        // and both are registered here.
+        NextAction::array(0,
+            new NextAction("frost nova", 60.0f),
+            new NextAction("flee", 59.0f),
+            NULL)));
 
     triggers.push_back(new TriggerNode(
             "low mana",

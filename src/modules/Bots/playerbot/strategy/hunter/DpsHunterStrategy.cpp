@@ -70,9 +70,22 @@ void DpsHunterStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     GenericHunterStrategy::InitTriggers(triggers);
 
+    // Serpent Sting on "no stings", not Black Arrow on "black arrow".
+    //
+    // Black Arrow is a Wrath ability: the rows carrying that name in the 1.12 DBC (3674,
+    // 14296, 20733, 20734) are all NPC spells, so the action was registered but could never
+    // be cast and the trigger achieved nothing. Serpent Sting is the level 4 damage-over-time
+    // every hunter actually has.
+    //
+    // The TRIGGER had to change too, and that is the part worth remembering. The old one
+    // tested for the absence of Black Arrow -- an aura a player never applies -- so it was
+    // permanently true, and CastSerpentStingAction::isUseful only checks target health, not
+    // whether a sting is already ticking. Swapping the action alone would have refreshed
+    // Serpent Sting on every available global cooldown and starved the rest of the rotation.
+    // "no stings" is the existing trigger that correctly excludes Serpent, Scorpid and Viper.
     triggers.push_back(new TriggerNode(
-            "black arrow",
-        NextAction::array(0, new NextAction("black arrow", 51.0f), NULL)));
+            "no stings",
+        NextAction::array(0, new NextAction("serpent sting", 51.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
             "low mana",

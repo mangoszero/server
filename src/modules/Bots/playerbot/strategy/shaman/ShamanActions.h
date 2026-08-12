@@ -198,6 +198,15 @@ namespace ai
             CastEarthShockAction(PlayerbotAI* ai) : CastDebuffSpellAction(ai, "earth shock") {}
     };
 
+    // The shaman's interrupt aimed at whoever is healing the other side. Earth Shock carries
+    // the interrupt effect in 1.12 (DBC effect 68); the Wind Shear this replaces is TBC and
+    // had no vanilla spell to resolve, so the enemy-healer route never did anything.
+    class CastEarthShockOnEnemyHealerAction : public CastSpellOnEnemyHealerAction
+    {
+        public:
+            CastEarthShockOnEnemyHealerAction(PlayerbotAI* ai) : CastSpellOnEnemyHealerAction(ai, "earth shock") {}
+    };
+
     class CastFrostShockAction : public CastDebuffSpellAction
     {
         public:

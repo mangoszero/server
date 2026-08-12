@@ -8,7 +8,18 @@ using namespace ai;
 
 NextAction** HealPriestStrategy::getDefaultActions()
 {
-    return NextAction::array(0, new NextAction("shoot", 10.0f), NULL);
+    // "shoot" is not a floor: it needs an equipped wand, and NONE of the ten stock priest
+    // race/sex starting outfits contains one. A healing priest was therefore left with no
+    // unconditional action at all -- its healing and utility triggers are all conditional --
+    // so a wandless one simply stood in combat doing nothing, at any level from 1 to 60.
+    // Smite is trainable at level 1 by every priest and needs no equipment; melee is the last
+    // resort that always works. Shoot stays on top so a priest that DOES have a wand still
+    // prefers it.
+    return NextAction::array(0,
+        new NextAction("shoot", 10.0f),
+        new NextAction("smite", 9.0f),
+        new NextAction("melee in range", 8.0f),
+        NULL);
 }
 
 void HealPriestStrategy::InitTriggers(std::list<TriggerNode*> &triggers)

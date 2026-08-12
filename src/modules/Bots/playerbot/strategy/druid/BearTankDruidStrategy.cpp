@@ -141,11 +141,24 @@ BearTankDruidStrategy::BearTankDruidStrategy(PlayerbotAI* ai) : FeralDruidStrate
 
 NextAction** BearTankDruidStrategy::getDefaultActions()
 {
+    // An unconditional melee floor, because every entry above it can decline.
+    //
+    // Lacerate and Mangle (Bear) do not exist in 1.12 at all, and Faerie Fire (Feral) is a
+    // debuff rather than damage -- so Maul carried the whole rotation. Maul's isUseful()
+    // requires 45 rage, and when it returns false the engine does not push the node's own
+    // melee alternative either, so a bear below that threshold had nothing to execute and
+    // stood there. A bear generates rage BY hitting things, so the one state it must never
+    // be in is "too little rage to attack".
+    //
+    // This matters more now that quest wrapper 19179 is expanded properly: bots finally
+    // have Growl and Maul rather than Bear Form alone, and the floor keeps them swinging
+    // between Mauls instead of waiting for rage that only swinging produces.
     return NextAction::array(0,
         new NextAction("lacerate", ACTION_NORMAL + 4),
         new NextAction("mangle (bear)", ACTION_NORMAL + 3),
         new NextAction("maul", ACTION_NORMAL + 2),
         new NextAction("faerie fire (feral)", ACTION_NORMAL + 1),
+        new NextAction("melee", ACTION_NORMAL),
         NULL);
 }
 

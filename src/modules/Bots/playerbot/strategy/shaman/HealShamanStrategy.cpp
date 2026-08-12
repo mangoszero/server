@@ -32,6 +32,20 @@ class HealShamanStrategyActionNodeFactory : public NamedObjectFactory<ActionNode
 
 };
 
+NextAction** HealShamanStrategy::getDefaultActions()
+{
+    // Same defect as the healing druid: no override at all, so this inherited
+    // Strategy::getDefaultActions()'s NULL and a healing shaman had no unconditional action.
+    // Its healing, totem and utility triggers are all conditional, so it stood in combat doing
+    // nothing across the whole level range, and a grouped Restoration shaman is selected
+    // automatically. Lightning Bolt is a level 1 shaman spell needing no equipment; melee is
+    // the always-available last resort.
+    return NextAction::array(0,
+        new NextAction("lightning bolt", 10.0f),
+        new NextAction("melee in range", 9.0f),
+        NULL);
+}
+
 HealShamanStrategy::HealShamanStrategy(PlayerbotAI* ai) : GenericShamanStrategy(ai)
 {
     actionNodeFactories.Add(new HealShamanStrategyActionNodeFactory());

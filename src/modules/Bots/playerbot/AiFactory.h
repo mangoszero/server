@@ -17,6 +17,7 @@ class AiFactory
 
     public:
         static int GetPlayerSpecTab(Player* player);
+        static bool HasChosenSpec(Player* player);
         static map<uint32, int32> GetPlayerSpecTabs(Player* player);
 
         /**

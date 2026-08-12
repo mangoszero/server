@@ -91,6 +91,18 @@ bool HunterMeleeAction::Execute(Event event)
     {
         return false;
     }
-    bot->Attack(target, true);
-    return true;
+
+    // Report what Attack actually DID, rather than always claiming success.
+    //
+    // Unit::Attack returns true only when it starts or switches to melee, and false when
+    // this bot is already melee-attacking this same target. That distinction is what stops
+    // this action starving the reposition above it: a successful action ends the engine
+    // tick, so an unconditional true meant the hunter re-won every tick, white-swung
+    // forever and never backed out to shoot again -- the mirror image of the bug where the
+    // reposition starved melee.
+    //
+    // Auto-attack keeps swinging on its own once started, so one successful engage is all
+    // this needs; from the next tick it declines and "hunter ensure ranged position" gets
+    // its turn. Engage, then open range, which is what a hunter is supposed to do.
+    return bot->Attack(target, true);
 }

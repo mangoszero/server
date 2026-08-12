@@ -52,6 +52,22 @@ AiObjectContext* AiFactory::createAiObjectContext(Player* player, PlayerbotAI* a
     return new AiObjectContext(ai);
 }
 
+// Has this bot actually chosen a specialisation yet?
+//
+// GetPlayerSpecTabs seeds all three tab keys at zero, so a character with nothing spent
+// produces a three-way tie that GetPlayerSpecTab resolves to whichever key sorts first.
+// That is not a spec; it is an artefact of the seeding. Every class below level 10 has one,
+// and the branch it lands in decides which abilities the bot will try to use for its whole
+// early life -- which is how untalented druids were sent to Bear before Bear Form exists.
+bool AiFactory::HasChosenSpec(Player* bot)
+{
+    // Ask the core how many points this bot should have rather than deriving it from level.
+    // A hand-rolled (level - 9) assumes Rate.Talent is 1, which is the stock and the live
+    // value but is configurable; at any other rate the subtraction misclassifies, and below
+    // level 10 it underflows an unsigned.
+    return bot->CalculateTalentsPoints() > bot->GetFreeTalentPoints();
+}
+
 int AiFactory::GetPlayerSpecTab(Player* bot)
 {
     map<uint32, int32> tabs = GetPlayerSpecTabs(bot);
@@ -224,7 +240,26 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
 {
     int tab = GetPlayerSpecTab(player);
 
-    engine->addStrategies("attack weak", "racials", "chat", "default", "aoe", "potions", "cast time", "conserve mana", "duel", "pvp", NULL);
+    engine->addStrategies("attack weak", "racials", "chat", "default", "potions", "cast time", "conserve mana", "duel", "pvp", NULL);
+
+    // "aoe" is NOT generic. Only four classes register it -- hunter, priest (as shadow_aoe),
+    // warlock and warrior -- while the rest either have a spec-specific variant added in the
+    // switch below ("fire aoe", "frost aoe", "cat aoe", "caster aoe", "melee aoe", "tank aoe")
+    // or none at all. Adding it unconditionally therefore did nothing for five of the nine
+    // classes except emit an unresolved-strategy error for every one of those bots on every
+    // ResetStrategies -- around 150 lines per startup, which buries the real unresolved names
+    // this diagnostic exists to surface. Add it where it exists instead.
+    switch (player->getClass())
+    {
+        case CLASS_HUNTER:
+        case CLASS_PRIEST:
+        case CLASS_WARLOCK:
+        case CLASS_WARRIOR:
+            engine->addStrategy("aoe");
+            break;
+        default:
+            break;
+    }
 
     switch (player->getClass())
     {
@@ -279,12 +314,21 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
             {
                 engine->addStrategies("heal", "bmana", "flee", NULL);
             }
+            else if (!HasChosenSpec(player))
+            {
+                // An untalented shaman is NOT an Enhancement shaman. It lands here only
+                // because the seeded tab tie resolves to this branch, and Enhancement's
+                // defining ability is Stormstrike -- a level 40 thirty-one-point talent.
+                // Meanwhile every shaman starts with Lightning Bolt (403), so the caster
+                // branch is the one it can actually play from level 1. Same strategies as
+                // the Elemental branch above.
+                engine->addStrategies("caster", "caster aoe", "bmana", "threat", "flee", NULL);
+            }
             else
             {
                 // "flee" to match the other two shaman branches, which both have it. An
-                // Enhancement shaman -- and every untalented one, since GetPlayerSpecTab
-                // answers -1 and lands here -- had no escape at low health and simply
-                // fought until it died.
+                // Enhancement shaman had no escape at low health and simply fought until
+                // it died.
                 engine->addStrategies("dps", "melee aoe", "bdps", "threat", "flee", NULL);
             }
             break;
@@ -321,7 +365,15 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
             }
             else
             {
-                if (IsFeralCatSpec(player))
+                // Gate each form on the bot actually HAVING it, not on the talent weighting
+                // that asked for it. Cat Form (768) and Claw (1082) are level 20 and Bear
+                // Form (5487) is level 10, but feral weighting can select Cat from level 10
+                // and an untalented druid lands in this branch from level 1. Both produced a
+                // druid running a form rotation in caster shape: no form, no form attacks,
+                // and the caster spells it did own outranked by a strategy built around
+                // shapeshifting. Falling back through Bear to caster keeps it playing the
+                // character it actually is until the forms exist.
+                if (IsFeralCatSpec(player) && player->HasSpell(768) && player->HasSpell(1082))
                 {
                     engine->addStrategies("cat", "cat aoe", "threat", "flee", NULL);
                     if (player->getLevel() > 19)
@@ -329,9 +381,13 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
                         engine->addStrategy("dps debuff");
                     }
                 }
-                else
+                else if (player->HasSpell(5487))
                 {
                     engine->addStrategies("bear", "tank aoe", "threat", "flee", NULL);
+                }
+                else
+                {
+                    engine->addStrategies("caster", "caster aoe", "threat", "flee", NULL);
                 }
             }
             break;
