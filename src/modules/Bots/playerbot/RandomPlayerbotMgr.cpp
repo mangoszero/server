@@ -461,7 +461,19 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
     if (!GetPlayerBot(bot))
     {
         sLog.outDetail("Bot %d logged in", bot);
-        AddPlayerBot(bot, 0);
+        // Retire the roster entry when the login is refused outright rather than retrying
+        // it forever. The entry outlives the configuration that created it: drop
+        // RandomBotAccountCount after a stress test and every 'add' event above the new
+        // ceiling comes back here on every pass, spending the pass budget that the bots
+        // which can still log in need. One run left 712 of 811 entries in this state,
+        // retried 9,558 times in ninety minutes.
+        if (!AddPlayerBot(bot, 0))
+        {
+            SetEventValue(bot, "add", 0, 0);
+            SetEventValue(bot, "online", 0, 0);
+            return true;
+        }
+
         if (!GetEventValue(bot, "online"))
         {
             SetEventValue(bot, "online", 1, sPlayerbotAIConfig.minRandomBotInWorldTime);
@@ -654,8 +666,35 @@ bool RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
     {
         int index = urand(0, locs.size() - 1);
         WorldLocation loc = locs[index];
-        float x = loc.coord_x + urand(0, sPlayerbotAIConfig.grindDistance) - sPlayerbotAIConfig.grindDistance / 2;
-        float y = loc.coord_y + urand(0, sPlayerbotAIConfig.grindDistance) - sPlayerbotAIConfig.grindDistance / 2;
+
+        // Land on the anchor, and do NOT invent a nearby point.
+        //
+        // This used to jitter x and y by up to half a grindDistance -- fifty yards with the
+        // shipped setting -- while leaving z as the anchor's own height. That combination is
+        // the whole bug: an authored, known-good spawn height applied to an XY up to fifty
+        // yards away, which is a position no one ever validated and which frequently belongs
+        // to a different layer of the world entirely. Everything downstream was then trying
+        // to rescue a coordinate that was fabricated from two unrelated places, and the
+        // guards that were added to do so each failed on a different shape of geometry:
+        //
+        //   Shadowglen: anchor Young Nightsaber (10270.5, 744.21, 1341.8), jitter (-43,+40).
+        //     The landing had Static below at 1339.259 and ADT Terrain above at 1365.012, so
+        //     an overhead test looking for Static found nothing and passed it.
+        //   Stormwind: anchor Stormwind Orphan (-8615.78, 739.56, 101.894), jitter (+23,-39).
+        //     The landing had Terrain below at 59.457 and the street as Static above at
+        //     122.337 -- 2.83 yards higher than a sixty-yard upward scan could reach.
+        //
+        // Both dropped a bot ~40 yards under the world, onto a sealed navmesh island it
+        // could wander but never leave. Note the two are exact opposites in surface kind,
+        // which is why no rule keyed on SurfaceKind can settle this, and why a kind-agnostic
+        // ceiling rule is no better: 9.56% of ground anchors legitimately carry something
+        // solid overhead -- bridges, caves, overhangs, multi-level models.
+        //
+        // The anchor is already a validated position: it is where the world authors put a
+        // creature. Use it, and require the baked floor to agree with it. The cost is the
+        // loss of the scatter, and the pool supplies thousands of anchors instead.
+        float x = loc.coord_x;
+        float y = loc.coord_y;
         float z = loc.coord_z;
 
         Map* map = sMapMgr.FindMap(loc.mapid);
@@ -670,63 +709,40 @@ bool RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
             continue;
         }
 
-        // Snap before judging, not after. x and y have just been jittered by up to half a
-        // grindDistance -- fifty yards with the shipped setting -- while z is still the
-        // height of an anchor that far away, so every test run against it was asking about
-        // a point in mid-air or underground. StaticFloor then searched a column centred on
-        // that same wrong height and returned whatever surface it found there, which under
-        // a building is the ground beneath it. That is how a bot ends up inside a structure
-        // or below one, and it is what a player teleporting to it falls through.
+        // The floor here must AGREE with the anchor, not merely exist.
+        //
+        // "A floor was found" is what let both bad landings through: there is always a floor
+        // somewhere under an XY, and taking whichever one the column search happened to
+        // return is how a bot ends up on the wrong layer. Requiring the baked floor to sit
+        // within two yards of the height the world authors recorded for this spawn is a
+        // statement about the same place rather than a guess about geometry, so it does not
+        // care which of terrain or model happens to be on top.
+        //
+        // Measured over the shipped Zero data: 20,502 ground anchors on maps 0 and 1, of
+        // which 20,439 agree within two yards -- 99.69%. The 63 rejects are 30 genuine
+        // disagreements and 33 with no floor at all. Both known bad anchors agree to better
+        // than 0.01 yards, so neither is lost.
         std::optional<float> floor = terrain->StaticFloor(x, y, 0.5f + z);
-        if (!floor)
+        if (!floor || fabs(*floor - loc.coord_z) > 2.0f)
         {
             continue;
         }
 
         z = 0.05f + *floor;
 
-        // Is there a building over this spot? IsOutdoors below catches a floor INSIDE a
-        // structure and structurally cannot catch the ground UNDERNEATH one: below
-        // Stormwind a bot is outdoors, on solid ground, correctly inside the Stormwind
-        // City area, and forty yards under the streets. Every predicate the core offers
-        // answers truthfully about a position no player would ever occupy.
+        // The overhead-kind test and the loose fifty-yard backstop that used to sit here are
+        // both GONE, deliberately, and should not come back.
         //
-        // The column is the thing that knows. Surfaces carry their kind, so a baked model
-        // overhead -- a city, a bridge, a pier -- is Static, while a hillside overhead is
-        // Terrain. Asking only about Static is what separates "under the streets of
-        // Stormwind" from "at the foot of a cliff in Winterspring", which no comparison of
-        // heights can do: a scalar drop bound cannot tell a valid steep slope from an
-        // under-structure fall, and 6.6% of the world's spawns live where drops of that
-        // size are the normal ground.
-        {
-            world::terrain::Column column = terrain->ColumnAt(x, y, z + 60.0f, z - 2.0f);
-            std::optional<float> ceiling;
-            for (world::terrain::Surface const& surface : column.Surfaces())
-            {
-                if (surface.kind == world::terrain::SurfaceKind::Static && surface.z > z + 2.0f)
-                {
-                    if (!ceiling || surface.z < *ceiling)
-                    {
-                        ceiling = surface.z;
-                    }
-                }
-            }
-
-            if (ceiling)
-            {
-                continue;
-            }
-        }
-
-        // A loose bound either way as a backstop, well above the p99 of real spawn spread,
-        // so a landing that lands somewhere wildly unrelated to its anchor is still thrown
-        // out even where no model is involved -- a mesa edge, a ravine. Deliberately not
-        // the primary defence: at 25 yards it rejected legitimate ground in Winterspring,
-        // the Badlands and the Wailing Caverns ravine.
-        if (fabs(loc.coord_z - z) > 50.0f)
-        {
-            continue;
-        }
+        // Each existed to catch a landing the jitter had already invented, and each could
+        // only ever catch one shape of it. The kind test asked whether something Static was
+        // overhead: true under Stormwind's streets, false under Teldrassil's canopy, where
+        // the layer above is Terrain -- and it could not see Stormwind either, because its
+        // sixty-yard ray began 2.83 yards below the street it was looking for. The fifty-yard
+        // backstop then waved through a 42-yard drop as being within tolerance.
+        //
+        // Widening the ray or loosening the kind test only moves the boundary. Neither is
+        // needed once x and y are the anchor's own, because the agreement check above is
+        // asking about a single real place instead of adjudicating geometry.
 
         AreaTableEntry const* area = sAreaStore.LookupEntry(terrain->GetAreaId(x, y, z));
         if (!area)
@@ -734,10 +750,14 @@ bool RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
             continue;
         }
 
-        // Now that z is where the bot would actually stand. IsOutdoors reads the WMO group
-        // flags at the point given, so asking it here is what rejects a floor inside a
-        // building or the ground under one -- the previous order asked it about the sky
-        // above the roof and was satisfied.
+        // Asked at the height the bot would actually stand at, not at the anchor's.
+        //
+        // IsOutdoors reads the WMO group flags at the point given, so it rejects a spot
+        // inside a building's interior. It does NOT reject the ground beneath one, and the
+        // comment here used to claim it did: under Stormwind's streets a bot is outdoors,
+        // on solid ground, correctly inside the Stormwind City area, and forty yards below
+        // where anyone should be. Nothing in this predicate would have caught that -- the
+        // agreement check above is what does.
         if (!terrain->IsOutdoors(x, y, z) ||
             terrain->IsUnderWater(x, y, z) ||
             terrain->IsInWater(x, y, z))
@@ -747,10 +767,12 @@ bool RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
 
         sLog.outDetail("Random teleporting bot %s to %s %f,%f,%f", bot->GetName(), area->AreaName_lang[0], x, y, z);
 
-        // ProcessBot judges the spot the bot is standing on, not the anchor it was
-        // sampled around, and the two are up to randomBotTeleportDistance/2 plus a
-        // grindDistance/2 jitter apart. Vetting only the anchor lets an eviction drop
-        // the bot somewhere the next pass evicts it from again, a minute later.
+        // ProcessBot judges the spot the bot is standing on, so this must judge the same
+        // spot. That is now the anchor itself -- the jitter is gone -- but the anchors in
+        // this pool are still gathered over a radius around a game_tele, so a landing can
+        // sit well away from the point the pool was centred on. Vetting only that centre
+        // lets an eviction drop the bot somewhere the next pass evicts it from again, a
+        // minute later.
         if (!IsZoneSafeForBot(bot, loc.mapid, x, y, z))
         {
             continue;
@@ -2127,7 +2149,13 @@ void RandomPlayerbotMgr::OnPlayerLogout(Player* player)
         }
     }
 
-    if (!player->GetPlayerbotAI())
+    // A null PlayerbotAI is not sufficient to call this a real player. An unauthorised bot
+    // reaches logout with no AI attached -- it never got one -- and OnPlayerZoneChange
+    // deliberately declined to count it, testing exactly this remote address. Decrementing
+    // here for a player that was never incremented erases a genuine real player's zone entry,
+    // after which HasRealPlayerInZone reports false and every ungrouped random bot in that
+    // zone stops ticking while the player is still standing in it. Mirror the same test.
+    if (!player->GetPlayerbotAI() && player->GetSession()->GetRemoteAddress() != "bot")
     {
         vector<Player*>::iterator i = find(players.begin(), players.end(), player);
         if (i != players.end())
