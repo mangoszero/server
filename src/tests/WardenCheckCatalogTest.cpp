@@ -86,3 +86,73 @@ TEST(WardenCheckCatalog_enforces_the_one_byte_path_length_boundary)
     CHECK(catalog.Validate(profile) ==
         warden::CheckCatalogValidation::Valid);
 }
+
+TEST(WardenCheckCatalog_selects_only_exact_5875_windows_enUS_lua_profile)
+{
+    warden::WardenCheckCatalog catalog;
+    warden::LuaCheckProfile const* profile =
+        catalog.FindLua(5875, "Win", "enUS");
+
+    REQUIRE(profile != nullptr);
+    CHECK_EQ(profile->checkId, uint32(2));
+    CHECK_STR(profile->query.c_str(), "OKAY");
+    CHECK_STR(profile->expectedText.c_str(), "Okay");
+    CHECK(catalog.Validate(*profile) ==
+        warden::CheckCatalogValidation::Valid);
+
+    CHECK(catalog.FindLua(6005, "Win", "enUS") == nullptr);
+    CHECK(catalog.FindLua(6141, "Win", "enUS") == nullptr);
+    CHECK(catalog.FindLua(5875, "OSX", "enUS") == nullptr);
+    CHECK(catalog.FindLua(5875, "Win", "enGB") == nullptr);
+    CHECK(catalog.FindLua(5875, "Win", "frFR") == nullptr);
+}
+
+TEST(WardenCheckCatalog_rejects_invalid_lua_identity_and_text)
+{
+    warden::WardenCheckCatalog catalog;
+    warden::LuaCheckProfile profile =
+        *catalog.FindLua(5875, "Win", "enUS");
+
+    profile.checkId = 0;
+    CHECK(catalog.Validate(profile) ==
+        warden::CheckCatalogValidation::InvalidId);
+
+    profile = *catalog.FindLua(5875, "Win", "enUS");
+    profile.query.clear();
+    CHECK(catalog.Validate(profile) ==
+        warden::CheckCatalogValidation::InvalidQuery);
+
+    profile.query.assign("OK\0AY", 5);
+    CHECK(catalog.Validate(profile) ==
+        warden::CheckCatalogValidation::InvalidQuery);
+
+    profile = *catalog.FindLua(5875, "Win", "enUS");
+    profile.expectedText.assign("Ok\0ay", 5);
+    CHECK(catalog.Validate(profile) ==
+        warden::CheckCatalogValidation::InvalidExpectedText);
+}
+
+TEST(WardenCheckCatalog_enforces_lua_query_and_result_boundaries)
+{
+    warden::WardenCheckCatalog catalog;
+    warden::LuaCheckProfile profile =
+        *catalog.FindLua(5875, "Win", "enUS");
+
+    profile.query.assign(255, 'Q');
+    profile.expectedText.assign(64, 'R');
+    CHECK(catalog.Validate(profile) ==
+        warden::CheckCatalogValidation::Valid);
+
+    profile.query.push_back('Q');
+    CHECK(catalog.Validate(profile) ==
+        warden::CheckCatalogValidation::InvalidQuery);
+
+    profile = *catalog.FindLua(5875, "Win", "enUS");
+    profile.expectedText.assign(65, 'R');
+    CHECK(catalog.Validate(profile) ==
+        warden::CheckCatalogValidation::InvalidExpectedText);
+
+    profile.expectedText.clear();
+    CHECK(catalog.Validate(profile) ==
+        warden::CheckCatalogValidation::Valid);
+}

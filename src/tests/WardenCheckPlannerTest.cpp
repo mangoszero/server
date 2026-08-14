@@ -60,6 +60,15 @@ TEST(WardenEvidence_mpq_outcomes_have_secret_free_fixed_labels)
         "Unavailable");
 }
 
+TEST(WardenEvidence_lua_outcomes_have_secret_free_fixed_labels)
+{
+    CHECK_STR(warden::ToString(warden::LuaOutcome::Match), "Match");
+    CHECK_STR(warden::ToString(warden::LuaOutcome::TextMismatch),
+        "TextMismatch");
+    CHECK_STR(warden::ToString(warden::LuaOutcome::Unavailable),
+        "Unavailable");
+}
+
 TEST(WardenCheckPlanner_waits_one_cumulative_eligible_second_once)
 {
     warden::WardenCheckPlanner planner;

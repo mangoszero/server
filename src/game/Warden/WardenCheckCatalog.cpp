@@ -32,6 +32,14 @@ struct MpqCatalogRecord
     warden::MpqCheckProfile profile;
 };
 
+struct LuaCatalogRecord
+{
+    uint32 build;
+    char const* platform;
+    char const* locale;
+    warden::LuaCheckProfile profile;
+};
+
 MpqCatalogRecord const& Windows5875EnUsMpqRecord()
 {
     static MpqCatalogRecord const record
@@ -51,6 +59,18 @@ MpqCatalogRecord const& Windows5875EnUsMpqRecord()
     };
     return record;
 }
+
+LuaCatalogRecord const& Windows5875EnUsLuaRecord()
+{
+    static LuaCatalogRecord const record
+    {
+        5875,
+        "Win",
+        "enUS",
+        {2, "OKAY", "Okay"}
+    };
+    return record;
+}
 }
 
 namespace warden
@@ -67,6 +87,18 @@ MpqCheckProfile const* WardenCheckCatalog::FindMpq(uint32 build,
     return &record.profile;
 }
 
+LuaCheckProfile const* WardenCheckCatalog::FindLua(uint32 build,
+    std::string const& platform, std::string const& locale) const
+{
+    LuaCatalogRecord const& record = Windows5875EnUsLuaRecord();
+    if (record.build != build || platform != record.platform ||
+        locale != record.locale || Validate(record.profile) !=
+            CheckCatalogValidation::Valid)
+        return nullptr;
+
+    return &record.profile;
+}
+
 CheckCatalogValidation WardenCheckCatalog::Validate(
     MpqCheckProfile const& profile) const
 {
@@ -75,6 +107,22 @@ CheckCatalogValidation WardenCheckCatalog::Validate(
     if (profile.path.empty() || profile.path.size() > 255 ||
         profile.path.find('\0') != std::string::npos)
         return CheckCatalogValidation::InvalidPath;
+    return CheckCatalogValidation::Valid;
+}
+
+CheckCatalogValidation WardenCheckCatalog::Validate(
+    LuaCheckProfile const& profile) const
+{
+    if (!profile.checkId)
+        return CheckCatalogValidation::InvalidId;
+    if (profile.query.empty() || profile.query.size() > 255 ||
+        profile.query.find('\0') != std::string::npos)
+        return CheckCatalogValidation::InvalidQuery;
+
+    // The exact delivered module truncates callback output at byte 64.
+    if (profile.expectedText.size() > 64 ||
+        profile.expectedText.find('\0') != std::string::npos)
+        return CheckCatalogValidation::InvalidExpectedText;
     return CheckCatalogValidation::Valid;
 }
 }

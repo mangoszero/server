@@ -44,4 +44,15 @@ char const* ToString(MpqOutcome outcome)
     }
     return "Unknown";
 }
+
+char const* ToString(LuaOutcome outcome)
+{
+    switch (outcome)
+    {
+        case LuaOutcome::Match: return "Match";
+        case LuaOutcome::TextMismatch: return "TextMismatch";
+        case LuaOutcome::Unavailable: return "Unavailable";
+    }
+    return "Unknown";
+}
 }

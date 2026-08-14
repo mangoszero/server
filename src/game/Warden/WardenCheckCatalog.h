@@ -33,7 +33,9 @@ enum class CheckCatalogValidation : uint8
 {
     Valid,
     InvalidId,
-    InvalidPath
+    InvalidPath,
+    InvalidQuery,
+    InvalidExpectedText
 };
 
 /** Immutable input needed to request and evaluate one client MPQ digest. */
@@ -42,6 +44,14 @@ struct MpqCheckProfile
     uint32 checkId = 0;
     std::string path;
     Digest20 expectedSha1{};
+};
+
+/** Immutable input needed to request and evaluate one client Lua lookup. */
+struct LuaCheckProfile
+{
+    uint32 checkId = 0;
+    std::string query;
+    std::string expectedText;
 };
 
 /**
@@ -53,7 +63,10 @@ class WardenCheckCatalog
 public:
     MpqCheckProfile const* FindMpq(uint32 build,
         std::string const& platform, std::string const& locale) const;
+    LuaCheckProfile const* FindLua(uint32 build,
+        std::string const& platform, std::string const& locale) const;
     CheckCatalogValidation Validate(MpqCheckProfile const& profile) const;
+    CheckCatalogValidation Validate(LuaCheckProfile const& profile) const;
 };
 }
 

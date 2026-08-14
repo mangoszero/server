@@ -58,11 +58,27 @@ struct MpqEvidence
     MpqOutcome outcome = MpqOutcome::Unavailable;
 };
 
+enum class LuaOutcome : uint8
+{
+    Match,
+    TextMismatch,
+    Unavailable
+};
+
+/** Validated script evidence containing no query or returned client text. */
+struct LuaEvidence
+{
+    uint32 requestId = 0;
+    uint32 checkId = 0;
+    LuaOutcome outcome = LuaOutcome::Unavailable;
+};
+
 using WardenEvidence = std::variant<TimingEvidence, MpqEvidence>;
 
 // Fixed labels are safe for operator summaries and contain no client data.
 char const* ToString(TimingOutcome outcome);
 char const* ToString(MpqOutcome outcome);
+char const* ToString(LuaOutcome outcome);
 }
 
 #endif
