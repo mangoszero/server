@@ -47,6 +47,26 @@ public:
 private:
     warden::Bytes& m_bytes;
 };
+
+class CleanseCheckBatchResult
+{
+public:
+    explicit CleanseCheckBatchResult(warden::CheckBatchResult& result)
+        : m_result(result) {}
+
+    ~CleanseCheckBatchResult()
+    {
+        for (warden::CheckResult& check : m_result.checks)
+        {
+            warden::LuaResult* lua = std::get_if<warden::LuaResult>(&check);
+            if (lua && !lua->text.empty())
+                OPENSSL_cleanse(lua->text.data(), lua->text.size());
+        }
+    }
+
+private:
+    warden::CheckBatchResult& m_result;
+};
 }
 
 namespace warden
@@ -54,11 +74,12 @@ namespace warden
 WardenServer::WardenServer(ModuleProfile const& profile,
     WardenCryptoContext&& crypto, SendEncrypted send, WardenLimits limits,
     LifecycleObserver observer, EvidenceObserver evidenceObserver,
-    std::optional<MpqCheckProfile> mpqCheck)
+    std::optional<MpqCheckProfile> mpqCheck,
+    std::optional<LuaCheckProfile> luaCheck)
     : m_profile(profile), m_crypto(std::move(crypto)), m_send(std::move(send)),
       m_limits(limits), m_observer(std::move(observer)),
       m_evidenceObserver(std::move(evidenceObserver)),
-      m_planner(1000, std::move(mpqCheck))
+      m_planner(1000, std::move(mpqCheck), std::move(luaCheck))
 {
 }
 
@@ -393,6 +414,9 @@ void WardenServer::HandleCheckResult(ByteView plain)
     }
 
     CheckBatchResult result;
+    // Lua globals are addon-writable; cleanse their temporary returned text
+    // on every exit after decoding, including later classification failures.
+    CleanseCheckBatchResult const cleanseResult(result);
     DecodeStatus const status = DecodeCheckResult(plain, *m_pendingPlan, result);
     if (status == DecodeStatus::UnsupportedCommand)
     {
@@ -440,23 +464,50 @@ void WardenServer::HandleCheckResult(ByteView plain)
             continue;
         }
 
-        MpqCheckProfile const* profile =
-            std::get_if<MpqCheckProfile>(&planned);
-        MpqResult const* mpq = std::get_if<MpqResult>(&returned);
-        if (!profile || !mpq)
+        if (MpqCheckProfile const* profile =
+                std::get_if<MpqCheckProfile>(&planned))
+        {
+            MpqResult const* mpq = std::get_if<MpqResult>(&returned);
+            if (!mpq)
+            {
+                Fail(WardenFailure::MalformedPayload);
+                return;
+            }
+
+            MpqOutcome outcome = MpqOutcome::Unavailable;
+            if (mpq->status == MpqResultStatus::Success)
+            {
+                outcome = CRYPTO_memcmp(mpq->digest.data(),
+                    profile->expectedSha1.data(), mpq->digest.size()) == 0 ?
+                    MpqOutcome::Match : MpqOutcome::DigestMismatch;
+            }
+            evidence.emplace_back(MpqEvidence
+            {
+                m_pendingPlan->requestId,
+                profile->checkId,
+                outcome
+            });
+            continue;
+        }
+
+        LuaCheckProfile const* profile =
+            std::get_if<LuaCheckProfile>(&planned);
+        LuaResult const* lua = std::get_if<LuaResult>(&returned);
+        if (!profile || !lua)
         {
             Fail(WardenFailure::MalformedPayload);
             return;
         }
 
-        MpqOutcome outcome = MpqOutcome::Unavailable;
-        if (mpq->status == MpqResultStatus::Success)
+        // Returned script text is compared only inside this private boundary.
+        // Observers receive the catalogue identity and classification alone.
+        LuaOutcome outcome = LuaOutcome::Unavailable;
+        if (lua->status == LuaResultStatus::Success)
         {
-            outcome = CRYPTO_memcmp(mpq->digest.data(),
-                profile->expectedSha1.data(), mpq->digest.size()) == 0 ?
-                MpqOutcome::Match : MpqOutcome::DigestMismatch;
+            outcome = lua->text == profile->expectedText ? LuaOutcome::Match :
+                LuaOutcome::TextMismatch;
         }
-        evidence.emplace_back(MpqEvidence
+        evidence.emplace_back(LuaEvidence
         {
             m_pendingPlan->requestId,
             profile->checkId,

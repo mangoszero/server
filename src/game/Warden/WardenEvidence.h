@@ -73,7 +73,8 @@ struct LuaEvidence
     LuaOutcome outcome = LuaOutcome::Unavailable;
 };
 
-using WardenEvidence = std::variant<TimingEvidence, MpqEvidence>;
+using WardenEvidence =
+    std::variant<TimingEvidence, MpqEvidence, LuaEvidence>;
 
 // Fixed labels are safe for operator summaries and contain no client data.
 char const* ToString(TimingOutcome outcome);

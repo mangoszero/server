@@ -411,11 +411,9 @@ void WorldSession::OnAuthenticatedAdmission()
                         return;
                     }
 
-                    else
+                    else if constexpr (std::is_same_v<Evidence,
+                            warden::MpqEvidence>)
                     {
-                        static_assert(std::is_same_v<Evidence,
-                            warden::MpqEvidence>);
-
                         if (typedEvidence.outcome == warden::MpqOutcome::Match)
                         {
                             if (playerInWorld)
@@ -449,6 +447,47 @@ void WorldSession::OnAuthenticatedAdmission()
                             sLog.outError("Warden archive check %s for account %u "
                                 "(check %u; observation only).", result, accountId,
                                 typedEvidence.checkId);
+                        }
+                    }
+
+                    else
+                    {
+                        static_assert(std::is_same_v<Evidence,
+                            warden::LuaEvidence>);
+
+                        if (typedEvidence.outcome == warden::LuaOutcome::Match)
+                        {
+                            if (playerInWorld)
+                            {
+                                sLog.outString("Warden script check passed for "
+                                    "player %s (account %u; check %u).",
+                                    player->GetName(), accountId,
+                                    typedEvidence.checkId);
+                            }
+                            else
+                            {
+                                sLog.outString("Warden script check passed for "
+                                    "account %u (check %u).", accountId,
+                                    typedEvidence.checkId);
+                            }
+                            return;
+                        }
+
+                        char const* result = typedEvidence.outcome ==
+                            warden::LuaOutcome::Unavailable ? "unavailable" :
+                            "text mismatch";
+                        if (playerInWorld)
+                        {
+                            sLog.outError("Warden script check %s for player %s "
+                                "(account %u; check %u; observation only).",
+                                result, player->GetName(), accountId,
+                                typedEvidence.checkId);
+                        }
+                        else
+                        {
+                            sLog.outError("Warden script check %s for account "
+                                "%u (check %u; observation only).", result,
+                                accountId, typedEvidence.checkId);
                         }
                     }
                 }, evidence);

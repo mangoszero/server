@@ -63,7 +63,8 @@ public:
     WardenServer(ModuleProfile const& profile, WardenCryptoContext&& crypto,
         SendEncrypted send, WardenLimits limits = {},
         LifecycleObserver observer = {}, EvidenceObserver evidenceObserver = {},
-        std::optional<MpqCheckProfile> mpqCheck = std::nullopt);
+        std::optional<MpqCheckProfile> mpqCheck = std::nullopt,
+        std::optional<LuaCheckProfile> luaCheck = std::nullopt);
 
     // Idempotently emits MODULE_USE and begins the module-status deadline.
     bool Start();

@@ -53,8 +53,16 @@ std::unique_ptr<WardenServer> WardenManager::Create(uint32 build,
             CheckCatalogValidation::Valid)
         mpqCheck = *selected;
 
+    std::optional<LuaCheckProfile> luaCheck;
+    LuaCheckProfile const* selectedLua =
+        m_checkCatalog.FindLua(build, platform, locale);
+    if (selectedLua && m_checkCatalog.Validate(*selectedLua) ==
+            CheckCatalogValidation::Valid)
+        luaCheck = *selectedLua;
+
     return std::make_unique<WardenServer>(*profile, std::move(crypto),
         std::move(send), limits, std::move(observer),
-        std::move(evidenceObserver), std::move(mpqCheck));
+        std::move(evidenceObserver), std::move(mpqCheck),
+        std::move(luaCheck));
 }
 }

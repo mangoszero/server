@@ -87,6 +87,11 @@ warden::MpqCheckProfile TestMpqProfile()
     return profile;
 }
 
+warden::LuaCheckProfile TestLuaProfile()
+{
+    return {2, "OKAY", "Okay"};
+}
+
 bool Digest(EVP_MD const* algorithm, uint8 const* data, size_t size,
     uint8* output, size_t expectedSize)
 {
@@ -224,7 +229,8 @@ struct ManagerLocale
 struct Harness
 {
     explicit Harness(bool allowSend = true,
-        std::optional<warden::MpqCheckProfile> mpqCheck = std::nullopt)
+        std::optional<warden::MpqCheckProfile> mpqCheck = std::nullopt,
+        std::optional<warden::LuaCheckProfile> luaCheck = std::nullopt)
         : peer(TestSessionKey()), sendSucceeds(allowSend)
     {
         warden::WardenModuleCatalog catalog;
@@ -235,7 +241,8 @@ struct Harness
 
         server = std::make_unique<warden::WardenServer>(*profile,
             std::move(crypto), MakeSend(), warden::WardenLimits{},
-            MakeLifecycleObserver(), MakeEvidenceObserver(), mpqCheck);
+            MakeLifecycleObserver(), MakeEvidenceObserver(), mpqCheck,
+            luaCheck);
     }
 
     explicit Harness(ManagerLocale locale, bool allowSend = true)
@@ -381,6 +388,23 @@ bool StartTimingMpqCheck(Harness& harness)
     return harness.peer.DecryptServer(harness.sent.back()) == FromHex(
         "021B444246696C6573436C69656E745C41"
         "7265615461626C652E6462630028E7017F");
+}
+
+bool StartTimingMpqLuaCheck(Harness& harness)
+{
+    if (!ReachModuleReady(harness))
+        return false;
+
+    harness.server->Update(true, 1000);
+    if (harness.server->GetState() !=
+            warden::WardenState::AwaitingCheckResult ||
+        harness.sent.size() != 4)
+        return false;
+
+    return harness.peer.DecryptServer(harness.sent.back()) == FromHex(
+        "021B444246696C6573436C69656E745C41"
+        "7265615461626C652E646263044F4B4159"
+        "0028E701F4027F");
 }
 }
 
@@ -616,10 +640,10 @@ TEST(WardenManager_creation_is_inert_and_rejects_unsupported_profiles)
     CHECK_EQ(calls, 1u);
 }
 
-TEST(WardenManager_selects_mpq_only_for_the_exact_locale)
+TEST(WardenManager_selects_content_checks_only_for_the_exact_locale)
 {
     Harness enUS(ManagerLocale{"enUS"});
-    REQUIRE(StartTimingMpqCheck(enUS));
+    REQUIRE(StartTimingMpqLuaCheck(enUS));
 
     Harness frFR(ManagerLocale{"frFR"});
     REQUIRE(StartTimingCheck(frFR));
@@ -785,6 +809,81 @@ TEST(WardenServer_valid_mpq_negatives_are_observation_only)
     CHECK(std::get<warden::MpqEvidence>(
         bothNegative.evidenceEvents[1]).outcome ==
         warden::MpqOutcome::Unavailable);
+}
+
+TEST(WardenServer_combined_lua_match_is_classified_without_text_evidence)
+{
+    Harness harness(true, TestMpqProfile(), TestLuaProfile());
+    REQUIRE(StartTimingMpqLuaCheck(harness));
+
+    harness.SendClient(FromHex(
+        "022000376F4E370104030201007D88154D"
+        "3411811985F5D81177C5453248133443"
+        "00044F6B6179"));
+    CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
+    CHECK(harness.server->GetFailure() == warden::WardenFailure::None);
+    REQUIRE(harness.evidenceEvents.size() == 3u);
+    CHECK(std::holds_alternative<warden::TimingEvidence>(
+        harness.evidenceEvents[0]));
+    CHECK(std::holds_alternative<warden::MpqEvidence>(
+        harness.evidenceEvents[1]));
+    REQUIRE(std::holds_alternative<warden::LuaEvidence>(
+        harness.evidenceEvents[2]));
+    warden::LuaEvidence const& lua =
+        std::get<warden::LuaEvidence>(harness.evidenceEvents[2]);
+    CHECK_EQ(lua.requestId, uint32(1));
+    CHECK_EQ(lua.checkId, uint32(2));
+    CHECK(lua.outcome == warden::LuaOutcome::Match);
+
+    harness.SendClient(ModuleOk());
+    CHECK(harness.server->GetState() == warden::WardenState::Failed);
+    CHECK(harness.server->GetFailure() == warden::WardenFailure::Replay);
+    CHECK_EQ(harness.evidenceEvents.size(), 3u);
+}
+
+TEST(WardenServer_valid_lua_negatives_are_observation_only)
+{
+    Harness unavailable(true, TestMpqProfile(), TestLuaProfile());
+    REQUIRE(StartTimingMpqLuaCheck(unavailable));
+    unavailable.SendClient(FromHex(
+        "021B007362FCCC0104030201007D88154D"
+        "3411811985F5D81177C545324813344301"));
+    CHECK(unavailable.server->GetState() == warden::WardenState::ModuleReady);
+    CHECK(unavailable.server->GetFailure() == warden::WardenFailure::None);
+    REQUIRE(unavailable.evidenceEvents.size() == 3u);
+    REQUIRE(std::holds_alternative<warden::LuaEvidence>(
+        unavailable.evidenceEvents[2]));
+    CHECK(std::get<warden::LuaEvidence>(
+        unavailable.evidenceEvents[2]).outcome ==
+        warden::LuaOutcome::Unavailable);
+
+    Harness mismatch(true, TestMpqProfile(), TestLuaProfile());
+    REQUIRE(StartTimingMpqLuaCheck(mismatch));
+    mismatch.SendClient(FromHex(
+        "021F00D71749220104030201007D88154D"
+        "3411811985F5D81177C5453248133443"
+        "0003426164"));
+    CHECK(mismatch.server->GetState() == warden::WardenState::ModuleReady);
+    CHECK(mismatch.server->GetFailure() == warden::WardenFailure::None);
+    REQUIRE(mismatch.evidenceEvents.size() == 3u);
+    REQUIRE(std::holds_alternative<warden::LuaEvidence>(
+        mismatch.evidenceEvents[2]));
+    CHECK(std::get<warden::LuaEvidence>(mismatch.evidenceEvents[2]).outcome ==
+        warden::LuaOutcome::TextMismatch);
+}
+
+TEST(WardenServer_malformed_lua_result_publishes_no_partial_evidence)
+{
+    Harness harness(true, TestMpqProfile(), TestLuaProfile());
+    REQUIRE(StartTimingMpqLuaCheck(harness));
+
+    harness.SendClient(FromHex(
+        "021B00D41AA2F80104030201007D88154D"
+        "3411811985F5D81177C545324813344302"));
+    CHECK(harness.server->GetState() == warden::WardenState::Failed);
+    CHECK(harness.server->GetFailure() ==
+        warden::WardenFailure::MalformedPayload);
+    CHECK(harness.evidenceEvents.empty());
 }
 
 TEST(WardenServer_combined_malformed_result_publishes_no_partial_evidence)
