@@ -43,6 +43,7 @@ set(SRC_GRP_TESTS
     SessionProtocolPolicyTest.cpp
     WorldGatewayAccountTest.cpp
     WardenModuleCatalogTest.cpp
+    WardenCheckCatalogTest.cpp
     WardenCryptoContextTest.cpp
     WardenPacketCodecTest.cpp
     WardenCheckPlannerTest.cpp
@@ -71,6 +72,7 @@ set(SRC_GRP_TESTS
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenManager.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenModuleWin5875Data.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenModuleCatalog.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenCheckCatalog.cpp
     ByteBufferStressTest.cpp
     CryptoStressTest.cpp
     CodecStressTest.cpp
