@@ -432,7 +432,8 @@ bool StartTimingMpqLuaMemCheck(Harness& harness)
         "021B444246696C6573436C69656E745C41"
         "7265615461626C652E646263044F4B4159"
         "0028E701F4028C0000896100208C000662"
-        "7C000D7F");
+        "7C000D8C00504A4900058C00FCDF800004"
+        "7F");
 }
 
 bool StartTimingMemCheck(Harness& harness)
@@ -447,7 +448,8 @@ bool StartTimingMemCheck(Harness& harness)
         return false;
 
     return harness.peer.DecryptServer(harness.sent.back()) == FromHex(
-        "0200288C0000896100208C0006627C000D7F");
+        "0200288C0000896100208C0006627C000D"
+        "8C00504A4900058C00FCDF8000047F");
 }
 }
 
@@ -951,28 +953,26 @@ TEST(WardenServer_mem_results_are_identifier_only_and_ordered)
     REQUIRE(StartTimingMemCheck(harness));
 
     harness.SendClient(FromHex(
-        "023400E0F696B3010403020100558BEC8B51408B450C81E2FF7DA07550"
-        "8950108B450850E824DA1A005DC208000025FFFFDFFB0D00200000894640"));
+        "023F00833BDAFB010403020100558BEC8B51408B450C81E2FF7DA07550"
+        "8950108B450850E824DA1A005DC208000025FFFFDFFB0D00200000894640"
+        "00A1C0EACE0000BB8D243F"));
     CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
     CHECK(harness.server->GetFailure() == warden::WardenFailure::None);
-    REQUIRE(harness.evidenceEvents.size() == 3u);
+    REQUIRE(harness.evidenceEvents.size() == 5u);
     CHECK(std::holds_alternative<warden::TimingEvidence>(
         harness.evidenceEvents[0]));
-    REQUIRE(std::holds_alternative<warden::MemEvidence>(
-        harness.evidenceEvents[1]));
-    REQUIRE(std::holds_alternative<warden::MemEvidence>(
-        harness.evidenceEvents[2]));
-
-    warden::MemEvidence const& first =
-        std::get<warden::MemEvidence>(harness.evidenceEvents[1]);
-    warden::MemEvidence const& second =
-        std::get<warden::MemEvidence>(harness.evidenceEvents[2]);
-    CHECK_EQ(first.requestId, uint32(1));
-    CHECK_EQ(first.checkId, uint32(1107));
-    CHECK(first.outcome == warden::MemOutcome::Match);
-    CHECK_EQ(second.requestId, uint32(1));
-    CHECK_EQ(second.checkId, uint32(827));
-    CHECK(second.outcome == warden::MemOutcome::Match);
+    uint32 const expectedIds[] = {1107u, 827u, 1566u, 1135u};
+    for (size_t index = 0; index < 4u; ++index)
+    {
+        REQUIRE(std::holds_alternative<warden::MemEvidence>(
+            harness.evidenceEvents[index + 1u]));
+        warden::MemEvidence const& evidence =
+            std::get<warden::MemEvidence>(
+                harness.evidenceEvents[index + 1u]);
+        CHECK_EQ(evidence.requestId, uint32(1));
+        CHECK_EQ(evidence.checkId, expectedIds[index]);
+        CHECK(evidence.outcome == warden::MemOutcome::Match);
+    }
 }
 
 TEST(WardenServer_valid_mem_negatives_are_observation_only)
@@ -980,30 +980,35 @@ TEST(WardenServer_valid_mem_negatives_are_observation_only)
     Harness unavailable(true, std::nullopt, std::nullopt,
         TestMemProfiles());
     REQUIRE(StartTimingMemCheck(unavailable));
-    unavailable.SendClient(FromHex("020700B7F6E18801040302010101"));
+    unavailable.SendClient(FromHex("0209005848324D010403020101010101"));
     CHECK(unavailable.server->GetState() == warden::WardenState::ModuleReady);
     CHECK(unavailable.server->GetFailure() == warden::WardenFailure::None);
-    REQUIRE(unavailable.evidenceEvents.size() == 3u);
-    CHECK(std::get<warden::MemEvidence>(
-        unavailable.evidenceEvents[1]).outcome ==
-        warden::MemOutcome::Unavailable);
-    CHECK(std::get<warden::MemEvidence>(
-        unavailable.evidenceEvents[2]).outcome ==
-        warden::MemOutcome::Unavailable);
+    REQUIRE(unavailable.evidenceEvents.size() == 5u);
+    for (size_t index = 1; index < unavailable.evidenceEvents.size(); ++index)
+    {
+        CHECK(std::get<warden::MemEvidence>(
+            unavailable.evidenceEvents[index]).outcome ==
+            warden::MemOutcome::Unavailable);
+    }
 
     Harness mismatch(true, std::nullopt, std::nullopt, TestMemProfiles());
     REQUIRE(StartTimingMemCheck(mismatch));
     mismatch.SendClient(FromHex(
-        "0234009A448C650104030201000000000000000000000000000000000000"
-        "0000000000000000000000000000000025FFFFDFFB0D00200000894640"));
+        "023F009A7787510104030201000000000000000000000000000000000000"
+        "0000000000000000000000000000000025FFFFDFFB0D0020000089464000"
+        "A1C0EACE0000BB8D243F"));
     CHECK(mismatch.server->GetState() == warden::WardenState::ModuleReady);
     CHECK(mismatch.server->GetFailure() == warden::WardenFailure::None);
-    REQUIRE(mismatch.evidenceEvents.size() == 3u);
+    REQUIRE(mismatch.evidenceEvents.size() == 5u);
     CHECK(std::get<warden::MemEvidence>(
         mismatch.evidenceEvents[1]).outcome ==
         warden::MemOutcome::ByteMismatch);
-    CHECK(std::get<warden::MemEvidence>(
-        mismatch.evidenceEvents[2]).outcome == warden::MemOutcome::Match);
+    for (size_t index = 2; index < mismatch.evidenceEvents.size(); ++index)
+    {
+        CHECK(std::get<warden::MemEvidence>(
+            mismatch.evidenceEvents[index]).outcome ==
+            warden::MemOutcome::Match);
+    }
 }
 
 TEST(WardenServer_malformed_mem_result_publishes_no_partial_evidence)

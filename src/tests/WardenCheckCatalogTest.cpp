@@ -158,14 +158,14 @@ TEST(WardenCheckCatalog_enforces_lua_query_and_result_boundaries)
         warden::CheckCatalogValidation::Valid);
 }
 
-TEST(WardenCheckCatalog_selects_two_exact_mem_checks_per_supported_profile)
+TEST(WardenCheckCatalog_selects_four_exact_mem_checks_per_supported_profile)
 {
     warden::WardenCheckCatalog catalog;
 
     std::vector<warden::MemCheckProfile> const* checks5875 =
         catalog.FindMem(5875, "Win", "enUS");
     REQUIRE(checks5875 != nullptr);
-    REQUIRE(checks5875->size() == 2u);
+    REQUIRE(checks5875->size() == 4u);
     CHECK_EQ((*checks5875)[0].checkId, uint32(1107));
     CHECK((*checks5875)[0].moduleName.empty());
     CHECK_EQ((*checks5875)[0].addressOrRva, uint32(0x00618900));
@@ -177,26 +177,56 @@ TEST(WardenCheckCatalog_selects_two_exact_mem_checks_per_supported_profile)
     CHECK_HEX((*checks5875)[1].expectedBytes.data(),
         (*checks5875)[1].expectedBytes.size(),
         "25ffffdffb0d00200000894640");
+    CHECK_EQ((*checks5875)[2].checkId, uint32(1566));
+    CHECK((*checks5875)[2].moduleName.empty());
+    CHECK_EQ((*checks5875)[2].addressOrRva, uint32(0x00494A50));
+    CHECK_HEX((*checks5875)[2].expectedBytes.data(),
+        (*checks5875)[2].expectedBytes.size(), "a1c0eace00");
+    CHECK_EQ((*checks5875)[3].checkId, uint32(1135));
+    CHECK((*checks5875)[3].moduleName.empty());
+    CHECK_EQ((*checks5875)[3].addressOrRva, uint32(0x0080DFFC));
+    CHECK_HEX((*checks5875)[3].expectedBytes.data(),
+        (*checks5875)[3].expectedBytes.size(), "bb8d243f");
 
     std::vector<warden::MemCheckProfile> const* checks6005 =
         catalog.FindMem(6005, "Win", "enGB");
     REQUIRE(checks6005 != nullptr);
-    REQUIRE(checks6005->size() == 2u);
+    REQUIRE(checks6005->size() == 4u);
     CHECK_EQ((*checks6005)[0].addressOrRva, uint32(0x00618900));
     CHECK_HEX((*checks6005)[0].expectedBytes.data(),
         (*checks6005)[0].expectedBytes.size(),
         "558bec8b51408b450c81e2ff7da075508950108b450850e864da1a005dc20800");
     CHECK_EQ((*checks6005)[1].addressOrRva, uint32(0x007C6246));
+    CHECK_EQ((*checks6005)[2].checkId, uint32(1566));
+    CHECK((*checks6005)[2].moduleName.empty());
+    CHECK_EQ((*checks6005)[2].addressOrRva, uint32(0x00494A50));
+    CHECK_HEX((*checks6005)[2].expectedBytes.data(),
+        (*checks6005)[2].expectedBytes.size(), "a1c0eace00");
+    CHECK_EQ((*checks6005)[3].checkId, uint32(1135));
+    CHECK((*checks6005)[3].moduleName.empty());
+    CHECK_EQ((*checks6005)[3].addressOrRva, uint32(0x0080DFFC));
+    CHECK_HEX((*checks6005)[3].expectedBytes.data(),
+        (*checks6005)[3].expectedBytes.size(), "bb8d243f");
 
     std::vector<warden::MemCheckProfile> const* checks6141 =
         catalog.FindMem(6141, "Win", "zhCN");
     REQUIRE(checks6141 != nullptr);
-    REQUIRE(checks6141->size() == 2u);
+    REQUIRE(checks6141->size() == 4u);
     CHECK_EQ((*checks6141)[0].addressOrRva, uint32(0x0061ACA0));
     CHECK_HEX((*checks6141)[0].expectedBytes.data(),
         (*checks6141)[0].expectedBytes.size(),
         "558bec8b51408b450c81e2ff7da075508950108b450850e864eb1a005dc20800");
     CHECK_EQ((*checks6141)[1].addressOrRva, uint32(0x007C96E6));
+    CHECK_EQ((*checks6141)[2].checkId, uint32(1566));
+    CHECK((*checks6141)[2].moduleName.empty());
+    CHECK_EQ((*checks6141)[2].addressOrRva, uint32(0x00495840));
+    CHECK_HEX((*checks6141)[2].expectedBytes.data(),
+        (*checks6141)[2].expectedBytes.size(), "a1e031cf00");
+    CHECK_EQ((*checks6141)[3].checkId, uint32(1135));
+    CHECK((*checks6141)[3].moduleName.empty());
+    CHECK_EQ((*checks6141)[3].addressOrRva, uint32(0x008121BC));
+    CHECK_HEX((*checks6141)[3].expectedBytes.data(),
+        (*checks6141)[3].expectedBytes.size(), "bb8d243f");
 
     CHECK(catalog.FindMem(5875, "Win", "frFR") == nullptr);
     CHECK(catalog.FindMem(6005, "Win", "enUS") == nullptr);

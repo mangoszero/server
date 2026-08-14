@@ -136,9 +136,12 @@ warden::CheckPlan TimingMemPlan(uint32 build, std::string const& locale)
 
 warden::CheckPlan TimingSingleMemPlan()
 {
-    warden::CheckPlan plan = TimingMemPlan(5875, "enUS");
-    if (plan.checks.size() == 3u)
-        plan.checks.erase(plan.checks.begin() + 1);
+    static warden::WardenCheckCatalog const catalog;
+    std::vector<warden::MemCheckProfile> const* profiles =
+        catalog.FindMem(5875, "Win", "enUS");
+    warden::CheckPlan plan = TimingPlan();
+    if (profiles && profiles->size() > 1u)
+        plan.checks.emplace_back((*profiles)[1]);
     return plan;
 }
 
@@ -296,9 +299,12 @@ TEST(WardenPacket_encodes_exact_crossbuild_timing_and_mem_requests)
     };
     Vector const vectors[] =
     {
-        {5875, "enUS", "0200288c0000896100208c0006627c000d7f"},
-        {6005, "enGB", "0200288c0000896100208c0046627c000d7f"},
-        {6141, "zhCN", "0200288c00a0ac6100208c00e6967c000d7f"}
+        {5875, "enUS",
+            "0200288c0000896100208c0006627c000d8c00504a4900058c00fcdf8000047f"},
+        {6005, "enGB",
+            "0200288c0000896100208c0046627c000d8c00504a4900058c00fcdf8000047f"},
+        {6141, "zhCN",
+            "0200288c00a0ac6100208c00e6967c000d8c0040584900058c00bc218100047f"}
     };
 
     for (Vector const& vector : vectors)
@@ -445,14 +451,17 @@ TEST(WardenPacket_decodes_exact_crossbuild_mem_result_vectors)
     Vector const vectors[] =
     {
         {5875, "enUS",
-            "023400e0f696b3010403020100558bec8b51408b450c81e2ff7da07550"
-            "8950108b450850e824da1a005dc208000025ffffdffb0d00200000894640"},
+            "023f00833bdafb010403020100558bec8b51408b450c81e2ff7da07550"
+            "8950108b450850e824da1a005dc208000025ffffdffb0d00200000894640"
+            "00a1c0eace0000bb8d243f"},
         {6005, "enGB",
-            "023400abe72626010403020100558bec8b51408b450c81e2ff7da07550"
-            "8950108b450850e864da1a005dc208000025ffffdffb0d00200000894640"},
+            "023f0053b1b911010403020100558bec8b51408b450c81e2ff7da07550"
+            "8950108b450850e864da1a005dc208000025ffffdffb0d00200000894640"
+            "00a1c0eace0000bb8d243f"},
         {6141, "zhCN",
-            "02340081bf317f010403020100558bec8b51408b450c81e2ff7da07550"
-            "8950108b450850e864eb1a005dc208000025ffffdffb0d00200000894640"}
+            "023f0099e39fee010403020100558bec8b51408b450c81e2ff7da07550"
+            "8950108b450850e864eb1a005dc208000025ffffdffb0d00200000894640"
+            "00a1e031cf0000bb8d243f"}
     };
 
     for (Vector const& vector : vectors)
@@ -462,31 +471,32 @@ TEST(WardenPacket_decodes_exact_crossbuild_mem_result_vectors)
         REQUIRE(warden::DecodeCheckResult(View(response),
             TimingMemPlan(vector.build, vector.locale), result) ==
             warden::DecodeStatus::Ok);
-        REQUIRE(result.checks.size() == 3u);
-        REQUIRE(std::holds_alternative<warden::MemResult>(result.checks[1]));
-        REQUIRE(std::holds_alternative<warden::MemResult>(result.checks[2]));
-        warden::MemResult const& first =
-            std::get<warden::MemResult>(result.checks[1]);
-        warden::MemResult const& second =
-            std::get<warden::MemResult>(result.checks[2]);
-        CHECK(first.status == warden::MemResultStatus::Success);
-        CHECK(second.status == warden::MemResultStatus::Success);
-        CHECK_EQ(first.actualBytes.size(), size_t(32));
-        CHECK_EQ(second.actualBytes.size(), size_t(13));
+        REQUIRE(result.checks.size() == 5u);
+        size_t const expectedSizes[] = {32u, 13u, 5u, 4u};
+        for (size_t index = 0; index < 4u; ++index)
+        {
+            REQUIRE(std::holds_alternative<warden::MemResult>(
+                result.checks[index + 1u]));
+            warden::MemResult const& mem =
+                std::get<warden::MemResult>(result.checks[index + 1u]);
+            CHECK(mem.status == warden::MemResultStatus::Success);
+            CHECK_EQ(mem.actualBytes.size(), expectedSizes[index]);
+        }
     }
 
     warden::Bytes const unavailable =
-        FromHex("020700b7f6e18801040302010101");
+        FromHex("0209005848324d010403020101010101");
     warden::CheckBatchResult result;
     REQUIRE(warden::DecodeCheckResult(View(unavailable),
         TimingMemPlan(5875, "enUS"), result) == warden::DecodeStatus::Ok);
-    REQUIRE(result.checks.size() == 3u);
-    CHECK(std::get<warden::MemResult>(result.checks[1]).status ==
-        warden::MemResultStatus::Unavailable);
-    CHECK(std::get<warden::MemResult>(result.checks[1]).actualBytes.empty());
-    CHECK(std::get<warden::MemResult>(result.checks[2]).status ==
-        warden::MemResultStatus::Unavailable);
-    CHECK(std::get<warden::MemResult>(result.checks[2]).actualBytes.empty());
+    REQUIRE(result.checks.size() == 5u);
+    for (size_t index = 1; index < result.checks.size(); ++index)
+    {
+        warden::MemResult const& mem =
+            std::get<warden::MemResult>(result.checks[index]);
+        CHECK(mem.status == warden::MemResultStatus::Unavailable);
+        CHECK(mem.actualBytes.empty());
+    }
 }
 
 TEST(WardenPacket_rejects_malformed_mem_results_without_partial_output)

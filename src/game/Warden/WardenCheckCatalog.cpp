@@ -106,6 +106,19 @@ MemCatalogRecord const& Windows5875EnUsMemRecord()
                     0x25, 0xFF, 0xFF, 0xDF, 0xFB, 0x0D, 0x00,
                     0x20, 0x00, 0x00, 0x89, 0x46, 0x40
                 }
+            },
+            // The inherited 1566 window began at +7 and stayed unchanged
+            // under the source-backed early-return patch. Read the complete
+            // entry MOV instead.
+            {
+                1566, "", 0x00494A50,
+                {0xA1, 0xC0, 0xEA, 0xCE, 0x00}
+            },
+            // Zzuk names this exact wall-climb constant, but its mutation is
+            // disabled in the inspected source. It remains observation-only.
+            {
+                1135, "", 0x0080DFFC,
+                {0xBB, 0x8D, 0x24, 0x3F}
             }
         }
     };
@@ -135,6 +148,14 @@ MemCatalogRecord const& Windows6005EnGbMemRecord()
                     0x25, 0xFF, 0xFF, 0xDF, 0xFB, 0x0D, 0x00,
                     0x20, 0x00, 0x00, 0x89, 0x46, 0x40
                 }
+            },
+            {
+                1566, "", 0x00494A50,
+                {0xA1, 0xC0, 0xEA, 0xCE, 0x00}
+            },
+            {
+                1135, "", 0x0080DFFC,
+                {0xBB, 0x8D, 0x24, 0x3F}
             }
         }
     };
@@ -164,6 +185,14 @@ MemCatalogRecord const& Windows6141ZhCnMemRecord()
                     0x25, 0xFF, 0xFF, 0xDF, 0xFB, 0x0D, 0x00,
                     0x20, 0x00, 0x00, 0x89, 0x46, 0x40
                 }
+            },
+            {
+                1566, "", 0x00495840,
+                {0xA1, 0xE0, 0x31, 0xCF, 0x00}
+            },
+            {
+                1135, "", 0x008121BC,
+                {0xBB, 0x8D, 0x24, 0x3F}
             }
         }
     };
