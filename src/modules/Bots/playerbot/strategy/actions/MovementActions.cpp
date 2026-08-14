@@ -468,9 +468,24 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
         // while the group is fighting drops the bot's combat state -- shedding its threat
         // and letting whatever it was tanking pick a new target or evade. The flag keeps
         // the fix to what it is meant to be, a change of position and nothing else.
-        // Compare Map*, not map id. Two instances of the same dungeon share an id, so an id
-        // test calls them the same place and keeps the bot's own x and y -- which belong to
-        // the instance it is standing in, not the one the target is in.
+        // Two instances of one dungeon share a map id, and there is no teleport that crosses
+        // between them: Player::TeleportTo picks near over far by comparing ids alone, so
+        // asking to be moved to the target would put the bot at the target's coordinates
+        // inside its OWN instance -- a lateral jump to an unrelated spot, reported as a
+        // successful follow. Refuse instead. Nothing here can carry a bot across an instance
+        // boundary, and pretending otherwise is worse than admitting it.
+        //
+        // Deliberately not fixed in IsMovingAllowed, which makes the same id comparison: a
+        // bot ashore and a master on a deck hold genuinely different Map* while sharing an
+        // id, and tightening that test would refuse the transport follow this module relies
+        // on. The narrow case belongs here, where the teleport is.
+        if (bot->GetMapId() == target->GetMapId() && bot->GetMap() != target->GetMap())
+        {
+            return false;
+        }
+
+        // Compare Map*, not map id, for the coordinate choice: same id now guarantees the
+        // same instance, so this is simply "is the target somewhere else entirely".
         const bool differentMap = bot->GetMap() != target->GetMap();
         const float x = differentMap ? target->GetPositionX() : bot->GetPositionX();
         const float y = differentMap ? target->GetPositionY() : bot->GetPositionY();
