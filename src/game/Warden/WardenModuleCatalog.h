@@ -25,13 +25,54 @@
 
 #include "WardenProtocol.h"
 
+#include <array>
+#include <string>
+
 namespace warden
 {
 enum class ModuleValidation : uint8
 {
     Valid,
     WrongLength,
-    DigestMismatch
+    DigestMismatch,
+    InvalidInitialization
+};
+
+/** Build-specific host callbacks installed by command-3 archive record 1. */
+struct ArchiveInitializationProfile
+{
+    // These four one-byte ABI selectors precede the callback RVAs. For the
+    // delivered module, selectors[2] chooses the six-argument read ABI.
+    std::array<uint8, 4> selectors{};
+    uint32 openRva = 0;
+    uint32 sizeRva = 0;
+    uint32 readRva = 0;
+    uint32 closeRva = 0;
+};
+
+/** Build-specific FrameScript callback installed by command-3 record 2. */
+struct LuaInitializationProfile
+{
+    // The three-byte record prefix selects the module's Lua callback family.
+    std::array<uint8, 3> prefix{};
+    uint32 callbackRva = 0;
+    uint8 selector = 0;
+};
+
+/** Build-specific client clock callback installed by command-3 record 3. */
+struct TimingInitializationProfile
+{
+    // The three-byte record prefix selects the module's timing callback family.
+    std::array<uint8, 3> prefix{};
+    uint32 callbackRva = 0;
+    uint8 install = 0;
+};
+
+struct ModuleInitializationProfile
+{
+    ArchiveInitializationProfile archive;
+    LuaInitializationProfile lua;
+    TimingInitializationProfile timing;
 };
 
 struct ModuleProfile
@@ -48,6 +89,7 @@ struct ModuleProfile
     Digest20 clientKeySeedHash;    // Exact accepted 20-byte client response.
     Key16 clientKeySeed;           // Post-hash client-to-server RC4 key.
     Key16 serverKeySeed;           // Post-hash server-to-client RC4 key.
+    ModuleInitializationProfile initialization;
 };
 
 /** Selects and validates immutable, custody-pinned delivered modules. */

@@ -52,6 +52,33 @@ TEST(WardenCatalog_exact_module_identity_is_custody_pinned)
     CHECK(catalog.Validate(*profile) == warden::ModuleValidation::Valid);
 }
 
+TEST(WardenCatalog_exact_5875_initialization_callbacks_are_custody_pinned)
+{
+    warden::WardenModuleCatalog catalog;
+    warden::ModuleProfile const* profile = catalog.Find(5875, "Win");
+
+    REQUIRE(profile != nullptr);
+    CHECK_HEX(profile->initialization.archive.selectors.data(),
+        profile->initialization.archive.selectors.size(), "01000200");
+    CHECK_EQ(profile->initialization.archive.openRva, uint32(0x002477A0));
+    CHECK_EQ(profile->initialization.archive.sizeRva, uint32(0x002487F0));
+    CHECK_EQ(profile->initialization.archive.readRva, uint32(0x00248460));
+    CHECK_EQ(profile->initialization.archive.closeRva, uint32(0x00248730));
+    CHECK_HEX(profile->initialization.lua.prefix.data(),
+        profile->initialization.lua.prefix.size(), "040000");
+    CHECK_EQ(profile->initialization.lua.callbackRva, uint32(0x00303BF0));
+    CHECK_EQ(profile->initialization.lua.selector, uint8(0));
+    CHECK_HEX(profile->initialization.timing.prefix.data(),
+        profile->initialization.timing.prefix.size(), "010100");
+    CHECK_EQ(profile->initialization.timing.callbackRva, uint32(0x0002C010));
+    CHECK_EQ(profile->initialization.timing.install, uint8(1));
+
+    warden::ModuleProfile invalid = *profile;
+    invalid.initialization.archive.closeRva = 0;
+    CHECK(catalog.Validate(invalid) ==
+        warden::ModuleValidation::InvalidInitialization);
+}
+
 TEST(WardenCatalog_rejects_a_corrupted_module_copy)
 {
     warden::WardenModuleCatalog catalog;

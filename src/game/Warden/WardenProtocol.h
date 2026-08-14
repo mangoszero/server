@@ -64,6 +64,7 @@ enum class ServerCommand : uint8
     ModuleUse = 0,
     ModuleCache = 1,
     CheatChecksRequest = 2,
+    ModuleInitialize = 3,
     HashRequest = 5
 };
 

@@ -53,7 +53,8 @@ using EvidenceObserver = std::function<void(TimingEvidence const&)>;
  *
  * This class alone decrypts/decodes client bodies, advances directional
  * streams, bounds module transfer, owns waiting-state deadlines, and installs
- * post-hash keys, and owns one validated active timing check.
+ * post-hash keys. It sends the build-specific callback initialization before
+ * publishing ModuleReady and owns one validated active timing check.
  */
 class WardenServer
 {

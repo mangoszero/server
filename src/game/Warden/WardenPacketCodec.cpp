@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <utility>
 
 namespace
 {
@@ -75,6 +76,24 @@ void Append(warden::Bytes& bytes, Range const& range)
 {
     bytes.insert(bytes.end(), range.begin(), range.end());
 }
+
+bool AppendInitializationRecord(warden::Bytes& encoded,
+    warden::ByteView payload)
+{
+    if (!payload.data || !payload.size ||
+        payload.size > std::numeric_limits<uint16>::max())
+        return false;
+
+    uint32 checksum = 0;
+    if (!BuildChecksum(payload, checksum))
+        return false;
+
+    encoded.push_back(uint8(warden::ServerCommand::ModuleInitialize));
+    AppendUint16LE(encoded, uint16(payload.size));
+    AppendUint32LE(encoded, checksum);
+    encoded.insert(encoded.end(), payload.data, payload.data + payload.size);
+    return true;
+}
 }
 
 namespace warden
@@ -118,6 +137,52 @@ Bytes EncodeHashRequest(ModuleProfile const& profile)
     bytes.push_back(uint8(ServerCommand::HashRequest));
     Append(bytes, profile.hashSeed);
     return bytes;
+}
+
+EncodeStatus EncodeModuleInitialize(ModuleProfile const& profile, Bytes& output)
+{
+    ModuleInitializationProfile const& initialization = profile.initialization;
+    if (!initialization.archive.openRva || !initialization.archive.sizeRva ||
+        !initialization.archive.readRva || !initialization.archive.closeRva ||
+        !initialization.lua.callbackRva || !initialization.timing.callbackRva)
+        return EncodeStatus::InvalidProfile;
+
+    // Construct every payload before hashing it. This avoids the legacy bug,
+    // where checksums covered uninitialized bytes and the wrong record offset.
+    Bytes archivePayload;
+    archivePayload.reserve(20);
+    Append(archivePayload, initialization.archive.selectors);
+    AppendUint32LE(archivePayload, initialization.archive.openRva);
+    AppendUint32LE(archivePayload, initialization.archive.sizeRva);
+    AppendUint32LE(archivePayload, initialization.archive.readRva);
+    AppendUint32LE(archivePayload, initialization.archive.closeRva);
+
+    Bytes luaPayload;
+    luaPayload.reserve(8);
+    Append(luaPayload, initialization.lua.prefix);
+    AppendUint32LE(luaPayload, initialization.lua.callbackRva);
+    luaPayload.push_back(initialization.lua.selector);
+
+    Bytes timingPayload;
+    timingPayload.reserve(8);
+    Append(timingPayload, initialization.timing.prefix);
+    AppendUint32LE(timingPayload, initialization.timing.callbackRva);
+    timingPayload.push_back(initialization.timing.install);
+
+    // Build the complete body privately. Caller output changes only after all
+    // three folded SHA-1 checksums and record frames have succeeded.
+    Bytes encoded;
+    encoded.reserve(57);
+    if (!AppendInitializationRecord(encoded,
+            {archivePayload.data(), archivePayload.size()}) ||
+        !AppendInitializationRecord(encoded,
+            {luaPayload.data(), luaPayload.size()}) ||
+        !AppendInitializationRecord(encoded,
+            {timingPayload.data(), timingPayload.size()}))
+        return EncodeStatus::CryptoFailure;
+
+    output = std::move(encoded);
+    return EncodeStatus::Ok;
 }
 
 Bytes EncodeTimingCheck(ModuleProfile const& profile)

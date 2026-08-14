@@ -64,7 +64,26 @@ warden::ModuleProfile const ModuleWin5875 =
     {0x7F, 0x96, 0xEE, 0xFD, 0xA5, 0xB6, 0x3D, 0x20,
      0xA4, 0xDF, 0x8E, 0x00, 0xCB, 0xF4, 0x83, 0x04},
     {0xC2, 0xB7, 0xAD, 0xED, 0xFC, 0xCC, 0xA9, 0xC2,
-     0xBF, 0xB3, 0xF8, 0x56, 0x02, 0xBA, 0x80, 0x9B}
+     0xBF, 0xB3, 0xF8, 0x56, 0x02, 0xBA, 0x80, 0x9B},
+    {
+        {
+            {0x01, 0x00, 0x02, 0x00},
+            0x002477A0,
+            0x002487F0,
+            0x00248460,
+            0x00248730
+        },
+        {
+            {0x04, 0x00, 0x00},
+            0x00303BF0,
+            0x00
+        },
+        {
+            {0x01, 0x01, 0x00},
+            0x0002C010,
+            0x01
+        }
+    }
 };
 }
 
@@ -86,6 +105,12 @@ ModuleValidation WardenModuleCatalog::Validate(ModuleProfile const& profile) con
 {
     if (profile.module.size != WardenModuleWin5875Size)
         return ModuleValidation::WrongLength;
+
+    ModuleInitializationProfile const& initialization = profile.initialization;
+    if (!initialization.archive.openRva || !initialization.archive.sizeRva ||
+        !initialization.archive.readRva || !initialization.archive.closeRva ||
+        !initialization.lua.callbackRva || !initialization.timing.callbackRva)
+        return ModuleValidation::InvalidInitialization;
 
     ModuleId md5{};
     Digest32 sha256{};

@@ -255,6 +255,15 @@ warden::Bytes CorrectHash()
     return FromHex("04568C054C781A972A6037A2290C22B52571A06F4E");
 }
 
+warden::Bytes ExactModuleInitialization()
+{
+    return FromHex(
+        "031400693D8DD001000200A0772400F0872400"
+        "6084240030872400"
+        "030800F72DF4F0040000F03B300000"
+        "030800672F4D0A01010010C0020001");
+}
+
 bool StartAndReadModuleUse(Harness& harness)
 {
     if (!harness.server || !harness.server->Start() || harness.sent.size() != 1)
@@ -285,8 +294,13 @@ bool ReachModuleReady(Harness& harness)
     warden::Bytes encrypted = harness.peer.EncryptClient(CorrectHash());
     harness.peer.InstallModuleKeys();
     harness.server->HandleEncrypted({encrypted.data(), encrypted.size()});
-    return harness.server->GetState() == warden::WardenState::ModuleReady &&
-        harness.server->GetFailure() == warden::WardenFailure::None;
+    if (harness.server->GetState() != warden::WardenState::ModuleReady ||
+        harness.server->GetFailure() != warden::WardenFailure::None ||
+        harness.sent.size() != 3)
+        return false;
+
+    return harness.peer.DecryptServer(harness.sent[2]) ==
+        ExactModuleInitialization();
 }
 
 bool StartTimingCheck(Harness& harness)
@@ -297,7 +311,7 @@ bool StartTimingCheck(Harness& harness)
     harness.server->Update(true, 1000);
     if (harness.server->GetState() !=
             warden::WardenState::AwaitingCheckResult ||
-        harness.sent.size() != 3)
+        harness.sent.size() != 4)
         return false;
 
     return harness.peer.DecryptServer(harness.sent.back()) ==
@@ -309,7 +323,7 @@ TEST(WardenServer_cache_hit_reaches_module_ready)
 {
     Harness harness;
     REQUIRE(ReachModuleReady(harness));
-    CHECK_EQ(harness.sendCalls, 2u);
+    CHECK_EQ(harness.sendCalls, 3u);
     CHECK_EQ(harness.server->GetTransferCount(), uint8(0));
     REQUIRE(harness.events.size() == 1u);
     CHECK(harness.events[0].state == warden::WardenState::ModuleReady);
@@ -364,11 +378,39 @@ TEST(WardenServer_cache_miss_transfers_exact_custody_pinned_module_once)
     harness.peer.InstallModuleKeys();
     harness.server->HandleEncrypted({encrypted.data(), encrypted.size()});
     CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
+    REQUIRE(harness.sent.size() == 41u);
+    CHECK(harness.peer.DecryptServer(harness.sent.back()) ==
+        ExactModuleInitialization());
     CHECK_EQ(harness.server->GetTransferCount(), uint8(1));
     REQUIRE(harness.events.size() == 1u);
     CHECK(harness.events[0].state == warden::WardenState::ModuleReady);
     CHECK(harness.events[0].failure == warden::WardenFailure::None);
     CHECK_EQ(harness.events[0].transferCount, uint8(1));
+}
+
+TEST(WardenServer_initialization_send_failure_is_terminal_without_retry)
+{
+    Harness harness;
+    REQUIRE(ReachAwaitingHash(harness));
+
+    warden::Bytes encrypted = harness.peer.EncryptClient(CorrectHash());
+    harness.peer.InstallModuleKeys();
+    harness.sendSucceeds = false;
+    harness.server->HandleEncrypted({encrypted.data(), encrypted.size()});
+
+    CHECK(harness.server->GetState() == warden::WardenState::Failed);
+    CHECK(harness.server->GetFailure() == warden::WardenFailure::SendFailure);
+    CHECK_EQ(harness.sendCalls, 3u);
+    CHECK_EQ(harness.sent.size(), 2u);
+    REQUIRE(harness.events.size() == 1u);
+    CHECK(harness.events[0].state == warden::WardenState::Failed);
+    CHECK(harness.events[0].failure == warden::WardenFailure::SendFailure);
+
+    size_t const calls = harness.sendCalls;
+    harness.server->HandleEncrypted({encrypted.data(), encrypted.size()});
+    harness.server->Update(true, 30000);
+    CHECK_EQ(harness.sendCalls, calls);
+    CHECK_EQ(harness.events.size(), 1u);
 }
 
 TEST(WardenServer_second_module_missing_is_terminal_without_retransfer)
@@ -560,12 +602,12 @@ TEST(WardenServer_sends_one_timing_check_after_eligibility_and_reports_stable)
     harness.server->Update(false, 60000);
     harness.server->Update(true, 999);
     CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
-    CHECK_EQ(harness.sent.size(), 2u);
+    CHECK_EQ(harness.sent.size(), 3u);
 
     harness.server->Update(true, 1);
     REQUIRE(harness.server->GetState() ==
         warden::WardenState::AwaitingCheckResult);
-    REQUIRE(harness.sent.size() == 3u);
+    REQUIRE(harness.sent.size() == 4u);
     warden::Bytes const request = harness.peer.DecryptServer(harness.sent.back());
     CHECK_HEX(request.data(), request.size(), "0200287f");
 
@@ -578,7 +620,7 @@ TEST(WardenServer_sends_one_timing_check_after_eligibility_and_reports_stable)
     CHECK_EQ(harness.evidenceEvents[0].clientTick, uint32(0x12345678));
 
     harness.server->Update(true, 60000);
-    CHECK_EQ(harness.sent.size(), 3u);
+    CHECK_EQ(harness.sent.size(), 4u);
     CHECK_EQ(harness.evidenceEvents.size(), 1u);
 }
 

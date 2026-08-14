@@ -58,6 +58,47 @@ TEST(WardenPacket_encodes_exact_module_use_and_hash_request)
         "054d808d2c77d905c41a6380ec08586afe");
 }
 
+TEST(WardenPacket_encodes_exact_5875_module_initialization)
+{
+    warden::ModuleProfile const* profile = Windows5875Profile();
+    REQUIRE(profile != nullptr);
+
+    warden::Bytes initialization{0xA5};
+    REQUIRE(warden::EncodeModuleInitialize(*profile, initialization) ==
+        warden::EncodeStatus::Ok);
+    REQUIRE(initialization.size() == 57u);
+    CHECK_HEX(initialization.data(), initialization.size(),
+        "031400693d8dd001000200a0772400f0872400"
+        "6084240030872400"
+        "030800f72df4f0040000f03b300000"
+        "030800672f4d0a01010010c0020001");
+
+    CHECK_EQ(initialization[0], uint8(warden::ServerCommand::ModuleInitialize));
+    CHECK_HEX(initialization.data() + 1, 2, "1400");
+    CHECK_HEX(initialization.data() + 3, 4, "693d8dd0");
+    CHECK_EQ(initialization[27], uint8(warden::ServerCommand::ModuleInitialize));
+    CHECK_HEX(initialization.data() + 28, 2, "0800");
+    CHECK_HEX(initialization.data() + 30, 4, "f72df4f0");
+    CHECK_EQ(initialization[42], uint8(warden::ServerCommand::ModuleInitialize));
+    CHECK_HEX(initialization.data() + 43, 2, "0800");
+    CHECK_HEX(initialization.data() + 45, 4, "672f4d0a");
+}
+
+TEST(WardenPacket_invalid_initialization_does_not_replace_output)
+{
+    warden::ModuleProfile const* profile = Windows5875Profile();
+    REQUIRE(profile != nullptr);
+
+    warden::ModuleProfile invalid = *profile;
+    invalid.initialization.lua.callbackRva = 0;
+    warden::Bytes output{0xA5};
+
+    CHECK(warden::EncodeModuleInitialize(invalid, output) ==
+        warden::EncodeStatus::InvalidProfile);
+    REQUIRE(output.size() == 1u);
+    CHECK_EQ(output[0], uint8(0xA5));
+}
+
 TEST(WardenPacket_encodes_exact_timing_check_request)
 {
     warden::ModuleProfile const* profile = Windows5875Profile();

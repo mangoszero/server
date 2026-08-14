@@ -38,6 +38,13 @@ enum class DecodeStatus : uint8
     CryptoFailure
 };
 
+enum class EncodeStatus : uint8
+{
+    Ok,
+    InvalidProfile,
+    CryptoFailure
+};
+
 struct TimingResult
 {
     bool stable = false;
@@ -56,6 +63,9 @@ struct ClientMessage
 Bytes EncodeModuleUse(ModuleProfile const& profile);
 Bytes EncodeModuleCache(ByteView chunk);
 Bytes EncodeHashRequest(ModuleProfile const& profile);
+// Encodes all three adjacent command-3 records into one body. Output remains
+// unchanged if profile validation or folded SHA-1 construction fails.
+EncodeStatus EncodeModuleInitialize(ModuleProfile const& profile, Bytes& output);
 Bytes EncodeTimingCheck(ModuleProfile const& profile);
 
 // Accepts only the delivered module's exact command-2 timing result frame.

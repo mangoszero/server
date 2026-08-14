@@ -175,6 +175,7 @@ void WardenServer::HandleEncrypted(ByteView encryptedBody)
             return;
 
         case WardenState::AwaitingHash:
+        {
             if (message.command != ClientCommand::HashResult)
             {
                 Fail(WardenFailure::UnexpectedCommand);
@@ -193,10 +194,32 @@ void WardenServer::HandleEncrypted(ByteView encryptedBody)
                 Fail(WardenFailure::CryptoFailure);
                 return;
             }
+
+            // Command 3 is the first server body under the replacement stream.
+            // It installs the exact build-scoped archive, Lua, and timing host
+            // callbacks. The module sends no acknowledgement, so a successful
+            // transport handoff is the only transition into ModuleReady.
+            Bytes initialization;
+            EncodeStatus const encodeStatus =
+                EncodeModuleInitialize(m_profile, initialization);
+            if (encodeStatus == EncodeStatus::InvalidProfile)
+            {
+                Fail(WardenFailure::UnsupportedProfile);
+                return;
+            }
+            if (encodeStatus == EncodeStatus::CryptoFailure)
+            {
+                Fail(WardenFailure::CryptoFailure);
+                return;
+            }
+            if (!SendPlain(std::move(initialization)))
+                return;
+
             m_state = WardenState::ModuleReady;
             m_remainingMs = 0;
             NotifyTerminal();
             return;
+        }
 
         case WardenState::ModuleReady:
         case WardenState::AwaitingCheckResult:
