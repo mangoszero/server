@@ -38,12 +38,18 @@ enum class DecodeStatus : uint8
 struct ClientMessage
 {
     ClientCommand command = ClientCommand::ModuleMissing;
+    // Populated only for the exact 1 + 20-byte HASH_RESULT shape.
     Digest20 hash{};
 };
 
+// These functions encode/decode the plaintext inner Warden command. Transport
+// encryption and the outer SMSG/CMSG_WARDEN_DATA packet belong to other layers.
 Bytes EncodeModuleUse(ModuleProfile const& profile);
 Bytes EncodeModuleCache(ByteView chunk);
 Bytes EncodeHashRequest(ModuleProfile const& profile);
+
+// DecodeClient accepts only the four bootstrap commands and their exact sizes;
+// trailing bytes are malformed rather than silently ignored.
 DecodeStatus DecodeClient(ByteView body, ClientMessage& message);
 }
 

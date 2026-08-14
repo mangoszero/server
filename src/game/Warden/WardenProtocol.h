@@ -32,6 +32,8 @@
 
 namespace warden
 {
+// Warden transport values use fixed widths. In particular, the authenticated
+// login session key is always preserved as 40 bytes, including leading zeroes.
 using Bytes = std::vector<uint8>;
 using SessionKey = std::array<uint8, 40>;
 using ModuleId = std::array<uint8, 16>;
@@ -41,10 +43,13 @@ using Digest32 = std::array<uint8, 32>;
 
 struct ByteView
 {
+    // Non-owning view used at codec boundaries; size may be zero with null data.
     uint8 const* data = nullptr;
     size_t size = 0;
 };
 
+// Command identifiers live inside the encrypted SMSG/CMSG_WARDEN_DATA body;
+// they are not world opcodes.
 enum class ClientCommand : uint8
 {
     ModuleMissing = 0,
@@ -86,11 +91,18 @@ enum class WardenFailure : uint8
 
 struct WardenLimits
 {
+    // Each waiting state receives a new cumulative deadline. Update calls
+    // subtract from it; packet activity does not extend it.
     uint32 deadlineMs = 30000;
     uint16 chunkSize = 500;
     uint8 maxTransfers = 1;
 };
 
+/**
+ * Carries the authenticated bootstrap inputs from the network admission path
+ * to WorldSession. It is move-only so the raw session key has one owner and is
+ * cleansed when consumed, replaced, or destroyed.
+ */
 struct AdmissionData
 {
     AdmissionData() = default;
@@ -108,6 +120,8 @@ struct AdmissionData
     bool available = false;
 };
 
+// These fixed labels are safe for summaries; they never contain wire data or
+// cryptographic values.
 char const* ToString(WardenState state);
 char const* ToString(WardenFailure failure);
 }

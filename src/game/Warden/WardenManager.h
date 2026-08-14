@@ -29,14 +29,22 @@
 
 namespace warden
 {
+/**
+ * Stateless factory boundary between authenticated session inputs and the
+ * exact delivered-module profile. Creating a server is inert; Start owns the
+ * first wire write after WorldSession admission completes.
+ */
 class WardenManager
 {
 public:
     static WardenManager& Instance();
 
+    // Returns null for unsupported or custody-invalid profiles. The observer
+    // receives typed terminal facts only and may be omitted by tests/tools.
     std::unique_ptr<WardenServer> Create(uint32 build,
         std::string const& platform, SessionKey const& sessionKey,
-        SendEncrypted send, WardenLimits limits = {}) const;
+        SendEncrypted send, WardenLimits limits = {},
+        LifecycleObserver observer = {}) const;
 
 private:
     WardenModuleCatalog m_catalog;

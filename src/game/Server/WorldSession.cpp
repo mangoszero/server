@@ -313,6 +313,8 @@ void WorldSession::SendPendingAddonInfo()
 
 void WorldSession::OnAuthenticatedAdmission()
 {
+    // Admission is one-shot and runs only after AUTH_OK. Queued sessions retain
+    // no active Warden object and cannot emit module traffic early.
     if (m_wardenAdmissionHandled)
         return;
     m_wardenAdmissionHandled = true;
@@ -326,7 +328,10 @@ void WorldSession::OnAuthenticatedAdmission()
     warden::AdmissionData admission(std::move(*m_pendingWardenAdmission));
     m_pendingWardenAdmission.reset();
     uint32 const build = admission.build;
+    uint32 const accountId = GetAccountId();
 
+    // The send adapter owns only the outer world packet. WardenServer supplies
+    // an already encrypted, complete inner body and advances its own stream.
     std::unique_ptr<warden::WardenServer> server =
         warden::WardenManager::Instance().Create(build, admission.platform,
             admission.sessionKey, [this](warden::Bytes const& payload)
@@ -339,24 +344,41 @@ void WorldSession::OnAuthenticatedAdmission()
                     packet.append(payload.data(), payload.size());
                 SendPacket(&packet);
                 return m_link && !m_link->IsClosed();
+            }, {}, [accountId, build](warden::WardenLifecycleEvent const& event)
+            {
+                // ModuleReady precedes character selection, so account identity
+                // is the only truthful operator identity at this phase.
+                if (event.state == warden::WardenState::ModuleReady)
+                {
+                    sLog.outString("Warden initialized for account %u "
+                        "(build %u; module %s).", accountId, build,
+                        event.transferCount ? "transferred" : "cache hit");
+                }
+                else if (event.state == warden::WardenState::Failed)
+                {
+                    sLog.outError("Warden protocol failed for account %u "
+                        "(build %u): %s.", accountId, build,
+                        warden::ToString(event.failure));
+                }
             });
     admission.Clear();
 
     if (!server)
+    {
+        sLog.outError("Warden unavailable for account %u (build %u): "
+            "unsupported or invalid profile.", accountId, build);
         return;
+    }
 
     m_warden = std::move(server);
-    if (!m_warden->Start())
-    {
-        sLog.outError("Warden bootstrap failed for account %u build %u: "
-            "state=%s failure=%s", GetAccountId(), build,
-            warden::ToString(m_warden->GetState()),
-            warden::ToString(m_warden->GetFailure()));
-    }
+    // Create is deliberately inert; Start is the first Warden wire action.
+    m_warden->Start();
 }
 
 void WorldSession::UpdateWarden(uint32 diffMs)
 {
+    // World::UpdateSessions is the sole deadline owner. Map updates must never
+    // advance this clock a second time.
     if (m_warden)
         m_warden->Update(diffMs);
 }

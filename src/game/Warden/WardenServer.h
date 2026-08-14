@@ -30,16 +30,42 @@
 
 namespace warden
 {
+// SendEncrypted receives a complete encrypted inner Warden body. The session
+// adapter is responsible only for wrapping it in SMSG_WARDEN_DATA.
 using SendEncrypted = std::function<bool(Bytes const&)>;
 
+/** Secret-free terminal state supplied to the session observability adapter. */
+struct WardenLifecycleEvent
+{
+    WardenState state = WardenState::AwaitingModuleStatus;
+    WardenFailure failure = WardenFailure::None;
+    uint8 transferCount = 0;
+};
+
+using LifecycleObserver =
+    std::function<void(WardenLifecycleEvent const&)>;
+
+/**
+ * Per-session bootstrap state machine for the delivered Warden module.
+ *
+ * This class alone decrypts/decodes client bodies, advances directional
+ * streams, bounds module transfer, owns waiting-state deadlines, and installs
+ * post-hash keys. The current phase deliberately stops at ModuleReady.
+ */
 class WardenServer
 {
 public:
     WardenServer(ModuleProfile const& profile, WardenCryptoContext&& crypto,
-        SendEncrypted send, WardenLimits limits = {});
+        SendEncrypted send, WardenLimits limits = {},
+        LifecycleObserver observer = {});
 
+    // Idempotently emits MODULE_USE and begins the module-status deadline.
     bool Start();
+
+    // Accepts one complete encrypted CMSG_WARDEN_DATA body on the world thread.
     void HandleEncrypted(ByteView encryptedBody);
+
+    // Advances the cumulative deadline for the current waiting state.
     void Update(uint32 diffMs);
 
     WardenState GetState() const;
@@ -47,7 +73,10 @@ public:
     uint8 GetTransferCount() const;
 
 private:
+    // Failed is absorbing. ModuleReady may transition once to Replay failure if
+    // another bootstrap command arrives.
     void Fail(WardenFailure reason);
+    void NotifyTerminal();
     bool SendPlain(Bytes plain);
     void ResetDeadline();
     bool SendModuleTransfer();
@@ -57,6 +86,7 @@ private:
     WardenCryptoContext m_crypto;
     SendEncrypted m_send;
     WardenLimits m_limits;
+    LifecycleObserver m_observer;
     WardenState m_state = WardenState::AwaitingModuleStatus;
     WardenFailure m_failure = WardenFailure::None;
     uint32 m_remainingMs = 0;

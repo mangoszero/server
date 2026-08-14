@@ -216,6 +216,9 @@ struct Harness
                     return false;
                 sent.push_back(bytes);
                 return true;
+            }, {}, [this](warden::WardenLifecycleEvent const& event)
+            {
+                events.push_back(event);
             });
     }
 
@@ -229,6 +232,7 @@ struct Harness
     bool sendSucceeds = true;
     size_t sendCalls = 0;
     std::vector<warden::Bytes> sent;
+    std::vector<warden::WardenLifecycleEvent> events;
     std::unique_ptr<warden::WardenServer> server;
 };
 
@@ -288,6 +292,10 @@ TEST(WardenServer_cache_hit_reaches_module_ready)
     REQUIRE(ReachModuleReady(harness));
     CHECK_EQ(harness.sendCalls, 2u);
     CHECK_EQ(harness.server->GetTransferCount(), uint8(0));
+    REQUIRE(harness.events.size() == 1u);
+    CHECK(harness.events[0].state == warden::WardenState::ModuleReady);
+    CHECK(harness.events[0].failure == warden::WardenFailure::None);
+    CHECK_EQ(harness.events[0].transferCount, uint8(0));
 }
 
 TEST(WardenServer_cache_miss_transfers_exact_custody_pinned_module_once)
@@ -338,6 +346,10 @@ TEST(WardenServer_cache_miss_transfers_exact_custody_pinned_module_once)
     harness.server->HandleEncrypted({encrypted.data(), encrypted.size()});
     CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
     CHECK_EQ(harness.server->GetTransferCount(), uint8(1));
+    REQUIRE(harness.events.size() == 1u);
+    CHECK(harness.events[0].state == warden::WardenState::ModuleReady);
+    CHECK(harness.events[0].failure == warden::WardenFailure::None);
+    CHECK_EQ(harness.events[0].transferCount, uint8(1));
 }
 
 TEST(WardenServer_second_module_missing_is_terminal_without_retransfer)
@@ -393,20 +405,34 @@ TEST(WardenServer_replay_and_send_failure_are_terminal)
 {
     Harness ready;
     REQUIRE(ReachModuleReady(ready));
+    REQUIRE(ready.events.size() == 1u);
+    ready.server->Update(30000);
+    CHECK_EQ(ready.events.size(), 1u);
     size_t const readyCalls = ready.sendCalls;
     ready.SendClient(ModuleOk());
     CHECK(ready.server->GetFailure() == warden::WardenFailure::Replay);
     CHECK_EQ(ready.sendCalls, readyCalls);
+    REQUIRE(ready.events.size() == 2u);
+    CHECK(ready.events[1].state == warden::WardenState::Failed);
+    CHECK(ready.events[1].failure == warden::WardenFailure::Replay);
+    CHECK_EQ(ready.events[1].transferCount, uint8(0));
+    ready.SendClient(ModuleOk());
+    ready.server->Update(30000);
+    CHECK_EQ(ready.events.size(), 2u);
 
     Harness failedSend(false);
     REQUIRE(failedSend.server != nullptr);
     CHECK(!failedSend.server->Start());
     CHECK(failedSend.server->GetFailure() == warden::WardenFailure::SendFailure);
     CHECK_EQ(failedSend.sendCalls, 1u);
+    REQUIRE(failedSend.events.size() == 1u);
+    CHECK(failedSend.events[0].state == warden::WardenState::Failed);
+    CHECK(failedSend.events[0].failure == warden::WardenFailure::SendFailure);
     CHECK(!failedSend.server->Start());
     failedSend.server->HandleEncrypted({});
     failedSend.server->Update(30000);
     CHECK_EQ(failedSend.sendCalls, 1u);
+    CHECK_EQ(failedSend.events.size(), 1u);
 }
 
 TEST(WardenServer_deadlines_are_cumulative_in_each_waiting_state)

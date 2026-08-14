@@ -32,6 +32,7 @@ AdmissionData::AdmissionData(AdmissionData&& other) noexcept
     : build(other.build), platform(std::move(other.platform)),
       sessionKey(other.sessionKey), available(other.available)
 {
+    // Moving transfers the only usable copy and immediately cleanses the source.
     other.Clear();
 }
 
@@ -56,6 +57,8 @@ AdmissionData::~AdmissionData()
 
 void AdmissionData::Clear()
 {
+    // The raw key is explicitly cleansed; release ordinary platform metadata
+    // storage where the standard-library implementation permits.
     OPENSSL_cleanse(sessionKey.data(), sessionKey.size());
     platform.clear();
     platform.shrink_to_fit();

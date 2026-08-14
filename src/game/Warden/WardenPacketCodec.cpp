@@ -29,6 +29,8 @@ namespace
 {
 void AppendUint16LE(warden::Bytes& bytes, uint16 value)
 {
+    // Warden inner structures are explicitly little-endian and must not depend
+    // on the host compiler's struct layout or byte order.
     bytes.push_back(uint8(value));
     bytes.push_back(uint8(value >> 8));
 }
@@ -55,6 +57,7 @@ Bytes EncodeModuleUse(ModuleProfile const& profile)
     if (profile.module.size > std::numeric_limits<uint32>::max())
         return {};
 
+    // command(1) || module MD5(16) || module key(16) || compressed size(4).
     Bytes bytes;
     bytes.reserve(1 + profile.moduleId.size() + profile.moduleKey.size() + 4);
     bytes.push_back(uint8(ServerCommand::ModuleUse));
@@ -70,6 +73,8 @@ Bytes EncodeModuleCache(ByteView chunk)
         chunk.size > std::numeric_limits<uint16>::max())
         return {};
 
+    // Each transfer frame carries its own uint16 payload length; the final
+    // chunk may be shorter than the negotiated server-side chunk limit.
     Bytes bytes;
     bytes.reserve(3 + chunk.size);
     bytes.push_back(uint8(ServerCommand::ModuleCache));
@@ -80,6 +85,7 @@ Bytes EncodeModuleCache(ByteView chunk)
 
 Bytes EncodeHashRequest(ModuleProfile const& profile)
 {
+    // The delivered module consumes exactly a one-byte command and 16-byte seed.
     Bytes bytes;
     bytes.reserve(1 + profile.hashSeed.size());
     bytes.push_back(uint8(ServerCommand::HashRequest));
@@ -113,6 +119,7 @@ DecodeStatus DecodeClient(ByteView body, ClientMessage& message)
             return DecodeStatus::UnsupportedCommand;
     }
 
+    // Status commands are one byte. HASH_RESULT is command + SHA-1-sized body.
     size_t const expectedSize = command == ClientCommand::HashResult ? 21 : 1;
     if (body.size != expectedSize)
         return DecodeStatus::WrongSize;

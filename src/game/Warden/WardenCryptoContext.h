@@ -29,6 +29,11 @@
 
 namespace warden
 {
+/**
+ * Owns the two independent streaming RC4 directions for one Warden session.
+ * Login-key streams are derived from the exact raw-40 session key and are
+ * atomically replaced by the delivered module's keys after hash validation.
+ */
 class WardenCryptoContext
 {
 public:
@@ -39,10 +44,16 @@ public:
     WardenCryptoContext& operator=(WardenCryptoContext&& other) noexcept;
     ~WardenCryptoContext();
 
+    // Initializes both directions without retaining the login session key.
     bool Initialize(SessionKey const& sessionKey);
     bool IsInitialized() const;
+
+    // Transforms advance their directional stream across packet boundaries;
+    // callers must invoke the matching direction exactly once per body.
     bool TransformClientToServer(Bytes& bytes);
     bool TransformServerToClient(Bytes& bytes);
+
+    // Builds replacement states first, then swaps both directions together.
     bool InstallModuleKeys(Key16 const& clientKey, Key16 const& serverKey);
 
 private:
@@ -53,6 +64,7 @@ private:
         void Clear();
 
         std::array<uint8, 256> permutation{};
+        // PRGA indices are part of the stream state and must not reset per packet.
         uint8 i = 0;
         uint8 j = 0;
         bool initialized = false;

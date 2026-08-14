@@ -34,15 +34,18 @@ WardenManager& WardenManager::Instance()
 
 std::unique_ptr<WardenServer> WardenManager::Create(uint32 build,
     std::string const& platform, SessionKey const& sessionKey,
-    SendEncrypted send, WardenLimits limits) const
+    SendEncrypted send, WardenLimits limits,
+    LifecycleObserver observer) const
 {
     ModuleProfile const* profile = m_catalog.Find(build, platform);
     if (!profile || m_catalog.Validate(*profile) != ModuleValidation::Valid)
         return nullptr;
 
+    // Initialization derives private stream state; WardenServer does not retain
+    // the authenticated raw-40 key and Create emits no packet.
     WardenCryptoContext crypto;
     crypto.Initialize(sessionKey);
     return std::make_unique<WardenServer>(*profile, std::move(crypto),
-        std::move(send), limits);
+        std::move(send), limits, std::move(observer));
 }
 }

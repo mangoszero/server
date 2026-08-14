@@ -31,6 +31,8 @@
 
 namespace warden
 {
+// Generated immutable compressed/encrypted module bytes. Identity and length
+// are revalidated by WardenModuleCatalog before a session can use them.
 extern uint8 const WardenModuleWin5875Data[18756];
 extern size_t const WardenModuleWin5875Size;
 }

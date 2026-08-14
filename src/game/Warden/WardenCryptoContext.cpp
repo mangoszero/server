@@ -50,6 +50,8 @@ bool Sha1(uint8 const* data, size_t size, warden::Digest20& digest)
 bool DeriveInitialKeys(warden::SessionKey const& sessionKey,
     warden::Key16& clientKey, warden::Key16& serverKey)
 {
+    // This is the Classic client generator, not a generic KDF: SHA-1 each
+    // 20-byte half of K, then expand SHA1(left || previous || right) to 32 bytes.
     warden::Digest20 left{};
     warden::Digest20 right{};
     warden::Digest20 current{};
@@ -76,6 +78,8 @@ bool DeriveInitialKeys(warden::SessionKey const& sessionKey,
 
     if (success)
     {
+        // The first half encrypts client replies; the second encrypts server
+        // requests. Reversing them produces valid-looking but undecipherable RC4.
         std::copy(generated.begin(), generated.begin() + clientKey.size(),
             clientKey.begin());
         std::copy(generated.begin() + clientKey.size(), generated.end(),
@@ -97,6 +101,7 @@ WardenCryptoContext::WardenCryptoContext(WardenCryptoContext&& other) noexcept
     : m_clientToServer(other.m_clientToServer),
       m_serverToClient(other.m_serverToClient)
 {
+    // The moved-from object must not retain a second live copy of either stream.
     other.Clear();
 }
 
@@ -125,6 +130,8 @@ bool WardenCryptoContext::Initialize(SessionKey const& sessionKey)
     Rc4State clientState;
     Rc4State serverState;
 
+    // Commit only after both streams initialize, leaving the current context
+    // untouched if either derivation or setup fails.
     bool const success = DeriveInitialKeys(sessionKey, clientKey, serverKey) &&
         clientState.Initialize(clientKey) && serverState.Initialize(serverKey);
     if (success)
@@ -173,6 +180,7 @@ bool WardenCryptoContext::InstallModuleKeys(Key16 const& clientKey,
         return false;
     }
 
+    // Replace the directions as one operation only after both new states exist.
     m_clientToServer.Clear();
     m_serverToClient.Clear();
     m_clientToServer = clientState;
@@ -204,6 +212,8 @@ bool WardenCryptoContext::Rc4State::Transform(uint8* data, size_t size)
     if (!initialized || (size && !data))
         return false;
 
+    // RC4 is symmetric; direction is enforced by which persistent state owns
+    // this call rather than by separate encrypt/decrypt functions.
     for (size_t offset = 0; offset < size; ++offset)
     {
         i = uint8(i + 1);

@@ -36,22 +36,28 @@ enum class ModuleValidation : uint8
 
 struct ModuleProfile
 {
+    // Profiles are explicit build/platform contracts. Future check addresses
+    // must remain build scoped even when two builds can load the same module.
     uint32 build;
     char const* platform;
     ByteView module;
-    ModuleId moduleId;
-    Digest32 moduleSha256;
-    Key16 moduleKey;
-    Key16 hashSeed;
-    Digest20 clientKeySeedHash;
-    Key16 clientKeySeed;
-    Key16 serverKeySeed;
+    ModuleId moduleId;             // MD5 identity sent in MODULE_USE.
+    Digest32 moduleSha256;         // Server custody check; not sent on wire.
+    Key16 moduleKey;               // Client decryption key sent in MODULE_USE.
+    Key16 hashSeed;                // Challenge sent in HASH_REQUEST.
+    Digest20 clientKeySeedHash;    // Exact accepted 20-byte client response.
+    Key16 clientKeySeed;           // Post-hash client-to-server RC4 key.
+    Key16 serverKeySeed;           // Post-hash server-to-client RC4 key.
 };
 
+/** Selects and validates immutable, custody-pinned delivered modules. */
 class WardenModuleCatalog
 {
 public:
+    // Returns null rather than falling back across builds or platforms.
     ModuleProfile const* Find(uint32 build, std::string const& platform) const;
+
+    // Recomputes both the wire MD5 identity and server-only SHA-256 identity.
     ModuleValidation Validate(ModuleProfile const& profile) const;
 };
 }

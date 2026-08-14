@@ -29,6 +29,8 @@
 
 namespace
 {
+// Plaintext Warden bodies are short-lived but may contain challenge results or
+// module bytes. Clean every owned working buffer on every return path.
 class CleanseBytes
 {
 public:
@@ -48,9 +50,10 @@ private:
 namespace warden
 {
 WardenServer::WardenServer(ModuleProfile const& profile,
-    WardenCryptoContext&& crypto, SendEncrypted send, WardenLimits limits)
+    WardenCryptoContext&& crypto, SendEncrypted send, WardenLimits limits,
+    LifecycleObserver observer)
     : m_profile(profile), m_crypto(std::move(crypto)), m_send(std::move(send)),
-      m_limits(limits)
+      m_limits(limits), m_observer(std::move(observer))
 {
 }
 
@@ -68,6 +71,8 @@ bool WardenServer::Start()
         return false;
     }
 
+    // Start occurs only after AUTH_OK/session admission, preserving world
+    // packet ordering and keeping queued sessions completely inert.
     if (!SendPlain(EncodeModuleUse(m_profile)))
         return false;
 
@@ -96,6 +101,8 @@ void WardenServer::HandleEncrypted(ByteView encryptedBody)
         return;
     }
 
+    // Decrypt a private copy so the WorldPacket remains an opaque transport
+    // object and plaintext lifetime is bounded by this call.
     Bytes plain;
     if (encryptedBody.size)
         plain.assign(encryptedBody.data, encryptedBody.data + encryptedBody.size);
@@ -121,6 +128,8 @@ void WardenServer::HandleEncrypted(ByteView encryptedBody)
         return;
     }
 
+    // The same command value has different validity in each bootstrap state.
+    // Decode shape first, then enforce the state-specific transition table.
     switch (m_state)
     {
         case WardenState::AwaitingModuleStatus:
@@ -151,6 +160,7 @@ void WardenServer::HandleEncrypted(ByteView encryptedBody)
                 Fail(WardenFailure::UnexpectedCommand);
                 return;
             }
+            // Compare all 20 bytes before installing replacement stream keys.
             if (CRYPTO_memcmp(message.hash.data(),
                     m_profile.clientKeySeedHash.data(), message.hash.size()) != 0)
             {
@@ -165,6 +175,7 @@ void WardenServer::HandleEncrypted(ByteView encryptedBody)
             }
             m_state = WardenState::ModuleReady;
             m_remainingMs = 0;
+            NotifyTerminal();
             return;
 
         case WardenState::ModuleReady:
@@ -179,6 +190,8 @@ void WardenServer::Update(uint32 diffMs)
         m_state == WardenState::Failed)
         return;
 
+    // Many small updates cannot extend the deadline: elapsed world time is
+    // accumulated until the state either advances or expires.
     if (diffMs >= m_remainingMs)
     {
         m_remainingMs = 0;
@@ -210,10 +223,20 @@ void WardenServer::Fail(WardenFailure reason)
     m_failure = reason;
     m_state = WardenState::Failed;
     m_remainingMs = 0;
+    NotifyTerminal();
+}
+
+void WardenServer::NotifyTerminal()
+{
+    // The callback receives classifications only; protocol bytes and keys never
+    // cross this observability boundary.
+    if (m_observer)
+        m_observer({m_state, m_failure, m_transferCount});
 }
 
 bool WardenServer::SendPlain(Bytes plain)
 {
+    // Encrypt in place and cleanse the temporary regardless of callback result.
     CleanseBytes const cleanse(plain);
     if (plain.empty())
     {
@@ -240,6 +263,8 @@ void WardenServer::ResetDeadline()
 
 bool WardenServer::SendModuleTransfer()
 {
+    // One bounded transfer prevents a client from requesting an unbounded
+    // 18,756-byte amplification loop. A second miss is a digest/load failure.
     if (!m_limits.chunkSize || m_transferCount >= m_limits.maxTransfers)
     {
         Fail(WardenFailure::ModuleDigestMismatch);
@@ -264,6 +289,8 @@ bool WardenServer::SendModuleTransfer()
 
 bool WardenServer::SendHashRequest()
 {
+    // A successful response proves the delivered module's seed transform and
+    // authorizes the switch to its post-hash transport keys.
     if (!SendPlain(EncodeHashRequest(m_profile)))
         return false;
     m_state = WardenState::AwaitingHash;

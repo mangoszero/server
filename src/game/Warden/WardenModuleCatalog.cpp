@@ -43,6 +43,8 @@ bool Digest(warden::ByteView bytes, EVP_MD const* algorithm,
 
 warden::ModuleProfile const ModuleWin5875 =
 {
+    // Values below belong to this exact delivered module and its challenge
+    // path; they are not inferred from the WoW executable or Scan.dll.
     5875,
     "Win",
     {warden::WardenModuleWin5875Data, warden::WardenModuleWin5875Size},
@@ -71,6 +73,8 @@ namespace warden
 ModuleProfile const* WardenModuleCatalog::Find(uint32 build,
     std::string const& platform) const
 {
+    // Never wildcard 1.12.x: bootstrap compatibility does not make absolute
+    // memory checks or host callbacks interchangeable between client builds.
     if (build != ModuleWin5875.build || platform != ModuleWin5875.platform)
         return nullptr;
 
@@ -89,6 +93,8 @@ ModuleValidation WardenModuleCatalog::Validate(ModuleProfile const& profile) con
         !Digest(profile.module, EVP_sha256(), sha256))
         return ModuleValidation::DigestMismatch;
 
+    // Constant-time comparison avoids making either pinned identity observable
+    // through early-exit timing, even though the values are not secret.
     if (CRYPTO_memcmp(md5.data(), profile.moduleId.data(), md5.size()) != 0 ||
         CRYPTO_memcmp(sha256.data(), profile.moduleSha256.data(), sha256.size()) != 0)
         return ModuleValidation::DigestMismatch;
