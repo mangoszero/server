@@ -23,7 +23,11 @@
 #ifndef MANGOS_WARDEN_PACKET_CODEC_H
 #define MANGOS_WARDEN_PACKET_CODEC_H
 
+#include "WardenCheckPlanner.h"
 #include "WardenModuleCatalog.h"
+
+#include <variant>
+#include <vector>
 
 namespace warden
 {
@@ -42,6 +46,7 @@ enum class EncodeStatus : uint8
 {
     Ok,
     InvalidProfile,
+    InvalidPlan,
     CryptoFailure
 };
 
@@ -49,6 +54,25 @@ struct TimingResult
 {
     bool stable = false;
     uint32 clientTick = 0;
+};
+
+enum class MpqResultStatus : uint8
+{
+    Success = 0,
+    Unavailable = 1
+};
+
+struct MpqResult
+{
+    MpqResultStatus status = MpqResultStatus::Unavailable;
+    Digest20 digest{};
+};
+
+using CheckResult = std::variant<TimingResult, MpqResult>;
+
+struct CheckBatchResult
+{
+    std::vector<CheckResult> checks;
 };
 
 struct ClientMessage
@@ -66,8 +90,14 @@ Bytes EncodeHashRequest(ModuleProfile const& profile);
 // Encodes all three adjacent command-3 records into one body. Output remains
 // unchanged if profile validation or folded SHA-1 construction fails.
 EncodeStatus EncodeModuleInitialize(ModuleProfile const& profile, Bytes& output);
+// Builds a complete command-2 request privately; output changes only on Ok.
+EncodeStatus EncodeCheckRequest(ModuleProfile const& profile,
+    CheckPlan const& plan, Bytes& output);
 Bytes EncodeTimingCheck(ModuleProfile const& profile);
 
+// Parses exactly the pending ordered plan and publishes no partial result.
+DecodeStatus DecodeCheckResult(ByteView body, CheckPlan const& plan,
+    CheckBatchResult& result);
 // Accepts only the delivered module's exact command-2 timing result frame.
 // The encoded length and checksum cover the five-byte result body alone.
 DecodeStatus DecodeTimingResult(ByteView body, TimingResult& result);

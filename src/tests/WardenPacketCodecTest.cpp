@@ -22,11 +22,13 @@
 
 #include "TestHarness.h"
 
+#include "WardenCheckCatalog.h"
 #include "WardenModuleCatalog.h"
 #include "WardenPacketCodec.h"
 
 #include <algorithm>
 #include <limits>
+#include <variant>
 
 namespace
 {
@@ -39,6 +41,57 @@ warden::ModuleProfile const* Windows5875Profile()
 {
     static warden::WardenModuleCatalog const catalog;
     return catalog.Find(5875, "Win");
+}
+
+warden::MpqCheckProfile TestMpqProfile()
+{
+    warden::MpqCheckProfile profile;
+    profile.checkId = 1;
+    profile.path = "DBFilesClient\\AreaTable.dbc";
+    profile.expectedSha1 =
+    {
+        0x7D, 0x88, 0x15, 0x4D, 0x34, 0x11, 0x81, 0x19,
+        0x85, 0xF5, 0xD8, 0x11, 0x77, 0xC5, 0x45, 0x32,
+        0x48, 0x13, 0x34, 0x43
+    };
+    return profile;
+}
+
+warden::CheckPlan TimingPlan()
+{
+    warden::CheckPlan plan;
+    plan.requestId = 1;
+    plan.checks.emplace_back(warden::TimingCheck{});
+    return plan;
+}
+
+warden::CheckPlan TimingMpqPlan()
+{
+    warden::CheckPlan plan = TimingPlan();
+    plan.checks.emplace_back(TestMpqProfile());
+    return plan;
+}
+
+void CheckInvalidPlanLeavesOutput(warden::ModuleProfile const& profile,
+    warden::CheckPlan const& plan)
+{
+    warden::Bytes output{0xA5};
+    CHECK(warden::EncodeCheckRequest(profile, plan, output) ==
+        warden::EncodeStatus::InvalidPlan);
+    REQUIRE(output.size() == 1u);
+    CHECK_EQ(output[0], uint8(0xA5));
+}
+
+void CheckFailedDecodeLeavesOutput(warden::ByteView body,
+    warden::CheckPlan const& plan, warden::DecodeStatus expected)
+{
+    warden::CheckBatchResult output;
+    output.checks.emplace_back(warden::TimingResult{false, 0xA5A5A5A5});
+    CHECK(warden::DecodeCheckResult(body, plan, output) == expected);
+    REQUIRE(output.checks.size() == 1u);
+    REQUIRE(std::holds_alternative<warden::TimingResult>(output.checks[0]));
+    CHECK_EQ(std::get<warden::TimingResult>(output.checks[0]).clientTick,
+        uint32(0xA5A5A5A5));
 }
 }
 
@@ -99,77 +152,199 @@ TEST(WardenPacket_invalid_initialization_does_not_replace_output)
     CHECK_EQ(output[0], uint8(0xA5));
 }
 
-TEST(WardenPacket_encodes_exact_timing_check_request)
+TEST(WardenPacket_encodes_exact_timing_only_and_timing_mpq_requests)
 {
     warden::ModuleProfile const* profile = Windows5875Profile();
     REQUIRE(profile != nullptr);
 
-    warden::Bytes const request = warden::EncodeTimingCheck(*profile);
+    warden::Bytes request{0xA5};
+    REQUIRE(warden::EncodeCheckRequest(*profile, TimingPlan(), request) ==
+        warden::EncodeStatus::Ok);
     CHECK_HEX(request.data(), request.size(), "0200287f");
+
+    REQUIRE(warden::EncodeCheckRequest(*profile, TimingMpqPlan(), request) ==
+        warden::EncodeStatus::Ok);
+    REQUIRE(request.size() == 34u);
+    CHECK_HEX(request.data(), request.size(),
+        "021b444246696c6573436c69656e745c41"
+        "7265615461626c652e6462630028e7017f");
 }
 
-TEST(WardenPacket_decodes_exact_timing_result_vector)
+TEST(WardenPacket_rejects_invalid_check_plans_without_replacing_output)
+{
+    warden::ModuleProfile const* profile = Windows5875Profile();
+    REQUIRE(profile != nullptr);
+
+    warden::CheckPlan plan = TimingPlan();
+    plan.requestId = 0;
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = {};
+    plan.requestId = 1;
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan.checks.emplace_back(TestMpqProfile());
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingPlan();
+    plan.checks.emplace_back(warden::TimingCheck{});
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingMpqPlan();
+    plan.checks.emplace_back(TestMpqProfile());
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingMpqPlan();
+    std::get<warden::MpqCheckProfile>(plan.checks[1]).checkId = 0;
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingMpqPlan();
+    std::get<warden::MpqCheckProfile>(plan.checks[1]).path.clear();
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingMpqPlan();
+    std::get<warden::MpqCheckProfile>(plan.checks[1]).path.assign(
+        "DBFiles\0Client", 14);
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingMpqPlan();
+    std::get<warden::MpqCheckProfile>(plan.checks[1]).path.assign(256, 'A');
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+}
+
+TEST(WardenPacket_decodes_exact_timing_mpq_result_vectors_in_plan_order)
+{
+    warden::Bytes const success =
+    {
+        0x02, 0x1A, 0x00, 0x88, 0xBD, 0xFA, 0xEB,
+        0x01, 0x04, 0x03, 0x02, 0x01, 0x00, 0x7D, 0x88, 0x15,
+        0x4D, 0x34, 0x11, 0x81, 0x19, 0x85, 0xF5, 0xD8, 0x11,
+        0x77, 0xC5, 0x45, 0x32, 0x48, 0x13, 0x34, 0x43
+    };
+    warden::CheckBatchResult result;
+    REQUIRE(warden::DecodeCheckResult(View(success), TimingMpqPlan(), result) ==
+        warden::DecodeStatus::Ok);
+    REQUIRE(result.checks.size() == 2u);
+    REQUIRE(std::holds_alternative<warden::TimingResult>(result.checks[0]));
+    warden::TimingResult const& timing =
+        std::get<warden::TimingResult>(result.checks[0]);
+    CHECK(timing.stable);
+    CHECK_EQ(timing.clientTick, uint32(0x01020304));
+    REQUIRE(std::holds_alternative<warden::MpqResult>(result.checks[1]));
+    warden::MpqResult const& mpq =
+        std::get<warden::MpqResult>(result.checks[1]);
+    CHECK(mpq.status == warden::MpqResultStatus::Success);
+    CHECK_HEX(mpq.digest.data(), mpq.digest.size(),
+        "7d88154d3411811985f5d81177c5453248133443");
+
+    warden::Bytes const unavailable =
+    {
+        0x02, 0x06, 0x00, 0xC0, 0x6D, 0xA5, 0x67,
+        0x01, 0x04, 0x03, 0x02, 0x01, 0x01
+    };
+    REQUIRE(warden::DecodeCheckResult(View(unavailable), TimingMpqPlan(),
+        result) == warden::DecodeStatus::Ok);
+    REQUIRE(result.checks.size() == 2u);
+    REQUIRE(std::holds_alternative<warden::MpqResult>(result.checks[1]));
+    CHECK(std::get<warden::MpqResult>(result.checks[1]).status ==
+        warden::MpqResultStatus::Unavailable);
+
+    warden::Bytes const mismatch =
+    {
+        0x02, 0x1A, 0x00, 0x0F, 0x45, 0x48, 0x02,
+        0x01, 0x04, 0x03, 0x02, 0x01, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00
+    };
+    REQUIRE(warden::DecodeCheckResult(View(mismatch), TimingMpqPlan(),
+        result) == warden::DecodeStatus::Ok);
+    warden::MpqResult const& mismatchResult =
+        std::get<warden::MpqResult>(result.checks[1]);
+    CHECK(mismatchResult.status == warden::MpqResultStatus::Success);
+    CHECK(std::all_of(mismatchResult.digest.begin(), mismatchResult.digest.end(),
+        [](uint8 value) { return value == 0; }));
+}
+
+TEST(WardenPacket_decodes_the_existing_timing_only_result_vector)
 {
     warden::Bytes const response =
     {
         0x02, 0x05, 0x00, 0xA7, 0xD4, 0x3E,
         0x25, 0x01, 0x78, 0x56, 0x34, 0x12
     };
-
-    warden::TimingResult result;
-    CHECK(warden::DecodeTimingResult(View(response), result) ==
+    warden::CheckBatchResult result;
+    REQUIRE(warden::DecodeCheckResult(View(response), TimingPlan(), result) ==
         warden::DecodeStatus::Ok);
-    CHECK(result.stable);
-    CHECK_EQ(result.clientTick, uint32(0x12345678));
+    REQUIRE(result.checks.size() == 1u);
+    warden::TimingResult const& timing =
+        std::get<warden::TimingResult>(result.checks[0]);
+    CHECK(timing.stable);
+    CHECK_EQ(timing.clientTick, uint32(0x12345678));
 }
 
-TEST(WardenPacket_rejects_malformed_timing_result_frames)
+TEST(WardenPacket_rejects_malformed_check_results_without_partial_output)
 {
     warden::Bytes const valid =
     {
-        0x02, 0x05, 0x00, 0xA7, 0xD4, 0x3E,
-        0x25, 0x01, 0x78, 0x56, 0x34, 0x12
+        0x02, 0x1A, 0x00, 0x88, 0xBD, 0xFA, 0xEB,
+        0x01, 0x04, 0x03, 0x02, 0x01, 0x00, 0x7D, 0x88, 0x15,
+        0x4D, 0x34, 0x11, 0x81, 0x19, 0x85, 0xF5, 0xD8, 0x11,
+        0x77, 0xC5, 0x45, 0x32, 0x48, 0x13, 0x34, 0x43
     };
-    warden::TimingResult result;
+    warden::CheckPlan const plan = TimingMpqPlan();
 
-    CHECK(warden::DecodeTimingResult({}, result) ==
-        warden::DecodeStatus::Empty);
-    CHECK(warden::DecodeTimingResult({nullptr, valid.size()}, result) ==
+    CheckFailedDecodeLeavesOutput({}, plan, warden::DecodeStatus::Empty);
+    CheckFailedDecodeLeavesOutput({nullptr, valid.size()}, plan,
         warden::DecodeStatus::WrongSize);
 
     warden::Bytes malformed = valid;
-    malformed.pop_back();
-    CHECK(warden::DecodeTimingResult(View(malformed), result) ==
-        warden::DecodeStatus::WrongSize);
-    malformed = valid;
-    malformed.push_back(0);
-    CHECK(warden::DecodeTimingResult(View(malformed), result) ==
-        warden::DecodeStatus::WrongSize);
+    malformed[0] = uint8(warden::ClientCommand::HashResult);
+    CheckFailedDecodeLeavesOutput(View(malformed), plan,
+        warden::DecodeStatus::UnsupportedCommand);
 
     malformed = valid;
-    malformed[0] = uint8(warden::ClientCommand::HashResult);
-    CHECK(warden::DecodeTimingResult(View(malformed), result) ==
-        warden::DecodeStatus::UnsupportedCommand);
-    malformed = {uint8(warden::ClientCommand::ModuleOk)};
-    CHECK(warden::DecodeTimingResult(View(malformed), result) ==
-        warden::DecodeStatus::UnsupportedCommand);
-    malformed = valid;
-    malformed[1] = 4;
-    CHECK(warden::DecodeTimingResult(View(malformed), result) ==
+    malformed[1] = 0x19;
+    CheckFailedDecodeLeavesOutput(View(malformed), plan,
         warden::DecodeStatus::WrongSize);
+
     malformed = valid;
     malformed[3] ^= 1;
-    CHECK(warden::DecodeTimingResult(View(malformed), result) ==
+    CheckFailedDecodeLeavesOutput(View(malformed), plan,
         warden::DecodeStatus::ChecksumMismatch);
 
-    // This checksum is independently derived for body 02 78 56 34 12, so the
-    // decoder reaches the Boolean validation instead of failing the checksum.
-    warden::Bytes const nonBoolean =
+    malformed = valid;
+    malformed.push_back(0);
+    CheckFailedDecodeLeavesOutput(View(malformed), plan,
+        warden::DecodeStatus::WrongSize);
+
+    for (size_t size = 1; size < valid.size(); ++size)
     {
-        0x02, 0x05, 0x00, 0x24, 0x36, 0x22,
-        0x04, 0x02, 0x78, 0x56, 0x34, 0x12
+        warden::Bytes truncated(valid.begin(), valid.begin() + size);
+        warden::CheckBatchResult output;
+        output.checks.emplace_back(warden::TimingResult{false, 0xA5A5A5A5});
+        CHECK(warden::DecodeCheckResult(View(truncated), plan, output) !=
+            warden::DecodeStatus::Ok);
+        REQUIRE(output.checks.size() == 1u);
+        CHECK_EQ(std::get<warden::TimingResult>(output.checks[0]).clientTick,
+            uint32(0xA5A5A5A5));
+    }
+
+    // Checksums are independently derived so validation reaches each status.
+    warden::Bytes const invalidTimingStatus =
+    {
+        0x02, 0x06, 0x00, 0x53, 0x4D, 0x72, 0x53,
+        0x02, 0x04, 0x03, 0x02, 0x01, 0x01
     };
-    CHECK(warden::DecodeTimingResult(View(nonBoolean), result) ==
+    CheckFailedDecodeLeavesOutput(View(invalidTimingStatus), plan,
+        warden::DecodeStatus::InvalidValue);
+
+    warden::Bytes const invalidMpqStatus =
+    {
+        0x02, 0x06, 0x00, 0x8A, 0xFC, 0x74, 0xC1,
+        0x01, 0x04, 0x03, 0x02, 0x01, 0x02
+    };
+    CheckFailedDecodeLeavesOutput(View(invalidMpqStatus), plan,
         warden::DecodeStatus::InvalidValue);
 }
 

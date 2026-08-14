@@ -26,7 +26,10 @@
 
 #include <algorithm>
 #include <limits>
+#include <string>
 #include <utility>
+#include <variant>
+#include <vector>
 
 namespace
 {
@@ -93,6 +96,47 @@ bool AppendInitializationRecord(warden::Bytes& encoded,
     AppendUint32LE(encoded, checksum);
     encoded.insert(encoded.end(), payload.data, payload.data + payload.size);
     return true;
+}
+
+bool ValidateCheckPlan(warden::CheckPlan const& plan,
+    std::vector<std::string>& strings)
+{
+    if (!plan.requestId || plan.checks.empty() ||
+        !std::holds_alternative<warden::TimingCheck>(plan.checks.front()))
+        return false;
+
+    size_t timingCount = 0;
+    size_t mpqCount = 0;
+    size_t stringTableSize = 1; // Final zero-length string terminator.
+    for (warden::PlannedCheck const& check : plan.checks)
+    {
+        if (std::holds_alternative<warden::TimingCheck>(check))
+        {
+            if (++timingCount > 1)
+                return false;
+            continue;
+        }
+
+        warden::MpqCheckProfile const* mpq =
+            std::get_if<warden::MpqCheckProfile>(&check);
+        if (!mpq || ++mpqCount > 1 || !mpq->checkId || mpq->path.empty() ||
+            mpq->path.size() > std::numeric_limits<uint8>::max() ||
+            mpq->path.find('\0') != std::string::npos)
+            return false;
+
+        auto const existing = std::find(strings.begin(), strings.end(),
+            mpq->path);
+        if (existing != strings.end())
+            continue;
+
+        stringTableSize += 1 + mpq->path.size();
+        if (stringTableSize > 512 ||
+            strings.size() >= std::numeric_limits<uint8>::max())
+            return false;
+        strings.push_back(mpq->path);
+    }
+
+    return timingCount == 1;
 }
 }
 
@@ -185,6 +229,48 @@ EncodeStatus EncodeModuleInitialize(ModuleProfile const& profile, Bytes& output)
     return EncodeStatus::Ok;
 }
 
+EncodeStatus EncodeCheckRequest(ModuleProfile const& profile,
+    CheckPlan const& plan, Bytes& output)
+{
+    std::vector<std::string> strings;
+    if (!ValidateCheckPlan(plan, strings))
+        return EncodeStatus::InvalidPlan;
+
+    uint8 const xorByte = profile.clientKeySeed[0];
+    Bytes encoded;
+    encoded.push_back(uint8(ServerCommand::CheatChecksRequest));
+    for (std::string const& value : strings)
+    {
+        encoded.push_back(uint8(value.size()));
+        encoded.insert(encoded.end(), value.begin(), value.end());
+    }
+    encoded.push_back(0);
+
+    for (PlannedCheck const& check : plan.checks)
+    {
+        if (std::holds_alternative<TimingCheck>(check))
+        {
+            encoded.push_back(uint8(0x57 ^ xorByte));
+            continue;
+        }
+
+        MpqCheckProfile const& mpq = std::get<MpqCheckProfile>(check);
+        auto const found = std::find(strings.begin(), strings.end(), mpq.path);
+        if (found == strings.end())
+            return EncodeStatus::InvalidPlan;
+        size_t const index = size_t(found - strings.begin()) + 1;
+        if (index > std::numeric_limits<uint8>::max())
+            return EncodeStatus::InvalidPlan;
+
+        encoded.push_back(uint8(0x98 ^ xorByte));
+        encoded.push_back(uint8(index));
+    }
+    encoded.push_back(xorByte);
+
+    output = std::move(encoded);
+    return EncodeStatus::Ok;
+}
+
 Bytes EncodeTimingCheck(ModuleProfile const& profile)
 {
     // Command 2 begins with a terminated string table. Each following check
@@ -228,6 +314,82 @@ DecodeStatus DecodeTimingResult(ByteView body, TimingResult& result)
     decoded.stable = resultBody.data[0] != 0;
     decoded.clientTick = ReadUint32LE(resultBody.data + 1);
     result = decoded;
+    return DecodeStatus::Ok;
+}
+
+DecodeStatus DecodeCheckResult(ByteView body, CheckPlan const& plan,
+    CheckBatchResult& result)
+{
+    if (!body.size)
+        return DecodeStatus::Empty;
+    if (!body.data)
+        return DecodeStatus::WrongSize;
+    if (body.data[0] != uint8(ClientCommand::CheckResult))
+        return DecodeStatus::UnsupportedCommand;
+    if (body.size < 7)
+        return DecodeStatus::WrongSize;
+
+    uint16 const resultLength = ReadUint16LE(body.data + 1);
+    if (body.size != size_t(7) + resultLength)
+        return DecodeStatus::WrongSize;
+
+    ByteView const resultBody{body.data + 7, resultLength};
+    uint32 calculatedChecksum = 0;
+    if (!BuildChecksum(resultBody, calculatedChecksum))
+        return DecodeStatus::CryptoFailure;
+    if (ReadUint32LE(body.data + 3) != calculatedChecksum)
+        return DecodeStatus::ChecksumMismatch;
+
+    std::vector<std::string> strings;
+    if (!ValidateCheckPlan(plan, strings))
+        return DecodeStatus::InvalidValue;
+
+    CheckBatchResult decoded;
+    decoded.checks.reserve(plan.checks.size());
+    size_t offset = 0;
+    for (PlannedCheck const& check : plan.checks)
+    {
+        if (std::holds_alternative<TimingCheck>(check))
+        {
+            if (resultLength - offset < 5)
+                return DecodeStatus::WrongSize;
+            uint8 const status = resultBody.data[offset];
+            if (status > 1)
+                return DecodeStatus::InvalidValue;
+
+            decoded.checks.emplace_back(TimingResult
+            {
+                status != 0,
+                ReadUint32LE(resultBody.data + offset + 1)
+            });
+            offset += 5;
+            continue;
+        }
+
+        if (resultLength - offset < 1)
+            return DecodeStatus::WrongSize;
+        uint8 const status = resultBody.data[offset++];
+        if (status > uint8(MpqResultStatus::Unavailable))
+            return DecodeStatus::InvalidValue;
+
+        MpqResult mpq;
+        mpq.status = MpqResultStatus(status);
+        if (mpq.status == MpqResultStatus::Success)
+        {
+            if (resultLength - offset < mpq.digest.size())
+                return DecodeStatus::WrongSize;
+            std::copy(resultBody.data + offset,
+                resultBody.data + offset + mpq.digest.size(),
+                mpq.digest.begin());
+            offset += mpq.digest.size();
+        }
+        decoded.checks.emplace_back(mpq);
+    }
+
+    if (offset != resultLength)
+        return DecodeStatus::WrongSize;
+
+    result = std::move(decoded);
     return DecodeStatus::Ok;
 }
 
