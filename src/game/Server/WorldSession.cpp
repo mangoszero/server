@@ -176,7 +176,8 @@ WorldSession::WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
     m_wardenAdmissionHandled(false),
     _security(sec), _accountId(id), _logoutTime(0),
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
-    m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
+    m_clientLocale(locale), m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)),
+    m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
     m_latency(0), m_clientTimeDelay(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_npcWatchLastGuid(),
     m_pingTracker()
 {
@@ -336,7 +337,7 @@ void WorldSession::OnAuthenticatedAdmission()
     // an already encrypted, complete inner body and advances its own stream.
     std::unique_ptr<warden::WardenServer> server =
         warden::WardenManager::Instance().Create(build, admission.platform,
-            localeNames[GetSessionDbcLocale()], admission.sessionKey,
+            localeNames[GetClientLocale()], admission.sessionKey,
             [this](warden::Bytes const& payload)
             {
                 if (!m_link || m_link->IsClosed())

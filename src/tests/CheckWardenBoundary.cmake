@@ -94,6 +94,12 @@ require_count("${SESSION_CPP}" "WardenEvidence const&" 1
     "session adapter must consume typed Warden evidence exactly once")
 require_count("${SESSION_CPP}" "std::visit[ \\t]*\\(" 1
     "session adapter must dispatch typed Warden evidence exactly once")
+require_count("${SESSION_CPP}"
+    "m_clientLocale[ \\t]*\\([ \\t]*locale[ \\t]*\\)" 1
+    "session must preserve the unfallbacked client locale exactly once")
+require_count("${SESSION_CPP}"
+    "localeNames\\[GetClientLocale[ \\t]*\\([ \\t]*\\)[ \\t]*\\]" 1
+    "Warden profile selection must use the unfallbacked client locale")
 require_count("${SESSION_CPP}" "Warden healthy for player %s" 1
     "stable evidence must have one normal operator health message")
 if(NOT SESSION_CPP MATCHES "GetPlayer[ \\t]*\\([ \\t]*\\)" OR

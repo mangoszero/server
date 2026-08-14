@@ -492,6 +492,12 @@ class WorldSession
         time_t m_muteTime;
 
         // Locales
+        // Locale reported during realm authentication, before any fallback to
+        // the DBC locales installed on this server.
+        LocaleConstant GetClientLocale() const
+        {
+            return m_clientLocale;
+        }
         LocaleConstant GetSessionDbcLocale() const
         {
             return m_sessionDbcLocale;
@@ -937,6 +943,7 @@ class WorldSession
         bool m_playerLogout;                                // code processed in LogoutPlayer
         bool m_playerRecentlyLogout;
         bool m_playerSave;                                  // code processed in LogoutPlayer with save request
+        LocaleConstant m_clientLocale;
         LocaleConstant m_sessionDbcLocale;
         int m_sessionDbLocaleIndex;
         uint32 m_latency;
