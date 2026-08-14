@@ -107,7 +107,23 @@ bool ValidateCheckPlan(warden::CheckPlan const& plan,
 
     size_t timingCount = 0;
     size_t mpqCount = 0;
+    size_t luaCount = 0;
     size_t stringTableSize = 1; // Final zero-length string terminator.
+
+    auto addString = [&](std::string const& value)
+    {
+        auto const existing = std::find(strings.begin(), strings.end(), value);
+        if (existing != strings.end())
+            return true;
+
+        stringTableSize += 1 + value.size();
+        if (stringTableSize > 512 ||
+            strings.size() >= std::numeric_limits<uint8>::max())
+            return false;
+        strings.push_back(value);
+        return true;
+    };
+
     for (warden::PlannedCheck const& check : plan.checks)
     {
         if (std::holds_alternative<warden::TimingCheck>(check))
@@ -117,23 +133,26 @@ bool ValidateCheckPlan(warden::CheckPlan const& plan,
             continue;
         }
 
-        warden::MpqCheckProfile const* mpq =
-            std::get_if<warden::MpqCheckProfile>(&check);
-        if (!mpq || ++mpqCount > 1 || !mpq->checkId || mpq->path.empty() ||
-            mpq->path.size() > std::numeric_limits<uint8>::max() ||
-            mpq->path.find('\0') != std::string::npos)
-            return false;
-
-        auto const existing = std::find(strings.begin(), strings.end(),
-            mpq->path);
-        if (existing != strings.end())
+        if (warden::MpqCheckProfile const* mpq =
+                std::get_if<warden::MpqCheckProfile>(&check))
+        {
+            if (++mpqCount > 1 || !mpq->checkId || mpq->path.empty() ||
+                mpq->path.size() > std::numeric_limits<uint8>::max() ||
+                mpq->path.find('\0') != std::string::npos ||
+                !addString(mpq->path))
+                return false;
             continue;
+        }
 
-        stringTableSize += 1 + mpq->path.size();
-        if (stringTableSize > 512 ||
-            strings.size() >= std::numeric_limits<uint8>::max())
+        warden::LuaCheckProfile const* lua =
+            std::get_if<warden::LuaCheckProfile>(&check);
+        if (!lua || ++luaCount > 1 || !lua->checkId || lua->query.empty() ||
+            lua->query.size() > std::numeric_limits<uint8>::max() ||
+            lua->query.find('\0') != std::string::npos ||
+            lua->expectedText.size() > 64 ||
+            lua->expectedText.find('\0') != std::string::npos ||
+            !addString(lua->query))
             return false;
-        strings.push_back(mpq->path);
     }
 
     return timingCount == 1;
@@ -254,15 +273,31 @@ EncodeStatus EncodeCheckRequest(ModuleProfile const& profile,
             continue;
         }
 
-        MpqCheckProfile const& mpq = std::get<MpqCheckProfile>(check);
-        auto const found = std::find(strings.begin(), strings.end(), mpq.path);
+        std::string const* value = nullptr;
+        uint8 decodedType = 0;
+        if (MpqCheckProfile const* mpq =
+                std::get_if<MpqCheckProfile>(&check))
+        {
+            value = &mpq->path;
+            decodedType = 0x98;
+        }
+        else if (LuaCheckProfile const* lua =
+                     std::get_if<LuaCheckProfile>(&check))
+        {
+            value = &lua->query;
+            decodedType = 0x8B;
+        }
+        else
+            return EncodeStatus::InvalidPlan;
+
+        auto const found = std::find(strings.begin(), strings.end(), *value);
         if (found == strings.end())
             return EncodeStatus::InvalidPlan;
         size_t const index = size_t(found - strings.begin()) + 1;
         if (index > std::numeric_limits<uint8>::max())
             return EncodeStatus::InvalidPlan;
 
-        encoded.push_back(uint8(0x98 ^ xorByte));
+        encoded.push_back(uint8(decodedType ^ xorByte));
         encoded.push_back(uint8(index));
     }
     encoded.push_back(xorByte);
@@ -320,24 +355,53 @@ DecodeStatus DecodeCheckResult(ByteView body, CheckPlan const& plan,
             continue;
         }
 
-        if (resultLength - offset < 1)
+        if (std::holds_alternative<MpqCheckProfile>(check))
+        {
+            if (resultLength - offset < 1)
+                return DecodeStatus::WrongSize;
+            uint8 const status = resultBody.data[offset++];
+            if (status > uint8(MpqResultStatus::Unavailable))
+                return DecodeStatus::InvalidValue;
+
+            MpqResult mpq;
+            mpq.status = MpqResultStatus(status);
+            if (mpq.status == MpqResultStatus::Success)
+            {
+                if (resultLength - offset < mpq.digest.size())
+                    return DecodeStatus::WrongSize;
+                std::copy(resultBody.data + offset,
+                    resultBody.data + offset + mpq.digest.size(),
+                    mpq.digest.begin());
+                offset += mpq.digest.size();
+            }
+            decoded.checks.emplace_back(mpq);
+            continue;
+        }
+
+        if (!std::holds_alternative<LuaCheckProfile>(check) ||
+            resultLength - offset < 1)
             return DecodeStatus::WrongSize;
         uint8 const status = resultBody.data[offset++];
-        if (status > uint8(MpqResultStatus::Unavailable))
+        if (status > uint8(LuaResultStatus::Unavailable))
             return DecodeStatus::InvalidValue;
 
-        MpqResult mpq;
-        mpq.status = MpqResultStatus(status);
-        if (mpq.status == MpqResultStatus::Success)
+        LuaResult lua;
+        lua.status = LuaResultStatus(status);
+        if (lua.status == LuaResultStatus::Success)
         {
-            if (resultLength - offset < mpq.digest.size())
+            if (resultLength - offset < 1)
                 return DecodeStatus::WrongSize;
-            std::copy(resultBody.data + offset,
-                resultBody.data + offset + mpq.digest.size(),
-                mpq.digest.begin());
-            offset += mpq.digest.size();
+            uint8 const textLength = resultBody.data[offset++];
+            if (textLength > 64)
+                return DecodeStatus::InvalidValue;
+            if (resultLength - offset < textLength)
+                return DecodeStatus::WrongSize;
+            lua.text.assign(
+                reinterpret_cast<char const*>(resultBody.data + offset),
+                textLength);
+            offset += textLength;
         }
-        decoded.checks.emplace_back(mpq);
+        decoded.checks.emplace_back(std::move(lua));
     }
 
     if (offset != resultLength)

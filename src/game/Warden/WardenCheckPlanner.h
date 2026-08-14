@@ -35,7 +35,8 @@ struct TimingCheck
 {
 };
 
-using PlannedCheck = std::variant<TimingCheck, MpqCheckProfile>;
+using PlannedCheck =
+    std::variant<TimingCheck, MpqCheckProfile, LuaCheckProfile>;
 
 struct CheckPlan
 {
@@ -45,14 +46,15 @@ struct CheckPlan
 
 /**
  * Owns eligibility timing and one-shot selection without transport, player,
- * logging, or policy dependencies. This first slice emits only one timing
- * check after one uninterrupted eligible second.
+ * logging, or policy dependencies. This first slice emits one ordered batch
+ * after one uninterrupted eligible second.
  */
 class WardenCheckPlanner
 {
 public:
     explicit WardenCheckPlanner(uint32 eligibilityDelayMs = 1000,
-        std::optional<MpqCheckProfile> mpqCheck = std::nullopt);
+        std::optional<MpqCheckProfile> mpqCheck = std::nullopt,
+        std::optional<LuaCheckProfile> luaCheck = std::nullopt);
 
     // Ineligible updates reset partial delay. Once a plan is returned, this
     // planner remains complete and returns no further work.
@@ -61,6 +63,7 @@ public:
 private:
     uint32 m_eligibilityDelayMs;
     std::optional<MpqCheckProfile> m_mpqCheck;
+    std::optional<LuaCheckProfile> m_luaCheck;
     uint32 m_eligibleMs = 0;
     bool m_issued = false;
 };

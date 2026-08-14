@@ -25,8 +25,10 @@
 namespace warden
 {
 WardenCheckPlanner::WardenCheckPlanner(uint32 eligibilityDelayMs,
-    std::optional<MpqCheckProfile> mpqCheck)
-    : m_eligibilityDelayMs(eligibilityDelayMs), m_mpqCheck(mpqCheck)
+    std::optional<MpqCheckProfile> mpqCheck,
+    std::optional<LuaCheckProfile> luaCheck)
+    : m_eligibilityDelayMs(eligibilityDelayMs), m_mpqCheck(mpqCheck),
+      m_luaCheck(luaCheck)
 {
 }
 
@@ -56,6 +58,8 @@ std::optional<CheckPlan> WardenCheckPlanner::Update(bool eligible,
     plan.checks.emplace_back(TimingCheck{});
     if (m_mpqCheck)
         plan.checks.emplace_back(*m_mpqCheck);
+    if (m_luaCheck)
+        plan.checks.emplace_back(*m_luaCheck);
 
     m_issued = true;
     return plan;

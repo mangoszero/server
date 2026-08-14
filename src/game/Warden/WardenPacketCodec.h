@@ -68,7 +68,20 @@ struct MpqResult
     Digest20 digest{};
 };
 
-using CheckResult = std::variant<TimingResult, MpqResult>;
+enum class LuaResultStatus : uint8
+{
+    Success = 0,
+    Unavailable = 1
+};
+
+/** Private decoded Lua result; only classified evidence may leave the server. */
+struct LuaResult
+{
+    LuaResultStatus status = LuaResultStatus::Unavailable;
+    std::string text;
+};
+
+using CheckResult = std::variant<TimingResult, MpqResult, LuaResult>;
 
 struct CheckBatchResult
 {

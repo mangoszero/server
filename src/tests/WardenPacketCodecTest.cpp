@@ -57,6 +57,11 @@ warden::MpqCheckProfile TestMpqProfile()
     return profile;
 }
 
+warden::LuaCheckProfile TestLuaProfile()
+{
+    return {2, "OKAY", "Okay"};
+}
+
 warden::CheckPlan TimingPlan()
 {
     warden::CheckPlan plan;
@@ -69,6 +74,20 @@ warden::CheckPlan TimingMpqPlan()
 {
     warden::CheckPlan plan = TimingPlan();
     plan.checks.emplace_back(TestMpqProfile());
+    return plan;
+}
+
+warden::CheckPlan TimingLuaPlan()
+{
+    warden::CheckPlan plan = TimingPlan();
+    plan.checks.emplace_back(TestLuaProfile());
+    return plan;
+}
+
+warden::CheckPlan TimingMpqLuaPlan()
+{
+    warden::CheckPlan plan = TimingMpqPlan();
+    plan.checks.emplace_back(TestLuaProfile());
     return plan;
 }
 
@@ -170,6 +189,27 @@ TEST(WardenPacket_encodes_exact_timing_only_and_timing_mpq_requests)
         "7265615461626c652e6462630028e7017f");
 }
 
+TEST(WardenPacket_encodes_exact_timing_lua_and_combined_requests)
+{
+    warden::ModuleProfile const* profile = Windows5875Profile();
+    REQUIRE(profile != nullptr);
+
+    warden::Bytes request{0xA5};
+    REQUIRE(warden::EncodeCheckRequest(*profile, TimingLuaPlan(), request) ==
+        warden::EncodeStatus::Ok);
+    REQUIRE(request.size() == 11u);
+    CHECK_HEX(request.data(), request.size(),
+        "02044f4b41590028f4017f");
+
+    REQUIRE(warden::EncodeCheckRequest(*profile, TimingMpqLuaPlan(), request) ==
+        warden::EncodeStatus::Ok);
+    REQUIRE(request.size() == 41u);
+    CHECK_HEX(request.data(), request.size(),
+        "021b444246696c6573436c69656e745c41"
+        "7265615461626c652e646263044f4b4159"
+        "0028e701f4027f");
+}
+
 TEST(WardenPacket_rejects_invalid_check_plans_without_replacing_output)
 {
     warden::ModuleProfile const* profile = Windows5875Profile();
@@ -209,6 +249,37 @@ TEST(WardenPacket_rejects_invalid_check_plans_without_replacing_output)
 
     plan = TimingMpqPlan();
     std::get<warden::MpqCheckProfile>(plan.checks[1]).path.assign(256, 'A');
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingLuaPlan();
+    plan.checks.emplace_back(TestLuaProfile());
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingLuaPlan();
+    std::get<warden::LuaCheckProfile>(plan.checks[1]).checkId = 0;
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingLuaPlan();
+    std::get<warden::LuaCheckProfile>(plan.checks[1]).query.clear();
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingLuaPlan();
+    std::get<warden::LuaCheckProfile>(plan.checks[1]).query.assign(
+        "OK\0AY", 5);
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingLuaPlan();
+    std::get<warden::LuaCheckProfile>(plan.checks[1]).query.assign(256, 'Q');
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingLuaPlan();
+    std::get<warden::LuaCheckProfile>(plan.checks[1]).expectedText.assign(
+        "Ok\0ay", 5);
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingLuaPlan();
+    std::get<warden::LuaCheckProfile>(plan.checks[1]).expectedText.assign(
+        65, 'R');
     CheckInvalidPlanLeavesOutput(*profile, plan);
 }
 
@@ -281,6 +352,140 @@ TEST(WardenPacket_decodes_the_existing_timing_only_result_vector)
         std::get<warden::TimingResult>(result.checks[0]);
     CHECK(timing.stable);
     CHECK_EQ(timing.clientTick, uint32(0x12345678));
+}
+
+TEST(WardenPacket_decodes_exact_lua_result_vectors_in_plan_order)
+{
+    warden::Bytes const success =
+    {
+        0x02, 0x0B, 0x00, 0x8E, 0xF7, 0x55, 0x15,
+        0x01, 0x04, 0x03, 0x02, 0x01, 0x00, 0x04,
+        0x4F, 0x6B, 0x61, 0x79
+    };
+    warden::CheckBatchResult result;
+    REQUIRE(warden::DecodeCheckResult(View(success), TimingLuaPlan(), result) ==
+        warden::DecodeStatus::Ok);
+    REQUIRE(result.checks.size() == 2u);
+    REQUIRE(std::holds_alternative<warden::LuaResult>(result.checks[1]));
+    warden::LuaResult const& lua =
+        std::get<warden::LuaResult>(result.checks[1]);
+    CHECK(lua.status == warden::LuaResultStatus::Success);
+    CHECK_STR(lua.text.c_str(), "Okay");
+
+    warden::Bytes const unavailable =
+    {
+        0x02, 0x06, 0x00, 0xC0, 0x6D, 0xA5, 0x67,
+        0x01, 0x04, 0x03, 0x02, 0x01, 0x01
+    };
+    REQUIRE(warden::DecodeCheckResult(View(unavailable), TimingLuaPlan(),
+        result) == warden::DecodeStatus::Ok);
+    REQUIRE(result.checks.size() == 2u);
+    REQUIRE(std::holds_alternative<warden::LuaResult>(result.checks[1]));
+    CHECK(std::get<warden::LuaResult>(result.checks[1]).status ==
+        warden::LuaResultStatus::Unavailable);
+    CHECK(std::get<warden::LuaResult>(result.checks[1]).text.empty());
+
+    warden::Bytes const mismatch =
+    {
+        0x02, 0x0A, 0x00, 0xE1, 0x54, 0x1A, 0xB3,
+        0x01, 0x04, 0x03, 0x02, 0x01, 0x00, 0x03,
+        0x42, 0x61, 0x64
+    };
+    REQUIRE(warden::DecodeCheckResult(View(mismatch), TimingLuaPlan(),
+        result) == warden::DecodeStatus::Ok);
+    CHECK_STR(std::get<warden::LuaResult>(result.checks[1]).text.c_str(),
+        "Bad");
+
+    warden::Bytes maximum =
+    {
+        0x02, 0x47, 0x00, 0xC3, 0xC7, 0x1E, 0xBE,
+        0x01, 0x04, 0x03, 0x02, 0x01, 0x00, 0x40
+    };
+    maximum.insert(maximum.end(), 64, uint8('A'));
+    REQUIRE(warden::DecodeCheckResult(View(maximum), TimingLuaPlan(), result) ==
+        warden::DecodeStatus::Ok);
+    CHECK_EQ(std::get<warden::LuaResult>(result.checks[1]).text.size(),
+        size_t(64));
+}
+
+TEST(WardenPacket_decodes_exact_combined_timing_mpq_lua_result)
+{
+    warden::Bytes const success =
+    {
+        0x02, 0x20, 0x00, 0x37, 0x6F, 0x4E, 0x37,
+        0x01, 0x04, 0x03, 0x02, 0x01,
+        0x00, 0x7D, 0x88, 0x15, 0x4D, 0x34, 0x11, 0x81,
+        0x19, 0x85, 0xF5, 0xD8, 0x11, 0x77, 0xC5, 0x45,
+        0x32, 0x48, 0x13, 0x34, 0x43,
+        0x00, 0x04, 0x4F, 0x6B, 0x61, 0x79
+    };
+    warden::CheckBatchResult result;
+    REQUIRE(warden::DecodeCheckResult(View(success), TimingMpqLuaPlan(),
+        result) == warden::DecodeStatus::Ok);
+    REQUIRE(result.checks.size() == 3u);
+    CHECK(std::holds_alternative<warden::TimingResult>(result.checks[0]));
+    CHECK(std::holds_alternative<warden::MpqResult>(result.checks[1]));
+    REQUIRE(std::holds_alternative<warden::LuaResult>(result.checks[2]));
+    CHECK_STR(std::get<warden::LuaResult>(result.checks[2]).text.c_str(),
+        "Okay");
+}
+
+TEST(WardenPacket_rejects_malformed_lua_results_without_partial_output)
+{
+    warden::CheckPlan const plan = TimingLuaPlan();
+
+    warden::Bytes const invalidStatus =
+    {
+        0x02, 0x06, 0x00, 0x8A, 0xFC, 0x74, 0xC1,
+        0x01, 0x04, 0x03, 0x02, 0x01, 0x02
+    };
+    CheckFailedDecodeLeavesOutput(View(invalidStatus), plan,
+        warden::DecodeStatus::InvalidValue);
+
+    warden::Bytes tooLong =
+    {
+        0x02, 0x48, 0x00, 0x26, 0x87, 0xBE, 0x12,
+        0x01, 0x04, 0x03, 0x02, 0x01, 0x00, 0x41
+    };
+    tooLong.insert(tooLong.end(), 65, uint8('A'));
+    CheckFailedDecodeLeavesOutput(View(tooLong), plan,
+        warden::DecodeStatus::InvalidValue);
+
+    warden::Bytes const truncatedText =
+    {
+        0x02, 0x0A, 0x00, 0x58, 0x4B, 0x67, 0xA2,
+        0x01, 0x04, 0x03, 0x02, 0x01, 0x00, 0x04,
+        0x4F, 0x6B, 0x61
+    };
+    CheckFailedDecodeLeavesOutput(View(truncatedText), plan,
+        warden::DecodeStatus::WrongSize);
+
+    warden::Bytes const unavailableWithTrailingByte =
+    {
+        0x02, 0x07, 0x00, 0xCB, 0xFD, 0x42, 0x40,
+        0x01, 0x04, 0x03, 0x02, 0x01, 0x01, 0x00
+    };
+    CheckFailedDecodeLeavesOutput(View(unavailableWithTrailingByte), plan,
+        warden::DecodeStatus::WrongSize);
+
+    warden::Bytes withOuterTrailingByte =
+    {
+        0x02, 0x0B, 0x00, 0x8E, 0xF7, 0x55, 0x15,
+        0x01, 0x04, 0x03, 0x02, 0x01, 0x00, 0x04,
+        0x4F, 0x6B, 0x61, 0x79, 0x00
+    };
+    CheckFailedDecodeLeavesOutput(View(withOuterTrailingByte), plan,
+        warden::DecodeStatus::WrongSize);
+
+    warden::Bytes const mpqSuccess =
+    {
+        0x02, 0x1A, 0x00, 0x88, 0xBD, 0xFA, 0xEB,
+        0x01, 0x04, 0x03, 0x02, 0x01, 0x00, 0x7D, 0x88, 0x15,
+        0x4D, 0x34, 0x11, 0x81, 0x19, 0x85, 0xF5, 0xD8, 0x11,
+        0x77, 0xC5, 0x45, 0x32, 0x48, 0x13, 0x34, 0x43
+    };
+    CheckFailedDecodeLeavesOutput(View(mpqSuccess), plan,
+        warden::DecodeStatus::InvalidValue);
 }
 
 TEST(WardenPacket_rejects_malformed_check_results_without_partial_output)

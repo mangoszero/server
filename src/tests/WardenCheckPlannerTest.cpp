@@ -43,6 +43,11 @@ warden::MpqCheckProfile TestMpqProfile()
     };
     return profile;
 }
+
+warden::LuaCheckProfile TestLuaProfile()
+{
+    return {2, "OKAY", "Okay"};
+}
 }
 
 TEST(WardenEvidence_timing_outcomes_have_secret_free_fixed_labels)
@@ -121,4 +126,36 @@ TEST(WardenCheckPlanner_emits_timing_then_exact_mpq_once)
 
     CHECK(!planner.Update(true, 60000).has_value());
     CHECK(!planner.Update(false, 60000).has_value());
+}
+
+TEST(WardenCheckPlanner_emits_timing_mpq_then_exact_lua_once)
+{
+    warden::WardenCheckPlanner planner(1000, TestMpqProfile(),
+        TestLuaProfile());
+
+    auto const plan = planner.Update(true, 1000);
+    REQUIRE(plan.has_value());
+    CHECK_EQ(plan->requestId, uint32(1));
+    REQUIRE(plan->checks.size() == 3u);
+    CHECK(std::holds_alternative<warden::TimingCheck>(plan->checks[0]));
+    CHECK(std::holds_alternative<warden::MpqCheckProfile>(plan->checks[1]));
+    REQUIRE(std::holds_alternative<warden::LuaCheckProfile>(plan->checks[2]));
+    warden::LuaCheckProfile const& lua =
+        std::get<warden::LuaCheckProfile>(plan->checks[2]);
+    CHECK_EQ(lua.checkId, uint32(2));
+    CHECK_STR(lua.query.c_str(), "OKAY");
+    CHECK_STR(lua.expectedText.c_str(), "Okay");
+
+    CHECK(!planner.Update(true, 60000).has_value());
+}
+
+TEST(WardenCheckPlanner_emits_timing_then_lua_without_mpq)
+{
+    warden::WardenCheckPlanner planner(1000, std::nullopt, TestLuaProfile());
+
+    auto const plan = planner.Update(true, 1000);
+    REQUIRE(plan.has_value());
+    REQUIRE(plan->checks.size() == 2u);
+    CHECK(std::holds_alternative<warden::TimingCheck>(plan->checks[0]));
+    CHECK(std::holds_alternative<warden::LuaCheckProfile>(plan->checks[1]));
 }
