@@ -360,6 +360,39 @@ void WorldSession::OnAuthenticatedAdmission()
                         "(build %u): %s.", accountId, build,
                         warden::ToString(event.failure));
                 }
+            }, [this, accountId](warden::TimingEvidence const& evidence)
+            {
+                // Timing internals remain in typed memory only. Normal logs
+                // report the validated outcome and current session identity,
+                // never the tick, checksum, decrypted body, or keys.
+                Player* const player = GetPlayer();
+                bool const playerInWorld = player && player->IsInWorld();
+                if (evidence.outcome == warden::TimingOutcome::Stable)
+                {
+                    if (playerInWorld)
+                    {
+                        sLog.outString("Warden healthy for player %s "
+                            "(account %u).", player->GetName(), accountId);
+                    }
+                    else
+                    {
+                        sLog.outString("Warden healthy for account %u.",
+                            accountId);
+                    }
+                    return;
+                }
+
+                if (playerInWorld)
+                {
+                    sLog.outError("Warden timing check %s for player %s "
+                        "(account %u).", warden::ToString(evidence.outcome),
+                        player->GetName(), accountId);
+                }
+                else
+                {
+                    sLog.outError("Warden timing check %s for account %u.",
+                        warden::ToString(evidence.outcome), accountId);
+                }
             });
     admission.Clear();
 
@@ -385,9 +418,14 @@ void WorldSession::StartWardenBootstrap()
 void WorldSession::UpdateWarden(uint32 diffMs)
 {
     // World::UpdateSessions is the sole deadline owner. Map updates must never
-    // advance this clock a second time.
+    // advance this clock a second time. The state machine receives only the
+    // derived eligibility fact, not a Player or map dependency.
     if (m_warden)
-        m_warden->Update(diffMs);
+    {
+        Player* const player = GetPlayer();
+        bool const eligible = player && !m_playerLoading && player->IsInWorld();
+        m_warden->Update(eligible, diffMs);
+    }
 }
 
 /// Add an incoming packet to the queue

@@ -87,6 +87,23 @@ endif()
 
 require_count("${SESSION_CPP}" "m_warden->Start[ \\t]*\\(" 1
     "session bootstrap seam must own the only direct Start call")
+require_count("${SESSION_CPP}"
+    "m_warden->Update[ \\t]*\\([ \\t]*eligible[ \\t]*,[ \\t]*diffMs[ \\t]*\\)" 1
+    "session update must pass only derived eligibility and elapsed time")
+require_count("${SESSION_CPP}" "TimingEvidence const&" 1
+    "session adapter must consume typed timing evidence exactly once")
+require_count("${SESSION_CPP}" "Warden healthy for player %s" 1
+    "stable evidence must have one normal operator health message")
+if(NOT SESSION_CPP MATCHES "GetPlayer[ \\t]*\\([ \\t]*\\)" OR
+    NOT SESSION_CPP MATCHES "IsInWorld[ \\t]*\\([ \\t]*\\)" OR
+    NOT SESSION_CPP MATCHES "m_playerLoading")
+    message(FATAL_ERROR
+        "Warden boundary: eligibility must require a non-loading player in world")
+endif()
+if(SESSION_CPP MATCHES "clientTick|checksum|decrypted|packet body")
+    message(FATAL_ERROR
+        "Warden boundary: session observability must not expose timing internals")
+endif()
 string(FIND "${SESSION_CPP}" "void WorldSession::OnAuthenticatedAdmission()"
     SESSION_ADMISSION_BEGIN)
 string(FIND "${SESSION_CPP}" "void WorldSession::StartWardenBootstrap()"

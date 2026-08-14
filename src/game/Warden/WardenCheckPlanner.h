@@ -20,35 +20,44 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef MANGOS_WARDEN_MANAGER_H
-#define MANGOS_WARDEN_MANAGER_H
+#ifndef MANGOS_WARDEN_CHECK_PLANNER_H
+#define MANGOS_WARDEN_CHECK_PLANNER_H
 
-#include "WardenServer.h"
+#include "WardenProtocol.h"
 
-#include <memory>
+#include <optional>
 
 namespace warden
 {
+enum class CheckKind : uint8
+{
+    Timing
+};
+
+struct CheckPlan
+{
+    uint32 requestId = 0;
+    CheckKind kind = CheckKind::Timing;
+};
+
 /**
- * Stateless factory boundary between authenticated session inputs and the
- * exact delivered-module profile. Creating a server is inert; Start owns the
- * first wire write after WorldSession admission completes.
+ * Owns eligibility timing and one-shot selection without transport, player,
+ * logging, or policy dependencies. This first slice emits only one timing
+ * check after one uninterrupted eligible second.
  */
-class WardenManager
+class WardenCheckPlanner
 {
 public:
-    static WardenManager& Instance();
+    explicit WardenCheckPlanner(uint32 eligibilityDelayMs = 1000);
 
-    // Returns null for unsupported or custody-invalid profiles. The observer
-    // receives typed terminal facts only and may be omitted by tests/tools.
-    std::unique_ptr<WardenServer> Create(uint32 build,
-        std::string const& platform, SessionKey const& sessionKey,
-        SendEncrypted send, WardenLimits limits = {},
-        LifecycleObserver observer = {},
-        EvidenceObserver evidenceObserver = {}) const;
+    // Ineligible updates reset partial delay. Once a plan is returned, this
+    // planner remains complete and returns no further work.
+    std::optional<CheckPlan> Update(bool eligible, uint32 diffMs);
 
 private:
-    WardenModuleCatalog m_catalog;
+    uint32 m_eligibilityDelayMs;
+    uint32 m_eligibleMs = 0;
+    bool m_issued = false;
 };
 }
 

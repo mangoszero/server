@@ -32,7 +32,16 @@ enum class DecodeStatus : uint8
     Ok,
     Empty,
     WrongSize,
-    UnsupportedCommand
+    UnsupportedCommand,
+    ChecksumMismatch,
+    InvalidValue,
+    CryptoFailure
+};
+
+struct TimingResult
+{
+    bool stable = false;
+    uint32 clientTick = 0;
 };
 
 struct ClientMessage
@@ -47,6 +56,11 @@ struct ClientMessage
 Bytes EncodeModuleUse(ModuleProfile const& profile);
 Bytes EncodeModuleCache(ByteView chunk);
 Bytes EncodeHashRequest(ModuleProfile const& profile);
+Bytes EncodeTimingCheck(ModuleProfile const& profile);
+
+// Accepts only the delivered module's exact command-2 timing result frame.
+// The encoded length and checksum cover the five-byte result body alone.
+DecodeStatus DecodeTimingResult(ByteView body, TimingResult& result);
 
 // DecodeClient accepts only the four bootstrap commands and their exact sizes;
 // trailing bytes are malformed rather than silently ignored.

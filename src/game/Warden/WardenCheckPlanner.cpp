@@ -20,36 +20,37 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef MANGOS_WARDEN_MANAGER_H
-#define MANGOS_WARDEN_MANAGER_H
-
-#include "WardenServer.h"
-
-#include <memory>
+#include "WardenCheckPlanner.h"
 
 namespace warden
 {
-/**
- * Stateless factory boundary between authenticated session inputs and the
- * exact delivered-module profile. Creating a server is inert; Start owns the
- * first wire write after WorldSession admission completes.
- */
-class WardenManager
+WardenCheckPlanner::WardenCheckPlanner(uint32 eligibilityDelayMs)
+    : m_eligibilityDelayMs(eligibilityDelayMs)
 {
-public:
-    static WardenManager& Instance();
-
-    // Returns null for unsupported or custody-invalid profiles. The observer
-    // receives typed terminal facts only and may be omitted by tests/tools.
-    std::unique_ptr<WardenServer> Create(uint32 build,
-        std::string const& platform, SessionKey const& sessionKey,
-        SendEncrypted send, WardenLimits limits = {},
-        LifecycleObserver observer = {},
-        EvidenceObserver evidenceObserver = {}) const;
-
-private:
-    WardenModuleCatalog m_catalog;
-};
 }
 
-#endif
+std::optional<CheckPlan> WardenCheckPlanner::Update(bool eligible,
+    uint32 diffMs)
+{
+    if (m_issued)
+        return std::nullopt;
+
+    if (!eligible)
+    {
+        m_eligibleMs = 0;
+        return std::nullopt;
+    }
+
+    // Compare against the remaining delay instead of adding first, so an
+    // unusually large world update cannot wrap the cumulative timer.
+    if (m_eligibleMs < m_eligibilityDelayMs &&
+        diffMs < m_eligibilityDelayMs - m_eligibleMs)
+    {
+        m_eligibleMs += diffMs;
+        return std::nullopt;
+    }
+
+    m_issued = true;
+    return CheckPlan{1, CheckKind::Timing};
+}
+}

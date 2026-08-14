@@ -54,6 +54,7 @@ enum class ClientCommand : uint8
 {
     ModuleMissing = 0,
     ModuleOk = 1,
+    CheckResult = 2,
     HashResult = 4,
     ModuleFailed = 5
 };
@@ -62,6 +63,7 @@ enum class ServerCommand : uint8
 {
     ModuleUse = 0,
     ModuleCache = 1,
+    CheatChecksRequest = 2,
     HashRequest = 5
 };
 
@@ -71,6 +73,7 @@ enum class WardenState : uint8
     AwaitingTransferResult,
     AwaitingHash,
     ModuleReady,
+    AwaitingCheckResult,
     Failed
 };
 

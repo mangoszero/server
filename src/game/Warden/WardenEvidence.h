@@ -20,36 +20,29 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef MANGOS_WARDEN_MANAGER_H
-#define MANGOS_WARDEN_MANAGER_H
+#ifndef MANGOS_WARDEN_EVIDENCE_H
+#define MANGOS_WARDEN_EVIDENCE_H
 
-#include "WardenServer.h"
-
-#include <memory>
+#include "WardenProtocol.h"
 
 namespace warden
 {
-/**
- * Stateless factory boundary between authenticated session inputs and the
- * exact delivered-module profile. Creating a server is inert; Start owns the
- * first wire write after WorldSession admission completes.
- */
-class WardenManager
+enum class TimingOutcome : uint8
 {
-public:
-    static WardenManager& Instance();
-
-    // Returns null for unsupported or custody-invalid profiles. The observer
-    // receives typed terminal facts only and may be omitted by tests/tools.
-    std::unique_ptr<WardenServer> Create(uint32 build,
-        std::string const& platform, SessionKey const& sessionKey,
-        SendEncrypted send, WardenLimits limits = {},
-        LifecycleObserver observer = {},
-        EvidenceObserver evidenceObserver = {}) const;
-
-private:
-    WardenModuleCatalog m_catalog;
+    Stable,
+    Unstable
 };
+
+/** Validated timing evidence only; no keys or raw packet bytes cross here. */
+struct TimingEvidence
+{
+    uint32 requestId = 0;
+    TimingOutcome outcome = TimingOutcome::Unstable;
+    uint32 clientTick = 0;
+};
+
+// Fixed labels are safe for operator summaries and contain no client data.
+char const* ToString(TimingOutcome outcome);
 }
 
 #endif

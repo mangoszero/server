@@ -23,7 +23,9 @@
 #ifndef MANGOS_WARDEN_SERVER_H
 #define MANGOS_WARDEN_SERVER_H
 
+#include "WardenCheckPlanner.h"
 #include "WardenCryptoContext.h"
+#include "WardenEvidence.h"
 #include "WardenPacketCodec.h"
 
 #include <functional>
@@ -44,20 +46,21 @@ struct WardenLifecycleEvent
 
 using LifecycleObserver =
     std::function<void(WardenLifecycleEvent const&)>;
+using EvidenceObserver = std::function<void(TimingEvidence const&)>;
 
 /**
  * Per-session bootstrap state machine for the delivered Warden module.
  *
  * This class alone decrypts/decodes client bodies, advances directional
  * streams, bounds module transfer, owns waiting-state deadlines, and installs
- * post-hash keys. The current phase deliberately stops at ModuleReady.
+ * post-hash keys, and owns one validated active timing check.
  */
 class WardenServer
 {
 public:
     WardenServer(ModuleProfile const& profile, WardenCryptoContext&& crypto,
         SendEncrypted send, WardenLimits limits = {},
-        LifecycleObserver observer = {});
+        LifecycleObserver observer = {}, EvidenceObserver evidenceObserver = {});
 
     // Idempotently emits MODULE_USE and begins the module-status deadline.
     bool Start();
@@ -66,8 +69,9 @@ public:
     // Bodies received before Start are ignored without advancing crypto.
     void HandleEncrypted(ByteView encryptedBody);
 
-    // Advances the cumulative deadline for the current waiting state.
-    void Update(uint32 diffMs);
+    // Advances the current deadline and supplies only the session's derived
+    // in-world eligibility fact to the pure one-shot planner.
+    void Update(bool eligible, uint32 diffMs);
 
     WardenState GetState() const;
     WardenFailure GetFailure() const;
@@ -82,15 +86,20 @@ private:
     void ResetDeadline();
     bool SendModuleTransfer();
     bool SendHashRequest();
+    bool SendTimingCheck(CheckPlan const& plan);
+    void HandleTimingResult(ByteView plain);
 
     ModuleProfile m_profile;
     WardenCryptoContext m_crypto;
     SendEncrypted m_send;
     WardenLimits m_limits;
     LifecycleObserver m_observer;
+    EvidenceObserver m_evidenceObserver;
+    WardenCheckPlanner m_planner;
     WardenState m_state = WardenState::AwaitingModuleStatus;
     WardenFailure m_failure = WardenFailure::None;
     uint32 m_remainingMs = 0;
+    uint32 m_pendingRequestId = 0;
     uint8 m_transferCount = 0;
     bool m_started = false;
 };

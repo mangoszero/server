@@ -58,6 +58,80 @@ TEST(WardenPacket_encodes_exact_module_use_and_hash_request)
         "054d808d2c77d905c41a6380ec08586afe");
 }
 
+TEST(WardenPacket_encodes_exact_timing_check_request)
+{
+    warden::ModuleProfile const* profile = Windows5875Profile();
+    REQUIRE(profile != nullptr);
+
+    warden::Bytes const request = warden::EncodeTimingCheck(*profile);
+    CHECK_HEX(request.data(), request.size(), "0200287f");
+}
+
+TEST(WardenPacket_decodes_exact_timing_result_vector)
+{
+    warden::Bytes const response =
+    {
+        0x02, 0x05, 0x00, 0xA7, 0xD4, 0x3E,
+        0x25, 0x01, 0x78, 0x56, 0x34, 0x12
+    };
+
+    warden::TimingResult result;
+    CHECK(warden::DecodeTimingResult(View(response), result) ==
+        warden::DecodeStatus::Ok);
+    CHECK(result.stable);
+    CHECK_EQ(result.clientTick, uint32(0x12345678));
+}
+
+TEST(WardenPacket_rejects_malformed_timing_result_frames)
+{
+    warden::Bytes const valid =
+    {
+        0x02, 0x05, 0x00, 0xA7, 0xD4, 0x3E,
+        0x25, 0x01, 0x78, 0x56, 0x34, 0x12
+    };
+    warden::TimingResult result;
+
+    CHECK(warden::DecodeTimingResult({}, result) ==
+        warden::DecodeStatus::Empty);
+    CHECK(warden::DecodeTimingResult({nullptr, valid.size()}, result) ==
+        warden::DecodeStatus::WrongSize);
+
+    warden::Bytes malformed = valid;
+    malformed.pop_back();
+    CHECK(warden::DecodeTimingResult(View(malformed), result) ==
+        warden::DecodeStatus::WrongSize);
+    malformed = valid;
+    malformed.push_back(0);
+    CHECK(warden::DecodeTimingResult(View(malformed), result) ==
+        warden::DecodeStatus::WrongSize);
+
+    malformed = valid;
+    malformed[0] = uint8(warden::ClientCommand::HashResult);
+    CHECK(warden::DecodeTimingResult(View(malformed), result) ==
+        warden::DecodeStatus::UnsupportedCommand);
+    malformed = {uint8(warden::ClientCommand::ModuleOk)};
+    CHECK(warden::DecodeTimingResult(View(malformed), result) ==
+        warden::DecodeStatus::UnsupportedCommand);
+    malformed = valid;
+    malformed[1] = 4;
+    CHECK(warden::DecodeTimingResult(View(malformed), result) ==
+        warden::DecodeStatus::WrongSize);
+    malformed = valid;
+    malformed[3] ^= 1;
+    CHECK(warden::DecodeTimingResult(View(malformed), result) ==
+        warden::DecodeStatus::ChecksumMismatch);
+
+    // This checksum is independently derived for body 02 78 56 34 12, so the
+    // decoder reaches the Boolean validation instead of failing the checksum.
+    warden::Bytes const nonBoolean =
+    {
+        0x02, 0x05, 0x00, 0x24, 0x36, 0x22,
+        0x04, 0x02, 0x78, 0x56, 0x34, 0x12
+    };
+    CHECK(warden::DecodeTimingResult(View(nonBoolean), result) ==
+        warden::DecodeStatus::InvalidValue);
+}
+
 TEST(WardenPacket_encodes_cache_lengths_explicitly_little_endian)
 {
     warden::Bytes chunk500(500);

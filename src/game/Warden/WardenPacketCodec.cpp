@@ -22,6 +22,8 @@
 
 #include "WardenPacketCodec.h"
 
+#include <openssl/evp.h>
+
 #include <algorithm>
 #include <limits>
 
@@ -41,6 +43,31 @@ void AppendUint32LE(warden::Bytes& bytes, uint32 value)
     bytes.push_back(uint8(value >> 8));
     bytes.push_back(uint8(value >> 16));
     bytes.push_back(uint8(value >> 24));
+}
+
+uint16 ReadUint16LE(uint8 const* bytes)
+{
+    return uint16(bytes[0]) | (uint16(bytes[1]) << 8);
+}
+
+uint32 ReadUint32LE(uint8 const* bytes)
+{
+    return uint32(bytes[0]) | (uint32(bytes[1]) << 8) |
+        (uint32(bytes[2]) << 16) | (uint32(bytes[3]) << 24);
+}
+
+bool BuildChecksum(warden::ByteView body, uint32& checksum)
+{
+    warden::Digest20 digest{};
+    unsigned int length = 0;
+    if (!body.data || EVP_Digest(body.data, body.size, digest.data(), &length,
+            EVP_sha1(), nullptr) != 1 || length != digest.size())
+        return false;
+
+    checksum = 0;
+    for (size_t offset = 0; offset < digest.size(); offset += 4)
+        checksum ^= ReadUint32LE(digest.data() + offset);
+    return true;
 }
 
 template <typename Range>
@@ -91,6 +118,52 @@ Bytes EncodeHashRequest(ModuleProfile const& profile)
     bytes.push_back(uint8(ServerCommand::HashRequest));
     Append(bytes, profile.hashSeed);
     return bytes;
+}
+
+Bytes EncodeTimingCheck(ModuleProfile const& profile)
+{
+    // Command 2 begins with a terminated string table. Each following check
+    // type, including the zero terminator, is XORed with the first byte of the
+    // module's client-to-server post-hash key.
+    uint8 const xorByte = profile.clientKeySeed[0];
+    return
+    {
+        uint8(ServerCommand::CheatChecksRequest),
+        0,
+        uint8(0x57 ^ xorByte),
+        xorByte
+    };
+}
+
+DecodeStatus DecodeTimingResult(ByteView body, TimingResult& result)
+{
+    if (!body.size)
+        return DecodeStatus::Empty;
+    if (!body.data)
+        return DecodeStatus::WrongSize;
+    if (body.data[0] != uint8(ClientCommand::CheckResult))
+        return DecodeStatus::UnsupportedCommand;
+    if (body.size != 12)
+        return DecodeStatus::WrongSize;
+
+    uint16 const resultLength = ReadUint16LE(body.data + 1);
+    if (resultLength != 5 || body.size != 7 + resultLength)
+        return DecodeStatus::WrongSize;
+
+    ByteView const resultBody{body.data + 7, resultLength};
+    uint32 calculatedChecksum = 0;
+    if (!BuildChecksum(resultBody, calculatedChecksum))
+        return DecodeStatus::CryptoFailure;
+    if (ReadUint32LE(body.data + 3) != calculatedChecksum)
+        return DecodeStatus::ChecksumMismatch;
+    if (resultBody.data[0] > 1)
+        return DecodeStatus::InvalidValue;
+
+    TimingResult decoded;
+    decoded.stable = resultBody.data[0] != 0;
+    decoded.clientTick = ReadUint32LE(resultBody.data + 1);
+    result = decoded;
+    return DecodeStatus::Ok;
 }
 
 DecodeStatus DecodeClient(ByteView body, ClientMessage& message)

@@ -35,7 +35,7 @@ WardenManager& WardenManager::Instance()
 std::unique_ptr<WardenServer> WardenManager::Create(uint32 build,
     std::string const& platform, SessionKey const& sessionKey,
     SendEncrypted send, WardenLimits limits,
-    LifecycleObserver observer) const
+    LifecycleObserver observer, EvidenceObserver evidenceObserver) const
 {
     ModuleProfile const* profile = m_catalog.Find(build, platform);
     if (!profile || m_catalog.Validate(*profile) != ModuleValidation::Valid)
@@ -46,6 +46,7 @@ std::unique_ptr<WardenServer> WardenManager::Create(uint32 build,
     WardenCryptoContext crypto;
     crypto.Initialize(sessionKey);
     return std::make_unique<WardenServer>(*profile, std::move(crypto),
-        std::move(send), limits, std::move(observer));
+        std::move(send), limits, std::move(observer),
+        std::move(evidenceObserver));
 }
 }

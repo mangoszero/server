@@ -219,6 +219,9 @@ struct Harness
             }, {}, [this](warden::WardenLifecycleEvent const& event)
             {
                 events.push_back(event);
+            }, [this](warden::TimingEvidence const& evidence)
+            {
+                evidenceEvents.push_back(evidence);
             });
     }
 
@@ -233,6 +236,7 @@ struct Harness
     size_t sendCalls = 0;
     std::vector<warden::Bytes> sent;
     std::vector<warden::WardenLifecycleEvent> events;
+    std::vector<warden::TimingEvidence> evidenceEvents;
     std::unique_ptr<warden::WardenServer> server;
 };
 
@@ -283,6 +287,21 @@ bool ReachModuleReady(Harness& harness)
     harness.server->HandleEncrypted({encrypted.data(), encrypted.size()});
     return harness.server->GetState() == warden::WardenState::ModuleReady &&
         harness.server->GetFailure() == warden::WardenFailure::None;
+}
+
+bool StartTimingCheck(Harness& harness)
+{
+    if (!ReachModuleReady(harness))
+        return false;
+
+    harness.server->Update(true, 1000);
+    if (harness.server->GetState() !=
+            warden::WardenState::AwaitingCheckResult ||
+        harness.sent.size() != 3)
+        return false;
+
+    return harness.peer.DecryptServer(harness.sent.back()) ==
+        FromHex("0200287F");
 }
 }
 
@@ -381,7 +400,7 @@ TEST(WardenServer_classifies_terminal_protocol_failures)
         CHECK(harness.server->GetFailure() == expected);
         size_t const calls = harness.sendCalls;
         harness.server->HandleEncrypted({});
-        harness.server->Update(30000);
+        harness.server->Update(false, 30000);
         CHECK_EQ(harness.sendCalls, calls);
     };
 
@@ -406,7 +425,7 @@ TEST(WardenServer_replay_and_send_failure_are_terminal)
     Harness ready;
     REQUIRE(ReachModuleReady(ready));
     REQUIRE(ready.events.size() == 1u);
-    ready.server->Update(30000);
+    ready.server->Update(false, 30000);
     CHECK_EQ(ready.events.size(), 1u);
     size_t const readyCalls = ready.sendCalls;
     ready.SendClient(ModuleOk());
@@ -417,7 +436,7 @@ TEST(WardenServer_replay_and_send_failure_are_terminal)
     CHECK(ready.events[1].failure == warden::WardenFailure::Replay);
     CHECK_EQ(ready.events[1].transferCount, uint8(0));
     ready.SendClient(ModuleOk());
-    ready.server->Update(30000);
+    ready.server->Update(false, 30000);
     CHECK_EQ(ready.events.size(), 2u);
 
     Harness failedSend(false);
@@ -430,7 +449,7 @@ TEST(WardenServer_replay_and_send_failure_are_terminal)
     CHECK(failedSend.events[0].failure == warden::WardenFailure::SendFailure);
     CHECK(!failedSend.server->Start());
     failedSend.server->HandleEncrypted({});
-    failedSend.server->Update(30000);
+    failedSend.server->Update(false, 30000);
     CHECK_EQ(failedSend.sendCalls, 1u);
     CHECK_EQ(failedSend.events.size(), 1u);
 }
@@ -439,10 +458,10 @@ TEST(WardenServer_deadlines_are_cumulative_in_each_waiting_state)
 {
     auto expire = [](Harness& harness)
     {
-        harness.server->Update(12000);
-        harness.server->Update(17999);
+        harness.server->Update(false, 12000);
+        harness.server->Update(false, 17999);
         CHECK(harness.server->GetState() != warden::WardenState::Failed);
-        harness.server->Update(1);
+        harness.server->Update(false, 1);
         CHECK(harness.server->GetState() == warden::WardenState::Failed);
         CHECK(harness.server->GetFailure() ==
             warden::WardenFailure::DeadlineExpired);
@@ -531,4 +550,85 @@ TEST(WardenServer_ignores_prestart_data_and_can_start)
     CHECK(server->GetState() == warden::WardenState::AwaitingModuleStatus);
     CHECK(server->GetFailure() == warden::WardenFailure::None);
     CHECK_EQ(calls, 1u);
+}
+
+TEST(WardenServer_sends_one_timing_check_after_eligibility_and_reports_stable)
+{
+    Harness harness;
+    REQUIRE(ReachModuleReady(harness));
+
+    harness.server->Update(false, 60000);
+    harness.server->Update(true, 999);
+    CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
+    CHECK_EQ(harness.sent.size(), 2u);
+
+    harness.server->Update(true, 1);
+    REQUIRE(harness.server->GetState() ==
+        warden::WardenState::AwaitingCheckResult);
+    REQUIRE(harness.sent.size() == 3u);
+    warden::Bytes const request = harness.peer.DecryptServer(harness.sent.back());
+    CHECK_HEX(request.data(), request.size(), "0200287f");
+
+    harness.SendClient(FromHex("020500A7D43E250178563412"));
+    CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
+    CHECK(harness.server->GetFailure() == warden::WardenFailure::None);
+    REQUIRE(harness.evidenceEvents.size() == 1u);
+    CHECK_EQ(harness.evidenceEvents[0].requestId, uint32(1));
+    CHECK(harness.evidenceEvents[0].outcome == warden::TimingOutcome::Stable);
+    CHECK_EQ(harness.evidenceEvents[0].clientTick, uint32(0x12345678));
+
+    harness.server->Update(true, 60000);
+    CHECK_EQ(harness.sent.size(), 3u);
+    CHECK_EQ(harness.evidenceEvents.size(), 1u);
+}
+
+TEST(WardenServer_reports_unstable_timing_without_protocol_failure)
+{
+    Harness harness;
+    REQUIRE(StartTimingCheck(harness));
+
+    harness.SendClient(FromHex("020500A490E0960078563412"));
+    CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
+    CHECK(harness.server->GetFailure() == warden::WardenFailure::None);
+    REQUIRE(harness.evidenceEvents.size() == 1u);
+    CHECK(harness.evidenceEvents[0].outcome == warden::TimingOutcome::Unstable);
+    CHECK_EQ(harness.evidenceEvents[0].clientTick, uint32(0x12345678));
+}
+
+TEST(WardenServer_timing_timeout_malformed_unexpected_and_send_fail_are_terminal)
+{
+    Harness timeout;
+    REQUIRE(StartTimingCheck(timeout));
+    timeout.server->Update(true, 29999);
+    CHECK(timeout.server->GetState() ==
+        warden::WardenState::AwaitingCheckResult);
+    timeout.server->Update(true, 1);
+    CHECK(timeout.server->GetState() == warden::WardenState::Failed);
+    CHECK(timeout.server->GetFailure() ==
+        warden::WardenFailure::DeadlineExpired);
+
+    Harness malformed;
+    REQUIRE(StartTimingCheck(malformed));
+    malformed.SendClient(FromHex("020500A6D43E250178563412"));
+    CHECK(malformed.server->GetState() == warden::WardenState::Failed);
+    CHECK(malformed.server->GetFailure() ==
+        warden::WardenFailure::MalformedPayload);
+    CHECK(malformed.evidenceEvents.empty());
+
+    Harness unexpected;
+    REQUIRE(StartTimingCheck(unexpected));
+    unexpected.SendClient(ModuleOk());
+    CHECK(unexpected.server->GetState() == warden::WardenState::Failed);
+    CHECK(unexpected.server->GetFailure() ==
+        warden::WardenFailure::UnexpectedCommand);
+    CHECK(unexpected.evidenceEvents.empty());
+
+    Harness sendFailure;
+    REQUIRE(ReachModuleReady(sendFailure));
+    sendFailure.sendSucceeds = false;
+    sendFailure.server->Update(true, 1000);
+    CHECK(sendFailure.server->GetState() == warden::WardenState::Failed);
+    CHECK(sendFailure.server->GetFailure() ==
+        warden::WardenFailure::SendFailure);
+    CHECK(sendFailure.evidenceEvents.empty());
 }

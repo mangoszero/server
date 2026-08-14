@@ -51,9 +51,10 @@ namespace warden
 {
 WardenServer::WardenServer(ModuleProfile const& profile,
     WardenCryptoContext&& crypto, SendEncrypted send, WardenLimits limits,
-    LifecycleObserver observer)
+    LifecycleObserver observer, EvidenceObserver evidenceObserver)
     : m_profile(profile), m_crypto(std::move(crypto)), m_send(std::move(send)),
-      m_limits(limits), m_observer(std::move(observer))
+      m_limits(limits), m_observer(std::move(observer)),
+      m_evidenceObserver(std::move(evidenceObserver))
 {
 }
 
@@ -117,10 +118,21 @@ void WardenServer::HandleEncrypted(ByteView encryptedBody)
         return;
     }
 
+    ByteView const plainView
+    {
+        plain.empty() ? nullptr : plain.data(), plain.size()
+    };
+    if (m_state == WardenState::AwaitingCheckResult)
+    {
+        HandleTimingResult(plainView);
+        return;
+    }
+
     ClientMessage message;
-    DecodeStatus const status = DecodeClient(
-        {plain.empty() ? nullptr : plain.data(), plain.size()}, message);
-    if (status == DecodeStatus::Empty || status == DecodeStatus::WrongSize)
+    DecodeStatus const status = DecodeClient(plainView, message);
+    if (status == DecodeStatus::Empty || status == DecodeStatus::WrongSize ||
+        status == DecodeStatus::ChecksumMismatch ||
+        status == DecodeStatus::InvalidValue)
     {
         Fail(WardenFailure::MalformedPayload);
         return;
@@ -128,6 +140,11 @@ void WardenServer::HandleEncrypted(ByteView encryptedBody)
     if (status == DecodeStatus::UnsupportedCommand)
     {
         Fail(WardenFailure::UnexpectedCommand);
+        return;
+    }
+    if (status == DecodeStatus::CryptoFailure)
+    {
+        Fail(WardenFailure::CryptoFailure);
         return;
     }
 
@@ -182,16 +199,24 @@ void WardenServer::HandleEncrypted(ByteView encryptedBody)
             return;
 
         case WardenState::ModuleReady:
+        case WardenState::AwaitingCheckResult:
         case WardenState::Failed:
             return;
     }
 }
 
-void WardenServer::Update(uint32 diffMs)
+void WardenServer::Update(bool eligible, uint32 diffMs)
 {
-    if (!m_started || m_state == WardenState::ModuleReady ||
-        m_state == WardenState::Failed)
+    if (!m_started || m_state == WardenState::Failed)
         return;
+
+    if (m_state == WardenState::ModuleReady)
+    {
+        std::optional<CheckPlan> const plan = m_planner.Update(eligible, diffMs);
+        if (plan)
+            SendTimingCheck(*plan);
+        return;
+    }
 
     // Many small updates cannot extend the deadline: elapsed world time is
     // accumulated until the state either advances or expires.
@@ -226,6 +251,7 @@ void WardenServer::Fail(WardenFailure reason)
     m_failure = reason;
     m_state = WardenState::Failed;
     m_remainingMs = 0;
+    m_pendingRequestId = 0;
     NotifyTerminal();
 }
 
@@ -299,5 +325,58 @@ bool WardenServer::SendHashRequest()
     m_state = WardenState::AwaitingHash;
     ResetDeadline();
     return true;
+}
+
+bool WardenServer::SendTimingCheck(CheckPlan const& plan)
+{
+    if (plan.kind != CheckKind::Timing || !plan.requestId)
+    {
+        Fail(WardenFailure::UnexpectedCommand);
+        return false;
+    }
+
+    if (!SendPlain(EncodeTimingCheck(m_profile)))
+        return false;
+
+    m_pendingRequestId = plan.requestId;
+    m_state = WardenState::AwaitingCheckResult;
+    ResetDeadline();
+    return true;
+}
+
+void WardenServer::HandleTimingResult(ByteView plain)
+{
+    TimingResult result;
+    DecodeStatus const status = DecodeTimingResult(plain, result);
+    if (status == DecodeStatus::UnsupportedCommand)
+    {
+        Fail(WardenFailure::UnexpectedCommand);
+        return;
+    }
+    if (status == DecodeStatus::CryptoFailure)
+    {
+        Fail(WardenFailure::CryptoFailure);
+        return;
+    }
+    if (status != DecodeStatus::Ok)
+    {
+        Fail(WardenFailure::MalformedPayload);
+        return;
+    }
+
+    TimingEvidence const evidence
+    {
+        m_pendingRequestId,
+        result.stable ? TimingOutcome::Stable : TimingOutcome::Unstable,
+        result.clientTick
+    };
+    m_pendingRequestId = 0;
+    m_state = WardenState::ModuleReady;
+    m_remainingMs = 0;
+
+    // Publish only after state is committed, so observer re-entry cannot see a
+    // half-consumed request or cause duplicate evidence.
+    if (m_evidenceObserver)
+        m_evidenceObserver(evidence);
 }
 }

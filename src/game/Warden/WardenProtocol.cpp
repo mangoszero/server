@@ -74,6 +74,7 @@ char const* ToString(WardenState state)
         case WardenState::AwaitingTransferResult: return "AwaitingTransferResult";
         case WardenState::AwaitingHash: return "AwaitingHash";
         case WardenState::ModuleReady: return "ModuleReady";
+        case WardenState::AwaitingCheckResult: return "AwaitingCheckResult";
         case WardenState::Failed: return "Failed";
     }
     return "Unknown";
