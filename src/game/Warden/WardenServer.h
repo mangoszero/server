@@ -29,6 +29,7 @@
 #include "WardenPacketCodec.h"
 
 #include <functional>
+#include <optional>
 
 namespace warden
 {
@@ -46,7 +47,7 @@ struct WardenLifecycleEvent
 
 using LifecycleObserver =
     std::function<void(WardenLifecycleEvent const&)>;
-using EvidenceObserver = std::function<void(TimingEvidence const&)>;
+using EvidenceObserver = std::function<void(WardenEvidence const&)>;
 
 /**
  * Per-session bootstrap state machine for the delivered Warden module.
@@ -54,14 +55,15 @@ using EvidenceObserver = std::function<void(TimingEvidence const&)>;
  * This class alone decrypts/decodes client bodies, advances directional
  * streams, bounds module transfer, owns waiting-state deadlines, and installs
  * post-hash keys. It sends the build-specific callback initialization before
- * publishing ModuleReady and owns one validated active timing check.
+ * publishing ModuleReady and owns one validated ordered active-check batch.
  */
 class WardenServer
 {
 public:
     WardenServer(ModuleProfile const& profile, WardenCryptoContext&& crypto,
         SendEncrypted send, WardenLimits limits = {},
-        LifecycleObserver observer = {}, EvidenceObserver evidenceObserver = {});
+        LifecycleObserver observer = {}, EvidenceObserver evidenceObserver = {},
+        std::optional<MpqCheckProfile> mpqCheck = std::nullopt);
 
     // Idempotently emits MODULE_USE and begins the module-status deadline.
     bool Start();
@@ -87,8 +89,8 @@ private:
     void ResetDeadline();
     bool SendModuleTransfer();
     bool SendHashRequest();
-    bool SendTimingCheck(CheckPlan const& plan);
-    void HandleTimingResult(ByteView plain);
+    bool SendCheckRequest(CheckPlan const& plan);
+    void HandleCheckResult(ByteView plain);
 
     ModuleProfile m_profile;
     WardenCryptoContext m_crypto;
@@ -100,7 +102,7 @@ private:
     WardenState m_state = WardenState::AwaitingModuleStatus;
     WardenFailure m_failure = WardenFailure::None;
     uint32 m_remainingMs = 0;
-    uint32 m_pendingRequestId = 0;
+    std::optional<CheckPlan> m_pendingPlan;
     uint8 m_transferCount = 0;
     bool m_started = false;
 };

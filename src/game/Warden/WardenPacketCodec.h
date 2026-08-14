@@ -93,14 +93,10 @@ EncodeStatus EncodeModuleInitialize(ModuleProfile const& profile, Bytes& output)
 // Builds a complete command-2 request privately; output changes only on Ok.
 EncodeStatus EncodeCheckRequest(ModuleProfile const& profile,
     CheckPlan const& plan, Bytes& output);
-Bytes EncodeTimingCheck(ModuleProfile const& profile);
 
 // Parses exactly the pending ordered plan and publishes no partial result.
 DecodeStatus DecodeCheckResult(ByteView body, CheckPlan const& plan,
     CheckBatchResult& result);
-// Accepts only the delivered module's exact command-2 timing result frame.
-// The encoded length and checksum cover the five-byte result body alone.
-DecodeStatus DecodeTimingResult(ByteView body, TimingResult& result);
 
 // DecodeClient accepts only the four bootstrap commands and their exact sizes;
 // trailing bytes are malformed rather than silently ignored.

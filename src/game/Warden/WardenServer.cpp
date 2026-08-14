@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <utility>
 #include <variant>
+#include <vector>
 
 namespace
 {
@@ -52,10 +53,12 @@ namespace warden
 {
 WardenServer::WardenServer(ModuleProfile const& profile,
     WardenCryptoContext&& crypto, SendEncrypted send, WardenLimits limits,
-    LifecycleObserver observer, EvidenceObserver evidenceObserver)
+    LifecycleObserver observer, EvidenceObserver evidenceObserver,
+    std::optional<MpqCheckProfile> mpqCheck)
     : m_profile(profile), m_crypto(std::move(crypto)), m_send(std::move(send)),
       m_limits(limits), m_observer(std::move(observer)),
-      m_evidenceObserver(std::move(evidenceObserver))
+      m_evidenceObserver(std::move(evidenceObserver)),
+      m_planner(1000, std::move(mpqCheck))
 {
 }
 
@@ -125,7 +128,7 @@ void WardenServer::HandleEncrypted(ByteView encryptedBody)
     };
     if (m_state == WardenState::AwaitingCheckResult)
     {
-        HandleTimingResult(plainView);
+        HandleCheckResult(plainView);
         return;
     }
 
@@ -238,7 +241,7 @@ void WardenServer::Update(bool eligible, uint32 diffMs)
     {
         std::optional<CheckPlan> const plan = m_planner.Update(eligible, diffMs);
         if (plan)
-            SendTimingCheck(*plan);
+            SendCheckRequest(*plan);
         return;
     }
 
@@ -275,7 +278,7 @@ void WardenServer::Fail(WardenFailure reason)
     m_failure = reason;
     m_state = WardenState::Failed;
     m_remainingMs = 0;
-    m_pendingRequestId = 0;
+    m_pendingPlan.reset();
     NotifyTerminal();
 }
 
@@ -351,28 +354,46 @@ bool WardenServer::SendHashRequest()
     return true;
 }
 
-bool WardenServer::SendTimingCheck(CheckPlan const& plan)
+bool WardenServer::SendCheckRequest(CheckPlan const& plan)
 {
-    if (!plan.requestId || plan.checks.size() != 1 ||
-        !std::holds_alternative<TimingCheck>(plan.checks.front()))
+    Bytes request;
+    EncodeStatus const status = EncodeCheckRequest(m_profile, plan, request);
+    if (status == EncodeStatus::InvalidPlan)
     {
         Fail(WardenFailure::UnexpectedCommand);
         return false;
     }
+    if (status == EncodeStatus::InvalidProfile)
+    {
+        Fail(WardenFailure::UnsupportedProfile);
+        return false;
+    }
+    if (status == EncodeStatus::CryptoFailure)
+    {
+        Fail(WardenFailure::CryptoFailure);
+        return false;
+    }
 
-    if (!SendPlain(EncodeTimingCheck(m_profile)))
+    if (!SendPlain(std::move(request)))
         return false;
 
-    m_pendingRequestId = plan.requestId;
+    // A failed handoff must not leave a request that the server never sent.
+    m_pendingPlan = plan;
     m_state = WardenState::AwaitingCheckResult;
     ResetDeadline();
     return true;
 }
 
-void WardenServer::HandleTimingResult(ByteView plain)
+void WardenServer::HandleCheckResult(ByteView plain)
 {
-    TimingResult result;
-    DecodeStatus const status = DecodeTimingResult(plain, result);
+    if (!m_pendingPlan)
+    {
+        Fail(WardenFailure::UnexpectedCommand);
+        return;
+    }
+
+    CheckBatchResult result;
+    DecodeStatus const status = DecodeCheckResult(plain, *m_pendingPlan, result);
     if (status == DecodeStatus::UnsupportedCommand)
     {
         Fail(WardenFailure::UnexpectedCommand);
@@ -389,19 +410,70 @@ void WardenServer::HandleTimingResult(ByteView plain)
         return;
     }
 
-    TimingEvidence const evidence
+    if (result.checks.size() != m_pendingPlan->checks.size())
     {
-        m_pendingRequestId,
-        result.stable ? TimingOutcome::Stable : TimingOutcome::Unstable,
-        result.clientTick
-    };
-    m_pendingRequestId = 0;
+        Fail(WardenFailure::MalformedPayload);
+        return;
+    }
+
+    std::vector<WardenEvidence> evidence;
+    evidence.reserve(result.checks.size());
+    for (size_t index = 0; index < result.checks.size(); ++index)
+    {
+        PlannedCheck const& planned = m_pendingPlan->checks[index];
+        CheckResult const& returned = result.checks[index];
+        if (std::holds_alternative<TimingCheck>(planned))
+        {
+            TimingResult const* timing = std::get_if<TimingResult>(&returned);
+            if (!timing)
+            {
+                Fail(WardenFailure::MalformedPayload);
+                return;
+            }
+            evidence.emplace_back(TimingEvidence
+            {
+                m_pendingPlan->requestId,
+                timing->stable ? TimingOutcome::Stable :
+                    TimingOutcome::Unstable,
+                timing->clientTick
+            });
+            continue;
+        }
+
+        MpqCheckProfile const* profile =
+            std::get_if<MpqCheckProfile>(&planned);
+        MpqResult const* mpq = std::get_if<MpqResult>(&returned);
+        if (!profile || !mpq)
+        {
+            Fail(WardenFailure::MalformedPayload);
+            return;
+        }
+
+        MpqOutcome outcome = MpqOutcome::Unavailable;
+        if (mpq->status == MpqResultStatus::Success)
+        {
+            outcome = CRYPTO_memcmp(mpq->digest.data(),
+                profile->expectedSha1.data(), mpq->digest.size()) == 0 ?
+                MpqOutcome::Match : MpqOutcome::DigestMismatch;
+        }
+        evidence.emplace_back(MpqEvidence
+        {
+            m_pendingPlan->requestId,
+            profile->checkId,
+            outcome
+        });
+    }
+
+    m_pendingPlan.reset();
     m_state = WardenState::ModuleReady;
     m_remainingMs = 0;
 
-    // Publish only after state is committed, so observer re-entry cannot see a
-    // half-consumed request or cause duplicate evidence.
+    // Publish the complete authenticated batch only after state is committed,
+    // so observer re-entry cannot see or republish a half-consumed request.
     if (m_evidenceObserver)
-        m_evidenceObserver(evidence);
+    {
+        for (WardenEvidence const& event : evidence)
+            m_evidenceObserver(event);
+    }
 }
 }

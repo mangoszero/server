@@ -32,7 +32,9 @@
 #include <array>
 #include <cstring>
 #include <memory>
+#include <optional>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace
@@ -72,6 +74,16 @@ std::array<uint8, Size> FixedBytes(char const* text)
     if (bytes.size() == result.size())
         std::copy(bytes.begin(), bytes.end(), result.begin());
     return result;
+}
+
+warden::MpqCheckProfile TestMpqProfile()
+{
+    warden::MpqCheckProfile profile;
+    profile.checkId = 1;
+    profile.path = "DBFilesClient\\AreaTable.dbc";
+    profile.expectedSha1 = FixedBytes<20>(
+        "7D88154D3411811985F5D81177C5453248133443");
+    return profile;
 }
 
 bool Digest(EVP_MD const* algorithm, uint8 const* data, size_t size,
@@ -205,24 +217,32 @@ private:
 
 struct Harness
 {
-    explicit Harness(bool allowSend = true)
+    explicit Harness(bool allowSend = true,
+        std::optional<warden::MpqCheckProfile> mpqCheck = std::nullopt)
         : peer(TestSessionKey()), sendSucceeds(allowSend)
     {
-        server = warden::WardenManager::Instance().Create(5875, "Win",
-            TestSessionKey(), [this](warden::Bytes const& bytes)
+        warden::WardenModuleCatalog catalog;
+        warden::ModuleProfile const* profile = catalog.Find(5875, "Win");
+        warden::WardenCryptoContext crypto;
+        if (!profile || !crypto.Initialize(TestSessionKey()))
+            return;
+
+        server = std::make_unique<warden::WardenServer>(*profile,
+            std::move(crypto), [this](warden::Bytes const& bytes)
             {
                 ++sendCalls;
                 if (!sendSucceeds)
                     return false;
                 sent.push_back(bytes);
                 return true;
-            }, {}, [this](warden::WardenLifecycleEvent const& event)
+            }, warden::WardenLimits{},
+            [this](warden::WardenLifecycleEvent const& event)
             {
                 events.push_back(event);
-            }, [this](warden::TimingEvidence const& evidence)
+            }, [this](warden::WardenEvidence const& evidence)
             {
                 evidenceEvents.push_back(evidence);
-            });
+            }, mpqCheck);
     }
 
     void SendClient(warden::Bytes plain)
@@ -236,7 +256,7 @@ struct Harness
     size_t sendCalls = 0;
     std::vector<warden::Bytes> sent;
     std::vector<warden::WardenLifecycleEvent> events;
-    std::vector<warden::TimingEvidence> evidenceEvents;
+    std::vector<warden::WardenEvidence> evidenceEvents;
     std::unique_ptr<warden::WardenServer> server;
 };
 
@@ -316,6 +336,22 @@ bool StartTimingCheck(Harness& harness)
 
     return harness.peer.DecryptServer(harness.sent.back()) ==
         FromHex("0200287F");
+}
+
+bool StartTimingMpqCheck(Harness& harness)
+{
+    if (!ReachModuleReady(harness))
+        return false;
+
+    harness.server->Update(true, 1000);
+    if (harness.server->GetState() !=
+            warden::WardenState::AwaitingCheckResult ||
+        harness.sent.size() != 4)
+        return false;
+
+    return harness.peer.DecryptServer(harness.sent.back()) == FromHex(
+        "021B444246696C6573436C69656E745C41"
+        "7265615461626C652E6462630028E7017F");
 }
 }
 
@@ -615,9 +651,13 @@ TEST(WardenServer_sends_one_timing_check_after_eligibility_and_reports_stable)
     CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
     CHECK(harness.server->GetFailure() == warden::WardenFailure::None);
     REQUIRE(harness.evidenceEvents.size() == 1u);
-    CHECK_EQ(harness.evidenceEvents[0].requestId, uint32(1));
-    CHECK(harness.evidenceEvents[0].outcome == warden::TimingOutcome::Stable);
-    CHECK_EQ(harness.evidenceEvents[0].clientTick, uint32(0x12345678));
+    REQUIRE(std::holds_alternative<warden::TimingEvidence>(
+        harness.evidenceEvents[0]));
+    warden::TimingEvidence const& evidence =
+        std::get<warden::TimingEvidence>(harness.evidenceEvents[0]);
+    CHECK_EQ(evidence.requestId, uint32(1));
+    CHECK(evidence.outcome == warden::TimingOutcome::Stable);
+    CHECK_EQ(evidence.clientTick, uint32(0x12345678));
 
     harness.server->Update(true, 60000);
     CHECK_EQ(harness.sent.size(), 4u);
@@ -633,8 +673,107 @@ TEST(WardenServer_reports_unstable_timing_without_protocol_failure)
     CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
     CHECK(harness.server->GetFailure() == warden::WardenFailure::None);
     REQUIRE(harness.evidenceEvents.size() == 1u);
-    CHECK(harness.evidenceEvents[0].outcome == warden::TimingOutcome::Unstable);
-    CHECK_EQ(harness.evidenceEvents[0].clientTick, uint32(0x12345678));
+    warden::TimingEvidence const& evidence =
+        std::get<warden::TimingEvidence>(harness.evidenceEvents[0]);
+    CHECK(evidence.outcome == warden::TimingOutcome::Unstable);
+    CHECK_EQ(evidence.clientTick, uint32(0x12345678));
+}
+
+TEST(WardenServer_combined_check_preserves_stream_and_reports_ordered_match)
+{
+    Harness harness(true, TestMpqProfile());
+    REQUIRE(StartTimingMpqCheck(harness));
+
+    harness.SendClient(FromHex(
+        "021A0088BDFAEB0104030201007D88154D"
+        "3411811985F5D81177C5453248133443"));
+    CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
+    CHECK(harness.server->GetFailure() == warden::WardenFailure::None);
+    REQUIRE(harness.evidenceEvents.size() == 2u);
+
+    REQUIRE(std::holds_alternative<warden::TimingEvidence>(
+        harness.evidenceEvents[0]));
+    warden::TimingEvidence const& timing =
+        std::get<warden::TimingEvidence>(harness.evidenceEvents[0]);
+    CHECK_EQ(timing.requestId, uint32(1));
+    CHECK(timing.outcome == warden::TimingOutcome::Stable);
+    CHECK_EQ(timing.clientTick, uint32(0x01020304));
+
+    REQUIRE(std::holds_alternative<warden::MpqEvidence>(
+        harness.evidenceEvents[1]));
+    warden::MpqEvidence const& mpq =
+        std::get<warden::MpqEvidence>(harness.evidenceEvents[1]);
+    CHECK_EQ(mpq.requestId, uint32(1));
+    CHECK_EQ(mpq.checkId, uint32(1));
+    CHECK(mpq.outcome == warden::MpqOutcome::Match);
+
+    harness.SendClient(ModuleOk());
+    CHECK(harness.server->GetState() == warden::WardenState::Failed);
+    CHECK(harness.server->GetFailure() == warden::WardenFailure::Replay);
+    CHECK_EQ(harness.evidenceEvents.size(), 2u);
+}
+
+TEST(WardenServer_valid_mpq_negatives_are_observation_only)
+{
+    Harness unavailable(true, TestMpqProfile());
+    REQUIRE(StartTimingMpqCheck(unavailable));
+    unavailable.SendClient(FromHex("020600C06DA567010403020101"));
+    CHECK(unavailable.server->GetState() == warden::WardenState::ModuleReady);
+    CHECK(unavailable.server->GetFailure() == warden::WardenFailure::None);
+    REQUIRE(unavailable.evidenceEvents.size() == 2u);
+    CHECK(std::get<warden::MpqEvidence>(unavailable.evidenceEvents[1]).outcome ==
+        warden::MpqOutcome::Unavailable);
+
+    Harness mismatch(true, TestMpqProfile());
+    REQUIRE(StartTimingMpqCheck(mismatch));
+    mismatch.SendClient(FromHex(
+        "021A000F45480201040302010000000000"
+        "00000000000000000000000000000000"));
+    CHECK(mismatch.server->GetState() == warden::WardenState::ModuleReady);
+    CHECK(mismatch.server->GetFailure() == warden::WardenFailure::None);
+    REQUIRE(mismatch.evidenceEvents.size() == 2u);
+    CHECK(std::get<warden::MpqEvidence>(mismatch.evidenceEvents[1]).outcome ==
+        warden::MpqOutcome::DigestMismatch);
+
+    Harness bothNegative(true, TestMpqProfile());
+    REQUIRE(StartTimingMpqCheck(bothNegative));
+    bothNegative.SendClient(FromHex("02060071EF43C6000403020101"));
+    CHECK(bothNegative.server->GetState() ==
+        warden::WardenState::ModuleReady);
+    REQUIRE(bothNegative.evidenceEvents.size() == 2u);
+    CHECK(std::get<warden::TimingEvidence>(
+        bothNegative.evidenceEvents[0]).outcome ==
+        warden::TimingOutcome::Unstable);
+    CHECK(std::get<warden::MpqEvidence>(
+        bothNegative.evidenceEvents[1]).outcome ==
+        warden::MpqOutcome::Unavailable);
+}
+
+TEST(WardenServer_combined_malformed_result_publishes_no_partial_evidence)
+{
+    Harness harness(true, TestMpqProfile());
+    REQUIRE(StartTimingMpqCheck(harness));
+
+    harness.SendClient(FromHex("0206008AFC74C1010403020102"));
+    CHECK(harness.server->GetState() == warden::WardenState::Failed);
+    CHECK(harness.server->GetFailure() ==
+        warden::WardenFailure::MalformedPayload);
+    CHECK(harness.evidenceEvents.empty());
+}
+
+TEST(WardenServer_invalid_internal_mpq_plan_fails_before_sending)
+{
+    warden::MpqCheckProfile invalid = TestMpqProfile();
+    invalid.checkId = 0;
+    Harness harness(true, invalid);
+    REQUIRE(ReachModuleReady(harness));
+
+    harness.server->Update(true, 1000);
+    CHECK(harness.server->GetState() == warden::WardenState::Failed);
+    CHECK(harness.server->GetFailure() ==
+        warden::WardenFailure::UnexpectedCommand);
+    CHECK_EQ(harness.sent.size(), 3u);
+    CHECK(harness.evidenceEvents.empty());
 }
 
 TEST(WardenServer_timing_timeout_malformed_unexpected_and_send_fail_are_terminal)
@@ -665,7 +804,7 @@ TEST(WardenServer_timing_timeout_malformed_unexpected_and_send_fail_are_terminal
         warden::WardenFailure::UnexpectedCommand);
     CHECK(unexpected.evidenceEvents.empty());
 
-    Harness sendFailure;
+    Harness sendFailure(true, TestMpqProfile());
     REQUIRE(ReachModuleReady(sendFailure));
     sendFailure.sendSucceeds = false;
     sendFailure.server->Update(true, 1000);
