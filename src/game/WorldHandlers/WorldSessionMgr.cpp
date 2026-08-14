@@ -93,7 +93,6 @@
 #include "GitRevision.h"
 #include "UpdateTime.h"
 #include "GameTime.h"
-#include "WardenCheckMgr.h"
 #include "SystemConfig.h"
 #include "AuctionHouseBot/AuctionIntentExecutor.h"
 #include "AuctionHouseBot/CustodyLedger.h"

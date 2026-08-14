@@ -58,7 +58,6 @@ class Item;
 class Object;
 class Player;
 class Unit;
-class Warden;
 class WorldPacket;
 class SessionMailbox;
 class QueryResult;
@@ -326,9 +325,6 @@ class WorldSession
         {
             _player = plr;
         }
-
-        // Warden
-        void InitWarden(uint16 build, BigNumber* k, std::string const& os);
 
         /// Session in auth.queue currently
         void SetInQueue(bool state)
@@ -922,8 +918,6 @@ class WorldSession
         AccountTypes _security;
         uint32 _accountId;
 
-        // Warden
-        Warden* _warden;                                    // Remains NULL if Warden system is not enabled by config
         uint16 _build;                                      // connected client build
 
         time_t _logoutTime;

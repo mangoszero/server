@@ -115,9 +115,6 @@
 #include "RandomPlayerbotMgr.h"
 #endif
 
-// WARDEN
-#include "WardenCheckMgr.h"
-
 // AH subprocess supervisor (Task 5+)
 #include "WorkerSupervisor.h"
 #include "IpcMessage.h"
@@ -910,15 +907,6 @@ void World::SetInitialWorldSettings()
     sLog.outString("Starting Outdoor PvP System");
     sOutdoorPvPMgr.InitOutdoorPvP();
 
-    // Initialize Warden
-    sLog.outString("Loading Warden Checks...");
-    sWardenCheckMgr->LoadWardenChecks();
-    sLog.outString();
-
-    sLog.outString("Loading Warden Action Overrides...");
-    sWardenCheckMgr->LoadWardenOverrides();
-    sLog.outString();
-
     sLog.outString("Deleting expired bans...");
     LoginDatabase.Execute("DELETE FROM `ip_banned` WHERE `unbandate`<=UNIX_TIMESTAMP() AND `unbandate`<>`bandate`");
     sLog.outString();
@@ -1006,7 +994,7 @@ void World::SetInitialWorldSettings()
 
 namespace
 {
-    /// "Eluna, ScriptDev3, Warden" -- or "none" for an empty list.
+    /// "Eluna, ScriptDev3" -- or "none" for an empty list.
     std::string JoinList(const std::vector<std::string>& items)
     {
         std::string joined;
@@ -1075,15 +1063,6 @@ void World::showFooter(uint32 startupMs)
         disabled.push_back("SOAP");
     }
 #endif
-
-    if (getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED) || getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED))
-    {
-        enabled.push_back("Warden");
-    }
-    else
-    {
-        disabled.push_back("Warden");
-    }
 
     char database[128];
     snprintf(database, sizeof(database), "Rel%s.%s.%s", GitRevision::GetWorldDBVersion(),

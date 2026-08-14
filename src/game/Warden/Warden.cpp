@@ -403,51 +403,6 @@ std::string Warden::Penalty(WardenCheck* check /*= NULL*/)
 }
 
 /**
- * @brief Handles an incoming Warden data packet from the client.
- *
- * @param recvData The incoming Warden packet.
- */
-void WorldSession::HandleWardenDataOpcode(WorldPacket& recvData)
-{
-    if (!_warden || recvData.empty())
-    {
-        return;
-    }
-
-    _warden->DecryptData(const_cast<uint8*>(recvData.contents()), recvData.size());
-    uint8 opcode;
-    recvData >> opcode;
-    sLog.outWarden("Got packet, opcode %02X, size %u", opcode, uint32(recvData.size()));
-    recvData.hexlike();
-
-    switch (opcode)
-    {
-        case WARDEN_CMSG_MODULE_MISSING:
-            _warden->SendModuleToClient();
-            break;
-        case WARDEN_CMSG_MODULE_OK:
-            _warden->RequestHash();
-            break;
-        case WARDEN_CMSG_CHEAT_CHECKS_RESULT:
-            _warden->HandleData(recvData);
-            break;
-        case WARDEN_CMSG_MEM_CHECKS_RESULT:
-            sLog.outWarden("NYI WARDEN_CMSG_MEM_CHECKS_RESULT received!");
-            break;
-        case WARDEN_CMSG_HASH_RESULT:
-            _warden->HandleHashResult(recvData);
-            _warden->InitializeModule();
-            break;
-        case WARDEN_CMSG_MODULE_FAILED:
-            sLog.outWarden("NYI WARDEN_CMSG_MODULE_FAILED received!");
-            break;
-        default:
-            sLog.outWarden("Got unknown warden opcode %02X of size %u.", opcode, uint32(recvData.size() - 1));
-            break;
-    }
-}
-
-/**
  * @brief Marks Warden as waiting for the next data response.
  */
 void Warden::RequestData()
