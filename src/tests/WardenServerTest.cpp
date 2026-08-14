@@ -509,7 +509,7 @@ TEST(WardenServer_uninitialized_crypto_fails_before_sending)
     CHECK_EQ(calls, 0u);
 }
 
-TEST(WardenServer_cannot_start_after_prestart_protocol_failure)
+TEST(WardenServer_ignores_prestart_data_and_can_start)
 {
     size_t calls = 0;
     std::unique_ptr<warden::WardenServer> server =
@@ -521,11 +521,14 @@ TEST(WardenServer_cannot_start_after_prestart_protocol_failure)
             });
     REQUIRE(server != nullptr);
 
-    server->HandleEncrypted({});
-    CHECK(server->GetState() == warden::WardenState::Failed);
-    CHECK(server->GetFailure() == warden::WardenFailure::UnexpectedCommand);
-    CHECK(!server->Start());
-    CHECK(server->GetState() == warden::WardenState::Failed);
-    CHECK(server->GetFailure() == warden::WardenFailure::UnexpectedCommand);
+    uint8 const unsolicited = 0xA5;
+    server->HandleEncrypted({&unsolicited, 1});
+    CHECK(server->GetState() == warden::WardenState::AwaitingModuleStatus);
+    CHECK(server->GetFailure() == warden::WardenFailure::None);
     CHECK_EQ(calls, 0u);
+
+    CHECK(server->Start());
+    CHECK(server->GetState() == warden::WardenState::AwaitingModuleStatus);
+    CHECK(server->GetFailure() == warden::WardenFailure::None);
+    CHECK_EQ(calls, 1u);
 }

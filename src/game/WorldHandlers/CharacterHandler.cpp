@@ -332,6 +332,10 @@ void WorldSession::HandleCharEnum(QueryResult* result)
     data.put<uint8>(0, num);
 
     SendPacket(&data);
+
+    // Retail 1.12.1.5875 emits its first Warden packet after the completed
+    // character list. Start is idempotent for repeated enumeration requests.
+    StartWardenBootstrap();
 }
 
 /**
@@ -657,6 +661,10 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recv_data)
         sLog.outError("Player tryes to login again, AccountId = %d", GetAccountId());
         return;
     }
+
+    // Do not gate login on Warden. This idempotent safety net covers clients
+    // that skip character enumeration while leaving normal retail order intact.
+    StartWardenBootstrap();
 
     m_playerLoading = true;
 
@@ -1179,4 +1187,3 @@ void WorldSession::HandleShowingCloakOpcode(WorldPacket & /*recv_data*/)
     DEBUG_LOG("CMSG_SHOWING_CLOAK for %s", _player->GetName());
     _player->ToggleFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_CLOAK);
 }
-

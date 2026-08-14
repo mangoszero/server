@@ -71,8 +71,9 @@ bool WardenServer::Start()
         return false;
     }
 
-    // Start occurs only after AUTH_OK/session admission, preserving world
-    // packet ordering and keeping queued sessions completely inert.
+    // The session schedules Start after the character list in the normal
+    // retail flow, with an idempotent player-login safety net for clients that
+    // skip enumeration. Queued sessions remain completely inert.
     if (!SendPlain(EncodeModuleUse(m_profile)))
         return false;
 
@@ -92,7 +93,9 @@ void WardenServer::HandleEncrypted(ByteView encryptedBody)
     }
     if (!m_started)
     {
-        Fail(WardenFailure::UnexpectedCommand);
+        // No client Warden command is solicited before MODULE_USE. Ignore the
+        // body without advancing the receive cipher so it cannot latch
+        // bootstrap off before the server starts negotiation.
         return;
     }
     if (encryptedBody.size && !encryptedBody.data)

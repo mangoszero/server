@@ -63,6 +63,7 @@ public:
     bool Start();
 
     // Accepts one complete encrypted CMSG_WARDEN_DATA body on the world thread.
+    // Bodies received before Start are ignored without advancing crypto.
     void HandleEncrypted(ByteView encryptedBody);
 
     // Advances the cumulative deadline for the current waiting state.

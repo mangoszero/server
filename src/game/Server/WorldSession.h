@@ -290,6 +290,7 @@ class WorldSession
         void SetPendingAddonInfo(std::unique_ptr<WorldPacket> packet);
         void SendPendingAddonInfo();
         void OnAuthenticatedAdmission();
+        void StartWardenBootstrap();
         void UpdateWarden(uint32 diffMs);
         void SendNotification(const char* format, ...) ATTR_PRINTF(2, 3);
         void SendNotification(int32 string_id, ...);

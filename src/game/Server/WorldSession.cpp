@@ -346,8 +346,8 @@ void WorldSession::OnAuthenticatedAdmission()
                 return m_link && !m_link->IsClosed();
             }, {}, [accountId, build](warden::WardenLifecycleEvent const& event)
             {
-                // ModuleReady precedes character selection, so account identity
-                // is the only truthful operator identity at this phase.
+                // Bootstrap may complete before a selected player exists, so
+                // account identity is the only guaranteed operator identity.
                 if (event.state == warden::WardenState::ModuleReady)
                 {
                     sLog.outString("Warden initialized for account %u "
@@ -371,8 +371,15 @@ void WorldSession::OnAuthenticatedAdmission()
     }
 
     m_warden = std::move(server);
-    // Create is deliberately inert; Start is the first Warden wire action.
-    m_warden->Start();
+}
+
+void WorldSession::StartWardenBootstrap()
+{
+    // Unsupported profiles intentionally have no Warden object. Start is
+    // idempotent, so character enumeration and the login safety net may both
+    // schedule bootstrap without duplicating MODULE_USE.
+    if (m_warden)
+        m_warden->Start();
 }
 
 void WorldSession::UpdateWarden(uint32 diffMs)

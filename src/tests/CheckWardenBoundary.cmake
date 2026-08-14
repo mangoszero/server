@@ -60,6 +60,8 @@ set(GAME_ROOT "${SOURCE_ROOT}/src/game")
 read_code("${GAME_ROOT}/WorldHandlers/WardenHandler.cpp" WARDEN_HANDLER)
 read_code("${GAME_ROOT}/WorldHandlers/World.cpp" WORLD_CPP)
 read_code("${GAME_ROOT}/WorldHandlers/WorldSessionMgr.cpp" SESSION_MGR)
+read_code("${GAME_ROOT}/WorldHandlers/CharacterHandler.cpp" CHARACTER_HANDLER)
+read_code("${GAME_ROOT}/Server/WorldSession.cpp" SESSION_CPP)
 read_code("${GAME_ROOT}/WorldHandlers/Map.cpp" MAP_CPP)
 
 require_count("${WARDEN_HANDLER}" "m_warden->HandleEncrypted[ \\t]*\\(" 1
@@ -81,6 +83,78 @@ if(AUTH_OK_AT EQUAL -1 OR ADDON_AT EQUAL -1 OR ADMISSION_AT EQUAL -1 OR
     ADDON_AT LESS_EQUAL AUTH_OK_AT OR ADMISSION_AT LESS_EQUAL ADDON_AT)
     message(FATAL_ERROR
         "Warden boundary: immediate admission must follow AUTH_OK and addon response")
+endif()
+
+require_count("${SESSION_CPP}" "m_warden->Start[ \\t]*\\(" 1
+    "session bootstrap seam must own the only direct Start call")
+string(FIND "${SESSION_CPP}" "void WorldSession::OnAuthenticatedAdmission()"
+    SESSION_ADMISSION_BEGIN)
+string(FIND "${SESSION_CPP}" "void WorldSession::StartWardenBootstrap()"
+    SESSION_ADMISSION_END)
+if(SESSION_ADMISSION_BEGIN EQUAL -1 OR SESSION_ADMISSION_END EQUAL -1 OR
+    SESSION_ADMISSION_END LESS_EQUAL SESSION_ADMISSION_BEGIN)
+    message(FATAL_ERROR
+        "Warden boundary: cannot locate authenticated admission body")
+endif()
+math(EXPR SESSION_ADMISSION_LENGTH
+    "${SESSION_ADMISSION_END} - ${SESSION_ADMISSION_BEGIN}")
+string(SUBSTRING "${SESSION_CPP}" ${SESSION_ADMISSION_BEGIN}
+    ${SESSION_ADMISSION_LENGTH} SESSION_ADMISSION_BODY)
+if(SESSION_ADMISSION_BODY MATCHES
+    "StartWardenBootstrap[ \\t]*\\(|m_warden->Start[ \\t]*\\(")
+    message(FATAL_ERROR
+        "Warden boundary: authenticated admission must provision without emitting")
+endif()
+
+require_count("${CHARACTER_HANDLER}" "StartWardenBootstrap[ \\t]*\\(" 2
+    "character list and player login must each schedule bootstrap once")
+
+string(FIND "${CHARACTER_HANDLER}"
+    "void WorldSession::HandleCharEnum(QueryResult* result)" CHAR_ENUM_BEGIN)
+string(FIND "${CHARACTER_HANDLER}"
+    "void WorldSession::HandleCharEnumOpcode" CHAR_ENUM_END)
+if(CHAR_ENUM_BEGIN EQUAL -1 OR CHAR_ENUM_END EQUAL -1 OR
+    CHAR_ENUM_END LESS_EQUAL CHAR_ENUM_BEGIN)
+    message(FATAL_ERROR "Warden boundary: cannot locate character-enum body")
+endif()
+math(EXPR CHAR_ENUM_LENGTH "${CHAR_ENUM_END} - ${CHAR_ENUM_BEGIN}")
+string(SUBSTRING "${CHARACTER_HANDLER}" ${CHAR_ENUM_BEGIN}
+    ${CHAR_ENUM_LENGTH} CHAR_ENUM_BODY)
+require_count("${CHAR_ENUM_BODY}" "StartWardenBootstrap[ \\t]*\\(" 1
+    "character-enum completion must schedule bootstrap exactly once")
+string(FIND "${CHAR_ENUM_BODY}" "SendPacket(&data)" CHAR_LIST_SEND_AT)
+string(FIND "${CHAR_ENUM_BODY}" "StartWardenBootstrap()" CHAR_ENUM_START_AT)
+if(CHAR_LIST_SEND_AT EQUAL -1 OR CHAR_ENUM_START_AT EQUAL -1 OR
+    CHAR_ENUM_START_AT LESS_EQUAL CHAR_LIST_SEND_AT)
+    message(FATAL_ERROR
+        "Warden boundary: character-list send must precede bootstrap emission")
+endif()
+
+string(FIND "${CHARACTER_HANDLER}"
+    "void WorldSession::HandlePlayerLoginOpcode" PLAYER_LOGIN_BEGIN)
+string(FIND "${CHARACTER_HANDLER}"
+    "void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)"
+    PLAYER_LOGIN_END)
+if(PLAYER_LOGIN_BEGIN EQUAL -1 OR PLAYER_LOGIN_END EQUAL -1 OR
+    PLAYER_LOGIN_END LESS_EQUAL PLAYER_LOGIN_BEGIN)
+    message(FATAL_ERROR "Warden boundary: cannot locate player-login opcode body")
+endif()
+math(EXPR PLAYER_LOGIN_LENGTH "${PLAYER_LOGIN_END} - ${PLAYER_LOGIN_BEGIN}")
+string(SUBSTRING "${CHARACTER_HANDLER}" ${PLAYER_LOGIN_BEGIN}
+    ${PLAYER_LOGIN_LENGTH} PLAYER_LOGIN_BODY)
+require_count("${PLAYER_LOGIN_BODY}" "StartWardenBootstrap[ \\t]*\\(" 1
+    "player-login path must retain one non-gating bootstrap safety net")
+string(FIND "${PLAYER_LOGIN_BODY}" "PlayerLoading()" PLAYER_LOGIN_GUARD_AT)
+string(FIND "${PLAYER_LOGIN_BODY}" "StartWardenBootstrap()"
+    PLAYER_LOGIN_START_AT)
+string(FIND "${PLAYER_LOGIN_BODY}" "m_playerLoading = true"
+    PLAYER_LOADING_SET_AT)
+if(PLAYER_LOGIN_GUARD_AT EQUAL -1 OR PLAYER_LOGIN_START_AT EQUAL -1 OR
+    PLAYER_LOADING_SET_AT EQUAL -1 OR
+    PLAYER_LOGIN_START_AT LESS_EQUAL PLAYER_LOGIN_GUARD_AT OR
+    PLAYER_LOGIN_START_AT GREATER_EQUAL PLAYER_LOADING_SET_AT)
+    message(FATAL_ERROR
+        "Warden boundary: login safety net must follow the duplicate guard and never gate loading")
 endif()
 
 string(FIND "${SESSION_MGR}" "void World::AddQueuedSession" ADD_QUEUE_BEGIN)
