@@ -41,6 +41,7 @@ set(SRC_GRP_TESTS
     ByteBufferTest.cpp
     SessionMailboxTest.cpp
     SessionProtocolPolicyTest.cpp
+    WorldGatewayAccountTest.cpp
     DatabaseConcurrencyTest.cpp
     OpenSSLProviderTest.cpp
     ClientParserTest.cpp
@@ -55,6 +56,7 @@ set(SRC_GRP_TESTS
     ${CMAKE_SOURCE_DIR}/src/game/WorldHandlers/DynamicCollision.cpp
     ${CMAKE_SOURCE_DIR}/src/game/WorldHandlers/GameObjectModel.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Server/SessionMailbox.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Server/WorldGatewayAccount.cpp
     ByteBufferStressTest.cpp
     CryptoStressTest.cpp
     CodecStressTest.cpp
