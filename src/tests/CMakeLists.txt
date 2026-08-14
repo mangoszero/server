@@ -42,6 +42,7 @@ set(SRC_GRP_TESTS
     SessionMailboxTest.cpp
     SessionProtocolPolicyTest.cpp
     WorldGatewayAccountTest.cpp
+    WardenModuleCatalogTest.cpp
     DatabaseConcurrencyTest.cpp
     OpenSSLProviderTest.cpp
     ClientParserTest.cpp
@@ -57,6 +58,9 @@ set(SRC_GRP_TESTS
     ${CMAKE_SOURCE_DIR}/src/game/WorldHandlers/GameObjectModel.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Server/SessionMailbox.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Server/WorldGatewayAccount.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenProtocol.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenModuleWin5875Data.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenModuleCatalog.cpp
     ByteBufferStressTest.cpp
     CryptoStressTest.cpp
     CodecStressTest.cpp
@@ -76,7 +80,8 @@ add_executable(mangos_tests ${SRC_GRP_TESTS})
 target_include_directories(mangos_tests
     PRIVATE
         ${CMAKE_SOURCE_DIR}/src/game/WorldHandlers
-        ${CMAKE_SOURCE_DIR}/src/game/Server)
+        ${CMAKE_SOURCE_DIR}/src/game/Server
+        ${CMAKE_SOURCE_DIR}/src/game/Warden)
 
 target_link_libraries(mangos_tests
     PRIVATE
