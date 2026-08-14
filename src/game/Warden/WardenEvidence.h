@@ -25,6 +25,8 @@
 
 #include "WardenProtocol.h"
 
+#include <variant>
+
 namespace warden
 {
 enum class TimingOutcome : uint8
@@ -41,8 +43,26 @@ struct TimingEvidence
     uint32 clientTick = 0;
 };
 
+enum class MpqOutcome : uint8
+{
+    Match,
+    DigestMismatch,
+    Unavailable
+};
+
+/** Validated archive evidence containing only stable catalogue identity. */
+struct MpqEvidence
+{
+    uint32 requestId = 0;
+    uint32 checkId = 0;
+    MpqOutcome outcome = MpqOutcome::Unavailable;
+};
+
+using WardenEvidence = std::variant<TimingEvidence, MpqEvidence>;
+
 // Fixed labels are safe for operator summaries and contain no client data.
 char const* ToString(TimingOutcome outcome);
+char const* ToString(MpqOutcome outcome);
 }
 
 #endif

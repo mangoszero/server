@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <utility>
+#include <variant>
 
 namespace
 {
@@ -352,7 +353,8 @@ bool WardenServer::SendHashRequest()
 
 bool WardenServer::SendTimingCheck(CheckPlan const& plan)
 {
-    if (plan.kind != CheckKind::Timing || !plan.requestId)
+    if (!plan.requestId || plan.checks.size() != 1 ||
+        !std::holds_alternative<TimingCheck>(plan.checks.front()))
     {
         Fail(WardenFailure::UnexpectedCommand);
         return false;

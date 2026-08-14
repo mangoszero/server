@@ -22,13 +22,42 @@
 
 #include "TestHarness.h"
 
+#include "WardenCheckCatalog.h"
 #include "WardenCheckPlanner.h"
 #include "WardenEvidence.h"
+
+#include <variant>
+
+namespace
+{
+warden::MpqCheckProfile TestMpqProfile()
+{
+    warden::MpqCheckProfile profile;
+    profile.checkId = 1;
+    profile.path = "DBFilesClient\\AreaTable.dbc";
+    profile.expectedSha1 =
+    {
+        0x7D, 0x88, 0x15, 0x4D, 0x34, 0x11, 0x81, 0x19,
+        0x85, 0xF5, 0xD8, 0x11, 0x77, 0xC5, 0x45, 0x32,
+        0x48, 0x13, 0x34, 0x43
+    };
+    return profile;
+}
+}
 
 TEST(WardenEvidence_timing_outcomes_have_secret_free_fixed_labels)
 {
     CHECK_STR(warden::ToString(warden::TimingOutcome::Stable), "Stable");
     CHECK_STR(warden::ToString(warden::TimingOutcome::Unstable), "Unstable");
+}
+
+TEST(WardenEvidence_mpq_outcomes_have_secret_free_fixed_labels)
+{
+    CHECK_STR(warden::ToString(warden::MpqOutcome::Match), "Match");
+    CHECK_STR(warden::ToString(warden::MpqOutcome::DigestMismatch),
+        "DigestMismatch");
+    CHECK_STR(warden::ToString(warden::MpqOutcome::Unavailable),
+        "Unavailable");
 }
 
 TEST(WardenCheckPlanner_waits_one_cumulative_eligible_second_once)
@@ -41,8 +70,9 @@ TEST(WardenCheckPlanner_waits_one_cumulative_eligible_second_once)
 
     auto const plan = planner.Update(true, 1);
     REQUIRE(plan.has_value());
-    CHECK(plan->kind == warden::CheckKind::Timing);
     CHECK_EQ(plan->requestId, uint32(1));
+    REQUIRE(plan->checks.size() == 1u);
+    CHECK(std::holds_alternative<warden::TimingCheck>(plan->checks[0]));
 
     CHECK(!planner.Update(true, 60000).has_value());
     CHECK(!planner.Update(false, 60000).has_value());
@@ -58,5 +88,28 @@ TEST(WardenCheckPlanner_resets_partial_delay_when_ineligible)
 
     auto const plan = planner.Update(true, 1);
     REQUIRE(plan.has_value());
-    CHECK(plan->kind == warden::CheckKind::Timing);
+    REQUIRE(plan->checks.size() == 1u);
+    CHECK(std::holds_alternative<warden::TimingCheck>(plan->checks[0]));
+}
+
+TEST(WardenCheckPlanner_emits_timing_then_exact_mpq_once)
+{
+    warden::WardenCheckPlanner planner(1000, TestMpqProfile());
+
+    auto const plan = planner.Update(true, 1000);
+    REQUIRE(plan.has_value());
+    CHECK_EQ(plan->requestId, uint32(1));
+    REQUIRE(plan->checks.size() == 2u);
+    CHECK(std::holds_alternative<warden::TimingCheck>(plan->checks[0]));
+    REQUIRE(std::holds_alternative<warden::MpqCheckProfile>(
+        plan->checks[1]));
+    warden::MpqCheckProfile const& mpq =
+        std::get<warden::MpqCheckProfile>(plan->checks[1]);
+    CHECK_EQ(mpq.checkId, uint32(1));
+    CHECK_STR(mpq.path.c_str(), "DBFilesClient\\AreaTable.dbc");
+    CHECK_HEX(mpq.expectedSha1.data(), mpq.expectedSha1.size(),
+        "7d88154d3411811985f5d81177c5453248133443");
+
+    CHECK(!planner.Update(true, 60000).has_value());
+    CHECK(!planner.Update(false, 60000).has_value());
 }

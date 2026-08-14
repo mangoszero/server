@@ -23,21 +23,24 @@
 #ifndef MANGOS_WARDEN_CHECK_PLANNER_H
 #define MANGOS_WARDEN_CHECK_PLANNER_H
 
-#include "WardenProtocol.h"
+#include "WardenCheckCatalog.h"
 
 #include <optional>
+#include <variant>
+#include <vector>
 
 namespace warden
 {
-enum class CheckKind : uint8
+struct TimingCheck
 {
-    Timing
 };
+
+using PlannedCheck = std::variant<TimingCheck, MpqCheckProfile>;
 
 struct CheckPlan
 {
     uint32 requestId = 0;
-    CheckKind kind = CheckKind::Timing;
+    std::vector<PlannedCheck> checks;
 };
 
 /**
@@ -48,7 +51,8 @@ struct CheckPlan
 class WardenCheckPlanner
 {
 public:
-    explicit WardenCheckPlanner(uint32 eligibilityDelayMs = 1000);
+    explicit WardenCheckPlanner(uint32 eligibilityDelayMs = 1000,
+        std::optional<MpqCheckProfile> mpqCheck = std::nullopt);
 
     // Ineligible updates reset partial delay. Once a plan is returned, this
     // planner remains complete and returns no further work.
@@ -56,6 +60,7 @@ public:
 
 private:
     uint32 m_eligibilityDelayMs;
+    std::optional<MpqCheckProfile> m_mpqCheck;
     uint32 m_eligibleMs = 0;
     bool m_issued = false;
 };

@@ -33,4 +33,15 @@ char const* ToString(TimingOutcome outcome)
     }
     return "Unknown";
 }
+
+char const* ToString(MpqOutcome outcome)
+{
+    switch (outcome)
+    {
+        case MpqOutcome::Match: return "Match";
+        case MpqOutcome::DigestMismatch: return "DigestMismatch";
+        case MpqOutcome::Unavailable: return "Unavailable";
+    }
+    return "Unknown";
+}
 }
