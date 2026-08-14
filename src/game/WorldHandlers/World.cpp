@@ -360,6 +360,7 @@ World::AddSession_(WorldSession* s)
     packet << uint32(0);                                    // BillingTimeRested
     s->SendPacket(&packet);
     s->SendPendingAddonInfo();
+    s->OnAuthenticatedAdmission();
 
     UpdateMaxSessionCounters();
 
@@ -2396,7 +2397,7 @@ void World::ShutdownCancel()
  *
  * @param diff The elapsed world update time in milliseconds.
  */
-void World::UpdateSessions(uint32 /*diff*/)
+void World::UpdateSessions(uint32 diff)
 {
     ///- Add new sessions
     WorldSession* sess;
@@ -2419,6 +2420,10 @@ void World::UpdateSessions(uint32 /*diff*/)
             RemoveQueuedSession(pSession);
             m_sessions.erase(itr);
             delete pSession;
+        }
+        else
+        {
+            pSession->UpdateWarden(diff);
         }
     }
 }

@@ -72,6 +72,12 @@ namespace proto
 class IClientLink;
 }
 
+namespace warden
+{
+struct AdmissionData;
+class WardenServer;
+}
+
 struct OpcodeHandler;
 
 /**
@@ -241,6 +247,10 @@ class WorldSession
         WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
                      std::shared_ptr<SessionMailbox> mailbox, AccountTypes sec,
                      time_t mute_time, LocaleConstant locale);
+        WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
+                     std::shared_ptr<SessionMailbox> mailbox, AccountTypes sec,
+                     time_t mute_time, LocaleConstant locale,
+                     warden::AdmissionData&& admission);
 
         /**
          * @brief Destructor
@@ -279,6 +289,8 @@ class WorldSession
         void SendPacket(WorldPacket const* packet);
         void SetPendingAddonInfo(std::unique_ptr<WorldPacket> packet);
         void SendPendingAddonInfo();
+        void OnAuthenticatedAdmission();
+        void UpdateWarden(uint32 diffMs);
         void SendNotification(const char* format, ...) ATTR_PRINTF(2, 3);
         void SendNotification(int32 string_id, ...);
         void SendPetNameInvalid(uint32 error, const std::string& name);
@@ -910,6 +922,9 @@ class WorldSession
         std::shared_ptr<proto::IClientLink> m_link;
         std::shared_ptr<SessionMailbox> m_mailbox;
         std::unique_ptr<WorldPacket> m_pendingAddonInfo;
+        std::unique_ptr<warden::AdmissionData> m_pendingWardenAdmission;
+        std::unique_ptr<warden::WardenServer> m_warden;
+        bool m_wardenAdmissionHandled;
         std::string m_Address;
 
         AccountTypes _security;

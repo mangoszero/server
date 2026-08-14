@@ -22,7 +22,8 @@ enum AccountFieldIndex
     ACCOUNT_LOCALE = 8,
     ACCOUNT_BANNED = 9,
     IP_BANNED = 10,
-    ACCOUNT_FIELD_COUNT = 11
+    WARDEN_PLATFORM = 11,
+    ACCOUNT_FIELD_COUNT = 12
 };
 }
 
@@ -41,4 +42,9 @@ AccountRestriction EvaluateAccountRestriction(
     }
 
     return AccountRestriction::None;
+}
+
+std::string ReadWardenPlatformHint(Field const* fields)
+{
+    return fields[WARDEN_PLATFORM].GetCppString();
 }

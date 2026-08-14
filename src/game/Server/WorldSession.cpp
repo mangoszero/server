@@ -70,6 +70,7 @@
 #include "Guild.h"
 #include "GuildMgr.h"
 #include "World.h"
+#include "WardenManager.h"
 #include "BattleGround/BattleGroundMgr.h"
 #include "SocialMgr.h"
 #ifdef ENABLE_ELUNA
@@ -155,9 +156,22 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
 WorldSession::WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
                            std::shared_ptr<SessionMailbox> mailbox, AccountTypes sec,
                            time_t mute_time, LocaleConstant locale)
+    : WorldSession(id, std::move(link), std::move(mailbox), sec, mute_time,
+          locale, warden::AdmissionData())
+{
+}
+
+WorldSession::WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
+                           std::shared_ptr<SessionMailbox> mailbox, AccountTypes sec,
+                           time_t mute_time, LocaleConstant locale,
+                           warden::AdmissionData&& admission)
     : m_muteTime(mute_time),
     _player(NULL), m_link(std::move(link)),
     m_mailbox(mailbox ? std::move(mailbox) : std::make_shared<SessionMailbox>()),
+    m_pendingWardenAdmission(admission.available
+        ? std::make_unique<warden::AdmissionData>(std::move(admission))
+        : nullptr),
+    m_wardenAdmissionHandled(false),
     _security(sec), _accountId(id), _logoutTime(0),
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
@@ -173,6 +187,12 @@ WorldSession::WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
 /// WorldSession destructor
 WorldSession::~WorldSession()
 {
+    if (m_pendingWardenAdmission)
+    {
+        m_pendingWardenAdmission->Clear();
+        m_pendingWardenAdmission.reset();
+    }
+    m_warden.reset();
     m_mailbox->Close();
 
     ///- unload player if not unloaded
@@ -289,6 +309,56 @@ void WorldSession::SendPendingAddonInfo()
 
     SendPacket(m_pendingAddonInfo.get());
     m_pendingAddonInfo.reset();
+}
+
+void WorldSession::OnAuthenticatedAdmission()
+{
+    if (m_wardenAdmissionHandled)
+        return;
+    m_wardenAdmissionHandled = true;
+
+    if (!m_pendingWardenAdmission || !m_pendingWardenAdmission->available)
+    {
+        m_pendingWardenAdmission.reset();
+        return;
+    }
+
+    warden::AdmissionData admission(std::move(*m_pendingWardenAdmission));
+    m_pendingWardenAdmission.reset();
+    uint32 const build = admission.build;
+
+    std::unique_ptr<warden::WardenServer> server =
+        warden::WardenManager::Instance().Create(build, admission.platform,
+            admission.sessionKey, [this](warden::Bytes const& payload)
+            {
+                if (!m_link || m_link->IsClosed())
+                    return false;
+
+                WorldPacket packet(SMSG_WARDEN_DATA, payload.size());
+                if (!payload.empty())
+                    packet.append(payload.data(), payload.size());
+                SendPacket(&packet);
+                return m_link && !m_link->IsClosed();
+            });
+    admission.Clear();
+
+    if (!server)
+        return;
+
+    m_warden = std::move(server);
+    if (!m_warden->Start())
+    {
+        sLog.outError("Warden bootstrap failed for account %u build %u: "
+            "state=%s failure=%s", GetAccountId(), build,
+            warden::ToString(m_warden->GetState()),
+            warden::ToString(m_warden->GetFailure()));
+    }
+}
+
+void WorldSession::UpdateWarden(uint32 diffMs)
+{
+    if (m_warden)
+        m_warden->Update(diffMs);
 }
 
 /// Add an incoming packet to the queue

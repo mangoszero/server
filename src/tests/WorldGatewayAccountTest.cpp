@@ -13,13 +13,22 @@
 
 namespace
 {
-void SetClearRow(Field (&fields)[11])
+template <size_t Size>
+void SetClearRow(Field (&fields)[Size])
 {
     for (Field& field : fields)
     {
         field.SetValue("0");
     }
     fields[3].SetValue("192.0.2.10");
+}
+
+TEST(WorldGatewayAccount_warden_platform_hint_is_appended_at_eleven)
+{
+    Field fields[12];
+    SetClearRow(fields);
+    fields[11].SetValue("Win");
+    CHECK_STR(ReadWardenPlatformHint(fields), "Win");
 }
 }
 

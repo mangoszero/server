@@ -39,11 +39,13 @@
 #include "World.h"
 #include "WorldSession.h"
 #include "WorldGatewayAccount.h"
+#include "WardenProtocol.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
@@ -57,6 +59,7 @@ struct AccountRow final : proto::AuthContext
     time_t muteTime = 0;
     LocaleConstant locale = LOCALE_enUS;
     BigNumber sessionKey;
+    std::string platform;
 };
 
 void EnsureDbThreadRegistered()
@@ -121,7 +124,8 @@ proto::AuthLookup WorldGateway::LookupAccount(proto::AuthRequest const& request)
         "(SELECT 1 FROM `account_banned` WHERE `id` = `a`.`id` AND `active` = 1 "
         "AND (`unbandate` > UNIX_TIMESTAMP() OR `unbandate` = `bandate`) LIMIT 1), "
         "(SELECT 1 FROM `ip_banned` WHERE (`unbandate` = `bandate` "
-        "OR `unbandate` > UNIX_TIMESTAMP()) AND `ip` = '%s' LIMIT 1) "
+        "OR `unbandate` > UNIX_TIMESTAMP()) AND `ip` = '%s' LIMIT 1), "
+        "`a`.`os` "
         "FROM `account` AS `a` WHERE `a`.`username` = '%s'",
         safeAddress.c_str(), safeAccount.c_str()));
 
@@ -168,6 +172,7 @@ proto::AuthLookup WorldGateway::LookupAccount(proto::AuthRequest const& request)
     uint8 const locale = fields[8].GetUInt8();
     row->locale = locale >= MAX_LOCALE ? LOCALE_enUS : LocaleConstant(locale);
     row->sessionKey.SetHexStr(fields[2].GetString());
+    row->platform = ReadWardenPlatformHint(fields);
 
     proto::AuthLookup lookup;
     lookup.status = proto::AuthStatus::Ok;
@@ -194,8 +199,17 @@ proto::SessionId WorldGateway::Attach(proto::AuthRequest const& request,
     statement.PExecute(request.peerAddress.c_str(), request.account.c_str());
 
     auto mailbox = std::make_shared<SessionMailbox>();
+    warden::AdmissionData admission;
+    admission.build = request.build;
+    admission.platform = account->platform;
+    uint8 const* const sessionKeyBytes = account->sessionKey.AsByteArray(40);
+    std::copy(sessionKeyBytes,
+        sessionKeyBytes + admission.sessionKey.size(),
+        admission.sessionKey.begin());
+    admission.available = true;
     auto session = std::make_unique<WorldSession>(account->id, link, mailbox,
-        account->security, account->muteTime, account->locale);
+        account->security, account->muteTime, account->locale,
+        std::move(admission));
     session->LoadTutorialsData();
 
     WorldPacket addonSource(CMSG_AUTH_SESSION, request.addonData.size());
