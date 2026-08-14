@@ -45,6 +45,7 @@ set(SRC_GRP_TESTS
     WardenModuleCatalogTest.cpp
     WardenCryptoContextTest.cpp
     WardenPacketCodecTest.cpp
+    WardenServerTest.cpp
     DatabaseConcurrencyTest.cpp
     OpenSSLProviderTest.cpp
     ClientParserTest.cpp
@@ -63,6 +64,8 @@ set(SRC_GRP_TESTS
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenProtocol.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenCryptoContext.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenPacketCodec.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenManager.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenModuleWin5875Data.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenModuleCatalog.cpp
     ByteBufferStressTest.cpp
