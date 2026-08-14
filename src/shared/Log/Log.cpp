@@ -118,7 +118,7 @@ Log::Log() :
     elunaErrLogfile(NULL),
 #endif /* ENABLE_ELUNA */
 
-    eventAiErLogfile(NULL), scriptErrLogFile(NULL), worldLogfile(NULL), wardenLogfile(NULL),
+    eventAiErLogfile(NULL), scriptErrLogFile(NULL), worldLogfile(NULL),
     m_consoleBody(NULL), m_consoleThread(NULL), m_consoleAsync(false), m_colored(false),
     m_includeTime(false), m_gmlog_per_account(false), m_scriptLibName(NULL)
 {
@@ -336,11 +336,6 @@ void Log::CloseLogFiles()
     {
         fclose(worldLogfile);
         worldLogfile = NULL;
-    }
-    if (wardenLogfile != NULL)
-    {
-        fclose(wardenLogfile);
-        wardenLogfile = NULL;
     }
 }
 
@@ -589,8 +584,6 @@ void Log::Initialize()
     {
         worldLogfile = openLogFile("WorldLogFile", "WorldLogTimestamp", "a");
     }
-    wardenLogfile = openLogFile("WardenLogFile", "WardenLogTimestamp", "a");
-
     // Main log file settings
     m_includeTime  = sConfig.GetBoolDefault("LogTime", false);
     m_logLevel     = LogLevel(sConfig.GetIntDefault("LogLevel", 0));
@@ -1085,49 +1078,6 @@ void Log::outCommand(uint32 account, const char* str, ...)
         fprintf(gmLogfile, "\n");
         va_end(ap);
         fflush(gmLogfile);
-    }
-
-    fflush(stdout);
-}
-
-void Log::outWarden()
-{
-    ConsoleEmitBlank(true);
-    if (wardenLogfile)
-    {
-        outTimestamp(wardenLogfile);
-        fprintf(wardenLogfile, "\n");
-        fflush(wardenLogfile);
-    }
-
-    fflush(stdout);
-}
-
-void Log::outWarden(const char* str, ...)
-{
-    if (!str)
-    {
-        return;
-    }
-
-    // FILE ONLY. Warden narrates six lines per check per player, every thirty seconds --
-    // at LogLevel 3 that is a console nobody can read anything else in. It has a logfile of
-    // its own, which is the whole point of having one; a real detection is reported through
-    // outError and reaches the console that way.
-
-    if (wardenLogfile && m_logFileLevel >= LOG_LVL_DETAIL)
-    {
-        va_list ap;
-
-        outTimestamp(wardenLogfile);
-        fprintf(wardenLogfile, "[Warden]: ");
-
-        va_start(ap, str);
-        vfprintf(wardenLogfile, str, ap);
-        fprintf(wardenLogfile, "\n");
-        va_end(ap);
-
-        fflush(wardenLogfile);
     }
 
     fflush(stdout);

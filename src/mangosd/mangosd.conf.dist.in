@@ -389,11 +389,6 @@ MaxWhoListReturns                 = 49
 #        Default: "Ra.log"
 #                 "" - Empty name for disable
 #
-#    WardenLogFile
-#        Log file for warden-related output
-#        Default: ""          - no log file created
-#                 "warden.log" - recommended name to create a log file
-#
 #    LogColors
 #        Color for messages (format "normal_color details_color debug_color error_color")
 #        Colors: 0 - BLACK, 1 - RED, 2 - GREEN,  3 - BROWN, 4 - BLUE, 5 - MAGENTA, 6 -  CYAN, 7 - GREY,
@@ -444,8 +439,6 @@ GmLogFile                    = "world-gamemaster.log"
 GmLogTimestamp               = 0
 GmLogPerAccount              = 0
 RaLogFile                    = "world-remote-access.log"
-WardenLogFile                = "warden.log"
-WardenLogTimestamp           = 0
 LogColors                    = "13 7 11 9"
 SD3ErrorLogFile              = "scriptdev3-errors.log"
 
@@ -1930,74 +1923,6 @@ CharDelete.KeepDays = 30
 ###################################################################################################
 
 QuestTracker.Enable= 0
-
-###################################################################################################
-# WARDEN SETTINGS
-#
-#    Warden.WinEnabled
-#        Description: Enables Warden checks for Windows clients.
-#        Default:     1 - (Enabled)
-#                     0 - (Disabled)
-#
-#    Warden.OSXEnabled
-#        Description: Enables Warden checks for OSX clients.
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
-#
-#    Warden.NumMemChecks
-#        Description: Number of Warden memory checks that are sent to the client each cycle.
-#        Default:     3 - (Enabled)
-#                     0 - (Disabled)
-#
-#    Warden.NumOtherChecks
-#        Description: Number of Warden checks other than memory checks that are added to request
-#                     each checking cycle.
-#        Default:     7 - (Enabled)
-#                     0 - (Disabled)
-#
-#    Warden.ClientResponseDelay
-#        Description: Time (in seconds) before client is getting disconnecting for not responding.
-#        Default:     600 - (10 Minutes)
-#                     0 - (Disabled, client won't be kicked)
-#
-#    Warden.ClientCheckHoldOff
-#        Description: Time (in seconds) to wait before sending the next check request to the client.
-#                     A low number increases traffic and load on client and server side.
-#        Default:     30 - (30 Seconds)
-#                     0  - (Send check as soon as possible)
-#
-#    Warden.ClientCheckFailAction
-#        Description: Default action being taken if a client check failed. Actions can be
-#                     overwritten for each single check via warden_action table in characters
-#                     database.
-#        Default:     1 - (Kick)
-#                     0 - (Disabled, Logging only)
-#                     2 - (Ban)
-#
-#    Warden.BanDuration
-#        Description: Time (in seconds) an account will be banned if ClientCheckFailAction is set
-#                     to ban.
-#        Default:     86400 - (24 hours)
-#                     0     - (Permanent ban)
-#
-#    Warden.DBLogLevel
-#        Description: The minimal WardenActions value of Warden check to be logged into realmd.warden_log table.
-#                     WardenActions: 0 - log, 1 - kick, 2 - ban
-#
-#        Deafult:     0 - (Logging any failed check)
-#                     3 - (Disable DB logging)
-#
-###################################################################################################
-
-Warden.WinEnabled            = 1
-Warden.OSXEnabled            = 0
-Warden.NumMemChecks          = 3
-Warden.NumOtherChecks        = 7
-Warden.ClientResponseDelay   = 600
-Warden.ClientCheckHoldOff    = 30
-Warden.ClientCheckFailAction = 1
-Warden.BanDuration           = 86400
-Warden.DBLogLevel            = 0
 
 ###################################################################################################
 #  REALM STATUS FLAG

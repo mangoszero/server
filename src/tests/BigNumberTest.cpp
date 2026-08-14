@@ -109,7 +109,7 @@ TEST(BigNumber_exact_length_needs_no_padding)
 TEST(BigNumber_session_key_sized_padding)
 {
     // The shape that actually bit: a 40-byte session key whose top byte is zero.
-    // Warden and the login proof both ask for exactly 40 bytes.
+    // The login proof asks for exactly 40 bytes.
     BigNumber n;
     n.SetDword(0xAABBCCDD);
 

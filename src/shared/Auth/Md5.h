@@ -37,11 +37,9 @@
 /**
  * @brief MD5 over OpenSSL's EVP interface.
  *
- * MD5 is used here only where the Warden protocol requires it -- identifying a
- * client module by the digest of its compressed image, and checking the digest
- * the client reports back. It is not used for anything security-bearing that
- * could be moved to a stronger digest: the algorithm is fixed by what the
- * 3.3.5a client does.
+ * MD5 remains only for compatibility with legacy client protocols, including
+ * the realmd patch catalogue. It must not be used for new security decisions;
+ * the remaining algorithm choices are fixed by shipped clients.
  *
  * The point of this class is the *interface*, not the algorithm. The call sites
  * previously used OpenSSL's low-level MD5_Init/MD5_Update/MD5_Final, which

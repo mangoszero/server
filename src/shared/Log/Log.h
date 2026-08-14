@@ -337,17 +337,6 @@ class Log : public MaNGOS::Singleton<Log>
          */
         void outRALog(const char* str, ...)       ATTR_PRINTF(2, 3);
         /**
-        * @brief any log level
-        *
-        */
-        void outWarden();
-        /**
-        * @brief any log level
-        *
-        * @param str...
-        */
-        void outWarden(const char* str, ...)      ATTR_PRINTF(2, 3);
-        /**
          * @brief
          *
          * @return uint32
@@ -567,7 +556,6 @@ class Log : public MaNGOS::Singleton<Log>
         FILE* eventAiErLogfile; /**< TODO */
         FILE* scriptErrLogFile; /**< TODO */
         FILE* worldLogfile; /**< TODO */
-        FILE* wardenLogfile; /**< TODO */
         std::mutex m_worldLogMtx; /**< Serializes packet-dump writes to worldLogfile */
         std::mutex m_fileMtx; /**< Serializes writes to the main logfile so concurrent map-update worker threads cannot tear lines */
 

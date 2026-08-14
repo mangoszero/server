@@ -893,9 +893,6 @@ class WorldSession
         void HandleBotPackets();
 #endif
 
-        // for Warden
-        uint16 GetClientBuild() const { return _build; }
-
     private:
         // private trade methods
         void moveItems(Item* myItems[], Item* hisItems[]);
@@ -917,8 +914,6 @@ class WorldSession
 
         AccountTypes _security;
         uint32 _accountId;
-
-        uint16 _build;                                      // connected client build
 
         time_t _logoutTime;
         bool m_inQueue;                                     // session wait in auth.queue

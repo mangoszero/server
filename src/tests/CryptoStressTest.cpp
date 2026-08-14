@@ -140,8 +140,8 @@ TEST(Crypto_hmac_sha1_rfc2202_vector)
 TEST(Crypto_incremental_hashing_matches_one_shot)
 {
     // Feeding a digest in pieces must equal feeding it whole. This is the
-    // property Warden and the login proof both rely on, since both build their
-    // input from several appends.
+    // property authentication and legacy-protocol code rely on when building
+    // inputs from several appends.
     std::mt19937 rng(0x51A1u);
     std::uniform_int_distribution<int> byteDist(0, 255);
     std::uniform_int_distribution<size_t> chunkDist(1, 37);
@@ -283,4 +283,3 @@ TEST(Crypto_arc4_matches_the_published_vector)
     rc4.UpdateData(sizeof(data), data);
     CHECK_HEX(data, sizeof(data), "bbf316e8d940af0ad3");
 }
-
