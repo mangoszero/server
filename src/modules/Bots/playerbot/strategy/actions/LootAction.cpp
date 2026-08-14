@@ -109,7 +109,10 @@ OpenLootAction::LootResult OpenLootAction::DoLoot(LootObject& lootObject)
 
     if (creature && creature->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE))
     {
-        bot->GetMotionMaster()->Clear();
+        // A real halt, not just Clear(). The bot is at the corpse and about to loot it, so
+        // the leg that brought it here has to end -- Clear() alone would leave the spline
+        // running and slide the bot past the thing it stopped for.
+        ai->StopMovement();
         WorldPacket* const packet = new WorldPacket(CMSG_LOOT, 8);
         *packet << lootObject.guid;
         bot->GetSession()->QueuePacket(packet);
@@ -124,7 +127,7 @@ OpenLootAction::LootResult OpenLootAction::DoLoot(LootObject& lootObject)
             return LOOT_IMPOSSIBLE;
         }
 
-        bot->GetMotionMaster()->Clear();
+        ai->StopMovement();
         switch (skill)
         {
             // A missing profession is permanent; a cast that merely failed is not.
@@ -156,7 +159,7 @@ OpenLootAction::LootResult OpenLootAction::DoLoot(LootObject& lootObject)
         return LOOT_IMPOSSIBLE;
     }
 
-    bot->GetMotionMaster()->Clear();
+    ai->StopMovement();
 
     if (go && go->GetGoState() == GO_STATE_ACTIVE)
     {

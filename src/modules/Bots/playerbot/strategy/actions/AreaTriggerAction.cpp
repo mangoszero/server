@@ -53,9 +53,11 @@ bool AreaTriggerAction::Execute(Event event)
 
     ai->ChangeStrategy("-follow master,+stay", BOT_STATE_NON_COMBAT);
 
-    MotionMaster &mm = *bot->GetMotionMaster();
-    mm.Clear();
-    bot->StopMoving(true);
+    // StopMoving alone stopped the bot at its SERVER position, which UpdateSplineMovement
+    // only refreshes every POSITION_UPDATE_DELAY, so the declared stop could be most of a
+    // 400ms step behind where the client had it. StopMovement computes the real spline
+    // position first, so both ends agree on where the bot came to rest.
+    ai->StopMovement();
 
     WorldPacket p(CMSG_AREATRIGGER);
     p << triggerId;

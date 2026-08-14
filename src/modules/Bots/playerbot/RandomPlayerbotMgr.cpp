@@ -765,8 +765,6 @@ bool RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
             continue;
         }
 
-        sLog.outDetail("Random teleporting bot %s to %s %f,%f,%f", bot->GetName(), area->AreaName_lang[0], x, y, z);
-
         // ProcessBot judges the spot the bot is standing on, so this must judge the same
         // spot. That is now the anchor itself -- the jitter is gone -- but the anchors in
         // this pool are still gathered over a radius around a game_tele, so a landing can
@@ -778,8 +776,28 @@ bool RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
             continue;
         }
 
+        // Clear after acceptance, never before -- the same ordering as the meeting-stone
+        // teleports below. It used to sit ahead of the call, where on the failure path it
+        // stripped the generators off a bot that never moved and parked it idle until the
+        // next randomisation pass came round.
+        if (!bot->TeleportTo(loc.mapid, x, y, z, 0))
+        {
+            // Keep trying. TeleportTo has real failure returns -- a map it cannot enter, a
+            // bot already in flight -- and treating one as success banked the teleport event
+            // and left the bot where it stood, unmoved but marked as moved.
+            continue;
+        }
+
         bot->GetMotionMaster()->Clear();
-        bot->TeleportTo(loc.mapid, x, y, z, 0);
+
+        // Log the landing that HAPPENED, not the ones that were considered.
+        //
+        // This line used to sit above the checks, so every candidate the loop threw out was
+        // announced as a teleport. One bot logged fourteen destinations in a single second
+        // for at most one real move -- ten attempts plus the sub-area, zone and generic
+        // fallbacks -- overstating teleports roughly threefold and reading, wrongly, as
+        // churn. It cost real time twice while diagnosing a movement bug.
+        sLog.outDetail("Random teleporting bot %s to %s %f,%f,%f", bot->GetName(), area->AreaName_lang[0], x, y, z);
         return true;
     }
 
@@ -2502,8 +2520,16 @@ void RandomPlayerbotMgr::HandleMeetingStoneClick(Player* player, GameObject* obj
 
         if (!player->IsWithinDistInMap(member, sPlayerbotAIConfig.sightDistance))
         {
-            member->GetMotionMaster()->Clear();
-            member->TeleportTo(mapId, stoneX, stoneY, stoneZ, 0);
+            // Clear AFTER the teleport is accepted, never before. TeleportTo finalizes the
+            // spline but leaves the generator stack standing, and these two run from the real
+            // player's session -- after the random-bot acks for this tick and before map
+            // motion -- so a surviving targeted generator can lay a fresh leg in the gap
+            // before the ack arrives. Clearing on success closes that. Clearing BEFORE, as
+            // this used to, also stripped a bot whose teleport was refused, parking it.
+            if (member->TeleportTo(mapId, stoneX, stoneY, stoneZ, 0))
+            {
+                member->GetMotionMaster()->Clear();
+            }
         }
     }
 
@@ -2582,7 +2608,10 @@ void RandomPlayerbotMgr::HandleMeetingStoneClick(Player* player, GameObject* obj
             ai->SetMaster(player);
         }
 
-        bot->GetMotionMaster()->Clear();
-        bot->TeleportTo(mapId, stoneX, stoneY, stoneZ, 0);
+        // Same ordering as above: clear only once the teleport has been accepted.
+        if (bot->TeleportTo(mapId, stoneX, stoneY, stoneZ, 0))
+        {
+            bot->GetMotionMaster()->Clear();
+        }
     }
 }

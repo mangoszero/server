@@ -102,7 +102,9 @@ bool FishWithMasterAction::MoveToFishingSpot()
         bot->SetFacingTo(bot->GetAngle(masterBobber));
     }
 
-    bot->GetMotionMaster()->MoveIdle();
+    // MoveIdle only pushes idle onto the stack; it neither pops the follow generator
+    // underneath nor stops the running spline. A fishing bot has to actually be still.
+    ai->StopMovement();
     return true;
 }
 
@@ -123,7 +125,7 @@ bool FishWithMasterAction::CastFishing()
 
     bot->clearUnitState(UNIT_STAT_CHASE);
     bot->clearUnitState(UNIT_STAT_FOLLOW);
-    bot->GetMotionMaster()->MoveIdle();
+    ai->StopMovement();
 
     GameObject* masterBobber = AI_VALUE(GameObject*, "master bobber");
     if (masterBobber)

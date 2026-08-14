@@ -87,17 +87,49 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool unsafe
             ai->InterruptSpell();
         }
 
-        MotionMaster &mm = *bot->GetMotionMaster();
-        mm.Clear();
+        // Do not restart a leg that is already going where we want to go.
+        //
+        // Every call here used to Clear() and re-lay the spline unconditionally, and
+        // WaitForReach clamps the AI's next check to globalCoolDown -- about half a second --
+        // whenever ANY target is set. A bot chasing something therefore wiped and re-issued
+        // its movement twice a second. Measured live: 9113 MovePoint calls in ninety seconds,
+        // individual bots sustaining two to three per second, and a packet capture whose
+        // consecutive-spline pairs showed a median of 0.495 s of progress before the route
+        // was abandoned. That is the dominant movement event on this server.
+        //
+        // The predicate is strict, because a first attempt at it was not and was unsafe in
+        // two ways worth remembering:
+        //
+        //   * It compared against LastMovement -- the previous REQUEST -- and advanced that
+        //     baseline even when it skipped, so a goal creeping forward could be ignored for
+        //     as long as the stale spline lasted. It now compares against the destination the
+        //     mover is ACTUALLY travelling to, read from the spline.
+        //   * It treated every running spline as interchangeable, so a routed-only corpse
+        //     move could be suppressed because an ordinary point spline happened to be in
+        //     flight -- silently defeating MOVE_REQUIRE_ROUTE, which exists precisely to stop
+        //     a bot cutting through geometry. A requireRoute call is never suppressed now.
+        float activeX, activeY, activeZ;
+        const bool sameGoal =
+            !requireRoute &&
+            bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == POINT_MOTION_TYPE &&
+            bot->GetMotionMaster()->GetDestination(activeX, activeY, activeZ) &&
+            sqrt((activeX - x) * (activeX - x) +
+                 (activeY - y) * (activeY - y) +
+                 (activeZ - z) * (activeZ - z)) < sPlayerbotAIConfig.contactDistance;
 
-        float botZ = bot->GetPositionZ();
-        if (requireRoute)
+        if (!sameGoal)
         {
-            mm.MovePointRouted(mapId, x, y, z);
-        }
-        else
-        {
-            mm.MovePoint(mapId, x, y, z);
+            MotionMaster &mm = *bot->GetMotionMaster();
+            mm.Clear();
+
+            if (requireRoute)
+            {
+                mm.MovePointRouted(mapId, x, y, z);
+            }
+            else
+            {
+                mm.MovePoint(mapId, x, y, z);
+            }
         }
     }
 
@@ -298,13 +330,24 @@ bool MovementAction::FollowOnTransport(Unit* target, Player* master)
 
         // Embark moves him onto the vessel's map, and from there the deck IS his map:
         // the spot beside the master is chosen in the vessel's own frame, and no world
-        // position is composed for either of them. The transport fields on the wire are
-        // the update path's business, not this one's.
-        deck->Embark(bot);
+        // position is composed for either of them.
+        //
+        // The deck spot is set BEFORE the embark, and that order is the whole point.
+        // TransportMap::Add places the passenger at m_movementInfo.GetTransportPos() and
+        // builds the create packet from there. Boarding first and moving him afterwards
+        // therefore announced him at one spot and then relocated him to another with
+        // nothing sent -- the silent relocation this campaign exists to remove, and it
+        // would have glided him across the deck in front of everyone already aboard.
+        // Setting the offset first makes the create carry the final position, so there is
+        // nothing left to correct. Same order TransportMap::Board uses.
+        const float deckX = master->Where().X() + offsetX;
+        const float deckY = master->Where().Y() + offsetY;
+        const float deckZ = master->Where().Z();
+        const float deckO = bot->Where().Facing();
+
         bot->SetTransport(vessel);
-        bot->Place().MoveTo(master->Where().X() + offsetX,
-                            master->Where().Y() + offsetY,
-                            master->Where().Z(), bot->Where().Facing());
+        bot->m_movementInfo.SetTransportData(vessel->GetObjectGuid(), deckX, deckY, deckZ, deckO, 0);
+        deck->Embark(bot);
 
         AI_VALUE(LastMovement&, "last movement").Set(target);
         return true;
@@ -395,16 +438,53 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
     if (bot->GetDistance2d(target->GetPositionX(), target->GetPositionY()) <= sPlayerbotAIConfig.sightDistance &&
         abs(bot->GetPositionZ() - target->GetPositionZ()) >= sPlayerbotAIConfig.spellDistance)
     {
-        mm.Clear();
-        float x = bot->GetPositionX(), y = bot->GetPositionY(), z = target->GetPositionZ();
-        if (target->GetMapId() && bot->GetMapId() != target->GetMapId())
+        // Teleport, do not relocate in place.
+        //
+        // This used to call SetPosition directly for the same-map case, which is the very
+        // defect that made bots appear to glide: a server-side relocation tells NO observer
+        // anything -- UpdateVisibilityOf is transition-only -- so a watcher keeps rendering
+        // the bot where it was, and the 1.12 client then stitches its own rendered position
+        // onto the front of the next spline and travels the gap at four times run speed. The
+        // vertical hop this performs is exactly the sort a nearby player is looking at.
+        //
+        // MotionMaster::Clear did not protect it either: Clear removes generators, it does
+        // not interrupt the spline that is already running, so UpdateSplineMovement could
+        // overwrite the relocation from the old leg a moment later.
+        //
+        // Routing through TeleportTo puts it on the normal bot path, where the faked ack in
+        // HandleTeleportAck follows with a heartbeat and an observer resync.
+        //
+        // The map test is also fixed. `target->GetMapId() && ...` treated map 0 -- Eastern
+        // Kingdoms -- as "no map", so a follow onto map 0 fell into the relocate branch and
+        // silently kept the bot on whatever map it was already on. Compare the maps, and when
+        // they differ take the target's OWN x and y: carrying the bot's coordinates into a
+        // different map lands it at whatever happens to occupy them there.
+        //
+        // No Clear() first: the ack path clears on arrival, and clearing ahead of a
+        // TeleportTo that can fail would strip the generators off a bot that never moved.
+        //
+        // TELE_TO_NOT_LEAVE_COMBAT because TeleportTo calls CombatStop by default and the
+        // SetPosition this replaced did not. Without it, correcting a follower's height
+        // while the group is fighting drops the bot's combat state -- shedding its threat
+        // and letting whatever it was tanking pick a new target or evade. The flag keeps
+        // the fix to what it is meant to be, a change of position and nothing else.
+        // Compare Map*, not map id. Two instances of the same dungeon share an id, so an id
+        // test calls them the same place and keeps the bot's own x and y -- which belong to
+        // the instance it is standing in, not the one the target is in.
+        const bool differentMap = bot->GetMap() != target->GetMap();
+        const float x = differentMap ? target->GetPositionX() : bot->GetPositionX();
+        const float y = differentMap ? target->GetPositionY() : bot->GetPositionY();
+        const float z = target->GetPositionZ();
+
+        // A refused teleport is not a follow. Claiming success left the bot standing while
+        // the strategy believed it had acted, so it retried the same refusal every tick;
+        // falling through lets the ordinary follow below carry it instead.
+        if (!bot->TeleportTo(target->GetMapId(), x, y, z, bot->GetOrientation(),
+                             TELE_TO_NOT_LEAVE_COMBAT))
         {
-            bot->TeleportTo(target->GetMapId(), x, y, z, bot->GetOrientation());
+            return MoveTo(target, distance);
         }
-        else
-        {
-            bot->SetPosition(x, y, z, bot->GetOrientation(), true);
-        }
+
         AI_VALUE(LastMovement&, "last movement").Set(target);
         return true;
     }

@@ -128,8 +128,14 @@ bool SummonAction::Teleport()
             float z = master->GetPositionZ();
             if (master->IsWithinLOS(x, y, z))
             {
-                bot->GetMotionMaster()->Clear();
-                bot->TeleportTo(mapId, x, y, z, 0);
+                // Clear after acceptance, not before: clearing ahead of a TeleportTo that
+                // can fail strips the generators off a bot that never moved, and clearing on
+                // success closes the window where a surviving generator could lay a new leg
+                // between the teleport and its ack.
+                if (bot->TeleportTo(mapId, x, y, z, 0))
+                {
+                    bot->GetMotionMaster()->Clear();
+                }
                 return true;
             }
         }

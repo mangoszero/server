@@ -49,7 +49,7 @@ class PlayerbotFactory : public InventoryAction
         /**
          * @brief Initializes the pet for the player bot.
          */
-        void InitPet();
+        void InitPet(bool persist = true);
 
     private:
         /**

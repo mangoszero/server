@@ -119,7 +119,19 @@ void PlayerbotFactory::Randomize(bool incremental)
     bot->resetTalents(true);
     ClearSpells();
     ClearInventory();
-    bot->SaveToDB();
+
+    // The three intermediate SaveToDB calls that used to punctuate this function are gone
+    // (upstream mangoszero/server#366). Randomize wrote the bot four times -- here, after
+    // quests, after trade skills, and at the end -- and only the last one has any value: a
+    // bot re-randomizes from scratch on restart, so a half-finished state is never something
+    // anyone wants persisted. Nothing between these points reads the bot back from the
+    // database either; InitQuests, InitEquipment, InitBags, InitAmmo, InitPet and
+    // UpdateTradeSkills touch it not at all. Randomize calls InitPet(false), which skips
+    // SavePetToDB entirely -- the pet is rebuilt from scratch on the next randomisation, so
+    // there is nothing worth writing until the single flush at the end.
+    //
+    // Worth 3600 writes down to 900 across a 900-bot startup, which matters more now that
+    // this function also runs a third trainer pass for post-quest spell ranks.
 
     sLog.outDetail("Initializing quests...");
     InitQuests();
@@ -128,7 +140,6 @@ void PlayerbotFactory::Randomize(bool incremental)
     ClearInventory();
     bot->SetUInt32Value(PLAYER_XP, 0);
     CancelAuras();
-    bot->SaveToDB();
 
     sLog.outDetail("Initializing spells (step 1)...");
     InitAvailableSpells();
@@ -164,7 +175,6 @@ void PlayerbotFactory::Randomize(bool incremental)
 
     sLog.outDetail("Initializing skills (step 2)...");
     UpdateTradeSkills();
-    bot->SaveToDB();
 
     sLog.outDetail("Initializing equipment...");
     InitEquipment(incremental);
@@ -188,7 +198,7 @@ void PlayerbotFactory::Randomize(bool incremental)
     InitInventory();
 
     sLog.outDetail("Initializing pet...");
-    InitPet();
+    InitPet(false);
 
     // Rebuild the strategy set now that the bot is a different character than when its AI
     // was created.
@@ -222,7 +232,7 @@ void PlayerbotFactory::Randomize(bool incremental)
 /**
  * Initializes the player bot's pet.
  */
-void PlayerbotFactory::InitPet()
+void PlayerbotFactory::InitPet(bool persist)
 {
     if (bot->getClass() != CLASS_HUNTER)
     {
@@ -424,7 +434,19 @@ void PlayerbotFactory::InitPet()
         pet->ToggleAutocast(spellId, true);
     }
 
-    pet->SavePetToDB(PET_SAVE_AS_CURRENT);
+    // Persist only when nobody else is going to.
+    //
+    // SavePetToDB commits its own transaction immediately, while the owner's final
+    // Player::SaveToDB commits later -- so saving here during a Randomize leaves a window in
+    // which a crash would pair a freshly randomized PET with the previous owner state. That
+    // window was previously masked by the intermediate owner saves this function sat between,
+    // and those are gone (mangoszero/server#366). Randomize therefore passes persist=false
+    // and lets the final Player::SaveToDB write the pet after the owner has committed; the
+    // standalone hunter caller, which has no such save following it, still persists here.
+    if (persist)
+    {
+        pet->SavePetToDB(PET_SAVE_AS_CURRENT);
+    }
 }
 
 /**

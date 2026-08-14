@@ -214,7 +214,11 @@ void PlayerbotAI::StartJump(bool forward, float orientation)
         return;
     }
 
+    // Clear() removes generators; it does NOT interrupt the spline already running, so
+    // without the explicit stop the old leg keeps advancing underneath the simulated
+    // parabola and UpdateSplineMovement overwrites the jump's own position writes.
     bot->GetMotionMaster()->Clear();
+    bot->InterruptMoving(true);
     bot->GetMotionMaster()->MoveIdle();
 
     m_jumpStartTime = getMSTime();
@@ -273,7 +277,21 @@ void PlayerbotAI::UpdateJump()
             }
             else
             {
-                bot->GetMotionMaster()->MovePoint(0, m_jumpTargetX, m_jumpTargetY, m_jumpTargetZ);
+                // Ask once, not on every AI update. This used to re-issue the approach every
+                // pass, stacking point generators and interrupting the leg it had just laid --
+                // the same restart churn MovementAction::MoveTo now guards against, and for
+                // the same reason: the client is handed a stream of cancelled splines.
+                float destX, destY, destZ;
+                const bool alreadyHeadingThere =
+                    bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == POINT_MOTION_TYPE &&
+                    bot->GetMotionMaster()->GetDestination(destX, destY, destZ) &&
+                    sqrtf((destX - m_jumpTargetX) * (destX - m_jumpTargetX) +
+                          (destY - m_jumpTargetY) * (destY - m_jumpTargetY)) < 0.5f;
+
+                if (!alreadyHeadingThere)
+                {
+                    bot->GetMotionMaster()->MovePoint(0, m_jumpTargetX, m_jumpTargetY, m_jumpTargetZ);
+                }
             }
         }
         return;
@@ -441,6 +459,9 @@ void PlayerbotAI::UpdateAIInternal(uint32 elapsed)
  */
 void PlayerbotAI::HandleTeleportAck()
 {
+    // Before anything else: a jump must not survive a teleport. See CancelJump.
+    CancelJump();
+
     bot->GetMotionMaster()->Clear(true);
     bot->StopMoving(true);
     if (bot->IsBeingTeleportedNear())
@@ -450,6 +471,39 @@ void PlayerbotAI::HandleTeleportAck()
         p << (uint32)0; // supposed to be flags? not used currently
         p << (uint32)time(0); // time - not currently used
         bot->GetSession()->HandleMoveTeleportAckOpcode(p);
+
+        // Tell the watchers. A near teleport moves the bot server-side and notifies NOBODY:
+        // BuildTeleportAckMsg goes only to the mover's own session; DisableSpline runs before
+        // StopMoving so MoveSplineInit::Stop early-returns and emits no stop packet; and
+        // UpdateVisibilityOf is transition-only, so a hop that stays inside the hundred-yard
+        // bubble is not a transition and sends nothing at all.
+        //
+        // An observer therefore keeps rendering the bot where it was. The 1.12 client does
+        // not read the declared start of the next SMSG_MONSTER_MOVE -- it PREPENDS its own
+        // rendered position to the path and then travels the stitched leg at
+        // min(runSpeed * 4, length/duration). So the next ordinary step becomes a glide at
+        // 28 yd/s across the whole teleport distance: measured here as 56.89 yards covered in
+        // 2032 ms, where running it would take 8.13 seconds. No server packet carries that
+        // motion, which is why every packet-level speed audit of it comes back clean.
+        //
+        // The heartbeat carries Where() -- the destination -- and the client writes it
+        // straight into the slots it later reads as "current position", so the render snaps
+        // and the next leg's stitch distance is zero. This is exactly what the core already
+        // does for the creature branch of Unit::NearTeleportTo, and it is deliberately here
+        // rather than in MovementHandler: a real client echoes its own movement after a
+        // teleport, so only a client-less bot needs this.
+        // Only if the ack was actually taken. HandleMoveTeleportAckOpcode validates against
+        // the SESSION's mover, not the guid in the packet, and returns without doing
+        // anything when that mover is not this bot -- which possession legitimately causes.
+        // The near semaphore then stays set and UpdateSessions calls this again next tick,
+        // so an unguarded heartbeat would announce a destination the bot has not been moved
+        // to, and the resync would rebuild every observer's copy of it, every tick, for as
+        // long as the possession lasts. The semaphore clearing is the ack's own receipt.
+        if (!bot->IsBeingTeleportedNear())
+        {
+            bot->SendHeartBeat();
+            ResyncObserversAfterTeleport();
+        }
     }
     else if (bot->IsBeingTeleportedFar())
     {
@@ -462,6 +516,91 @@ void PlayerbotAI::HandleTeleportAck()
         ChangeStrategy("+follow master,-stay", BOT_STATE_NON_COMBAT);
         movement.lastFollowState = false;
     }
+}
+
+/**
+ * @brief Abandon any jump in progress or pending.
+ *
+ * A teleport during a simulated jump used only to PAUSE it -- UpdateAI returns early while
+ * IsBeingTeleported() is true, and neither jump flag is cleared. After the ack the old
+ * parabola simply resumes from its original start, and when it "lands" it relocates the bot
+ * to jumpStart plus run speed times elapsed -- silently overwriting the destination the
+ * teleport just put it at, with no observer told anything. Cancelling on both ack paths is
+ * what stops a teleport being undone by physics that belonged to somewhere else.
+ */
+void PlayerbotAI::CancelJump()
+{
+    if (!m_isJumping && !m_pendingJump)
+    {
+        return;
+    }
+
+    m_isJumping   = false;
+    m_pendingJump = false;
+
+    bot->m_movementInfo.RemoveMovementFlag(MovementFlags(MOVEFLAG_FALLING | MOVEFLAG_FORWARD));
+    bot->SetFallInformation(0, bot->GetPositionZ());
+}
+
+/**
+ * @brief Bring the bot to a genuine halt. See the header for why Clear() alone does not.
+ */
+void PlayerbotAI::StopMovement()
+{
+    bot->GetMotionMaster()->Clear();
+    bot->InterruptMoving(true);
+    bot->GetMotionMaster()->MoveIdle();
+}
+
+/**
+ * @brief Force every observer on this bot's map to re-sync its position after a teleport.
+ *
+ * The heartbeat above corrects observers who can see the DESTINATION. It cannot help one who
+ * could see the bot where it was and cannot see where it went: SendMessageToSet broadcasts to
+ * the visibility set of the new position, so an observer left behind never hears anything and
+ * keeps rendering the bot at the old spot until something else happens to refresh it.
+ *
+ * Destroying it for anyone who currently holds it, then asking for a normal visibility
+ * decision, covers all three cases in one pass: an observer who can only see the old position
+ * gets a destroy and no re-create; one who can see both gets it back at the destination; one
+ * who can only see the new position creates it there as usual.
+ *
+ * Ported from MaNGOS Three, which already carries this
+ * (PlayerbotAI::ResyncObserversAfterTeleport, commit dd4037f26).
+ */
+void PlayerbotAI::ResyncObserversAfterTeleport()
+{
+    Map* map = bot->FindMap();
+    if (!map)
+    {
+        return;
+    }
+
+    Map::PlayerList const& players = map->GetPlayers();
+    for (Map::PlayerList::const_iterator itr = players.begin(); itr != players.end(); ++itr)
+    {
+        Player* observer = itr->getSource();
+        if (!observer || observer == bot)
+        {
+            continue;
+        }
+
+        if (observer->HaveAtClient(bot))
+        {
+            bot->DestroyForPlayer(observer);
+            observer->m_clientGUIDs.erase(bot->GetObjectGuid());
+        }
+
+        // Through the CAMERA, not the body. HaveAtClient above is a statement about what the
+        // observer's current viewpoint holds, so the re-create has to be judged from that same
+        // viewpoint -- an observer using farsight or bind-sight would otherwise be asked
+        // whether its BODY can see the bot, and be told the wrong answer.
+        observer->GetCamera().UpdateVisibilityOf(bot);
+    }
+
+    // Refresh the bot's own view too, which the Three original does and this port first
+    // omitted: the bot has just arrived somewhere new and its own visibility set is stale.
+    bot->UpdateVisibilityAndView();
 }
 
 /**
