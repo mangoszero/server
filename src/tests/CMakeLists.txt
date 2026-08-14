@@ -43,6 +43,7 @@ set(SRC_GRP_TESTS
     SessionProtocolPolicyTest.cpp
     WorldGatewayAccountTest.cpp
     WardenModuleCatalogTest.cpp
+    WardenCryptoContextTest.cpp
     DatabaseConcurrencyTest.cpp
     OpenSSLProviderTest.cpp
     ClientParserTest.cpp
@@ -59,6 +60,7 @@ set(SRC_GRP_TESTS
     ${CMAKE_SOURCE_DIR}/src/game/Server/SessionMailbox.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Server/WorldGatewayAccount.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenProtocol.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenCryptoContext.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenModuleWin5875Data.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenModuleCatalog.cpp
     ByteBufferStressTest.cpp
