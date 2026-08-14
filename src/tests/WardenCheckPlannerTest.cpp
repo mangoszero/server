@@ -27,6 +27,7 @@
 #include "WardenEvidence.h"
 
 #include <variant>
+#include <vector>
 
 namespace
 {
@@ -47,6 +48,15 @@ warden::MpqCheckProfile TestMpqProfile()
 warden::LuaCheckProfile TestLuaProfile()
 {
     return {2, "OKAY", "Okay"};
+}
+
+std::vector<warden::MemCheckProfile> TestMemProfiles()
+{
+    return
+    {
+        {1107, "", 0x00618900, {0x55, 0x8B, 0xEC}},
+        {827, "", 0x007C6206, {0x25, 0xFF, 0xFF}}
+    };
 }
 }
 
@@ -71,6 +81,15 @@ TEST(WardenEvidence_lua_outcomes_have_secret_free_fixed_labels)
     CHECK_STR(warden::ToString(warden::LuaOutcome::TextMismatch),
         "TextMismatch");
     CHECK_STR(warden::ToString(warden::LuaOutcome::Unavailable),
+        "Unavailable");
+}
+
+TEST(WardenEvidence_mem_outcomes_have_secret_free_fixed_labels)
+{
+    CHECK_STR(warden::ToString(warden::MemOutcome::Match), "Match");
+    CHECK_STR(warden::ToString(warden::MemOutcome::ByteMismatch),
+        "ByteMismatch");
+    CHECK_STR(warden::ToString(warden::MemOutcome::Unavailable),
         "Unavailable");
 }
 
@@ -158,4 +177,36 @@ TEST(WardenCheckPlanner_emits_timing_then_lua_without_mpq)
     REQUIRE(plan->checks.size() == 2u);
     CHECK(std::holds_alternative<warden::TimingCheck>(plan->checks[0]));
     CHECK(std::holds_alternative<warden::LuaCheckProfile>(plan->checks[1]));
+}
+
+TEST(WardenCheckPlanner_preserves_content_order_then_appends_exact_mem_checks)
+{
+    warden::WardenCheckPlanner planner(1000, TestMpqProfile(),
+        TestLuaProfile(), TestMemProfiles());
+
+    auto const plan = planner.Update(true, 1000);
+    REQUIRE(plan.has_value());
+    REQUIRE(plan->checks.size() == 5u);
+    CHECK(std::holds_alternative<warden::TimingCheck>(plan->checks[0]));
+    CHECK(std::holds_alternative<warden::MpqCheckProfile>(plan->checks[1]));
+    CHECK(std::holds_alternative<warden::LuaCheckProfile>(plan->checks[2]));
+    REQUIRE(std::holds_alternative<warden::MemCheckProfile>(plan->checks[3]));
+    REQUIRE(std::holds_alternative<warden::MemCheckProfile>(plan->checks[4]));
+    CHECK_EQ(std::get<warden::MemCheckProfile>(plan->checks[3]).checkId,
+        uint32(1107));
+    CHECK_EQ(std::get<warden::MemCheckProfile>(plan->checks[4]).checkId,
+        uint32(827));
+}
+
+TEST(WardenCheckPlanner_emits_timing_then_mem_without_content_checks)
+{
+    warden::WardenCheckPlanner planner(1000, std::nullopt, std::nullopt,
+        TestMemProfiles());
+
+    auto const plan = planner.Update(true, 1000);
+    REQUIRE(plan.has_value());
+    REQUIRE(plan->checks.size() == 3u);
+    CHECK(std::holds_alternative<warden::TimingCheck>(plan->checks[0]));
+    CHECK(std::holds_alternative<warden::MemCheckProfile>(plan->checks[1]));
+    CHECK(std::holds_alternative<warden::MemCheckProfile>(plan->checks[2]));
 }

@@ -29,13 +29,17 @@
 #include <utility>
 #include <vector>
 
-TEST(WardenCatalog_selects_only_windows_build_5875)
+TEST(WardenCatalog_selects_only_the_three_exact_windows_builds)
 {
     warden::WardenModuleCatalog catalog;
 
     CHECK(catalog.Find(5875, "Win") != nullptr);
+    CHECK(catalog.Find(6005, "Win") != nullptr);
+    CHECK(catalog.Find(6141, "Win") != nullptr);
     CHECK(catalog.Find(5875, "OSX") == nullptr);
-    CHECK(catalog.Find(6005, "Win") == nullptr);
+    CHECK(catalog.Find(6005, "OSX") == nullptr);
+    CHECK(catalog.Find(6141, "OSX") == nullptr);
+    CHECK(catalog.Find(9999, "Win") == nullptr);
 }
 
 TEST(WardenCatalog_exact_module_identity_is_custody_pinned)
@@ -77,6 +81,51 @@ TEST(WardenCatalog_exact_5875_initialization_callbacks_are_custody_pinned)
     invalid.initialization.archive.closeRva = 0;
     CHECK(catalog.Validate(invalid) ==
         warden::ModuleValidation::InvalidInitialization);
+}
+
+TEST(WardenCatalog_exact_crossbuild_initialization_callbacks_are_custody_pinned)
+{
+    warden::WardenModuleCatalog catalog;
+    warden::ModuleProfile const* profile6005 = catalog.Find(6005, "Win");
+    warden::ModuleProfile const* profile6141 = catalog.Find(6141, "Win");
+
+    REQUIRE(profile6005 != nullptr);
+    CHECK_EQ(profile6005->initialization.archive.openRva,
+        uint32(0x002477A0));
+    CHECK_EQ(profile6005->initialization.archive.sizeRva,
+        uint32(0x002487F0));
+    CHECK_EQ(profile6005->initialization.archive.readRva,
+        uint32(0x00248460));
+    CHECK_EQ(profile6005->initialization.archive.closeRva,
+        uint32(0x00248730));
+    CHECK_EQ(profile6005->initialization.lua.callbackRva,
+        uint32(0x00303C20));
+    CHECK_EQ(profile6005->initialization.timing.callbackRva,
+        uint32(0x0002C010));
+
+    REQUIRE(profile6141 != nullptr);
+    CHECK_EQ(profile6141->initialization.archive.openRva,
+        uint32(0x00249B40));
+    CHECK_EQ(profile6141->initialization.archive.sizeRva,
+        uint32(0x0024AB90));
+    CHECK_EQ(profile6141->initialization.archive.readRva,
+        uint32(0x0024A800));
+    CHECK_EQ(profile6141->initialization.archive.closeRva,
+        uint32(0x0024AAD0));
+    CHECK_EQ(profile6141->initialization.lua.callbackRva,
+        uint32(0x00305FC0));
+    CHECK_EQ(profile6141->initialization.timing.callbackRva,
+        uint32(0x0002C010));
+
+    CHECK(profile6005->module.data == profile6141->module.data);
+    CHECK(profile6005->module.data == catalog.Find(5875, "Win")->module.data);
+    CHECK(profile6005->moduleId == profile6141->moduleId);
+    CHECK(profile6005->moduleSha256 == profile6141->moduleSha256);
+    CHECK(profile6005->moduleKey == profile6141->moduleKey);
+    CHECK(profile6005->hashSeed == profile6141->hashSeed);
+    CHECK(profile6005->clientKeySeedHash == profile6141->clientKeySeedHash);
+    CHECK(profile6005->clientKeySeed == profile6141->clientKeySeed);
+    CHECK(profile6005->serverKeySeed == profile6141->serverKeySeed);
 }
 
 TEST(WardenCatalog_rejects_a_corrupted_module_copy)

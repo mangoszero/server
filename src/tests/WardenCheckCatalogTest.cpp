@@ -25,6 +25,7 @@
 #include "WardenCheckCatalog.h"
 
 #include <string>
+#include <vector>
 
 TEST(WardenCheckCatalog_selects_only_exact_5875_windows_enUS_profile)
 {
@@ -155,4 +156,93 @@ TEST(WardenCheckCatalog_enforces_lua_query_and_result_boundaries)
     profile.expectedText.clear();
     CHECK(catalog.Validate(profile) ==
         warden::CheckCatalogValidation::Valid);
+}
+
+TEST(WardenCheckCatalog_selects_two_exact_mem_checks_per_supported_profile)
+{
+    warden::WardenCheckCatalog catalog;
+
+    std::vector<warden::MemCheckProfile> const* checks5875 =
+        catalog.FindMem(5875, "Win", "enUS");
+    REQUIRE(checks5875 != nullptr);
+    REQUIRE(checks5875->size() == 2u);
+    CHECK_EQ((*checks5875)[0].checkId, uint32(1107));
+    CHECK((*checks5875)[0].moduleName.empty());
+    CHECK_EQ((*checks5875)[0].addressOrRva, uint32(0x00618900));
+    CHECK_HEX((*checks5875)[0].expectedBytes.data(),
+        (*checks5875)[0].expectedBytes.size(),
+        "558bec8b51408b450c81e2ff7da075508950108b450850e824da1a005dc20800");
+    CHECK_EQ((*checks5875)[1].checkId, uint32(827));
+    CHECK_EQ((*checks5875)[1].addressOrRva, uint32(0x007C6206));
+    CHECK_HEX((*checks5875)[1].expectedBytes.data(),
+        (*checks5875)[1].expectedBytes.size(),
+        "25ffffdffb0d00200000894640");
+
+    std::vector<warden::MemCheckProfile> const* checks6005 =
+        catalog.FindMem(6005, "Win", "enGB");
+    REQUIRE(checks6005 != nullptr);
+    REQUIRE(checks6005->size() == 2u);
+    CHECK_EQ((*checks6005)[0].addressOrRva, uint32(0x00618900));
+    CHECK_HEX((*checks6005)[0].expectedBytes.data(),
+        (*checks6005)[0].expectedBytes.size(),
+        "558bec8b51408b450c81e2ff7da075508950108b450850e864da1a005dc20800");
+    CHECK_EQ((*checks6005)[1].addressOrRva, uint32(0x007C6246));
+
+    std::vector<warden::MemCheckProfile> const* checks6141 =
+        catalog.FindMem(6141, "Win", "zhCN");
+    REQUIRE(checks6141 != nullptr);
+    REQUIRE(checks6141->size() == 2u);
+    CHECK_EQ((*checks6141)[0].addressOrRva, uint32(0x0061ACA0));
+    CHECK_HEX((*checks6141)[0].expectedBytes.data(),
+        (*checks6141)[0].expectedBytes.size(),
+        "558bec8b51408b450c81e2ff7da075508950108b450850e864eb1a005dc20800");
+    CHECK_EQ((*checks6141)[1].addressOrRva, uint32(0x007C96E6));
+
+    CHECK(catalog.FindMem(5875, "Win", "frFR") == nullptr);
+    CHECK(catalog.FindMem(6005, "Win", "enUS") == nullptr);
+    CHECK(catalog.FindMem(6141, "Win", "enUS") == nullptr);
+    CHECK(catalog.FindMem(6141, "OSX", "zhCN") == nullptr);
+    CHECK(catalog.FindMem(9999, "Win", "enUS") == nullptr);
+}
+
+TEST(WardenCheckCatalog_rejects_invalid_mem_profiles_and_duplicate_ids)
+{
+    warden::WardenCheckCatalog catalog;
+    std::vector<warden::MemCheckProfile> profiles =
+        *catalog.FindMem(5875, "Win", "enUS");
+
+    warden::MemCheckProfile profile = profiles[0];
+    profile.checkId = 0;
+    CHECK(catalog.Validate(profile) ==
+        warden::CheckCatalogValidation::InvalidId);
+
+    profile = profiles[0];
+    profile.addressOrRva = 0;
+    CHECK(catalog.Validate(profile) ==
+        warden::CheckCatalogValidation::InvalidAddress);
+
+    profile = profiles[0];
+    profile.moduleName.assign("WoW\0.exe", 8);
+    CHECK(catalog.Validate(profile) ==
+        warden::CheckCatalogValidation::InvalidModuleName);
+    profile.moduleName.assign(256, 'M');
+    CHECK(catalog.Validate(profile) ==
+        warden::CheckCatalogValidation::InvalidModuleName);
+
+    profile = profiles[0];
+    profile.expectedBytes.clear();
+    CHECK(catalog.Validate(profile) ==
+        warden::CheckCatalogValidation::InvalidExpectedBytes);
+    profile.expectedBytes.assign(256, 0);
+    CHECK(catalog.Validate(profile) ==
+        warden::CheckCatalogValidation::InvalidExpectedBytes);
+
+    CHECK(catalog.Validate(profiles) ==
+        warden::CheckCatalogValidation::Valid);
+    profiles[1].checkId = profiles[0].checkId;
+    CHECK(catalog.Validate(profiles) ==
+        warden::CheckCatalogValidation::DuplicateId);
+    profiles.clear();
+    CHECK(catalog.Validate(profiles) ==
+        warden::CheckCatalogValidation::InvalidId);
 }

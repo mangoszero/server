@@ -30,6 +30,7 @@
 
 #include <functional>
 #include <optional>
+#include <vector>
 
 namespace warden
 {
@@ -64,7 +65,8 @@ public:
         SendEncrypted send, WardenLimits limits = {},
         LifecycleObserver observer = {}, EvidenceObserver evidenceObserver = {},
         std::optional<MpqCheckProfile> mpqCheck = std::nullopt,
-        std::optional<LuaCheckProfile> luaCheck = std::nullopt);
+        std::optional<LuaCheckProfile> luaCheck = std::nullopt,
+        std::vector<MemCheckProfile> memChecks = {});
 
     // Idempotently emits MODULE_USE and begins the module-status deadline.
     bool Start();

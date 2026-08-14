@@ -367,7 +367,8 @@ void WorldSession::OnAuthenticatedAdmission()
             }, [this, accountId](warden::WardenEvidence const& evidence)
             {
                 // Only typed classifications and catalogue IDs cross this
-                // boundary; ticks, paths, hashes, bodies, and keys stay private.
+                // boundary; paths, hashes, raw bytes, bodies, and keys stay
+                // private.
                 std::visit([this, accountId](auto const& typedEvidence)
                 {
                     using Evidence = std::decay_t<decltype(typedEvidence)>;
@@ -450,11 +451,9 @@ void WorldSession::OnAuthenticatedAdmission()
                         }
                     }
 
-                    else
+                    else if constexpr (std::is_same_v<Evidence,
+                            warden::LuaEvidence>)
                     {
-                        static_assert(std::is_same_v<Evidence,
-                            warden::LuaEvidence>);
-
                         if (typedEvidence.outcome == warden::LuaOutcome::Match)
                         {
                             if (playerInWorld)
@@ -486,6 +485,47 @@ void WorldSession::OnAuthenticatedAdmission()
                         else
                         {
                             sLog.outError("Warden script check %s for account "
+                                "%u (check %u; observation only).", result,
+                                accountId, typedEvidence.checkId);
+                        }
+                    }
+
+                    else
+                    {
+                        static_assert(std::is_same_v<Evidence,
+                            warden::MemEvidence>);
+
+                        if (typedEvidence.outcome == warden::MemOutcome::Match)
+                        {
+                            if (playerInWorld)
+                            {
+                                sLog.outString("Warden memory check passed for "
+                                    "player %s (account %u; check %u).",
+                                    player->GetName(), accountId,
+                                    typedEvidence.checkId);
+                            }
+                            else
+                            {
+                                sLog.outString("Warden memory check passed for "
+                                    "account %u (check %u).", accountId,
+                                    typedEvidence.checkId);
+                            }
+                            return;
+                        }
+
+                        char const* result = typedEvidence.outcome ==
+                            warden::MemOutcome::Unavailable ? "unavailable" :
+                            "byte mismatch";
+                        if (playerInWorld)
+                        {
+                            sLog.outError("Warden memory check %s for player %s "
+                                "(account %u; check %u; observation only).",
+                                result, player->GetName(), accountId,
+                                typedEvidence.checkId);
+                        }
+                        else
+                        {
+                            sLog.outError("Warden memory check %s for account "
                                 "%u (check %u; observation only).", result,
                                 accountId, typedEvidence.checkId);
                         }

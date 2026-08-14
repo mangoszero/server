@@ -22,13 +22,16 @@
 
 #include "WardenCheckPlanner.h"
 
+#include <utility>
+
 namespace warden
 {
 WardenCheckPlanner::WardenCheckPlanner(uint32 eligibilityDelayMs,
     std::optional<MpqCheckProfile> mpqCheck,
-    std::optional<LuaCheckProfile> luaCheck)
+    std::optional<LuaCheckProfile> luaCheck,
+    std::vector<MemCheckProfile> memChecks)
     : m_eligibilityDelayMs(eligibilityDelayMs), m_mpqCheck(mpqCheck),
-      m_luaCheck(luaCheck)
+      m_luaCheck(luaCheck), m_memChecks(std::move(memChecks))
 {
 }
 
@@ -60,6 +63,8 @@ std::optional<CheckPlan> WardenCheckPlanner::Update(bool eligible,
         plan.checks.emplace_back(*m_mpqCheck);
     if (m_luaCheck)
         plan.checks.emplace_back(*m_luaCheck);
+    for (MemCheckProfile const& memCheck : m_memChecks)
+        plan.checks.emplace_back(memCheck);
 
     m_issued = true;
     return plan;

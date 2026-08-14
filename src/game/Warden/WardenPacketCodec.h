@@ -81,7 +81,21 @@ struct LuaResult
     std::string text;
 };
 
-using CheckResult = std::variant<TimingResult, MpqResult, LuaResult>;
+enum class MemResultStatus : uint8
+{
+    Success = 0,
+    Unavailable = 1
+};
+
+/** Private decoded memory result; only classified evidence may leave Warden. */
+struct MemResult
+{
+    MemResultStatus status = MemResultStatus::Unavailable;
+    Bytes actualBytes;
+};
+
+using CheckResult =
+    std::variant<TimingResult, MpqResult, LuaResult, MemResult>;
 
 struct CheckBatchResult
 {

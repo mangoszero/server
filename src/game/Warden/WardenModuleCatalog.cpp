@@ -85,6 +85,64 @@ warden::ModuleProfile const ModuleWin5875 =
         }
     }
 };
+
+warden::ModuleProfile MakeBuildProfile(uint32 build,
+    warden::ModuleInitializationProfile const& initialization)
+{
+    warden::ModuleProfile profile = ModuleWin5875;
+    profile.build = build;
+    profile.initialization = initialization;
+    return profile;
+}
+
+warden::ModuleProfile const ModuleWin6005 = MakeBuildProfile(6005,
+{
+    {
+        {0x01, 0x00, 0x02, 0x00},
+        0x002477A0,
+        0x002487F0,
+        0x00248460,
+        0x00248730
+    },
+    {
+        {0x04, 0x00, 0x00},
+        0x00303C20,
+        0x00
+    },
+    {
+        {0x01, 0x01, 0x00},
+        0x0002C010,
+        0x01
+    }
+});
+
+warden::ModuleProfile const ModuleWin6141 = MakeBuildProfile(6141,
+{
+    {
+        {0x01, 0x00, 0x02, 0x00},
+        0x00249B40,
+        0x0024AB90,
+        0x0024A800,
+        0x0024AAD0
+    },
+    {
+        {0x04, 0x00, 0x00},
+        0x00305FC0,
+        0x00
+    },
+    {
+        {0x01, 0x01, 0x00},
+        0x0002C010,
+        0x01
+    }
+});
+
+std::array<warden::ModuleProfile const*, 3> const ModuleProfiles =
+{
+    &ModuleWin5875,
+    &ModuleWin6005,
+    &ModuleWin6141
+};
 }
 
 namespace warden
@@ -94,11 +152,14 @@ ModuleProfile const* WardenModuleCatalog::Find(uint32 build,
 {
     // Never wildcard 1.12.x: bootstrap compatibility does not make absolute
     // memory checks or host callbacks interchangeable between client builds.
-    if (build != ModuleWin5875.build || platform != ModuleWin5875.platform)
-        return nullptr;
+    for (ModuleProfile const* profile : ModuleProfiles)
+    {
+        if (build != profile->build || platform != profile->platform)
+            continue;
 
-    return Validate(ModuleWin5875) == ModuleValidation::Valid
-        ? &ModuleWin5875 : nullptr;
+        return Validate(*profile) == ModuleValidation::Valid ? profile : nullptr;
+    }
+    return nullptr;
 }
 
 ModuleValidation WardenModuleCatalog::Validate(ModuleProfile const& profile) const

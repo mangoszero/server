@@ -58,9 +58,21 @@ public:
     {
         for (warden::CheckResult& check : m_result.checks)
         {
+            warden::MpqResult* mpq = std::get_if<warden::MpqResult>(&check);
+            if (mpq)
+                OPENSSL_cleanse(mpq->digest.data(), mpq->digest.size());
+
             warden::LuaResult* lua = std::get_if<warden::LuaResult>(&check);
             if (lua && !lua->text.empty())
                 OPENSSL_cleanse(lua->text.data(), lua->text.size());
+
+            warden::MemResult* memory =
+                std::get_if<warden::MemResult>(&check);
+            if (memory && !memory->actualBytes.empty())
+            {
+                OPENSSL_cleanse(memory->actualBytes.data(),
+                    memory->actualBytes.size());
+            }
         }
     }
 
@@ -75,11 +87,13 @@ WardenServer::WardenServer(ModuleProfile const& profile,
     WardenCryptoContext&& crypto, SendEncrypted send, WardenLimits limits,
     LifecycleObserver observer, EvidenceObserver evidenceObserver,
     std::optional<MpqCheckProfile> mpqCheck,
-    std::optional<LuaCheckProfile> luaCheck)
+    std::optional<LuaCheckProfile> luaCheck,
+    std::vector<MemCheckProfile> memChecks)
     : m_profile(profile), m_crypto(std::move(crypto)), m_send(std::move(send)),
       m_limits(limits), m_observer(std::move(observer)),
       m_evidenceObserver(std::move(evidenceObserver)),
-      m_planner(1000, std::move(mpqCheck), std::move(luaCheck))
+      m_planner(1000, std::move(mpqCheck), std::move(luaCheck),
+          std::move(memChecks))
 {
 }
 
@@ -414,8 +428,8 @@ void WardenServer::HandleCheckResult(ByteView plain)
     }
 
     CheckBatchResult result;
-    // Lua globals are addon-writable; cleanse their temporary returned text
-    // on every exit after decoding, including later classification failures.
+    // Cleanse temporary Lua text and process-memory bytes on every exit after
+    // decoding, including later classification failures.
     CleanseCheckBatchResult const cleanseResult(result);
     DecodeStatus const status = DecodeCheckResult(plain, *m_pendingPlan, result);
     if (status == DecodeStatus::UnsupportedCommand)
@@ -490,24 +504,60 @@ void WardenServer::HandleCheckResult(ByteView plain)
             continue;
         }
 
-        LuaCheckProfile const* profile =
-            std::get_if<LuaCheckProfile>(&planned);
-        LuaResult const* lua = std::get_if<LuaResult>(&returned);
-        if (!profile || !lua)
+        if (LuaCheckProfile const* profile =
+                std::get_if<LuaCheckProfile>(&planned))
+        {
+            LuaResult const* lua = std::get_if<LuaResult>(&returned);
+            if (!lua)
+            {
+                Fail(WardenFailure::MalformedPayload);
+                return;
+            }
+
+            // Returned script text is compared only inside this private
+            // boundary. Observers receive catalogue identity and outcome.
+            LuaOutcome outcome = LuaOutcome::Unavailable;
+            if (lua->status == LuaResultStatus::Success)
+            {
+                outcome = lua->text == profile->expectedText ?
+                    LuaOutcome::Match : LuaOutcome::TextMismatch;
+            }
+            evidence.emplace_back(LuaEvidence
+            {
+                m_pendingPlan->requestId,
+                profile->checkId,
+                outcome
+            });
+            continue;
+        }
+
+        MemCheckProfile const* profile =
+            std::get_if<MemCheckProfile>(&planned);
+        MemResult const* memory = std::get_if<MemResult>(&returned);
+        if (!profile || !memory)
         {
             Fail(WardenFailure::MalformedPayload);
             return;
         }
 
-        // Returned script text is compared only inside this private boundary.
-        // Observers receive the catalogue identity and classification alone.
-        LuaOutcome outcome = LuaOutcome::Unavailable;
-        if (lua->status == LuaResultStatus::Success)
+        // Raw process bytes are compared and cleansed inside this boundary.
+        // Only the stable catalogue ID and outcome reach session observers.
+        MemOutcome outcome = MemOutcome::Unavailable;
+        if (memory->status == MemResultStatus::Success)
         {
-            outcome = lua->text == profile->expectedText ? LuaOutcome::Match :
-                LuaOutcome::TextMismatch;
+            // Keep this defensive invariant at the classification boundary
+            // even though the current codec reads the planned size exactly.
+            if (memory->actualBytes.size() != profile->expectedBytes.size())
+            {
+                Fail(WardenFailure::MalformedPayload);
+                return;
+            }
+            outcome = CRYPTO_memcmp(memory->actualBytes.data(),
+                profile->expectedBytes.data(),
+                profile->expectedBytes.size()) == 0 ? MemOutcome::Match :
+                MemOutcome::ByteMismatch;
         }
-        evidence.emplace_back(LuaEvidence
+        evidence.emplace_back(MemEvidence
         {
             m_pendingPlan->requestId,
             profile->checkId,

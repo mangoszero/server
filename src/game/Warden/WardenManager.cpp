@@ -23,6 +23,7 @@
 #include "WardenManager.h"
 
 #include <utility>
+#include <vector>
 
 namespace warden
 {
@@ -60,9 +61,16 @@ std::unique_ptr<WardenServer> WardenManager::Create(uint32 build,
             CheckCatalogValidation::Valid)
         luaCheck = *selectedLua;
 
+    std::vector<MemCheckProfile> memChecks;
+    std::vector<MemCheckProfile> const* selectedMem =
+        m_checkCatalog.FindMem(build, platform, locale);
+    if (selectedMem && m_checkCatalog.Validate(*selectedMem) ==
+            CheckCatalogValidation::Valid)
+        memChecks = *selectedMem;
+
     return std::make_unique<WardenServer>(*profile, std::move(crypto),
         std::move(send), limits, std::move(observer),
         std::move(evidenceObserver), std::move(mpqCheck),
-        std::move(luaCheck));
+        std::move(luaCheck), std::move(memChecks));
 }
 }

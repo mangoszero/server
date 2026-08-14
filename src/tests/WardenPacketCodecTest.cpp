@@ -27,6 +27,7 @@
 #include "WardenPacketCodec.h"
 
 #include <algorithm>
+#include <cstring>
 #include <limits>
 #include <variant>
 
@@ -37,10 +38,38 @@ warden::ByteView View(warden::Bytes const& bytes)
     return {bytes.empty() ? nullptr : bytes.data(), bytes.size()};
 }
 
+warden::Bytes FromHex(char const* text)
+{
+    auto nibble = [](char value) -> uint8
+    {
+        if (value >= '0' && value <= '9')
+            return uint8(value - '0');
+        if (value >= 'a' && value <= 'f')
+            return uint8(value - 'a' + 10);
+        return uint8(value - 'A' + 10);
+    };
+
+    size_t const length = std::strlen(text);
+    warden::Bytes bytes;
+    bytes.reserve(length / 2);
+    for (size_t index = 0; index < length; index += 2)
+    {
+        bytes.push_back(uint8((nibble(text[index]) << 4) |
+            nibble(text[index + 1])));
+    }
+    return bytes;
+}
+
 warden::ModuleProfile const* Windows5875Profile()
 {
     static warden::WardenModuleCatalog const catalog;
     return catalog.Find(5875, "Win");
+}
+
+warden::ModuleProfile const* WindowsProfile(uint32 build)
+{
+    static warden::WardenModuleCatalog const catalog;
+    return catalog.Find(build, "Win");
 }
 
 warden::MpqCheckProfile TestMpqProfile()
@@ -88,6 +117,28 @@ warden::CheckPlan TimingMpqLuaPlan()
 {
     warden::CheckPlan plan = TimingMpqPlan();
     plan.checks.emplace_back(TestLuaProfile());
+    return plan;
+}
+
+warden::CheckPlan TimingMemPlan(uint32 build, std::string const& locale)
+{
+    static warden::WardenCheckCatalog const catalog;
+    std::vector<warden::MemCheckProfile> const* profiles =
+        catalog.FindMem(build, "Win", locale);
+    warden::CheckPlan plan = TimingPlan();
+    if (profiles)
+    {
+        for (warden::MemCheckProfile const& profile : *profiles)
+            plan.checks.emplace_back(profile);
+    }
+    return plan;
+}
+
+warden::CheckPlan TimingSingleMemPlan()
+{
+    warden::CheckPlan plan = TimingMemPlan(5875, "enUS");
+    if (plan.checks.size() == 3u)
+        plan.checks.erase(plan.checks.begin() + 1);
     return plan;
 }
 
@@ -156,6 +207,31 @@ TEST(WardenPacket_encodes_exact_5875_module_initialization)
     CHECK_HEX(initialization.data() + 45, 4, "672f4d0a");
 }
 
+TEST(WardenPacket_encodes_exact_6005_and_6141_module_initialization)
+{
+    warden::ModuleProfile const* profile6005 = WindowsProfile(6005);
+    warden::ModuleProfile const* profile6141 = WindowsProfile(6141);
+    REQUIRE(profile6005 != nullptr);
+    REQUIRE(profile6141 != nullptr);
+
+    warden::Bytes initialization;
+    REQUIRE(warden::EncodeModuleInitialize(*profile6005, initialization) ==
+        warden::EncodeStatus::Ok);
+    CHECK_HEX(initialization.data(), initialization.size(),
+        "031400693d8dd001000200a0772400f0872400"
+        "6084240030872400"
+        "0308003549fd5e040000203c300000"
+        "030800672f4d0a01010010c0020001");
+
+    REQUIRE(warden::EncodeModuleInitialize(*profile6141, initialization) ==
+        warden::EncodeStatus::Ok);
+    CHECK_HEX(initialization.data(), initialization.size(),
+        "0314003f3d35ae01000200409b240090ab2400"
+        "00a82400d0aa2400"
+        "0308005d3e0413040000c05f300000"
+        "030800672f4d0a01010010c0020001");
+}
+
 TEST(WardenPacket_invalid_initialization_does_not_replace_output)
 {
     warden::ModuleProfile const* profile = Windows5875Profile();
@@ -208,6 +284,33 @@ TEST(WardenPacket_encodes_exact_timing_lua_and_combined_requests)
         "021b444246696c6573436c69656e745c41"
         "7265615461626c652e646263044f4b4159"
         "0028e701f4027f");
+}
+
+TEST(WardenPacket_encodes_exact_crossbuild_timing_and_mem_requests)
+{
+    struct Vector
+    {
+        uint32 build;
+        char const* locale;
+        char const* expected;
+    };
+    Vector const vectors[] =
+    {
+        {5875, "enUS", "0200288c0000896100208c0006627c000d7f"},
+        {6005, "enGB", "0200288c0000896100208c0046627c000d7f"},
+        {6141, "zhCN", "0200288c00a0ac6100208c00e6967c000d7f"}
+    };
+
+    for (Vector const& vector : vectors)
+    {
+        warden::ModuleProfile const* profile = WindowsProfile(vector.build);
+        REQUIRE(profile != nullptr);
+        warden::Bytes request{0xA5};
+        REQUIRE(warden::EncodeCheckRequest(*profile,
+            TimingMemPlan(vector.build, vector.locale), request) ==
+            warden::EncodeStatus::Ok);
+        CHECK_HEX(request.data(), request.size(), vector.expected);
+    }
 }
 
 TEST(WardenPacket_rejects_invalid_check_plans_without_replacing_output)
@@ -281,6 +384,143 @@ TEST(WardenPacket_rejects_invalid_check_plans_without_replacing_output)
     std::get<warden::LuaCheckProfile>(plan.checks[1]).expectedText.assign(
         65, 'R');
     CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingMemPlan(5875, "enUS");
+    std::get<warden::MemCheckProfile>(plan.checks[1]).checkId = 0;
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingMemPlan(5875, "enUS");
+    std::get<warden::MemCheckProfile>(plan.checks[1]).addressOrRva = 0;
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingMemPlan(5875, "enUS");
+    std::get<warden::MemCheckProfile>(plan.checks[1]).expectedBytes.clear();
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingMemPlan(5875, "enUS");
+    std::get<warden::MemCheckProfile>(plan.checks[1]).expectedBytes.assign(
+        256, 0);
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingMemPlan(5875, "enUS");
+    std::get<warden::MemCheckProfile>(plan.checks[1]).moduleName.assign(
+        "WoW\0.exe", 8);
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingMemPlan(5875, "enUS");
+    std::get<warden::MemCheckProfile>(plan.checks[2]).checkId =
+        std::get<warden::MemCheckProfile>(plan.checks[1]).checkId;
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingMpqPlan();
+    warden::MemCheckProfile duplicate =
+        std::get<warden::MemCheckProfile>(
+            TimingMemPlan(5875, "enUS").checks[1]);
+    duplicate.checkId = std::get<warden::MpqCheckProfile>(
+        plan.checks[1]).checkId;
+    plan.checks.emplace_back(std::move(duplicate));
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+
+    plan = TimingPlan();
+    warden::MemCheckProfile oversized =
+        std::get<warden::MemCheckProfile>(
+            TimingMemPlan(5875, "enUS").checks[1]);
+    oversized.expectedBytes.assign(255, 0);
+    for (uint32 index = 0; index < 256; ++index)
+    {
+        oversized.checkId = 1000 + index;
+        plan.checks.emplace_back(oversized);
+    }
+    CheckInvalidPlanLeavesOutput(*profile, plan);
+}
+
+TEST(WardenPacket_decodes_exact_crossbuild_mem_result_vectors)
+{
+    struct Vector
+    {
+        uint32 build;
+        char const* locale;
+        char const* response;
+    };
+    Vector const vectors[] =
+    {
+        {5875, "enUS",
+            "023400e0f696b3010403020100558bec8b51408b450c81e2ff7da07550"
+            "8950108b450850e824da1a005dc208000025ffffdffb0d00200000894640"},
+        {6005, "enGB",
+            "023400abe72626010403020100558bec8b51408b450c81e2ff7da07550"
+            "8950108b450850e864da1a005dc208000025ffffdffb0d00200000894640"},
+        {6141, "zhCN",
+            "02340081bf317f010403020100558bec8b51408b450c81e2ff7da07550"
+            "8950108b450850e864eb1a005dc208000025ffffdffb0d00200000894640"}
+    };
+
+    for (Vector const& vector : vectors)
+    {
+        warden::Bytes const response = FromHex(vector.response);
+        warden::CheckBatchResult result;
+        REQUIRE(warden::DecodeCheckResult(View(response),
+            TimingMemPlan(vector.build, vector.locale), result) ==
+            warden::DecodeStatus::Ok);
+        REQUIRE(result.checks.size() == 3u);
+        REQUIRE(std::holds_alternative<warden::MemResult>(result.checks[1]));
+        REQUIRE(std::holds_alternative<warden::MemResult>(result.checks[2]));
+        warden::MemResult const& first =
+            std::get<warden::MemResult>(result.checks[1]);
+        warden::MemResult const& second =
+            std::get<warden::MemResult>(result.checks[2]);
+        CHECK(first.status == warden::MemResultStatus::Success);
+        CHECK(second.status == warden::MemResultStatus::Success);
+        CHECK_EQ(first.actualBytes.size(), size_t(32));
+        CHECK_EQ(second.actualBytes.size(), size_t(13));
+    }
+
+    warden::Bytes const unavailable =
+        FromHex("020700b7f6e18801040302010101");
+    warden::CheckBatchResult result;
+    REQUIRE(warden::DecodeCheckResult(View(unavailable),
+        TimingMemPlan(5875, "enUS"), result) == warden::DecodeStatus::Ok);
+    REQUIRE(result.checks.size() == 3u);
+    CHECK(std::get<warden::MemResult>(result.checks[1]).status ==
+        warden::MemResultStatus::Unavailable);
+    CHECK(std::get<warden::MemResult>(result.checks[1]).actualBytes.empty());
+    CHECK(std::get<warden::MemResult>(result.checks[2]).status ==
+        warden::MemResultStatus::Unavailable);
+    CHECK(std::get<warden::MemResult>(result.checks[2]).actualBytes.empty());
+}
+
+TEST(WardenPacket_rejects_malformed_mem_results_without_partial_output)
+{
+    warden::CheckPlan const plan = TimingSingleMemPlan();
+    warden::Bytes const valid = FromHex(
+        "021300c7c99e6e01040302010025ffffdffb0d00200000894640");
+
+    for (size_t size = 1; size < valid.size(); ++size)
+    {
+        warden::Bytes const truncated(valid.begin(), valid.begin() + size);
+        CheckFailedDecodeLeavesOutput(View(truncated), plan,
+            warden::DecodeStatus::WrongSize);
+    }
+
+    CheckFailedDecodeLeavesOutput(
+        View(FromHex("0206008afc74c1010403020102")), plan,
+        warden::DecodeStatus::InvalidValue);
+    CheckFailedDecodeLeavesOutput(
+        View(FromHex("020700cbfd424001040302010100")), plan,
+        warden::DecodeStatus::WrongSize);
+
+    warden::Bytes wrongChecksum = valid;
+    wrongChecksum[3] ^= 1;
+    CheckFailedDecodeLeavesOutput(View(wrongChecksum), plan,
+        warden::DecodeStatus::ChecksumMismatch);
+
+    warden::Bytes trailing = valid;
+    trailing.push_back(0);
+    CheckFailedDecodeLeavesOutput(View(trailing), plan,
+        warden::DecodeStatus::WrongSize);
+
+    CheckFailedDecodeLeavesOutput(View(valid), TimingPlan(),
+        warden::DecodeStatus::WrongSize);
 }
 
 TEST(WardenPacket_decodes_exact_timing_mpq_result_vectors_in_plan_order)

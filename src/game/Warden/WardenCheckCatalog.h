@@ -26,6 +26,7 @@
 #include "WardenProtocol.h"
 
 #include <string>
+#include <vector>
 
 namespace warden
 {
@@ -35,7 +36,11 @@ enum class CheckCatalogValidation : uint8
     InvalidId,
     InvalidPath,
     InvalidQuery,
-    InvalidExpectedText
+    InvalidExpectedText,
+    InvalidAddress,
+    InvalidModuleName,
+    InvalidExpectedBytes,
+    DuplicateId
 };
 
 /** Immutable input needed to request and evaluate one client MPQ digest. */
@@ -54,6 +59,16 @@ struct LuaCheckProfile
     std::string expectedText;
 };
 
+/** Immutable input needed to request and classify one process-memory read. */
+struct MemCheckProfile
+{
+    uint32 checkId = 0;
+    // Empty selects an absolute process address; nonempty selects module+RVA.
+    std::string moduleName;
+    uint32 addressOrRva = 0;
+    Bytes expectedBytes;
+};
+
 /**
  * Selects active checks independently of the delivered module catalogue.
  * Archive contents are locale/build scoped even when module bytes are shared.
@@ -65,8 +80,13 @@ public:
         std::string const& platform, std::string const& locale) const;
     LuaCheckProfile const* FindLua(uint32 build,
         std::string const& platform, std::string const& locale) const;
+    std::vector<MemCheckProfile> const* FindMem(uint32 build,
+        std::string const& platform, std::string const& locale) const;
     CheckCatalogValidation Validate(MpqCheckProfile const& profile) const;
     CheckCatalogValidation Validate(LuaCheckProfile const& profile) const;
+    CheckCatalogValidation Validate(MemCheckProfile const& profile) const;
+    CheckCatalogValidation Validate(
+        std::vector<MemCheckProfile> const& profiles) const;
 };
 }
 

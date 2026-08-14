@@ -73,13 +73,29 @@ struct LuaEvidence
     LuaOutcome outcome = LuaOutcome::Unavailable;
 };
 
+enum class MemOutcome : uint8
+{
+    Match,
+    ByteMismatch,
+    Unavailable
+};
+
+/** Validated memory evidence containing no address or returned client bytes. */
+struct MemEvidence
+{
+    uint32 requestId = 0;
+    uint32 checkId = 0;
+    MemOutcome outcome = MemOutcome::Unavailable;
+};
+
 using WardenEvidence =
-    std::variant<TimingEvidence, MpqEvidence, LuaEvidence>;
+    std::variant<TimingEvidence, MpqEvidence, LuaEvidence, MemEvidence>;
 
 // Fixed labels are safe for operator summaries and contain no client data.
 char const* ToString(TimingOutcome outcome);
 char const* ToString(MpqOutcome outcome);
 char const* ToString(LuaOutcome outcome);
+char const* ToString(MemOutcome outcome);
 }
 
 #endif

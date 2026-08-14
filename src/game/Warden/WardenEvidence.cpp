@@ -55,4 +55,15 @@ char const* ToString(LuaOutcome outcome)
     }
     return "Unknown";
 }
+
+char const* ToString(MemOutcome outcome)
+{
+    switch (outcome)
+    {
+        case MemOutcome::Match: return "Match";
+        case MemOutcome::ByteMismatch: return "ByteMismatch";
+        case MemOutcome::Unavailable: return "Unavailable";
+    }
+    return "Unknown";
+}
 }

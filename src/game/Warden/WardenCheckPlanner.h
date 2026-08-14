@@ -36,7 +36,8 @@ struct TimingCheck
 };
 
 using PlannedCheck =
-    std::variant<TimingCheck, MpqCheckProfile, LuaCheckProfile>;
+    std::variant<TimingCheck, MpqCheckProfile, LuaCheckProfile,
+        MemCheckProfile>;
 
 struct CheckPlan
 {
@@ -54,7 +55,8 @@ class WardenCheckPlanner
 public:
     explicit WardenCheckPlanner(uint32 eligibilityDelayMs = 1000,
         std::optional<MpqCheckProfile> mpqCheck = std::nullopt,
-        std::optional<LuaCheckProfile> luaCheck = std::nullopt);
+        std::optional<LuaCheckProfile> luaCheck = std::nullopt,
+        std::vector<MemCheckProfile> memChecks = {});
 
     // Ineligible updates reset partial delay. Once a plan is returned, this
     // planner remains complete and returns no further work.
@@ -64,6 +66,7 @@ private:
     uint32 m_eligibilityDelayMs;
     std::optional<MpqCheckProfile> m_mpqCheck;
     std::optional<LuaCheckProfile> m_luaCheck;
+    std::vector<MemCheckProfile> m_memChecks;
     uint32 m_eligibleMs = 0;
     bool m_issued = false;
 };
