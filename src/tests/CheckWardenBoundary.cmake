@@ -90,8 +90,10 @@ require_count("${SESSION_CPP}" "m_warden->Start[ \\t]*\\(" 1
 require_count("${SESSION_CPP}"
     "m_warden->Update[ \\t]*\\([ \\t]*eligible[ \\t]*,[ \\t]*diffMs[ \\t]*\\)" 1
     "session update must pass only derived eligibility and elapsed time")
-require_count("${SESSION_CPP}" "TimingEvidence const&" 1
-    "session adapter must consume typed timing evidence exactly once")
+require_count("${SESSION_CPP}" "WardenEvidence const&" 1
+    "session adapter must consume typed Warden evidence exactly once")
+require_count("${SESSION_CPP}" "std::visit[ \\t]*\\(" 1
+    "session adapter must dispatch typed Warden evidence exactly once")
 require_count("${SESSION_CPP}" "Warden healthy for player %s" 1
     "stable evidence must have one normal operator health message")
 if(NOT SESSION_CPP MATCHES "GetPlayer[ \\t]*\\([ \\t]*\\)" OR

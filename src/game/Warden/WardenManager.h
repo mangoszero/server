@@ -23,6 +23,7 @@
 #ifndef MANGOS_WARDEN_MANAGER_H
 #define MANGOS_WARDEN_MANAGER_H
 
+#include "WardenCheckCatalog.h"
 #include "WardenServer.h"
 
 #include <memory>
@@ -42,13 +43,14 @@ public:
     // Returns null for unsupported or custody-invalid profiles. The observer
     // receives typed terminal facts only and may be omitted by tests/tools.
     std::unique_ptr<WardenServer> Create(uint32 build,
-        std::string const& platform, SessionKey const& sessionKey,
-        SendEncrypted send, WardenLimits limits = {},
+        std::string const& platform, std::string const& locale,
+        SessionKey const& sessionKey, SendEncrypted send, WardenLimits limits = {},
         LifecycleObserver observer = {},
         EvidenceObserver evidenceObserver = {}) const;
 
 private:
     WardenModuleCatalog m_catalog;
+    WardenCheckCatalog m_checkCatalog;
 };
 }
 

@@ -57,6 +57,8 @@
 #include <string>
 #include <set>
 #include <memory>
+#include <type_traits>
+#include <variant>
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
 #include "OpcodeTable.h"
@@ -334,7 +336,8 @@ void WorldSession::OnAuthenticatedAdmission()
     // an already encrypted, complete inner body and advances its own stream.
     std::unique_ptr<warden::WardenServer> server =
         warden::WardenManager::Instance().Create(build, admission.platform,
-            admission.sessionKey, [this](warden::Bytes const& payload)
+            localeNames[GetSessionDbcLocale()], admission.sessionKey,
+            [this](warden::Bytes const& payload)
             {
                 if (!m_link || m_link->IsClosed())
                     return false;
@@ -360,39 +363,94 @@ void WorldSession::OnAuthenticatedAdmission()
                         "(build %u): %s.", accountId, build,
                         warden::ToString(event.failure));
                 }
-            }, [this, accountId](warden::TimingEvidence const& evidence)
+            }, [this, accountId](warden::WardenEvidence const& evidence)
             {
-                // Timing internals remain in typed memory only. Normal logs
-                // report the validated outcome and current session identity,
-                // never the tick, checksum, decrypted body, or keys.
-                Player* const player = GetPlayer();
-                bool const playerInWorld = player && player->IsInWorld();
-                if (evidence.outcome == warden::TimingOutcome::Stable)
+                // Only typed classifications and catalogue IDs cross this
+                // boundary; ticks, paths, hashes, bodies, and keys stay private.
+                std::visit([this, accountId](auto const& typedEvidence)
                 {
-                    if (playerInWorld)
+                    using Evidence = std::decay_t<decltype(typedEvidence)>;
+                    Player* const player = GetPlayer();
+                    bool const playerInWorld =
+                        player && player->IsInWorld();
+
+                    if constexpr (std::is_same_v<Evidence,
+                            warden::TimingEvidence>)
                     {
-                        sLog.outString("Warden healthy for player %s "
-                            "(account %u).", player->GetName(), accountId);
+                        if (typedEvidence.outcome ==
+                            warden::TimingOutcome::Stable)
+                        {
+                            if (playerInWorld)
+                            {
+                                sLog.outString("Warden healthy for player %s "
+                                    "(account %u).", player->GetName(),
+                                    accountId);
+                            }
+                            else
+                            {
+                                sLog.outString("Warden healthy for account %u.",
+                                    accountId);
+                            }
+                            return;
+                        }
+
+                        if (playerInWorld)
+                        {
+                            sLog.outError("Warden timing check %s for player %s "
+                                "(account %u).",
+                                warden::ToString(typedEvidence.outcome),
+                                player->GetName(), accountId);
+                        }
+                        else
+                        {
+                            sLog.outError("Warden timing check %s for account "
+                                "%u.", warden::ToString(typedEvidence.outcome),
+                                accountId);
+                        }
+                        return;
                     }
+
                     else
                     {
-                        sLog.outString("Warden healthy for account %u.",
-                            accountId);
-                    }
-                    return;
-                }
+                        static_assert(std::is_same_v<Evidence,
+                            warden::MpqEvidence>);
 
-                if (playerInWorld)
-                {
-                    sLog.outError("Warden timing check %s for player %s "
-                        "(account %u).", warden::ToString(evidence.outcome),
-                        player->GetName(), accountId);
-                }
-                else
-                {
-                    sLog.outError("Warden timing check %s for account %u.",
-                        warden::ToString(evidence.outcome), accountId);
-                }
+                        if (typedEvidence.outcome == warden::MpqOutcome::Match)
+                        {
+                            if (playerInWorld)
+                            {
+                                sLog.outString("Warden archive check passed for "
+                                    "player %s (account %u; check %u).",
+                                    player->GetName(), accountId,
+                                    typedEvidence.checkId);
+                            }
+                            else
+                            {
+                                sLog.outString("Warden archive check passed for "
+                                    "account %u (check %u).", accountId,
+                                    typedEvidence.checkId);
+                            }
+                            return;
+                        }
+
+                        char const* result = typedEvidence.outcome ==
+                            warden::MpqOutcome::Unavailable ? "unavailable" :
+                            "digest mismatch";
+                        if (playerInWorld)
+                        {
+                            sLog.outError("Warden archive check %s for player %s "
+                                "(account %u; check %u; observation only).",
+                                result, player->GetName(), accountId,
+                                typedEvidence.checkId);
+                        }
+                        else
+                        {
+                            sLog.outError("Warden archive check %s for account %u "
+                                "(check %u; observation only).", result, accountId,
+                                typedEvidence.checkId);
+                        }
+                    }
+                }, evidence);
             });
     admission.Clear();
 

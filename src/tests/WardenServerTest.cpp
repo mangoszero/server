@@ -33,6 +33,7 @@
 #include <cstring>
 #include <memory>
 #include <optional>
+#include <string>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -215,6 +216,11 @@ private:
     PeerRc4 m_serverToClient;
 };
 
+struct ManagerLocale
+{
+    std::string value;
+};
+
 struct Harness
 {
     explicit Harness(bool allowSend = true,
@@ -228,27 +234,50 @@ struct Harness
             return;
 
         server = std::make_unique<warden::WardenServer>(*profile,
-            std::move(crypto), [this](warden::Bytes const& bytes)
-            {
-                ++sendCalls;
-                if (!sendSucceeds)
-                    return false;
-                sent.push_back(bytes);
-                return true;
-            }, warden::WardenLimits{},
-            [this](warden::WardenLifecycleEvent const& event)
-            {
-                events.push_back(event);
-            }, [this](warden::WardenEvidence const& evidence)
-            {
-                evidenceEvents.push_back(evidence);
-            }, mpqCheck);
+            std::move(crypto), MakeSend(), warden::WardenLimits{},
+            MakeLifecycleObserver(), MakeEvidenceObserver(), mpqCheck);
+    }
+
+    explicit Harness(ManagerLocale locale, bool allowSend = true)
+        : peer(TestSessionKey()), sendSucceeds(allowSend)
+    {
+        server = warden::WardenManager::Instance().Create(5875, "Win",
+            locale.value, TestSessionKey(), MakeSend(), {},
+            MakeLifecycleObserver(), MakeEvidenceObserver());
     }
 
     void SendClient(warden::Bytes plain)
     {
         warden::Bytes encrypted = peer.EncryptClient(std::move(plain));
         server->HandleEncrypted({encrypted.data(), encrypted.size()});
+    }
+
+    warden::SendEncrypted MakeSend()
+    {
+        return [this](warden::Bytes const& bytes)
+        {
+            ++sendCalls;
+            if (!sendSucceeds)
+                return false;
+            sent.push_back(bytes);
+            return true;
+        };
+    }
+
+    warden::LifecycleObserver MakeLifecycleObserver()
+    {
+        return [this](warden::WardenLifecycleEvent const& event)
+        {
+            events.push_back(event);
+        };
+    }
+
+    warden::EvidenceObserver MakeEvidenceObserver()
+    {
+        return [this](warden::WardenEvidence const& evidence)
+        {
+            evidenceEvents.push_back(evidence);
+        };
     }
 
     BootstrapPeer peer;
@@ -571,7 +600,7 @@ TEST(WardenManager_creation_is_inert_and_rejects_unsupported_profiles)
     };
 
     std::unique_ptr<warden::WardenServer> supported =
-        warden::WardenManager::Instance().Create(5875, "Win",
+        warden::WardenManager::Instance().Create(5875, "Win", "enUS",
             TestSessionKey(), send);
     REQUIRE(supported != nullptr);
     CHECK_EQ(calls, 0u);
@@ -581,10 +610,19 @@ TEST(WardenManager_creation_is_inert_and_rejects_unsupported_profiles)
     CHECK_EQ(calls, 1u);
 
     std::unique_ptr<warden::WardenServer> unsupported =
-        warden::WardenManager::Instance().Create(6005, "Win",
+        warden::WardenManager::Instance().Create(6005, "Win", "enUS",
             TestSessionKey(), send);
     CHECK(unsupported == nullptr);
     CHECK_EQ(calls, 1u);
+}
+
+TEST(WardenManager_selects_mpq_only_for_the_exact_locale)
+{
+    Harness enUS(ManagerLocale{"enUS"});
+    REQUIRE(StartTimingMpqCheck(enUS));
+
+    Harness frFR(ManagerLocale{"frFR"});
+    REQUIRE(StartTimingCheck(frFR));
 }
 
 TEST(WardenServer_uninitialized_crypto_fails_before_sending)
@@ -610,7 +648,7 @@ TEST(WardenServer_ignores_prestart_data_and_can_start)
 {
     size_t calls = 0;
     std::unique_ptr<warden::WardenServer> server =
-        warden::WardenManager::Instance().Create(5875, "Win",
+        warden::WardenManager::Instance().Create(5875, "Win", "enUS",
             TestSessionKey(), [&calls](warden::Bytes const&)
             {
                 ++calls;

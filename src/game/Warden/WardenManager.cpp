@@ -33,8 +33,8 @@ WardenManager& WardenManager::Instance()
 }
 
 std::unique_ptr<WardenServer> WardenManager::Create(uint32 build,
-    std::string const& platform, SessionKey const& sessionKey,
-    SendEncrypted send, WardenLimits limits,
+    std::string const& platform, std::string const& locale,
+    SessionKey const& sessionKey, SendEncrypted send, WardenLimits limits,
     LifecycleObserver observer, EvidenceObserver evidenceObserver) const
 {
     ModuleProfile const* profile = m_catalog.Find(build, platform);
@@ -45,8 +45,16 @@ std::unique_ptr<WardenServer> WardenManager::Create(uint32 build,
     // the authenticated raw-40 key and Create emits no packet.
     WardenCryptoContext crypto;
     crypto.Initialize(sessionKey);
+
+    std::optional<MpqCheckProfile> mpqCheck;
+    MpqCheckProfile const* selected =
+        m_checkCatalog.FindMpq(build, platform, locale);
+    if (selected && m_checkCatalog.Validate(*selected) ==
+            CheckCatalogValidation::Valid)
+        mpqCheck = *selected;
+
     return std::make_unique<WardenServer>(*profile, std::move(crypto),
         std::move(send), limits, std::move(observer),
-        std::move(evidenceObserver));
+        std::move(evidenceObserver), std::move(mpqCheck));
 }
 }
