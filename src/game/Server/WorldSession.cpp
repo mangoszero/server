@@ -364,17 +364,21 @@ void WorldSession::OnAuthenticatedAdmission()
                         "(build %u): %s.", accountId, build,
                         warden::ToString(event.failure));
                 }
-            }, [this, accountId](warden::WardenEvidence const& evidence)
+            }, [this, accountId](
+                warden::WardenEvidenceBatch const& batch)
             {
                 // Only typed classifications and catalogue IDs cross this
                 // boundary; paths, hashes, raw bytes, bodies, and keys stay
                 // private.
-                std::visit([this, accountId](auto const& typedEvidence)
+                for (warden::WardenEvidence const& evidence : batch.evidence)
                 {
-                    using Evidence = std::decay_t<decltype(typedEvidence)>;
-                    Player* const player = GetPlayer();
-                    bool const playerInWorld =
-                        player && player->IsInWorld();
+                    std::visit([this, accountId](auto const& typedEvidence)
+                    {
+                        using Evidence =
+                            std::decay_t<decltype(typedEvidence)>;
+                        Player* const player = GetPlayer();
+                        bool const playerInWorld =
+                            player && player->IsInWorld();
 
                     if constexpr (std::is_same_v<Evidence,
                             warden::TimingEvidence>)
@@ -530,7 +534,8 @@ void WorldSession::OnAuthenticatedAdmission()
                                 accountId, typedEvidence.checkId);
                         }
                     }
-                }, evidence);
+                    }, evidence);
+                }
             });
     admission.Clear();
 

@@ -145,6 +145,19 @@ warden::CheckPlan TimingSingleMemPlan()
     return plan;
 }
 
+warden::CheckPlan ConfirmationMemPlan()
+{
+    static warden::WardenCheckCatalog const catalog;
+    std::vector<warden::MemCheckProfile> const* profiles =
+        catalog.FindMem(5875, "Win", "enUS");
+    warden::CheckPlan plan;
+    plan.requestId = 7;
+    plan.purpose = warden::CheckPlanPurpose::Confirmation;
+    if (profiles && profiles->size() > 2u)
+        plan.checks.emplace_back((*profiles)[2]);
+    return plan;
+}
+
 void CheckInvalidPlanLeavesOutput(warden::ModuleProfile const& profile,
     warden::CheckPlan const& plan)
 {
@@ -319,6 +332,32 @@ TEST(WardenPacket_encodes_exact_crossbuild_timing_and_mem_requests)
     }
 }
 
+TEST(WardenPacket_encodes_and_decodes_exact_mem_only_confirmation)
+{
+    warden::ModuleProfile const* profile = Windows5875Profile();
+    REQUIRE(profile != nullptr);
+    warden::CheckPlan const plan = ConfirmationMemPlan();
+    REQUIRE(plan.checks.size() == 1u);
+
+    warden::Bytes encoded;
+    REQUIRE(warden::EncodeCheckRequest(*profile, plan, encoded) ==
+        warden::EncodeStatus::Ok);
+    CHECK_HEX(encoded.data(), encoded.size(), "02008c00504a4900057f");
+
+    warden::CheckBatchResult decoded;
+    warden::Bytes const result =
+        FromHex("0206005a6f3fca00a1c0eace00");
+    REQUIRE(warden::DecodeCheckResult(View(result), plan, decoded) ==
+        warden::DecodeStatus::Ok);
+    REQUIRE(decoded.checks.size() == 1u);
+    REQUIRE(std::holds_alternative<warden::MemResult>(decoded.checks[0]));
+    warden::MemResult const& memory =
+        std::get<warden::MemResult>(decoded.checks[0]);
+    CHECK(memory.status == warden::MemResultStatus::Success);
+    CHECK_HEX(memory.actualBytes.data(), memory.actualBytes.size(),
+        "a1c0eace00");
+}
+
 TEST(WardenPacket_rejects_invalid_check_plans_without_replacing_output)
 {
     warden::ModuleProfile const* profile = Windows5875Profile();
@@ -330,9 +369,6 @@ TEST(WardenPacket_rejects_invalid_check_plans_without_replacing_output)
 
     plan = {};
     plan.requestId = 1;
-    CheckInvalidPlanLeavesOutput(*profile, plan);
-
-    plan.checks.emplace_back(TestMpqProfile());
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingPlan();

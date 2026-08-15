@@ -35,8 +35,9 @@ WardenManager& WardenManager::Instance()
 
 std::unique_ptr<WardenServer> WardenManager::Create(uint32 build,
     std::string const& platform, std::string const& locale,
-    SessionKey const& sessionKey, SendEncrypted send, WardenLimits limits,
-    LifecycleObserver observer, EvidenceObserver evidenceObserver) const
+    SessionKey const& sessionKey, SendEncrypted send,
+    WardenCreationOptions options, LifecycleObserver lifecycleObserver,
+    EvidenceBatchObserver evidenceObserver) const
 {
     ModuleProfile const* profile = m_catalog.Find(build, platform);
     if (!profile || m_catalog.Validate(*profile) != ModuleValidation::Valid)
@@ -67,10 +68,13 @@ std::unique_ptr<WardenServer> WardenManager::Create(uint32 build,
     if (selectedMem && m_checkCatalog.Validate(*selectedMem) ==
             CheckCatalogValidation::Valid)
         memChecks = *selectedMem;
+    if (options.requireMemCatalog && memChecks.empty())
+        return nullptr;
 
     return std::make_unique<WardenServer>(*profile, std::move(crypto),
-        std::move(send), limits, std::move(observer),
-        std::move(evidenceObserver), std::move(mpqCheck),
-        std::move(luaCheck), std::move(memChecks));
+        std::move(send), options.limits, options.configuration,
+        options.initialAggressive, std::move(lifecycleObserver),
+        std::move(evidenceObserver), std::move(mpqCheck), std::move(luaCheck),
+        std::move(memChecks));
 }
 }

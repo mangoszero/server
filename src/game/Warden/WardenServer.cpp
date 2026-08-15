@@ -85,17 +85,18 @@ namespace warden
 {
 WardenServer::WardenServer(ModuleProfile const& profile,
     WardenCryptoContext&& crypto, SendEncrypted send, WardenLimits limits,
-    LifecycleObserver observer, EvidenceObserver evidenceObserver,
+    WardenConfiguration configuration, bool initialAggressive,
+    LifecycleObserver observer, EvidenceBatchObserver evidenceObserver,
     std::optional<MpqCheckProfile> mpqCheck,
     std::optional<LuaCheckProfile> luaCheck,
     std::vector<MemCheckProfile> memChecks)
     : m_profile(profile), m_crypto(std::move(crypto)), m_send(std::move(send)),
       m_limits(limits), m_observer(std::move(observer)),
       m_evidenceObserver(std::move(evidenceObserver)),
-      m_planner(WardenConfiguration{}, 1000, std::move(mpqCheck),
-          std::move(luaCheck),
+      m_planner(configuration, 1000, std::move(mpqCheck), std::move(luaCheck),
           std::move(memChecks))
 {
+    m_planner.SetAggressive(initialAggressive);
 }
 
 bool WardenServer::Start()
@@ -164,7 +165,7 @@ void WardenServer::HandleEncrypted(ByteView encryptedBody)
     };
     if (m_state == WardenState::AwaitingCheckResult)
     {
-        HandleCheckResult(plainView);
+        HandleCheckResult(plain);
         return;
     }
 
@@ -307,6 +308,16 @@ uint8 WardenServer::GetTransferCount() const
     return m_transferCount;
 }
 
+bool WardenServer::QueueConfirmation(uint32 checkId)
+{
+    return m_planner.QueueConfirmation(checkId);
+}
+
+void WardenServer::SetAggressive(bool aggressive)
+{
+    m_planner.SetAggressive(aggressive);
+}
+
 void WardenServer::Fail(WardenFailure reason)
 {
     if (m_state == WardenState::Failed)
@@ -420,7 +431,7 @@ bool WardenServer::SendCheckRequest(CheckPlan const& plan)
     return true;
 }
 
-void WardenServer::HandleCheckResult(ByteView plain)
+void WardenServer::HandleCheckResult(Bytes& plain)
 {
     if (!m_pendingPlan)
     {
@@ -428,154 +439,165 @@ void WardenServer::HandleCheckResult(ByteView plain)
         return;
     }
 
-    CheckBatchResult result;
-    // Cleanse temporary Lua text and process-memory bytes on every exit after
-    // decoding, including later classification failures.
-    CleanseCheckBatchResult const cleanseResult(result);
-    DecodeStatus const status = DecodeCheckResult(plain, *m_pendingPlan, result);
-    if (status == DecodeStatus::UnsupportedCommand)
-    {
-        Fail(WardenFailure::UnexpectedCommand);
-        return;
-    }
-    if (status == DecodeStatus::CryptoFailure)
-    {
-        Fail(WardenFailure::CryptoFailure);
-        return;
-    }
-    if (status != DecodeStatus::Ok)
-    {
-        Fail(WardenFailure::MalformedPayload);
-        return;
-    }
+    CheckPlan const completedPlan = *m_pendingPlan;
+    WardenEvidenceBatch batch;
+    batch.requestId = completedPlan.requestId;
+    batch.purpose = completedPlan.purpose;
 
-    if (result.checks.size() != m_pendingPlan->checks.size())
     {
-        Fail(WardenFailure::MalformedPayload);
-        return;
-    }
-
-    std::vector<WardenEvidence> evidence;
-    evidence.reserve(result.checks.size());
-    for (size_t index = 0; index < result.checks.size(); ++index)
-    {
-        PlannedCheck const& planned = m_pendingPlan->checks[index];
-        CheckResult const& returned = result.checks[index];
-        if (std::holds_alternative<TimingCheck>(planned))
+        CheckBatchResult result;
+        // Returned Lua text and process-memory bytes remain in this nested
+        // scope and are cleansed before the secret-free batch is published.
+        CleanseCheckBatchResult const cleanseResult(result);
+        ByteView const plainView
         {
-            TimingResult const* timing = std::get_if<TimingResult>(&returned);
-            if (!timing)
-            {
-                Fail(WardenFailure::MalformedPayload);
-                return;
-            }
-            evidence.emplace_back(TimingEvidence
-            {
-                m_pendingPlan->requestId,
-                timing->stable ? TimingOutcome::Stable :
-                    TimingOutcome::Unstable,
-                timing->clientTick
-            });
-            continue;
-        }
-
-        if (MpqCheckProfile const* profile =
-                std::get_if<MpqCheckProfile>(&planned))
+            plain.empty() ? nullptr : plain.data(), plain.size()
+        };
+        DecodeStatus const status =
+            DecodeCheckResult(plainView, completedPlan, result);
+        if (status == DecodeStatus::UnsupportedCommand)
         {
-            MpqResult const* mpq = std::get_if<MpqResult>(&returned);
-            if (!mpq)
-            {
-                Fail(WardenFailure::MalformedPayload);
-                return;
-            }
-
-            MpqOutcome outcome = MpqOutcome::Unavailable;
-            if (mpq->status == MpqResultStatus::Success)
-            {
-                outcome = CRYPTO_memcmp(mpq->digest.data(),
-                    profile->expectedSha1.data(), mpq->digest.size()) == 0 ?
-                    MpqOutcome::Match : MpqOutcome::DigestMismatch;
-            }
-            evidence.emplace_back(MpqEvidence
-            {
-                m_pendingPlan->requestId,
-                profile->checkId,
-                outcome
-            });
-            continue;
+            Fail(WardenFailure::UnexpectedCommand);
+            return;
         }
-
-        if (LuaCheckProfile const* profile =
-                std::get_if<LuaCheckProfile>(&planned))
+        if (status == DecodeStatus::CryptoFailure)
         {
-            LuaResult const* lua = std::get_if<LuaResult>(&returned);
-            if (!lua)
-            {
-                Fail(WardenFailure::MalformedPayload);
-                return;
-            }
-
-            // Returned script text is compared only inside this private
-            // boundary. Observers receive catalogue identity and outcome.
-            LuaOutcome outcome = LuaOutcome::Unavailable;
-            if (lua->status == LuaResultStatus::Success)
-            {
-                outcome = lua->text == profile->expectedText ?
-                    LuaOutcome::Match : LuaOutcome::TextMismatch;
-            }
-            evidence.emplace_back(LuaEvidence
-            {
-                m_pendingPlan->requestId,
-                profile->checkId,
-                outcome
-            });
-            continue;
+            Fail(WardenFailure::CryptoFailure);
+            return;
         }
-
-        MemCheckProfile const* profile =
-            std::get_if<MemCheckProfile>(&planned);
-        MemResult const* memory = std::get_if<MemResult>(&returned);
-        if (!profile || !memory)
+        if (status != DecodeStatus::Ok)
+        {
+            Fail(WardenFailure::MalformedPayload);
+            return;
+        }
+        if (result.checks.size() != completedPlan.checks.size())
         {
             Fail(WardenFailure::MalformedPayload);
             return;
         }
 
-        // Raw process bytes are compared and cleansed inside this boundary.
-        // Only the stable catalogue ID and outcome reach session observers.
-        MemOutcome outcome = MemOutcome::Unavailable;
-        if (memory->status == MemResultStatus::Success)
+        batch.evidence.reserve(result.checks.size());
+        for (size_t index = 0; index < result.checks.size(); ++index)
         {
-            // Keep this defensive invariant at the classification boundary
-            // even though the current codec reads the planned size exactly.
-            if (memory->actualBytes.size() != profile->expectedBytes.size())
+            PlannedCheck const& planned = completedPlan.checks[index];
+            CheckResult const& returned = result.checks[index];
+            if (std::holds_alternative<TimingCheck>(planned))
+            {
+                TimingResult const* timing =
+                    std::get_if<TimingResult>(&returned);
+                if (!timing)
+                {
+                    Fail(WardenFailure::MalformedPayload);
+                    return;
+                }
+                batch.evidence.emplace_back(TimingEvidence
+                {
+                    completedPlan.requestId,
+                    timing->stable ? TimingOutcome::Stable :
+                        TimingOutcome::Unstable,
+                    timing->clientTick
+                });
+                continue;
+            }
+
+            if (MpqCheckProfile const* profile =
+                    std::get_if<MpqCheckProfile>(&planned))
+            {
+                MpqResult const* mpq = std::get_if<MpqResult>(&returned);
+                if (!mpq)
+                {
+                    Fail(WardenFailure::MalformedPayload);
+                    return;
+                }
+
+                MpqOutcome outcome = MpqOutcome::Unavailable;
+                if (mpq->status == MpqResultStatus::Success)
+                {
+                    outcome = CRYPTO_memcmp(mpq->digest.data(),
+                        profile->expectedSha1.data(), mpq->digest.size()) == 0 ?
+                        MpqOutcome::Match : MpqOutcome::DigestMismatch;
+                }
+                batch.evidence.emplace_back(MpqEvidence
+                {
+                    completedPlan.requestId,
+                    profile->checkId,
+                    outcome
+                });
+                continue;
+            }
+
+            if (LuaCheckProfile const* profile =
+                    std::get_if<LuaCheckProfile>(&planned))
+            {
+                LuaResult const* lua = std::get_if<LuaResult>(&returned);
+                if (!lua)
+                {
+                    Fail(WardenFailure::MalformedPayload);
+                    return;
+                }
+
+                // Returned script text is compared only inside this private
+                // boundary. Observers receive catalogue identity and outcome.
+                LuaOutcome outcome = LuaOutcome::Unavailable;
+                if (lua->status == LuaResultStatus::Success)
+                {
+                    outcome = lua->text == profile->expectedText ?
+                        LuaOutcome::Match : LuaOutcome::TextMismatch;
+                }
+                batch.evidence.emplace_back(LuaEvidence
+                {
+                    completedPlan.requestId,
+                    profile->checkId,
+                    outcome
+                });
+                continue;
+            }
+
+            MemCheckProfile const* profile =
+                std::get_if<MemCheckProfile>(&planned);
+            MemResult const* memory = std::get_if<MemResult>(&returned);
+            if (!profile || !memory)
             {
                 Fail(WardenFailure::MalformedPayload);
                 return;
             }
-            outcome = CRYPTO_memcmp(memory->actualBytes.data(),
-                profile->expectedBytes.data(),
-                profile->expectedBytes.size()) == 0 ? MemOutcome::Match :
-                MemOutcome::ByteMismatch;
+
+            // Raw process bytes are compared and cleansed inside this scope.
+            MemOutcome outcome = MemOutcome::Unavailable;
+            if (memory->status == MemResultStatus::Success)
+            {
+                if (memory->actualBytes.size() !=
+                    profile->expectedBytes.size())
+                {
+                    Fail(WardenFailure::MalformedPayload);
+                    return;
+                }
+                outcome = CRYPTO_memcmp(memory->actualBytes.data(),
+                    profile->expectedBytes.data(),
+                    profile->expectedBytes.size()) == 0 ? MemOutcome::Match :
+                    MemOutcome::ByteMismatch;
+            }
+            batch.evidence.emplace_back(MemEvidence
+            {
+                completedPlan.requestId,
+                profile->checkId,
+                outcome
+            });
         }
-        evidence.emplace_back(MemEvidence
-        {
-            m_pendingPlan->requestId,
-            profile->checkId,
-            outcome
-        });
     }
 
     m_pendingPlan.reset();
     m_state = WardenState::ModuleReady;
     m_remainingMs = 0;
+    m_planner.Complete(completedPlan);
 
-    // Publish the complete authenticated batch only after state is committed,
-    // so observer re-entry cannot see or republish a half-consumed request.
+    // The decrypted response is explicitly zeroed before observer re-entry;
+    // the outer RAII guard then sees an empty, already-cleansed buffer.
+    if (!plain.empty())
+        OPENSSL_cleanse(plain.data(), plain.size());
+    plain.clear();
+
     if (m_evidenceObserver)
-    {
-        for (WardenEvidence const& event : evidence)
-            m_evidenceObserver(event);
-    }
+        m_evidenceObserver(batch);
 }
 }

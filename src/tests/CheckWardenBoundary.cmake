@@ -90,8 +90,8 @@ require_count("${SESSION_CPP}" "m_warden->Start[ \\t]*\\(" 1
 require_count("${SESSION_CPP}"
     "m_warden->Update[ \\t]*\\([ \\t]*eligible[ \\t]*,[ \\t]*diffMs[ \\t]*\\)" 1
     "session update must pass only derived eligibility and elapsed time")
-require_count("${SESSION_CPP}" "WardenEvidence const&" 1
-    "session adapter must consume typed Warden evidence exactly once")
+require_count("${SESSION_CPP}" "WardenEvidenceBatch const&" 1
+    "session adapter must consume one complete Warden evidence batch")
 require_count("${SESSION_CPP}" "std::visit[ \\t]*\\(" 1
     "session adapter must dispatch typed Warden evidence exactly once")
 require_count("${SESSION_CPP}"

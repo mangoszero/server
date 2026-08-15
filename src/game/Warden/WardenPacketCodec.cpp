@@ -139,8 +139,7 @@ bool AppendInitializationRecord(warden::Bytes& encoded,
 bool ValidateCheckPlan(warden::CheckPlan const& plan,
     std::vector<std::string>& strings)
 {
-    if (!plan.requestId || plan.checks.empty() ||
-        !std::holds_alternative<warden::TimingCheck>(plan.checks.front()))
+    if (!plan.requestId || plan.checks.empty())
         return false;
 
     size_t timingCount = 0;
@@ -230,7 +229,7 @@ bool ValidateCheckPlan(warden::CheckPlan const& plan,
             return false;
     }
 
-    return timingCount == 1;
+    return true;
 }
 }
 

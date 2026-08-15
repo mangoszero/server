@@ -23,9 +23,11 @@
 #ifndef MANGOS_WARDEN_EVIDENCE_H
 #define MANGOS_WARDEN_EVIDENCE_H
 
+#include "WardenCheckPlan.h"
 #include "WardenProtocol.h"
 
 #include <variant>
+#include <vector>
 
 namespace warden
 {
@@ -90,6 +92,17 @@ struct MemEvidence
 
 using WardenEvidence =
     std::variant<TimingEvidence, MpqEvidence, LuaEvidence, MemEvidence>;
+
+/**
+ * One fully validated request result. The batch contains only classifications
+ * and catalogue identifiers; decoded client buffers never cross this boundary.
+ */
+struct WardenEvidenceBatch
+{
+    uint32 requestId = 0;
+    CheckPlanPurpose purpose = CheckPlanPurpose::Initial;
+    std::vector<WardenEvidence> evidence;
+};
 
 // Fixed labels are safe for operator summaries and contain no client data.
 char const* ToString(TimingOutcome outcome);

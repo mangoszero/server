@@ -48,7 +48,8 @@ struct WardenLifecycleEvent
 
 using LifecycleObserver =
     std::function<void(WardenLifecycleEvent const&)>;
-using EvidenceObserver = std::function<void(WardenEvidence const&)>;
+using EvidenceBatchObserver =
+    std::function<void(WardenEvidenceBatch const&)>;
 
 /**
  * Per-session bootstrap state machine for the delivered Warden module.
@@ -63,7 +64,9 @@ class WardenServer
 public:
     WardenServer(ModuleProfile const& profile, WardenCryptoContext&& crypto,
         SendEncrypted send, WardenLimits limits = {},
-        LifecycleObserver observer = {}, EvidenceObserver evidenceObserver = {},
+        WardenConfiguration configuration = {}, bool initialAggressive = false,
+        LifecycleObserver observer = {},
+        EvidenceBatchObserver evidenceObserver = {},
         std::optional<MpqCheckProfile> mpqCheck = std::nullopt,
         std::optional<LuaCheckProfile> luaCheck = std::nullopt,
         std::vector<MemCheckProfile> memChecks = {});
@@ -83,6 +86,10 @@ public:
     WardenFailure GetFailure() const;
     uint8 GetTransferCount() const;
 
+    // These are scheduling controls only; punishment remains outside Warden.
+    bool QueueConfirmation(uint32 checkId);
+    void SetAggressive(bool aggressive);
+
 private:
     // Failed is absorbing. ModuleReady may transition once to Replay failure if
     // another bootstrap command arrives.
@@ -93,14 +100,14 @@ private:
     bool SendModuleTransfer();
     bool SendHashRequest();
     bool SendCheckRequest(CheckPlan const& plan);
-    void HandleCheckResult(ByteView plain);
+    void HandleCheckResult(Bytes& plain);
 
     ModuleProfile m_profile;
     WardenCryptoContext m_crypto;
     SendEncrypted m_send;
     WardenLimits m_limits;
     LifecycleObserver m_observer;
-    EvidenceObserver m_evidenceObserver;
+    EvidenceBatchObserver m_evidenceObserver;
     WardenCheckPlanner m_planner;
     WardenState m_state = WardenState::AwaitingModuleStatus;
     WardenFailure m_failure = WardenFailure::None;

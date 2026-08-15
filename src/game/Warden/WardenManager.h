@@ -30,6 +30,15 @@
 
 namespace warden
 {
+/** Immutable per-session inputs selected by the server admission policy. */
+struct WardenCreationOptions
+{
+    WardenLimits limits{};
+    WardenConfiguration configuration{};
+    bool initialAggressive = false;
+    bool requireMemCatalog = false;
+};
+
 /**
  * Stateless factory boundary between authenticated session inputs and the
  * exact delivered-module profile. Creating a server is inert; Start owns the
@@ -44,9 +53,10 @@ public:
     // receives typed terminal facts only and may be omitted by tests/tools.
     std::unique_ptr<WardenServer> Create(uint32 build,
         std::string const& platform, std::string const& locale,
-        SessionKey const& sessionKey, SendEncrypted send, WardenLimits limits = {},
-        LifecycleObserver observer = {},
-        EvidenceObserver evidenceObserver = {}) const;
+        SessionKey const& sessionKey, SendEncrypted send,
+        WardenCreationOptions options = {},
+        LifecycleObserver lifecycleObserver = {},
+        EvidenceBatchObserver evidenceObserver = {}) const;
 
 private:
     WardenModuleCatalog m_catalog;

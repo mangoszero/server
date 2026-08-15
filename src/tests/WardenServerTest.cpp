@@ -251,15 +251,16 @@ struct Harness
 
         server = std::make_unique<warden::WardenServer>(*profile,
             std::move(crypto), MakeSend(), warden::WardenLimits{},
-            MakeLifecycleObserver(), MakeEvidenceObserver(), mpqCheck,
-            luaCheck, std::move(memChecks));
+            warden::WardenConfiguration{}, false, MakeLifecycleObserver(),
+            MakeEvidenceObserver(), mpqCheck, luaCheck, std::move(memChecks));
     }
 
-    explicit Harness(ManagerLocale locale, bool allowSend = true)
+    explicit Harness(ManagerLocale locale, bool allowSend = true,
+        warden::WardenCreationOptions options = {})
         : peer(TestSessionKey()), sendSucceeds(allowSend)
     {
         server = warden::WardenManager::Instance().Create(5875, "Win",
-            locale.value, TestSessionKey(), MakeSend(), {},
+            locale.value, TestSessionKey(), MakeSend(), options,
             MakeLifecycleObserver(), MakeEvidenceObserver());
     }
 
@@ -289,11 +290,18 @@ struct Harness
         };
     }
 
-    warden::EvidenceObserver MakeEvidenceObserver()
+    warden::EvidenceBatchObserver MakeEvidenceObserver()
     {
-        return [this](warden::WardenEvidence const& evidence)
+        return [this](warden::WardenEvidenceBatch const& batch)
         {
-            evidenceEvents.push_back(evidence);
+            evidenceBatches.push_back(batch);
+            evidenceEvents.insert(evidenceEvents.end(), batch.evidence.begin(),
+                batch.evidence.end());
+            if (queueConfirmationId && server)
+            {
+                queueConfirmationResult =
+                    server->QueueConfirmation(queueConfirmationId);
+            }
         };
     }
 
@@ -302,7 +310,10 @@ struct Harness
     size_t sendCalls = 0;
     std::vector<warden::Bytes> sent;
     std::vector<warden::WardenLifecycleEvent> events;
+    std::vector<warden::WardenEvidenceBatch> evidenceBatches;
     std::vector<warden::WardenEvidence> evidenceEvents;
+    uint32 queueConfirmationId = 0;
+    bool queueConfirmationResult = false;
     std::unique_ptr<warden::WardenServer> server;
 };
 
@@ -710,6 +721,19 @@ TEST(WardenManager_selects_content_checks_only_for_the_exact_locale)
     REQUIRE(StartTimingCheck(frFR));
 }
 
+TEST(WardenManager_forwards_initial_aggressive_state_to_the_planner)
+{
+    warden::WardenCreationOptions options;
+    options.initialAggressive = true;
+    Harness harness(ManagerLocale{"enUS"}, true, options);
+    REQUIRE(ReachModuleReady(harness));
+
+    harness.server->Update(false, 0);
+    CHECK(harness.server->GetState() ==
+        warden::WardenState::AwaitingCheckResult);
+    CHECK_EQ(harness.sent.size(), size_t(4));
+}
+
 TEST(WardenServer_uninitialized_crypto_fails_before_sending)
 {
     warden::WardenModuleCatalog catalog;
@@ -773,6 +797,11 @@ TEST(WardenServer_sends_one_timing_check_after_eligibility_and_reports_stable)
     harness.SendClient(FromHex("020500A7D43E250178563412"));
     CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
     CHECK(harness.server->GetFailure() == warden::WardenFailure::None);
+    REQUIRE(harness.evidenceBatches.size() == 1u);
+    CHECK_EQ(harness.evidenceBatches[0].requestId, uint32(1));
+    CHECK(harness.evidenceBatches[0].purpose ==
+        warden::CheckPlanPurpose::Initial);
+    REQUIRE(harness.evidenceBatches[0].evidence.size() == 1u);
     REQUIRE(harness.evidenceEvents.size() == 1u);
     REQUIRE(std::holds_alternative<warden::TimingEvidence>(
         harness.evidenceEvents[0]));
@@ -783,7 +812,9 @@ TEST(WardenServer_sends_one_timing_check_after_eligibility_and_reports_stable)
     CHECK_EQ(evidence.clientTick, uint32(0x12345678));
 
     harness.server->Update(true, 60000);
-    CHECK_EQ(harness.sent.size(), 4u);
+    CHECK_EQ(harness.sent.size(), 5u);
+    CHECK(harness.server->GetState() ==
+        warden::WardenState::AwaitingCheckResult);
     CHECK_EQ(harness.evidenceEvents.size(), 1u);
 }
 
@@ -812,6 +843,10 @@ TEST(WardenServer_combined_check_preserves_stream_and_reports_ordered_match)
         "3411811985F5D81177C5453248133443"));
     CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
     CHECK(harness.server->GetFailure() == warden::WardenFailure::None);
+    REQUIRE(harness.evidenceBatches.size() == 1u);
+    CHECK(harness.evidenceBatches[0].purpose ==
+        warden::CheckPlanPurpose::Initial);
+    REQUIRE(harness.evidenceBatches[0].evidence.size() == 2u);
     REQUIRE(harness.evidenceEvents.size() == 2u);
 
     REQUIRE(std::holds_alternative<warden::TimingEvidence>(
@@ -944,6 +979,7 @@ TEST(WardenServer_malformed_lua_result_publishes_no_partial_evidence)
     CHECK(harness.server->GetState() == warden::WardenState::Failed);
     CHECK(harness.server->GetFailure() ==
         warden::WardenFailure::MalformedPayload);
+    CHECK(harness.evidenceBatches.empty());
     CHECK(harness.evidenceEvents.empty());
 }
 
@@ -973,6 +1009,31 @@ TEST(WardenServer_mem_results_are_identifier_only_and_ordered)
         CHECK_EQ(evidence.checkId, expectedIds[index]);
         CHECK(evidence.outcome == warden::MemOutcome::Match);
     }
+}
+
+TEST(WardenServer_batch_observer_can_queue_confirmation_after_state_commit)
+{
+    Harness harness(true, std::nullopt, std::nullopt, TestMemProfiles());
+    harness.queueConfirmationId = 1566;
+    REQUIRE(StartTimingMemCheck(harness));
+
+    harness.SendClient(FromHex(
+        "023F00833BDAFB010403020100558BEC8B51408B450C81E2FF7DA07550"
+        "8950108B450850E824DA1A005DC208000025FFFFDFFB0D00200000894640"
+        "00A1C0EACE0000BB8D243F"));
+
+    REQUIRE(harness.evidenceBatches.size() == 1u);
+    CHECK_EQ(harness.evidenceBatches[0].requestId, uint32(1));
+    CHECK(harness.evidenceBatches[0].purpose ==
+        warden::CheckPlanPurpose::Initial);
+    REQUIRE(harness.evidenceBatches[0].evidence.size() == 5u);
+    CHECK(harness.queueConfirmationResult);
+    CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
+
+    harness.server->Update(true, 0);
+    CHECK(harness.server->GetState() ==
+        warden::WardenState::AwaitingCheckResult);
+    CHECK_EQ(harness.sent.size(), size_t(5));
 }
 
 TEST(WardenServer_valid_mem_negatives_are_observation_only)
@@ -1020,6 +1081,7 @@ TEST(WardenServer_malformed_mem_result_publishes_no_partial_evidence)
     CHECK(harness.server->GetState() == warden::WardenState::Failed);
     CHECK(harness.server->GetFailure() ==
         warden::WardenFailure::MalformedPayload);
+    CHECK(harness.evidenceBatches.empty());
     CHECK(harness.evidenceEvents.empty());
 }
 
@@ -1032,6 +1094,7 @@ TEST(WardenServer_combined_malformed_result_publishes_no_partial_evidence)
     CHECK(harness.server->GetState() == warden::WardenState::Failed);
     CHECK(harness.server->GetFailure() ==
         warden::WardenFailure::MalformedPayload);
+    CHECK(harness.evidenceBatches.empty());
     CHECK(harness.evidenceEvents.empty());
 }
 
