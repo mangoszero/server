@@ -60,6 +60,7 @@ struct AccountRow final : proto::AuthContext
     LocaleConstant locale = LOCALE_enUS;
     BigNumber sessionKey;
     std::string platform;
+    std::string clientLocale;
 };
 
 void EnsureDbThreadRegistered()
@@ -125,7 +126,8 @@ proto::AuthLookup WorldGateway::LookupAccount(proto::AuthRequest const& request)
         "AND (`unbandate` > UNIX_TIMESTAMP() OR `unbandate` = `bandate`) LIMIT 1), "
         "(SELECT 1 FROM `ip_banned` WHERE (`unbandate` = `bandate` "
         "OR `unbandate` > UNIX_TIMESTAMP()) AND `ip` = '%s' LIMIT 1), "
-        "`a`.`os` "
+        "`a`.`os`, "
+        "`a`.`client_locale` "
         "FROM `account` AS `a` WHERE `a`.`username` = '%s'",
         safeAddress.c_str(), safeAccount.c_str()));
 
@@ -173,6 +175,7 @@ proto::AuthLookup WorldGateway::LookupAccount(proto::AuthRequest const& request)
     row->locale = locale >= MAX_LOCALE ? LOCALE_enUS : LocaleConstant(locale);
     row->sessionKey.SetHexStr(fields[2].GetString());
     row->platform = ReadWardenPlatformHint(fields);
+    row->clientLocale = ReadWardenClientLocale(fields);
 
     proto::AuthLookup lookup;
     lookup.status = proto::AuthStatus::Ok;
@@ -202,6 +205,7 @@ proto::SessionId WorldGateway::Attach(proto::AuthRequest const& request,
     warden::AdmissionData admission;
     admission.build = request.build;
     admission.platform = account->platform;
+    admission.clientLocale = account->clientLocale;
     uint8 const* const sessionKeyBytes = account->sessionKey.AsByteArray(40);
     std::copy(sessionKeyBytes,
         sessionKeyBytes + admission.sessionKey.size(),

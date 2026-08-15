@@ -120,6 +120,7 @@ struct AdmissionData
 
     uint32 build = 0;
     std::string platform;
+    std::string clientLocale;
     SessionKey sessionKey{};
     bool available = false;
 };

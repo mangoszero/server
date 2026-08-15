@@ -149,6 +149,7 @@ TEST(WardenProtocol_admission_move_transfers_then_cleanses_the_source)
     warden::AdmissionData source;
     source.build = 5875;
     source.platform = "Win";
+    source.clientLocale = "enGB";
     source.sessionKey.fill(0xA5);
     source.available = true;
 
@@ -156,11 +157,13 @@ TEST(WardenProtocol_admission_move_transfers_then_cleanses_the_source)
 
     CHECK_EQ(moved.build, 5875u);
     CHECK_STR(moved.platform, "Win");
+    CHECK_STR(moved.clientLocale, "enGB");
     CHECK(std::all_of(moved.sessionKey.begin(), moved.sessionKey.end(),
         [](uint8 value) { return value == 0xA5; }));
     CHECK(moved.available);
     CHECK_EQ(source.build, 0u);
     CHECK(source.platform.empty());
+    CHECK(source.clientLocale.empty());
     CHECK(std::all_of(source.sessionKey.begin(), source.sessionKey.end(),
         [](uint8 value) { return value == 0; }));
     CHECK(!source.available);
@@ -171,6 +174,7 @@ TEST(WardenProtocol_clear_removes_pending_credentials)
     warden::AdmissionData admission;
     admission.build = 5875;
     admission.platform = "Win";
+    admission.clientLocale = "enGB";
     admission.sessionKey.fill(0x5A);
     admission.available = true;
 
@@ -178,6 +182,7 @@ TEST(WardenProtocol_clear_removes_pending_credentials)
 
     CHECK_EQ(admission.build, 0u);
     CHECK(admission.platform.empty());
+    CHECK(admission.clientLocale.empty());
     CHECK(std::all_of(admission.sessionKey.begin(), admission.sessionKey.end(),
         [](uint8 value) { return value == 0; }));
     CHECK(!admission.available);

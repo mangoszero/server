@@ -30,7 +30,8 @@ namespace warden
 {
 AdmissionData::AdmissionData(AdmissionData&& other) noexcept
     : build(other.build), platform(std::move(other.platform)),
-      sessionKey(other.sessionKey), available(other.available)
+      clientLocale(std::move(other.clientLocale)), sessionKey(other.sessionKey),
+      available(other.available)
 {
     // Moving transfers the only usable copy and immediately cleanses the source.
     other.Clear();
@@ -43,6 +44,7 @@ AdmissionData& AdmissionData::operator=(AdmissionData&& other) noexcept
         Clear();
         build = other.build;
         platform = std::move(other.platform);
+        clientLocale = std::move(other.clientLocale);
         sessionKey = other.sessionKey;
         available = other.available;
         other.Clear();
@@ -57,11 +59,13 @@ AdmissionData::~AdmissionData()
 
 void AdmissionData::Clear()
 {
-    // The raw key is explicitly cleansed; release ordinary platform metadata
+    // The raw key is explicitly cleansed; release ordinary client metadata
     // storage where the standard-library implementation permits.
     OPENSSL_cleanse(sessionKey.data(), sessionKey.size());
     platform.clear();
     platform.shrink_to_fit();
+    clientLocale.clear();
+    clientLocale.shrink_to_fit();
     build = 0;
     available = false;
 }

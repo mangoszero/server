@@ -337,7 +337,7 @@ void WorldSession::OnAuthenticatedAdmission()
     // an already encrypted, complete inner body and advances its own stream.
     std::unique_ptr<warden::WardenServer> server =
         warden::WardenManager::Instance().Create(build, admission.platform,
-            localeNames[GetClientLocale()], admission.sessionKey,
+            admission.clientLocale, admission.sessionKey,
             [this](warden::Bytes const& payload)
             {
                 if (!m_link || m_link->IsClosed())

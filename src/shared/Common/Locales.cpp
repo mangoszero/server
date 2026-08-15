@@ -73,3 +73,18 @@ LocaleConstant GetLocaleByName(const std::string& name)
     }
     return LOCALE_enUS;                                     // including enGB case
 }
+
+/**
+ * Returns the canonical exact client locale name without collapsing aliases.
+ */
+char const* GetExactLocaleName(const std::string& name)
+{
+    for (LocaleNameStr const* itr = &fullLocaleNameList[0]; itr->name; ++itr)
+    {
+        if (name == itr->name)
+        {
+            return itr->name;
+        }
+    }
+    return localeNames[DEFAULT_LOCALE];
+}

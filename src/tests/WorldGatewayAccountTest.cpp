@@ -30,6 +30,33 @@ TEST(WorldGatewayAccount_warden_platform_hint_is_appended_at_eleven)
     fields[11].SetValue("Win");
     CHECK_STR(ReadWardenPlatformHint(fields), "Win");
 }
+
+TEST(WorldGatewayAccount_warden_client_locale_is_appended_at_twelve)
+{
+    Field fields[13];
+    SetClearRow(fields);
+
+    fields[12].SetValue("enGB");
+    CHECK_STR(ReadWardenClientLocale(fields), "enGB");
+
+    fields[12].SetValue("zhCN");
+    CHECK_STR(ReadWardenClientLocale(fields), "zhCN");
+}
+
+TEST(WorldGatewayAccount_invalid_warden_client_locale_falls_back_to_enUS)
+{
+    Field fields[13];
+    SetClearRow(fields);
+
+    fields[12].SetValue("");
+    CHECK_STR(ReadWardenClientLocale(fields), "enUS");
+
+    fields[12].SetValue("enUK");
+    CHECK_STR(ReadWardenClientLocale(fields), "enUS");
+
+    fields[12].SetValue("enGB-extra");
+    CHECK_STR(ReadWardenClientLocale(fields), "enUS");
+}
 }
 
 TEST(WorldGatewayAccount_account_ban_is_post_strip_field_nine)

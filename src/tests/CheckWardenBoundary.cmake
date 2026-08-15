@@ -98,8 +98,13 @@ require_count("${SESSION_CPP}"
     "m_clientLocale[ \\t]*\\([ \\t]*locale[ \\t]*\\)" 1
     "session must preserve the unfallbacked client locale exactly once")
 require_count("${SESSION_CPP}"
-    "localeNames\\[GetClientLocale[ \\t]*\\([ \\t]*\\)[ \\t]*\\]" 1
-    "Warden profile selection must use the unfallbacked client locale")
+    "admission\\.clientLocale" 1
+    "Warden profile selection must use the authenticated exact client locale")
+if(SESSION_CPP MATCHES
+    "localeNames\\[GetClientLocale[ \\t]*\\([ \\t]*\\)[ \\t]*\\]")
+    message(FATAL_ERROR
+        "Warden boundary: profile selection must not reconstruct the numeric DBC locale")
+endif()
 require_count("${SESSION_CPP}" "Warden healthy for player %s" 1
     "stable evidence must have one normal operator health message")
 if(NOT SESSION_CPP MATCHES "GetPlayer[ \\t]*\\([ \\t]*\\)" OR
