@@ -68,7 +68,9 @@ std::unique_ptr<WardenServer> WardenManager::Create(uint32 build,
     if (selectedMem && m_checkCatalog.Validate(*selectedMem) ==
             CheckCatalogValidation::Valid)
         memChecks = *selectedMem;
-    if (options.requireMemCatalog && memChecks.empty())
+    bool const enforcing = options.configuration.enforcementMode !=
+        WardenEnforcementMode::Observe;
+    if ((options.requireMemCatalog || enforcing) && memChecks.size() != 4u)
         return nullptr;
 
     return std::make_unique<WardenServer>(*profile, std::move(crypto),

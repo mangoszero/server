@@ -92,8 +92,13 @@ require_count("${SESSION_CPP}"
     "session update must pass only derived eligibility and elapsed time")
 require_count("${SESSION_CPP}" "WardenEvidenceBatch const&" 1
     "session adapter must consume one complete Warden evidence batch")
+require_count("${SESSION_CPP}"
+    "void WorldSession::HandleWardenEvidenceBatch[ \\t]*\\(" 1
+    "complete-batch policy application must have one session owner")
 require_count("${SESSION_CPP}" "std::visit[ \\t]*\\(" 1
     "session adapter must dispatch typed Warden evidence exactly once")
+require_count("${SESSION_CPP}" "m_warden->QueueConfirmation[ \\t]*\\(" 1
+    "session policy must own one isolated confirmation path")
 require_count("${SESSION_CPP}"
     "m_clientLocale[ \\t]*\\([ \\t]*locale[ \\t]*\\)" 1
     "session must preserve the unfallbacked client locale exactly once")
@@ -117,6 +122,60 @@ if(SESSION_CPP MATCHES "clientTick|checksum|decrypted|packet body")
     message(FATAL_ERROR
         "Warden boundary: session observability must not expose timing internals")
 endif()
+
+string(FIND "${SESSION_CPP}"
+    "void WorldSession::HandleWardenLifecycle(" LIFECYCLE_BEGIN)
+string(FIND "${SESSION_CPP}"
+    "void WorldSession::HandleWardenEvidenceBatch(" EVIDENCE_BEGIN)
+string(FIND "${SESSION_CPP}"
+    "void WorldSession::PersistWardenIncidentAndKick(" PERSIST_BEGIN)
+string(FIND "${SESSION_CPP}"
+    "void WorldSession::StartWardenBootstrap()" WARDEN_START_BEGIN)
+if(LIFECYCLE_BEGIN EQUAL -1 OR EVIDENCE_BEGIN EQUAL -1 OR
+    PERSIST_BEGIN EQUAL -1 OR WARDEN_START_BEGIN EQUAL -1 OR
+    EVIDENCE_BEGIN LESS_EQUAL LIFECYCLE_BEGIN OR
+    PERSIST_BEGIN LESS_EQUAL EVIDENCE_BEGIN OR
+    WARDEN_START_BEGIN LESS_EQUAL PERSIST_BEGIN)
+    message(FATAL_ERROR
+        "Warden boundary: cannot locate ordered session enforcement helpers")
+endif()
+
+math(EXPR LIFECYCLE_LENGTH "${EVIDENCE_BEGIN} - ${LIFECYCLE_BEGIN}")
+string(SUBSTRING "${SESSION_CPP}" ${LIFECYCLE_BEGIN} ${LIFECYCLE_LENGTH}
+    LIFECYCLE_BODY)
+if(LIFECYCLE_BODY MATCHES "WardenIncidentStore|Record[ \\t]*\\(")
+    message(FATAL_ERROR
+        "Warden boundary: lifecycle failure must never persist an incident")
+endif()
+
+math(EXPR ENFORCEMENT_LENGTH "${WARDEN_START_BEGIN} - ${EVIDENCE_BEGIN}")
+string(SUBSTRING "${SESSION_CPP}" ${EVIDENCE_BEGIN} ${ENFORCEMENT_LENGTH}
+    ENFORCEMENT_BODY)
+if(ENFORCEMENT_BODY MATCHES
+    "GetSecurity[ \\t]*\\(|SEC_[A-Z_]+|gmlevel|GameMaster")
+    message(FATAL_ERROR
+        "Warden boundary: enforcement must not exempt privileged accounts")
+endif()
+if(NOT ENFORCEMENT_BODY MATCHES "CheckPlanPurpose::Initial" OR
+    NOT ENFORCEMENT_BODY MATCHES "DEBUG_LOG[ \\t]*\\(")
+    message(FATAL_ERROR
+        "Warden boundary: recurring clean evidence must use debug logging")
+endif()
+
+math(EXPR PERSIST_LENGTH "${WARDEN_START_BEGIN} - ${PERSIST_BEGIN}")
+string(SUBSTRING "${SESSION_CPP}" ${PERSIST_BEGIN} ${PERSIST_LENGTH}
+    PERSIST_BODY)
+string(FIND "${PERSIST_BODY}" "WardenIncidentStore::Instance().Record"
+    INCIDENT_RECORD_AT)
+string(FIND "${PERSIST_BODY}" "KickPlayer()" INCIDENT_KICK_AT)
+if(INCIDENT_RECORD_AT EQUAL -1 OR INCIDENT_KICK_AT EQUAL -1 OR
+    INCIDENT_KICK_AT LESS_EQUAL INCIDENT_RECORD_AT)
+    message(FATAL_ERROR
+        "Warden boundary: confirmed incident must persist before link close")
+endif()
+require_count("${PERSIST_BODY}" "KickPlayer[ \\t]*\\(" 1
+    "confirmed violation must request one idempotent link close")
+
 string(FIND "${SESSION_CPP}" "void WorldSession::OnAuthenticatedAdmission()"
     SESSION_ADMISSION_BEGIN)
 string(FIND "${SESSION_CPP}" "void WorldSession::StartWardenBootstrap()"
@@ -228,6 +287,22 @@ foreach(SOURCE IN LISTS WARDEN_SOURCES)
                 "Warden boundary: forbidden production dependency ${PATTERN} in ${SOURCE}")
         endif()
     endforeach()
+endforeach()
+
+file(GLOB_RECURSE INCIDENT_STORE_FILES
+    "${GAME_ROOT}/*WardenIncidentStore.h"
+    "${GAME_ROOT}/*WardenIncidentStore.cpp")
+list(LENGTH INCIDENT_STORE_FILES INCIDENT_STORE_COUNT)
+if(NOT INCIDENT_STORE_COUNT EQUAL 2)
+    message(FATAL_ERROR
+        "Warden boundary: expected one incident-store header/source pair")
+endif()
+foreach(SOURCE IN LISTS INCIDENT_STORE_FILES)
+    string(FIND "${SOURCE}" "${GAME_ROOT}/Server/" SERVER_PREFIX_AT)
+    if(NOT SERVER_PREFIX_AT EQUAL 0)
+        message(FATAL_ERROR
+            "Warden boundary: incident store escaped src/game/Server: ${SOURCE}")
+    endif()
 endforeach()
 
 message(STATUS "Warden session boundary intact")

@@ -717,8 +717,56 @@ TEST(WardenManager_selects_content_checks_only_for_the_exact_locale)
     Harness enUS(ManagerLocale{"enUS"});
     REQUIRE(StartTimingMpqLuaMemCheck(enUS));
 
-    Harness frFR(ManagerLocale{"frFR"});
+    warden::WardenCreationOptions observe;
+    observe.configuration.enforcementMode =
+        warden::WardenEnforcementMode::Observe;
+    Harness frFR(ManagerLocale{"frFR"}, true, observe);
     REQUIRE(StartTimingCheck(frFR));
+}
+
+TEST(WardenManager_enforcing_modes_require_exact_mem_catalogues)
+{
+    auto send = [](warden::Bytes const&) { return true; };
+    struct Profile
+    {
+        uint32 build;
+        char const* locale;
+        char const* wrongLocale;
+    };
+    Profile const profiles[] =
+    {
+        {5875, "enUS", "frFR"},
+        {6005, "enGB", "enUS"},
+        {6141, "zhCN", "enUS"}
+    };
+
+    for (warden::WardenEnforcementMode mode :
+        {warden::WardenEnforcementMode::Kick,
+            warden::WardenEnforcementMode::KickAndBan})
+    {
+        warden::WardenCreationOptions options;
+        options.configuration.enforcementMode = mode;
+        for (Profile const& profile : profiles)
+        {
+            CHECK(warden::WardenManager::Instance().Create(profile.build,
+                "Win", profile.locale, TestSessionKey(), send,
+                options) != nullptr);
+            CHECK(warden::WardenManager::Instance().Create(profile.build,
+                "Win", profile.wrongLocale, TestSessionKey(), send,
+                options) == nullptr);
+        }
+    }
+}
+
+TEST(WardenManager_observe_mode_allows_missing_mem_catalogue)
+{
+    warden::WardenCreationOptions options;
+    options.configuration.enforcementMode =
+        warden::WardenEnforcementMode::Observe;
+
+    CHECK(warden::WardenManager::Instance().Create(5875, "Win", "frFR",
+        TestSessionKey(), [](warden::Bytes const&) { return true; },
+        options) != nullptr);
 }
 
 TEST(WardenManager_forwards_initial_aggressive_state_to_the_planner)

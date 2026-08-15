@@ -38,6 +38,7 @@
 #include <vector>
 #include <list>
 #include "SessionProtocolPolicy.h"
+#include "WardenConfiguration.h"
 #include "Auth/BigNumber.h"
 #include "SharedDefines.h"
 #include "ObjectGuid.h"
@@ -75,6 +76,10 @@ class IClientLink;
 namespace warden
 {
 struct AdmissionData;
+struct WardenEvidenceBatch;
+struct WardenLifecycleEvent;
+struct WardenPolicyDecision;
+class WardenEnforcementPolicy;
 class WardenServer;
 }
 
@@ -921,6 +926,13 @@ class WorldSession
 
         void ExecuteOpcode(OpcodeHandler const& opHandle, WorldPacket* packet);
 
+        void HandleWardenLifecycle(
+            warden::WardenLifecycleEvent const& event);
+        void HandleWardenEvidenceBatch(
+            warden::WardenEvidenceBatch const& batch);
+        void PersistWardenIncidentAndKick(
+            warden::WardenPolicyDecision const& decision);
+
         // logging helper
         void LogUnexpectedOpcode(WorldPacket* packet, const char* reason);
         void LogUnprocessedTail(WorldPacket* packet);
@@ -931,6 +943,12 @@ class WorldSession
         std::unique_ptr<WorldPacket> m_pendingAddonInfo;
         std::unique_ptr<warden::AdmissionData> m_pendingWardenAdmission;
         std::unique_ptr<warden::WardenServer> m_warden;
+        std::unique_ptr<warden::WardenEnforcementPolicy> m_wardenPolicy;
+        warden::WardenConfiguration m_wardenConfiguration;
+        uint32 m_wardenBuild = 0;
+        std::string m_wardenClientLocale;
+        uint64 m_wardenAggressiveUntil = 0;
+        bool m_wardenAggressive = false;
         bool m_wardenAdmissionHandled;
         std::string m_Address;
 
