@@ -26,11 +26,51 @@
 #include "HomeMovementGenerator.h"
 #include "Creature.h"
 #include "CreatureAI.h"
+#include "Map.h"
+#include "MotionFrame.h"
+#include "movement/MoveSpline.h"
+
+namespace
+{
+    /// How near counts as home. A completed leg ends on the goal, so this only has to
+    /// absorb the difference between the spline's end and the terrain the creature is
+    /// finally placed on.
+    constexpr float HOME_ARRIVAL_TOLERANCE = 2.0f;
+
+    /// A resume must close at least this much distance to count as progress.
+    constexpr float HOME_PROGRESS_EPSILON = 0.5f;
+
+    /// How long a creature may keep failing to get nearer before evade gives up. Evade
+    /// MUST always terminate: a player can stop a creature from the outside as often as
+    /// they like -- opening a gossip window does it, once per packet -- so resuming has
+    /// to be bounded by something the player cannot keep resetting.
+    constexpr uint32 HOME_STALL_BUDGET = 10000;
+
+    /// Put the creature where its spline actually left it.
+    ///
+    /// MoveSplineInit::Stop computes the true stop position for the packet it sends but
+    /// never relocates the unit, and Unit::UpdateSplineMovement skips its 400 ms placement
+    /// once the spline is finalized. So the server position can be most of a step behind,
+    /// and a leg routed from there walks the creature back over ground it has left.
+    void SyncToSpline(Unit& owner)
+    {
+        if (owner.GetTypeId() != TYPEID_UNIT || !owner.movespline->Initialized())
+        {
+            return;
+        }
+
+        const Movement::Location at = owner.movespline->ComputePosition();
+        owner.GetMap()->CreatureRelocation(static_cast<Creature*>(&owner),
+                                           at.x, at.y, at.z, at.orientation);
+    }
+}
 
 void HomeMovementGenerator::Initialize(Unit& owner)
 {
     m_arrived = false;
     m_haveHome = false;
+    m_closest = 0.0f;
+    m_stalled = 0;
     ResetLeg();
 
     if (owner.hasUnitState(UNIT_STAT_NOT_MOVE))
@@ -89,31 +129,39 @@ void HomeMovementGenerator::Reset(Unit& owner)
 
 Motion::MoveIntent HomeMovementGenerator::Intent(Unit& owner,
                                                  Motion::MoveStatus const& status,
-                                                 uint32 /*diff*/)
+                                                 uint32 diff)
 {
     // There is deliberately no UNIT_STAT_CAN_NOT_MOVE guard here, because one would be dead
     // code: MotionMaster::UpdateMotion returns before touching the top generator while that
     // state is set, so a rooted or stunned creature never reaches this function at all.
     // (PointMovementGenerator carries such a guard; it is unreachable for the same reason.)
-    // What a root actually does to us is stop the spline, and that is what is caught below.
+    // What a root actually does to us is stop the spline, and that is caught below.
 
-    // A STOP IS NOT AN ARRIVAL.
+    // ARRIVAL IS A PLACE, NOT AN EVENT.
     //
-    // The driver reports `arrived` for any leg that stopped running, and it cannot tell why
-    // it stopped. The unit state can: a leg that ran out leaves UNIT_STAT_ROAMING_MOVE
-    // standing, while every forced stop goes through Unit::StopMoving, which clears
-    // UNIT_STAT_MOVING -- and ROAMING_MOVE lives inside that mask.
+    // `status.arrived` means only that a leg stopped running, and the driver cannot tell
+    // why. Three different things produce it and only one of them is arriving home:
     //
-    // This matters only because making the move state honest is what let StopMoving work on
-    // an evading creature at all. Now that it does, a root or a stun taken mid-return would
-    // otherwise end evade and fire JustReachedHome wherever the creature happened to be
-    // standing, handing a patroller back to its waypoints from the wrong point on its route.
-    // Nor is it only combat: opening a gossip, quest or vendor window calls StopMoving on the
-    // creature directly, and none of those refuse an NPC merely for being on its way home.
+    //   * the home leg ran out -- the creature is home;
+    //   * something stopped it -- a root, a stun, or a player opening a gossip, quest or
+    //     vendor window, all of which call Unit::StopMoving on the creature directly;
+    //   * something replaced the spline entirely -- SetFacingTo and MonsterMoveWithSpeed
+    //     launch their own without telling the driver, so a scripted TURN_TO during an
+    //     evade ends a leg that was never the home leg.
     //
-    // So a stop that was not an arrival resumes the journey instead of ending it.
-    if (status.arrived && m_haveHome && !owner.hasUnitState(UNIT_STAT_ROAMING_MOVE))
+    // Only the first is an arrival, and no flag distinguishes them: the replacement-spline
+    // case leaves every movement state exactly as a real arrival does. So ask the ground
+    // instead. If the creature is not at home, it has not reached home, whatever ended the
+    // leg -- and it should carry on rather than announce it got there.
+    if (status.arrived && m_haveHome && !AtHome(owner))
     {
+        if (!Resumable(owner, diff))
+        {
+            m_arrived = true;
+            return Motion::MoveIntent::Done();
+        }
+
+        SyncToSpline(owner);
         owner.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
 
         return Motion::MoveIntent::Move(m_home, Motion::MOVE_NONE,
@@ -145,6 +193,38 @@ Motion::MoveIntent HomeMovementGenerator::Intent(Unit& owner,
 
     return Motion::MoveIntent::Move(m_home, Motion::MOVE_NONE,
                                     Motion::Facing::ToAngle(m_facing));
+}
+
+bool HomeMovementGenerator::AtHome(Unit const& owner) const
+{
+    const Motion::Vector3 gap = Motion::FrameFor(owner).MoverPosition(owner) - m_home;
+
+    return gap.squaredLength() <= HOME_ARRIVAL_TOLERANCE * HOME_ARRIVAL_TOLERANCE;
+}
+
+bool HomeMovementGenerator::Resumable(Unit const& owner, uint32 diff)
+{
+    const Motion::Vector3 gap = Motion::FrameFor(owner).MoverPosition(owner) - m_home;
+    const float distance = gap.length();
+
+    // Progress resets the budget, so an evade interrupted many times over a long return is
+    // not punished for it -- only one that stops getting nearer is. m_closest starts at
+    // zero and is seeded on the first resume, since until then there is nothing to beat.
+    if (m_stalled == 0 && m_closest == 0.0f)
+    {
+        m_closest = distance;
+    }
+    else if (distance < m_closest - HOME_PROGRESS_EPSILON)
+    {
+        m_closest = distance;
+        m_stalled = 0;
+    }
+    else
+    {
+        m_stalled += diff;
+    }
+
+    return m_stalled < HOME_STALL_BUDGET;
 }
 
 void HomeMovementGenerator::Finalize(Unit& owner)

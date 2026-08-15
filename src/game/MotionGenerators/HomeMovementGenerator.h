@@ -50,9 +50,14 @@
  * observers arriving mid-return were told nothing was happening. And nothing else in the
  * server could tell an evading creature from a standing one.
  *
- * Holding the state is also what lets Intent tell a stop from an arrival. The driver
- * reports both the same way; UNIT_STAT_ROAMING_MOVE is the difference, because a leg that
- * ran out leaves it standing and Unit::StopMoving does not.
+ * ARRIVAL IS A PLACE, NOT AN EVENT. The driver reports `arrived` for any leg that stopped
+ * running and cannot tell why it stopped, so this generator asks where the creature is
+ * rather than trusting that report. Nothing else is sound: a forced stop finalizes the
+ * spline mid-journey, and SetFacingTo and MonsterMoveWithSpeed launch replacement splines
+ * straight past the driver, so a scripted turn-to during an evade ends a leg that was
+ * never the home leg at all. Every one of those would otherwise fire JustReachedHome
+ * wherever the creature was standing, and hand a patroller back to its route from the
+ * wrong point.
  */
 class HomeMovementGenerator final : public IntentMovementGenerator
 {
@@ -69,10 +74,19 @@ class HomeMovementGenerator final : public IntentMovementGenerator
                                   uint32 diff) override;
 
     private:
+        /// Whether the creature is actually standing at its home position.
+        bool AtHome(Unit const& owner) const;
+
+        /// Whether a leg that ended away from home is still worth resuming. Accumulates
+        /// time spent getting no nearer, so that evade always terminates.
+        bool Resumable(Unit const& owner, uint32 diff);
+
         Motion::Vector3 m_home;  ///< Where home is, captured before we were pushed.
         float m_facing = 0.0f;   ///< The orientation to hold once there.
         bool m_haveHome = false; ///< False when the creature could not be sent home.
         bool m_arrived = false;  ///< Whether Finalize should fire JustReachedHome.
+        float m_closest = 0.0f;  ///< Nearest we have got to home, for progress detection.
+        uint32 m_stalled = 0;    ///< Time spent resuming without getting any nearer.
 };
 
 #endif // MANGOS_HOMEMOVEMENTGENERATOR_H
