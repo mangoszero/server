@@ -783,6 +783,34 @@ TEST(WardenManager_identifies_only_exact_enforcement_profiles)
     CHECK(!warden::IsWardenEnforcementProfile(5875, "Win", ""));
 }
 
+TEST(WardenManager_classifies_exact_profile_admission_policy)
+{
+    using warden::WardenEnforcementMode;
+    using warden::WardenProfileDisposition;
+
+    CHECK(warden::ClassifyWardenProfile(WardenEnforcementMode::Observe,
+        true, true) == WardenProfileDisposition::Observe);
+    CHECK(warden::ClassifyWardenProfile(WardenEnforcementMode::Observe,
+        true, false) == WardenProfileDisposition::Observe);
+    CHECK(warden::ClassifyWardenProfile(WardenEnforcementMode::Observe,
+        false, true) == WardenProfileDisposition::Observe);
+    CHECK(warden::ClassifyWardenProfile(WardenEnforcementMode::Observe,
+        false, false) == WardenProfileDisposition::Observe);
+
+    for (WardenEnforcementMode mode :
+        {WardenEnforcementMode::Kick, WardenEnforcementMode::KickAndBan})
+    {
+        CHECK(warden::ClassifyWardenProfile(mode, true, true) ==
+            WardenProfileDisposition::Enforce);
+        CHECK(warden::ClassifyWardenProfile(mode, false, true) ==
+            WardenProfileDisposition::Enforce);
+        CHECK(warden::ClassifyWardenProfile(mode, true, false) ==
+            WardenProfileDisposition::Reject);
+        CHECK(warden::ClassifyWardenProfile(mode, false, false) ==
+            WardenProfileDisposition::Observe);
+    }
+}
+
 TEST(WardenManager_forwards_initial_aggressive_state_to_the_planner)
 {
     warden::WardenCreationOptions options;

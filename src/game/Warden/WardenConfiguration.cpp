@@ -49,6 +49,7 @@ WardenConfigurationNormalization NormalizeWardenConfiguration(
     WardenRawConfiguration const& raw)
 {
     WardenConfigurationNormalization result;
+    result.value.requireExactProfile = raw.requireExactProfile;
 
     if (raw.enforcementMode <=
         static_cast<uint32>(WardenEnforcementMode::KickAndBan))

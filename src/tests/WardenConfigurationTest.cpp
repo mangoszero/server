@@ -32,6 +32,7 @@ warden::WardenRawConfiguration ValidCustomConfiguration()
 {
     warden::WardenRawConfiguration raw;
     raw.enforcementMode = 1;
+    raw.requireExactProfile = false;
     raw.normalMinSeconds = 31;
     raw.normalMaxSeconds = 45;
     raw.aggressiveMinSeconds = 11;
@@ -49,6 +50,7 @@ TEST(WardenConfiguration_defaults_match_approved_production_policy)
     auto const result = warden::NormalizeWardenConfiguration(raw);
 
     CHECK_EQ(uint32(result.value.enforcementMode), uint32(2));
+    CHECK(result.value.requireExactProfile);
     CHECK_EQ(result.value.normalMinSeconds, uint32(30));
     CHECK_EQ(result.value.normalMaxSeconds, uint32(60));
     CHECK_EQ(result.value.aggressiveMinSeconds, uint32(10));
@@ -80,6 +82,7 @@ TEST(WardenConfiguration_preserves_a_valid_custom_policy)
     auto const result = warden::NormalizeWardenConfiguration(raw);
 
     CHECK_EQ(uint32(result.value.enforcementMode), uint32(1));
+    CHECK(!result.value.requireExactProfile);
     CHECK_EQ(result.value.normalMinSeconds, uint32(31));
     CHECK_EQ(result.value.normalMaxSeconds, uint32(45));
     CHECK_EQ(result.value.aggressiveMinSeconds, uint32(11));

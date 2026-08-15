@@ -257,6 +257,8 @@ void World::LoadConfigSettings(bool reload)
     // Normalize here so no downstream component can observe unsafe ranges.
     setConfig(CONFIG_UINT32_WARDEN_ENFORCEMENT_MODE,
         "Warden.EnforcementMode", 2);
+    setConfig(CONFIG_BOOL_WARDEN_REQUIRE_EXACT_PROFILE,
+        "Warden.RequireExactProfile", true);
     setConfig(CONFIG_UINT32_WARDEN_CHECK_INTERVAL_MIN,
         "Warden.CheckIntervalMin", 30);
     setConfig(CONFIG_UINT32_WARDEN_CHECK_INTERVAL_MAX,
@@ -275,6 +277,8 @@ void World::LoadConfigSettings(bool reload)
     warden::WardenRawConfiguration wardenRaw;
     wardenRaw.enforcementMode =
         getConfig(CONFIG_UINT32_WARDEN_ENFORCEMENT_MODE);
+    wardenRaw.requireExactProfile =
+        getConfig(CONFIG_BOOL_WARDEN_REQUIRE_EXACT_PROFILE);
     wardenRaw.normalMinSeconds =
         getConfig(CONFIG_UINT32_WARDEN_CHECK_INTERVAL_MIN);
     wardenRaw.normalMaxSeconds =
@@ -293,6 +297,8 @@ void World::LoadConfigSettings(bool reload)
         warden::NormalizeWardenConfiguration(wardenRaw);
     setConfig(CONFIG_UINT32_WARDEN_ENFORCEMENT_MODE,
         static_cast<uint32>(wardenConfig.value.enforcementMode));
+    setConfig(CONFIG_BOOL_WARDEN_REQUIRE_EXACT_PROFILE,
+        wardenConfig.value.requireExactProfile);
     setConfig(CONFIG_UINT32_WARDEN_CHECK_INTERVAL_MIN,
         wardenConfig.value.normalMinSeconds);
     setConfig(CONFIG_UINT32_WARDEN_CHECK_INTERVAL_MAX,

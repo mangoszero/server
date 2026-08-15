@@ -34,6 +34,18 @@ namespace warden
 bool IsWardenEnforcementProfile(uint32 build,
     std::string const& platform, std::string const& locale);
 
+/** Admission outcome after applying enforcement and exact-profile policy. */
+enum class WardenProfileDisposition : uint8
+{
+    Observe,
+    Enforce,
+    Reject
+};
+
+WardenProfileDisposition ClassifyWardenProfile(
+    WardenEnforcementMode enforcementMode, bool requireExactProfile,
+    bool exactProfile);
+
 /** Immutable per-session inputs selected by the server admission policy. */
 struct WardenCreationOptions
 {

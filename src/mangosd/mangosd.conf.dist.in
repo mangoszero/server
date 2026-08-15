@@ -243,6 +243,13 @@ MaxWhoListReturns                 = 49
 #        2 = kick confirmed violations and permanently ban at BanThreshold
 #        Default: 2
 #
+#    Warden.RequireExactProfile
+#        Require an exact build, platform, locale, module, and memory-check
+#        profile whenever EnforcementMode is 1 or 2.
+#        0 = allow unprofiled clients with observation-only Warden checks
+#        1 = reject unprofiled clients before Warden bootstrap
+#        Default: 1
+#
 #    Warden.CheckIntervalMin / Warden.CheckIntervalMax
 #        Inclusive random interval, in seconds, between normal check batches.
 #        Default: 30 / 60
@@ -267,6 +274,7 @@ MaxWhoListReturns                 = 49
 ################################################################################
 
 Warden.EnforcementMode       = 2
+Warden.RequireExactProfile   = 1
 Warden.CheckIntervalMin      = 30
 Warden.CheckIntervalMax      = 60
 Warden.AggressiveIntervalMin = 10

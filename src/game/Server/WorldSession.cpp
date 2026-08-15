@@ -120,6 +120,8 @@ static warden::WardenConfiguration SnapshotWardenConfiguration()
     warden::WardenRawConfiguration raw;
     raw.enforcementMode =
         sWorld.getConfig(CONFIG_UINT32_WARDEN_ENFORCEMENT_MODE);
+    raw.requireExactProfile =
+        sWorld.getConfig(CONFIG_BOOL_WARDEN_REQUIRE_EXACT_PROFILE);
     raw.normalMinSeconds =
         sWorld.getConfig(CONFIG_UINT32_WARDEN_CHECK_INTERVAL_MIN);
     raw.normalMaxSeconds =
@@ -371,13 +373,31 @@ void WorldSession::OnAuthenticatedAdmission()
     bool const exactEnforcementProfile =
         warden::IsWardenEnforcementProfile(m_wardenBuild,
             admission.platform, m_wardenClientLocale);
-    if (configuredToEnforce && !exactEnforcementProfile)
+    warden::WardenProfileDisposition const profileDisposition =
+        warden::ClassifyWardenProfile(m_wardenConfiguration.enforcementMode,
+            m_wardenConfiguration.requireExactProfile,
+            exactEnforcementProfile);
+    if (profileDisposition == warden::WardenProfileDisposition::Reject)
+    {
+        sLog.outError("Warden rejected an unprofiled client claim for account "
+            "%u (build %u; platform %s; locale %s; enforcement mode %u); "
+            "strict exact-profile admission is enabled.", accountId,
+            m_wardenBuild, admission.platform.c_str(),
+            m_wardenClientLocale.c_str(),
+            static_cast<uint32>(m_wardenConfiguration.enforcementMode));
+        admission.Clear();
+        m_wardenEnforcementClosed = true;
+        KickPlayer();
+        return;
+    }
+    if (configuredToEnforce &&
+        profileDisposition == warden::WardenProfileDisposition::Observe)
     {
         m_wardenConfiguration.enforcementMode =
             warden::WardenEnforcementMode::Observe;
-        sLog.outError("Warden enforcement unavailable for unprofiled client "
-            "on account %u (build %u; platform %s; locale %s); using "
-            "observation-only checks.", accountId, m_wardenBuild,
+        sLog.outError("Warden exact-profile admission is disabled for "
+            "unprofiled client account %u (build %u; platform %s; locale "
+            "%s); forcing observation-only checks.", accountId, m_wardenBuild,
             admission.platform.c_str(), m_wardenClientLocale.c_str());
     }
 
@@ -407,7 +427,8 @@ void WorldSession::OnAuthenticatedAdmission()
     warden::WardenCreationOptions options;
     options.configuration = m_wardenConfiguration;
     options.initialAggressive = m_wardenAggressive;
-    options.requireMemCatalog = configuredToEnforce && exactEnforcementProfile;
+    options.requireMemCatalog =
+        profileDisposition == warden::WardenProfileDisposition::Enforce;
 
     // The send adapter owns only the outer world packet. WardenServer supplies
     // an already encrypted, complete inner body and advances its own stream.

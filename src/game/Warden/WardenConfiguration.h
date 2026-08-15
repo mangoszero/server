@@ -39,6 +39,7 @@ enum class WardenEnforcementMode : uint8
 struct WardenRawConfiguration
 {
     uint32 enforcementMode = 2;
+    bool requireExactProfile = true;
     uint32 normalMinSeconds = 30;
     uint32 normalMaxSeconds = 60;
     uint32 aggressiveMinSeconds = 10;
@@ -53,6 +54,7 @@ struct WardenConfiguration
 {
     WardenEnforcementMode enforcementMode =
         WardenEnforcementMode::KickAndBan;
+    bool requireExactProfile = true;
     uint32 normalMinSeconds = 30;
     uint32 normalMaxSeconds = 60;
     uint32 aggressiveMinSeconds = 10;

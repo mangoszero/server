@@ -62,7 +62,9 @@ read_code("${GAME_ROOT}/WorldHandlers/World.cpp" WORLD_CPP)
 read_code("${GAME_ROOT}/WorldHandlers/WorldSessionMgr.cpp" SESSION_MGR)
 read_code("${GAME_ROOT}/WorldHandlers/CharacterHandler.cpp" CHARACTER_HANDLER)
 read_code("${GAME_ROOT}/Server/WorldSession.cpp" SESSION_CPP)
+read_code("${GAME_ROOT}/WorldHandlers/WorldConfig.cpp" WORLD_CONFIG)
 read_code("${GAME_ROOT}/WorldHandlers/Map.cpp" MAP_CPP)
+file(READ "${SOURCE_ROOT}/src/mangosd/mangosd.conf.dist.in" MANGOSD_CONFIG)
 
 require_count("${WARDEN_HANDLER}" "m_warden->HandleEncrypted[ \\t]*\\(" 1
     "grouped handler must forward ingress exactly once")
@@ -101,6 +103,19 @@ require_count("${SESSION_CPP}" "m_warden->QueueConfirmation[ \\t]*\\(" 1
     "session policy must own one isolated confirmation path")
 require_count("${SESSION_CPP}" "IsWardenEnforcementProfile[ \\t]*\\(" 1
     "session enforcement must use the exact-profile predicate")
+require_count("${SESSION_CPP}" "ClassifyWardenProfile[ \\t]*\\(" 1
+    "session admission must classify the exact-profile policy once")
+require_count("${SESSION_CPP}"
+    "CONFIG_BOOL_WARDEN_REQUIRE_EXACT_PROFILE" 1
+    "session admission must snapshot the strict-profile setting once")
+require_count("${WORLD_CONFIG}"
+    "Warden\\.RequireExactProfile\"[ \\t]*,[ \\t]*true" 1
+    "strict exact-profile admission must default on in world configuration")
+if(NOT MANGOSD_CONFIG MATCHES
+    "Warden\\.RequireExactProfile[ \\t]*=[ \\t]*1")
+    message(FATAL_ERROR
+        "Warden boundary: distributed strict-profile admission must default on")
+endif()
 require_count("${SESSION_CPP}"
     "m_clientLocale[ \\t]*\\([ \\t]*locale[ \\t]*\\)" 1
     "session must preserve the unfallbacked client locale exactly once")
@@ -180,7 +195,7 @@ require_count("${PERSIST_BODY}" "KickPlayer[ \\t]*\\(" 1
 
 string(FIND "${SESSION_CPP}" "void WorldSession::OnAuthenticatedAdmission()"
     SESSION_ADMISSION_BEGIN)
-string(FIND "${SESSION_CPP}" "void WorldSession::StartWardenBootstrap()"
+string(FIND "${SESSION_CPP}" "void WorldSession::HandleWardenLifecycle("
     SESSION_ADMISSION_END)
 if(SESSION_ADMISSION_BEGIN EQUAL -1 OR SESSION_ADMISSION_END EQUAL -1 OR
     SESSION_ADMISSION_END LESS_EQUAL SESSION_ADMISSION_BEGIN)
@@ -195,6 +210,20 @@ if(SESSION_ADMISSION_BODY MATCHES
     "StartWardenBootstrap[ \\t]*\\(|m_warden->Start[ \\t]*\\(")
     message(FATAL_ERROR
         "Warden boundary: authenticated admission must provision without emitting")
+endif()
+string(FIND "${SESSION_ADMISSION_BODY}"
+    "WardenProfileDisposition::Reject" PROFILE_REJECT_AT)
+string(FIND "${SESSION_ADMISSION_BODY}"
+    "WardenManager::Instance().Create" WARDEN_CREATE_AT)
+if(PROFILE_REJECT_AT EQUAL -1 OR WARDEN_CREATE_AT EQUAL -1 OR
+    PROFILE_REJECT_AT GREATER WARDEN_CREATE_AT)
+    message(FATAL_ERROR
+        "Warden boundary: strict unprofiled rejection must precede Warden creation")
+endif()
+if(SESSION_ADMISSION_BODY MATCHES
+    "WardenIncidentStore::Instance[ \\t]*\\(\\)[ \\t]*\\.[ \\t]*Record")
+    message(FATAL_ERROR
+        "Warden boundary: admission rejection must never record an incident")
 endif()
 
 require_count("${CHARACTER_HANDLER}" "StartWardenBootstrap[ \\t]*\\(" 2

@@ -35,6 +35,18 @@ bool IsWardenEnforcementProfile(uint32 build,
     return WardenCheckCatalog().FindMem(build, platform, locale) != nullptr;
 }
 
+WardenProfileDisposition ClassifyWardenProfile(
+    WardenEnforcementMode enforcementMode, bool requireExactProfile,
+    bool exactProfile)
+{
+    if (enforcementMode == WardenEnforcementMode::Observe)
+        return WardenProfileDisposition::Observe;
+    if (exactProfile)
+        return WardenProfileDisposition::Enforce;
+    return requireExactProfile ? WardenProfileDisposition::Reject :
+        WardenProfileDisposition::Observe;
+}
+
 WardenManager& WardenManager::Instance()
 {
     static WardenManager manager;

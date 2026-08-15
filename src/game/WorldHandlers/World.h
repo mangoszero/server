@@ -398,6 +398,7 @@ enum eConfigBoolValues
     CONFIG_BOOL_AH_CUSTODY,
     // AH Service worker write-authority (SP-2, boot-latched)
     CONFIG_BOOL_AH_WRITE_AUTHORITY,
+    CONFIG_BOOL_WARDEN_REQUIRE_EXACT_PROFILE,
     CONFIG_BOOL_VALUE_COUNT
 };
 
