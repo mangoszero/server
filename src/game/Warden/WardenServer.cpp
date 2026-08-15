@@ -92,7 +92,8 @@ WardenServer::WardenServer(ModuleProfile const& profile,
     : m_profile(profile), m_crypto(std::move(crypto)), m_send(std::move(send)),
       m_limits(limits), m_observer(std::move(observer)),
       m_evidenceObserver(std::move(evidenceObserver)),
-      m_planner(1000, std::move(mpqCheck), std::move(luaCheck),
+      m_planner(WardenConfiguration{}, 1000, std::move(mpqCheck),
+          std::move(luaCheck),
           std::move(memChecks))
 {
 }

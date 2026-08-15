@@ -23,7 +23,7 @@
 #ifndef MANGOS_WARDEN_PACKET_CODEC_H
 #define MANGOS_WARDEN_PACKET_CODEC_H
 
-#include "WardenCheckPlanner.h"
+#include "WardenCheckPlan.h"
 #include "WardenModuleCatalog.h"
 
 #include <variant>

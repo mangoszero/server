@@ -23,52 +23,69 @@
 #ifndef MANGOS_WARDEN_CHECK_PLANNER_H
 #define MANGOS_WARDEN_CHECK_PLANNER_H
 
-#include "WardenCheckCatalog.h"
+#include "WardenCheckPlan.h"
+#include "WardenConfiguration.h"
 
+#include <cstddef>
+#include <deque>
+#include <functional>
 #include <optional>
-#include <variant>
+#include <unordered_set>
 #include <vector>
 
 namespace warden
 {
-struct TimingCheck
-{
-};
-
-using PlannedCheck =
-    std::variant<TimingCheck, MpqCheckProfile, LuaCheckProfile,
-        MemCheckProfile>;
-
-struct CheckPlan
-{
-    uint32 requestId = 0;
-    std::vector<PlannedCheck> checks;
-};
+using WardenRandomRange = std::function<uint32(uint32, uint32)>;
 
 /**
- * Owns eligibility timing and one-shot selection without transport, player,
- * logging, or policy dependencies. This first slice emits one ordered batch
- * after one uninterrupted eligible second.
+ * Owns initial eligibility, recurring cadence, bounded MEM coverage, and
+ * isolated confirmation ordering without transport or punishment knowledge.
  */
 class WardenCheckPlanner
 {
 public:
-    explicit WardenCheckPlanner(uint32 eligibilityDelayMs = 1000,
+    explicit WardenCheckPlanner(WardenConfiguration configuration = {},
+        uint32 eligibilityDelayMs = 1000,
         std::optional<MpqCheckProfile> mpqCheck = std::nullopt,
         std::optional<LuaCheckProfile> luaCheck = std::nullopt,
-        std::vector<MemCheckProfile> memChecks = {});
+        std::vector<MemCheckProfile> memChecks = {},
+        WardenRandomRange randomRange = {});
 
-    // Ineligible updates reset partial delay. Once a plan is returned, this
-    // planner remains complete and returns no further work.
     std::optional<CheckPlan> Update(bool eligible, uint32 diffMs);
+    bool QueueConfirmation(uint32 checkId);
+    void Complete(CheckPlan const& plan);
+    void SetAggressive(bool aggressive);
 
 private:
+    CheckPlan BeginPlan(CheckPlanPurpose purpose,
+        std::vector<PlannedCheck> checks);
+    std::vector<PlannedCheck> BuildInitialChecks() const;
+    std::vector<PlannedCheck> BuildNormalRecurringChecks();
+    std::vector<PlannedCheck> BuildAggressiveChecks(bool shuffle);
+    void Shuffle(std::vector<MemCheckProfile>& checks);
+    void ScheduleNextInterval();
+
+    WardenConfiguration m_configuration;
     uint32 m_eligibilityDelayMs;
     std::optional<MpqCheckProfile> m_mpqCheck;
     std::optional<LuaCheckProfile> m_luaCheck;
     std::vector<MemCheckProfile> m_memChecks;
+    WardenRandomRange m_randomRange;
+
     uint32 m_eligibleMs = 0;
-    bool m_issued = false;
+    uint32 m_nextRequestId = 1;
+    uint32 m_outstandingRequestId = 0;
+    uint32 m_recurringElapsedMs = 0;
+    uint32 m_recurringTargetMs = 0;
+    bool m_initialComplete = false;
+    bool m_outstanding = false;
+    bool m_aggressive = false;
+    bool m_aggressiveImmediateIssued = false;
+
+    std::vector<MemCheckProfile> m_normalMemBag;
+    size_t m_normalMemBagOffset = 0;
+    std::deque<uint32> m_confirmationQueue;
+    std::unordered_set<uint32> m_queuedConfirmationIds;
 };
 }
 
