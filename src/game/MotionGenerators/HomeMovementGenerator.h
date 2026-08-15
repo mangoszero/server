@@ -49,6 +49,10 @@
  * one evening, and stripped MOVEFLAG_SPLINE_ENABLED off a live spline as it went, so
  * observers arriving mid-return were told nothing was happening. And nothing else in the
  * server could tell an evading creature from a standing one.
+ *
+ * Holding the state is also what lets Intent tell a stop from an arrival. The driver
+ * reports both the same way; UNIT_STAT_ROAMING_MOVE is the difference, because a leg that
+ * ran out leaves it standing and Unit::StopMoving does not.
  */
 class HomeMovementGenerator final : public IntentMovementGenerator
 {

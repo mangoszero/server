@@ -91,21 +91,33 @@ Motion::MoveIntent HomeMovementGenerator::Intent(Unit& owner,
                                                  Motion::MoveStatus const& status,
                                                  uint32 /*diff*/)
 {
-    // Held, not finished.
+    // There is deliberately no UNIT_STAT_CAN_NOT_MOVE guard here, because one would be dead
+    // code: MotionMaster::UpdateMotion returns before touching the top generator while that
+    // state is set, so a rooted or stunned creature never reaches this function at all.
+    // (PointMovementGenerator carries such a guard; it is unreachable for the same reason.)
+    // What a root actually does to us is stop the spline, and that is what is caught below.
+
+    // A STOP IS NOT AN ARRIVAL.
     //
-    // A root or a stun stops the spline out from under this generator, and the next tick
-    // would read that stop as `arrived` — firing JustReachedHome wherever the creature
-    // happened to be standing, and handing a patroller back to its waypoints from the
-    // wrong point on the path. PointMovementGenerator holds here for exactly this reason.
+    // The driver reports `arrived` for any leg that stopped running, and it cannot tell why
+    // it stopped. The unit state can: a leg that ran out leaves UNIT_STAT_ROAMING_MOVE
+    // standing, while every forced stop goes through Unit::StopMoving, which clears
+    // UNIT_STAT_MOVING -- and ROAMING_MOVE lives inside that mask.
     //
-    // Home did not need the guard before, but only by accident: it claimed no move state,
-    // so Unit::StopMoving took its `IsStopped()` early return on an evading creature and
-    // the home spline ran straight through the root. Now that the state is honest — which
-    // is what makes root and stun work at all during an evade — the hold has to be too.
-    if (owner.hasUnitState(UNIT_STAT_CAN_NOT_MOVE))
+    // This matters only because making the move state honest is what let StopMoving work on
+    // an evading creature at all. Now that it does, a root or a stun taken mid-return would
+    // otherwise end evade and fire JustReachedHome wherever the creature happened to be
+    // standing, handing a patroller back to its waypoints from the wrong point on its route.
+    // Nor is it only combat: opening a gossip, quest or vendor window calls StopMoving on the
+    // creature directly, and none of those refuse an NPC merely for being on its way home.
+    //
+    // So a stop that was not an arrival resumes the journey instead of ending it.
+    if (status.arrived && m_haveHome && !owner.hasUnitState(UNIT_STAT_ROAMING_MOVE))
     {
-        owner.clearUnitState(UNIT_STAT_ROAMING_MOVE);
-        return Motion::MoveIntent::Hold();
+        owner.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+
+        return Motion::MoveIntent::Move(m_home, Motion::MOVE_NONE,
+                                        Motion::Facing::ToAngle(m_facing));
     }
 
     // A creature that could not be sent home — it cannot move, or there was no way back
@@ -127,8 +139,8 @@ Motion::MoveIntent HomeMovementGenerator::Intent(Unit& owner,
         return Motion::MoveIntent::Done();
     }
 
-    // Re-asserted every travelling tick, not just in Initialize, so the state comes back
-    // by itself when a hold above ends.
+    // Re-asserted every travelling tick, not just in Initialize, so it survives anything
+    // that strips it while the journey is still unfinished.
     owner.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
 
     return Motion::MoveIntent::Move(m_home, Motion::MOVE_NONE,
