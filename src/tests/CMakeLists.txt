@@ -49,6 +49,7 @@ set(SRC_GRP_TESTS
     WardenCheckPlannerTest.cpp
     WardenServerTest.cpp
     DatabaseConcurrencyTest.cpp
+    DatabaseVersionTest.cpp
     OpenSSLProviderTest.cpp
     ClientParserTest.cpp
     TerrainModelTest.cpp
