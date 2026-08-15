@@ -326,7 +326,17 @@ bool MovementAction::FollowOnTransport(Unit* target, Player* master)
         transportBoardingDelayTime = 0;
         bot->clearUnitState(UNIT_STAT_IGNORE_PATHFINDING);
         mm.Clear();
-        bot->movespline->_Interrupt();
+
+        // A real stop, not a bare movespline->_Interrupt(). _Interrupt only sets
+        // splineflags.done: it leaves MOVEFLAG_SPLINE_ENABLED set, and the one place that
+        // clears it on completion is Unit::UpdateSplineMovement, which returns early on an
+        // already-finalized spline. The flag therefore outlived the spline, and the create
+        // packet TransportMap::Add builds a moment later advertised movement the bot was
+        // not doing. InterruptMoving ends the leg at the position it had actually reached
+        // and stops it through MoveSplineInit, which is what clears the flags -- the same
+        // primitive StopMovement uses. (Unit::DisableSpline would say this in one word,
+        // but it is protected, and widening core access for one call site is not worth it.)
+        bot->InterruptMoving(true);
 
         // Embark moves him onto the vessel's map, and from there the deck IS his map:
         // the spot beside the master is chosen in the vessel's own frame, and no world

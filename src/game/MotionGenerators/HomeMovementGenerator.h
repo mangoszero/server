@@ -38,14 +38,25 @@
  * that knows where "home" is (a patroller resumes at the point combat pulled it off its
  * path, not at its spawn). By the time the first leg is laid we are on top and that
  * answer is gone.
+ *
+ * A NOTE ON UNIT_STAT_ROAMING_MOVE. Every other generator that lays a leg holds a
+ * ...._MOVE state for as long as it is moving; this one held none, and that single
+ * omission was worth more than it looks. Unit::IsStopped is exactly
+ * !hasUnitState(UNIT_STAT_MOVING), so a creature running home reported itself stopped
+ * for the whole return. Three things followed. StopMoving() — including the root and
+ * stun paths — took its early return and left the home spline running. The update
+ * builder's "not moving but spline enabled" guard fired on healthy returns, 151 times in
+ * one evening, and stripped MOVEFLAG_SPLINE_ENABLED off a live spline as it went, so
+ * observers arriving mid-return were told nothing was happening. And nothing else in the
+ * server could tell an evading creature from a standing one.
  */
 class HomeMovementGenerator final : public IntentMovementGenerator
 {
     public:
         void Initialize(Unit& owner) override;
         void Finalize(Unit& owner) override;
-        void Interrupt(Unit&) override {}
-        void Reset(Unit&) override {}
+        void Interrupt(Unit& owner) override;
+        void Reset(Unit& owner) override;
 
         MovementGeneratorType GetMovementGeneratorType() const override { return HOME_MOTION_TYPE; }
 
