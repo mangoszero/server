@@ -26,9 +26,7 @@
 #include "HomeMovementGenerator.h"
 #include "Creature.h"
 #include "CreatureAI.h"
-#include "Map.h"
 #include "MotionFrame.h"
-#include "movement/MoveSpline.h"
 
 namespace
 {
@@ -45,24 +43,6 @@ namespace
     /// they like -- opening a gossip window does it, once per packet -- so resuming has
     /// to be bounded by something the player cannot keep resetting.
     constexpr uint32 HOME_STALL_BUDGET = 10000;
-
-    /// Put the creature where its spline actually left it.
-    ///
-    /// MoveSplineInit::Stop computes the true stop position for the packet it sends but
-    /// never relocates the unit, and Unit::UpdateSplineMovement skips its 400 ms placement
-    /// once the spline is finalized. So the server position can be most of a step behind,
-    /// and a leg routed from there walks the creature back over ground it has left.
-    void SyncToSpline(Unit& owner)
-    {
-        if (owner.GetTypeId() != TYPEID_UNIT || !owner.movespline->Initialized())
-        {
-            return;
-        }
-
-        const Movement::Location at = owner.movespline->ComputePosition();
-        owner.GetMap()->CreatureRelocation(static_cast<Creature*>(&owner),
-                                           at.x, at.y, at.z, at.orientation);
-    }
 }
 
 void HomeMovementGenerator::Initialize(Unit& owner)
@@ -153,15 +133,21 @@ Motion::MoveIntent HomeMovementGenerator::Intent(Unit& owner,
     // case leaves every movement state exactly as a real arrival does. So ask the ground
     // instead. If the creature is not at home, it has not reached home, whatever ended the
     // leg -- and it should carry on rather than announce it got there.
+    // Accounted every tick, before anything else. Charging the budget only on an arrived
+    // edge undercounted it badly: a foreign leg that runs for thirty seconds and ends no
+    // nearer than it started contributes a single tick's worth, and something that keeps
+    // replacing the live spline before it ever finalizes contributes nothing at all -- so a
+    // creature could be held in evade indefinitely. Time passes whether or not a leg ended.
+    const bool spent = !Resumable(owner, diff);
+
     if (status.arrived && m_haveHome && !AtHome(owner))
     {
-        if (!Resumable(owner, diff))
+        if (spent)
         {
             m_arrived = true;
             return Motion::MoveIntent::Done();
         }
 
-        SyncToSpline(owner);
         owner.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
 
         return Motion::MoveIntent::Move(m_home, Motion::MOVE_NONE,
@@ -171,7 +157,7 @@ Motion::MoveIntent HomeMovementGenerator::Intent(Unit& owner,
     // A creature that could not be sent home — it cannot move, or there was no way back
     // at all — still counts as home. Evade MUST always terminate, or the creature stays
     // stuck in a fight it has already left.
-    if (!m_haveHome || status.arrived || status.blocked)
+    if (!m_haveHome || status.arrived || status.blocked || spent)
     {
         // Only `arrived` means a leg ran out. The other two end evade with a spline
         // possibly still in flight: `blocked` is the router refusing the NEXT leg while
@@ -204,6 +190,11 @@ bool HomeMovementGenerator::AtHome(Unit const& owner) const
 
 bool HomeMovementGenerator::Resumable(Unit const& owner, uint32 diff)
 {
+    if (!m_haveHome)
+    {
+        return false;
+    }
+
     const Motion::Vector3 gap = Motion::FrameFor(owner).MoverPosition(owner) - m_home;
     const float distance = gap.length();
 
@@ -245,6 +236,16 @@ void HomeMovementGenerator::Finalize(Unit& owner)
     if (creature.GetTemporaryFactionFlags() & TEMPFACTION_RESTORE_REACH_HOME)
     {
         creature.ClearTemporaryFaction();
+    }
+
+    // The captured facing, applied here rather than left to the leg. A home leg carries it
+    // and would have set it on arrival, but the leg that ends an evade is not always the
+    // home leg -- a foreign SetFacingTo finishing inside the arrival tolerance ends it too,
+    // pointing the creature wherever that turn wanted. LoadCreatureAddon does not restore
+    // orientation, so nothing else would put it back.
+    if (m_haveHome)
+    {
+        creature.SetFacingTo(m_facing);
     }
 
     creature.SetWalk(!creature.hasUnitState(UNIT_STAT_RUNNING_STATE) && !creature.IsLevitating(), false);
