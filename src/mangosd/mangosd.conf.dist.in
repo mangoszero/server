@@ -248,6 +248,12 @@ MaxWhoListReturns                 = 49
 #        profile whenever EnforcementMode is 1 or 2.
 #        0 = allow unprofiled clients with observation-only Warden checks
 #        1 = reject unprofiled clients before Warden bootstrap
+#        Exact enforcement profiles:
+#          5875/Win/enUS
+#          6005/Win/enGB
+#          6141/Win/zhCN
+#        With value 1, all other build/platform/locale combinations are disconnected
+#        after world authentication. Use value 0 for observation-only compatibility.
 #        Default: 1
 #
 #    Warden.CheckIntervalMin / Warden.CheckIntervalMax

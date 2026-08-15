@@ -64,7 +64,11 @@ read_code("${GAME_ROOT}/WorldHandlers/CharacterHandler.cpp" CHARACTER_HANDLER)
 read_code("${GAME_ROOT}/Server/WorldSession.cpp" SESSION_CPP)
 read_code("${GAME_ROOT}/WorldHandlers/WorldConfig.cpp" WORLD_CONFIG)
 read_code("${GAME_ROOT}/WorldHandlers/Map.cpp" MAP_CPP)
-file(READ "${SOURCE_ROOT}/src/mangosd/mangosd.conf.dist.in" MANGOSD_CONFIG)
+file(READ "${SOURCE_ROOT}/src/mangosd/mangosd.conf.dist.in"
+    MANGOSD_CONFIG)
+file(STRINGS "${SOURCE_ROOT}/src/mangosd/mangosd.conf.dist.in"
+    MANGOSD_ACTIVE_EXACT_PROFILE
+    REGEX "^[ \\t]*Warden\\.RequireExactProfile[ \\t]*=")
 
 require_count("${WARDEN_HANDLER}" "m_warden->HandleEncrypted[ \\t]*\\(" 1
     "grouped handler must forward ingress exactly once")
@@ -111,10 +115,20 @@ require_count("${SESSION_CPP}"
 require_count("${WORLD_CONFIG}"
     "Warden\\.RequireExactProfile\"[ \\t]*,[ \\t]*true" 1
     "strict exact-profile admission must default on in world configuration")
+require_count("${MANGOSD_ACTIVE_EXACT_PROFILE}"
+    "Warden\\.RequireExactProfile[ \\t]*=[ \\t]*1" 1
+    "distributed strict-profile admission must have one active default-on setting")
+foreach(EXACT_PROFILE IN ITEMS "5875/Win/enUS" "6005/Win/enGB"
+    "6141/Win/zhCN")
+    if(NOT MANGOSD_CONFIG MATCHES "${EXACT_PROFILE}")
+        message(FATAL_ERROR
+            "Warden boundary: distributed config must identify exact profile ${EXACT_PROFILE}")
+    endif()
+endforeach()
 if(NOT MANGOSD_CONFIG MATCHES
-    "Warden\\.RequireExactProfile[ \\t]*=[ \\t]*1")
+    "all other build/platform/locale combinations are disconnected")
     message(FATAL_ERROR
-        "Warden boundary: distributed strict-profile admission must default on")
+        "Warden boundary: distributed config must explain strict-profile lockout scope")
 endif()
 require_count("${SESSION_CPP}"
     "m_clientLocale[ \\t]*\\([ \\t]*locale[ \\t]*\\)" 1
@@ -219,6 +233,23 @@ if(PROFILE_REJECT_AT EQUAL -1 OR WARDEN_CREATE_AT EQUAL -1 OR
     PROFILE_REJECT_AT GREATER WARDEN_CREATE_AT)
     message(FATAL_ERROR
         "Warden boundary: strict unprofiled rejection must precede Warden creation")
+endif()
+math(EXPR PROFILE_REJECT_LENGTH
+    "${WARDEN_CREATE_AT} - ${PROFILE_REJECT_AT}")
+string(SUBSTRING "${SESSION_ADMISSION_BODY}" ${PROFILE_REJECT_AT}
+    ${PROFILE_REJECT_LENGTH} PROFILE_REJECT_BODY)
+string(FIND "${PROFILE_REJECT_BODY}" "admission.Clear()" REJECT_CLEAR_AT)
+string(FIND "${PROFILE_REJECT_BODY}" "m_wardenEnforcementClosed = true"
+    REJECT_LATCH_AT)
+string(FIND "${PROFILE_REJECT_BODY}" "KickPlayer()" REJECT_KICK_AT)
+string(FIND "${PROFILE_REJECT_BODY}" "return;" REJECT_RETURN_AT)
+if(REJECT_CLEAR_AT EQUAL -1 OR REJECT_LATCH_AT EQUAL -1 OR
+    REJECT_KICK_AT EQUAL -1 OR REJECT_RETURN_AT EQUAL -1 OR
+    REJECT_LATCH_AT LESS_EQUAL REJECT_CLEAR_AT OR
+    REJECT_KICK_AT LESS_EQUAL REJECT_LATCH_AT OR
+    REJECT_RETURN_AT LESS_EQUAL REJECT_KICK_AT)
+    message(FATAL_ERROR
+        "Warden boundary: strict rejection must cleanse, latch, close, and terminate admission in order")
 endif()
 if(SESSION_ADMISSION_BODY MATCHES
     "WardenIncidentStore::Instance[ \\t]*\\(\\)[ \\t]*\\.[ \\t]*Record")
