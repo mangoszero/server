@@ -769,6 +769,20 @@ TEST(WardenManager_observe_mode_allows_missing_mem_catalogue)
         options) != nullptr);
 }
 
+TEST(WardenManager_identifies_only_exact_enforcement_profiles)
+{
+    CHECK(warden::IsWardenEnforcementProfile(5875, "Win", "enUS"));
+    CHECK(warden::IsWardenEnforcementProfile(6005, "Win", "enGB"));
+    CHECK(warden::IsWardenEnforcementProfile(6141, "Win", "zhCN"));
+
+    CHECK(!warden::IsWardenEnforcementProfile(5875, "Win", "enGB"));
+    CHECK(!warden::IsWardenEnforcementProfile(6005, "Win", "enUS"));
+    CHECK(!warden::IsWardenEnforcementProfile(6141, "Win", "enUS"));
+    CHECK(!warden::IsWardenEnforcementProfile(5875, "OSX", "enUS"));
+    CHECK(!warden::IsWardenEnforcementProfile(12340, "Win", "enUS"));
+    CHECK(!warden::IsWardenEnforcementProfile(5875, "Win", ""));
+}
+
 TEST(WardenManager_forwards_initial_aggressive_state_to_the_planner)
 {
     warden::WardenCreationOptions options;

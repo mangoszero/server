@@ -30,6 +30,10 @@
 
 namespace warden
 {
+/** True only when the server has an exact, enforcement-safe client profile. */
+bool IsWardenEnforcementProfile(uint32 build,
+    std::string const& platform, std::string const& locale);
+
 /** Immutable per-session inputs selected by the server admission policy. */
 struct WardenCreationOptions
 {

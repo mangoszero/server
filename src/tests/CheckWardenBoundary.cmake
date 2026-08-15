@@ -99,6 +99,8 @@ require_count("${SESSION_CPP}" "std::visit[ \\t]*\\(" 1
     "session adapter must dispatch typed Warden evidence exactly once")
 require_count("${SESSION_CPP}" "m_warden->QueueConfirmation[ \\t]*\\(" 1
     "session policy must own one isolated confirmation path")
+require_count("${SESSION_CPP}" "IsWardenEnforcementProfile[ \\t]*\\(" 1
+    "session enforcement must use the exact-profile predicate")
 require_count("${SESSION_CPP}"
     "m_clientLocale[ \\t]*\\([ \\t]*locale[ \\t]*\\)" 1
     "session must preserve the unfallbacked client locale exactly once")

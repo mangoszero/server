@@ -46,6 +46,7 @@
 #include "Item.h"
 #include <chrono>
 #include <memory>
+#include <unordered_set>
 
 struct ItemPrototype;
 struct AuctionEntry;
@@ -949,6 +950,8 @@ class WorldSession
         std::string m_wardenClientLocale;
         uint64 m_wardenAggressiveUntil = 0;
         bool m_wardenAggressive = false;
+        bool m_wardenEnforcementClosed = false;
+        std::unordered_set<uint64> m_wardenLoggedAnomalies;
         bool m_wardenAdmissionHandled;
         std::string m_Address;
 

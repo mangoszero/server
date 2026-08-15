@@ -75,7 +75,8 @@ LocaleConstant GetLocaleByName(const std::string& name)
 }
 
 /**
- * Returns the canonical exact client locale name without collapsing aliases.
+ * Returns the canonical exact client locale name without collapsing aliases,
+ * or nullptr when the input is not one of the supported exact names.
  */
 char const* GetExactLocaleName(const std::string& name)
 {
@@ -86,5 +87,5 @@ char const* GetExactLocaleName(const std::string& name)
             return itr->name;
         }
     }
-    return localeNames[DEFAULT_LOCALE];
+    return nullptr;
 }

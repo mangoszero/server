@@ -43,19 +43,22 @@ TEST(WorldGatewayAccount_warden_client_locale_is_appended_at_twelve)
     CHECK_STR(ReadWardenClientLocale(fields), "zhCN");
 }
 
-TEST(WorldGatewayAccount_invalid_warden_client_locale_falls_back_to_enUS)
+TEST(WorldGatewayAccount_invalid_warden_client_locale_is_not_promoted)
 {
     Field fields[13];
     SetClearRow(fields);
 
     fields[12].SetValue("");
-    CHECK_STR(ReadWardenClientLocale(fields), "enUS");
+    CHECK_STR(ReadWardenClientLocale(fields), "");
 
     fields[12].SetValue("enUK");
-    CHECK_STR(ReadWardenClientLocale(fields), "enUS");
+    CHECK_STR(ReadWardenClientLocale(fields), "");
 
     fields[12].SetValue("enGB-extra");
-    CHECK_STR(ReadWardenClientLocale(fields), "enUS");
+    CHECK_STR(ReadWardenClientLocale(fields), "");
+
+    fields[12].SetValue("ruRU");
+    CHECK_STR(ReadWardenClientLocale(fields), "");
 }
 }
 

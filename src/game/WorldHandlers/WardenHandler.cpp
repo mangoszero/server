@@ -30,7 +30,7 @@ void WorldSession::HandleWardenDataOpcode(WorldPacket& recvData)
     // encrypted here and are decoded by the per-session state machine rather
     // than becoming separate WorldSession opcode handlers.
     size_t const unread = recvData.wpos() - recvData.rpos();
-    if (m_warden)
+    if (m_warden && !m_wardenEnforcementClosed)
     {
         warden::ByteView const body = {
             unread ? recvData.contents() + recvData.rpos() : nullptr,

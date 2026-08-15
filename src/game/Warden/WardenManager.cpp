@@ -27,6 +27,14 @@
 
 namespace warden
 {
+bool IsWardenEnforcementProfile(uint32 build,
+    std::string const& platform, std::string const& locale)
+{
+    // Presence identifies a profile even when later validation fails; exact
+    // enforcing clients must fail closed on invalid catalogue custody.
+    return WardenCheckCatalog().FindMem(build, platform, locale) != nullptr;
+}
+
 WardenManager& WardenManager::Instance()
 {
     static WardenManager manager;

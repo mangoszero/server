@@ -56,6 +56,7 @@ struct WardenIncidentWindowState
 {
     uint32 recentCount = 0;
     uint64 aggressiveUntil = 0;
+    uint64 databaseNow = 0;
 };
 
 enum class WardenIncidentWriteStatus : uint8
@@ -69,9 +70,7 @@ struct WardenIncidentWriteResult
 {
     WardenIncidentWriteStatus status = WardenIncidentWriteStatus::Failed;
     uint32 recentCount = 0;
-    uint64 aggressiveUntil = 0;
-    bool aggressiveTransition = false;
-    bool permanentBanTriggered = false;
+    bool permanentBanActive = false;
 };
 
 /** Session action derived without exposing database implementation details. */
@@ -81,9 +80,7 @@ struct WardenIncidentApplication
     bool durable = false;
     bool summaryKnown = false;
     uint32 recentCount = 0;
-    uint64 aggressiveUntil = 0;
-    bool aggressiveTransition = false;
-    bool permanentBanTriggered = false;
+    bool permanentBanActive = false;
 };
 
 namespace detail
@@ -150,6 +147,18 @@ inline WardenIncidentWindowState ClassifyIncidentWindow(
         incidentWindowSeconds, aggressiveThreshold);
 }
 
+/** Preserves a database-derived duration on the mangosd host clock. */
+inline uint64 RebaseIncidentDeadline(uint64 databaseDeadline,
+    uint64 databaseNow, uint64 serverNow)
+{
+    if (databaseNow == 0 || databaseDeadline <= databaseNow)
+        return 0;
+
+    uint64 const remaining = databaseDeadline - databaseNow;
+    uint64 const maximum = std::numeric_limits<uint64>::max();
+    return serverNow > maximum - remaining ? maximum : serverNow + remaining;
+}
+
 /** Failed or incompletely reloaded writes never manufacture durable facts. */
 inline WardenIncidentApplication ClassifyIncidentWriteResult(
     WardenIncidentWriteResult const& result)
@@ -167,9 +176,7 @@ inline WardenIncidentApplication ClassifyIncidentWriteResult(
 
     application.summaryKnown = true;
     application.recentCount = result.recentCount;
-    application.aggressiveUntil = result.aggressiveUntil;
-    application.aggressiveTransition = result.aggressiveTransition;
-    application.permanentBanTriggered = result.permanentBanTriggered;
+    application.permanentBanActive = result.permanentBanActive;
     return application;
 }
 

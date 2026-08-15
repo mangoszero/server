@@ -53,5 +53,7 @@ std::string ReadWardenPlatformHint(Field const* fields)
 
 std::string ReadWardenClientLocale(Field const* fields)
 {
-    return GetExactLocaleName(fields[WARDEN_CLIENT_LOCALE].GetCppString());
+    char const* exactLocale =
+        GetExactLocaleName(fields[WARDEN_CLIENT_LOCALE].GetCppString());
+    return exactLocale ? exactLocale : "";
 }

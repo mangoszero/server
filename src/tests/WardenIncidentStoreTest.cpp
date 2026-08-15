@@ -65,6 +65,21 @@ TEST(WardenIncidentWindow_more_than_threshold_uses_threshold_newest_expiry)
     CHECK_EQ(reversed.aggressiveUntil, ordered.aggressiveUntil);
 }
 
+TEST(WardenIncidentDeadline_rebases_database_clock_to_server_clock)
+{
+    CHECK_EQ(warden::RebaseIncidentDeadline(1300, 1000, 5000),
+        uint64(5300));
+    CHECK_EQ(warden::RebaseIncidentDeadline(1000, 1000, 5000),
+        uint64(0));
+    CHECK_EQ(warden::RebaseIncidentDeadline(900, 1000, 5000),
+        uint64(0));
+    CHECK_EQ(warden::RebaseIncidentDeadline(1300, 0, 5000), uint64(0));
+
+    uint64 const maximum = std::numeric_limits<uint64>::max();
+    CHECK_EQ(warden::RebaseIncidentDeadline(maximum, maximum - 10u,
+        maximum - 5u), maximum);
+}
+
 TEST(WardenIncidentOutcome_accepts_only_negative_memory_classifications)
 {
     CHECK(!warden::ToIncidentOutcome(
@@ -86,18 +101,14 @@ TEST(WardenIncidentApplication_failed_write_kicks_without_durable_summary)
     warden::WardenIncidentWriteResult result;
     result.status = warden::WardenIncidentWriteStatus::Failed;
     result.recentCount = 10;
-    result.aggressiveUntil = 1234;
-    result.aggressiveTransition = true;
-    result.permanentBanTriggered = true;
+    result.permanentBanActive = true;
 
     auto const application = warden::ClassifyIncidentWriteResult(result);
     CHECK(application.mustKick);
     CHECK(!application.durable);
     CHECK(!application.summaryKnown);
     CHECK_EQ(application.recentCount, uint32(0));
-    CHECK_EQ(application.aggressiveUntil, uint64(0));
-    CHECK(!application.aggressiveTransition);
-    CHECK(!application.permanentBanTriggered);
+    CHECK(!application.permanentBanActive);
 }
 
 TEST(WardenIncidentApplication_committed_write_exposes_durable_summary)
@@ -105,18 +116,14 @@ TEST(WardenIncidentApplication_committed_write_exposes_durable_summary)
     warden::WardenIncidentWriteResult result;
     result.status = warden::WardenIncidentWriteStatus::Committed;
     result.recentCount = 10;
-    result.aggressiveUntil = 1234;
-    result.aggressiveTransition = true;
-    result.permanentBanTriggered = true;
+    result.permanentBanActive = true;
 
     auto const application = warden::ClassifyIncidentWriteResult(result);
     CHECK(application.mustKick);
     CHECK(application.durable);
     CHECK(application.summaryKnown);
     CHECK_EQ(application.recentCount, uint32(10));
-    CHECK_EQ(application.aggressiveUntil, uint64(1234));
-    CHECK(application.aggressiveTransition);
-    CHECK(application.permanentBanTriggered);
+    CHECK(application.permanentBanActive);
 }
 
 TEST(WardenIncidentApplication_committed_unknown_state_never_invents_summary)
@@ -125,16 +132,12 @@ TEST(WardenIncidentApplication_committed_unknown_state_never_invents_summary)
     result.status =
         warden::WardenIncidentWriteStatus::CommittedStateUnavailable;
     result.recentCount = 10;
-    result.aggressiveUntil = 1234;
-    result.aggressiveTransition = true;
-    result.permanentBanTriggered = true;
+    result.permanentBanActive = true;
 
     auto const application = warden::ClassifyIncidentWriteResult(result);
     CHECK(application.mustKick);
     CHECK(application.durable);
     CHECK(!application.summaryKnown);
     CHECK_EQ(application.recentCount, uint32(0));
-    CHECK_EQ(application.aggressiveUntil, uint64(0));
-    CHECK(!application.aggressiveTransition);
-    CHECK(!application.permanentBanTriggered);
+    CHECK(!application.permanentBanActive);
 }

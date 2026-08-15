@@ -46,32 +46,43 @@ std::optional<WardenIncidentWindowState> WardenIncidentStore::Load(
     }
 
     // The NULL sentinel makes an empty successful query distinguishable from
-    // a database failure while the result still exposes only occurred_at.
+    // a database failure. One statement clock also lets mangosd preserve the
+    // remaining aggressive duration without comparing host wall clocks.
     std::unique_ptr<QueryResult> result(LoginDatabase.PQuery(
-        "SELECT `occurred_at` FROM ("
+        "SELECT `recent`.`occurred_at`, "
+        "UNIX_TIMESTAMP() AS `database_now` FROM ("
         "SELECT `occurred_at` FROM `warden_incident` "
         "WHERE `account_id` = %u "
         "AND `occurred_at` > UNIX_TIMESTAMP() - %u "
         "UNION ALL SELECT NULL AS `occurred_at`"
         ") AS `recent` "
-        "ORDER BY `occurred_at` IS NULL, `occurred_at` DESC",
+        "ORDER BY `recent`.`occurred_at` IS NULL, "
+        "`recent`.`occurred_at` DESC",
         accountId, incidentWindowSeconds));
     if (!result)
         return std::nullopt;
 
     std::vector<uint64> timestamps;
+    uint64 databaseNow = 0;
     do
     {
         Field const* fields = result->Fetch();
+        databaseNow = fields[1].GetUInt64();
         if (!fields[0].IsNULL())
             timestamps.push_back(fields[0].GetUInt64());
     }
     while (result->NextRow());
 
+    if (databaseNow == 0)
+        return std::nullopt;
+
     // SQL already applied the exclusive window with the database clock. Do
     // not filter a second time with the potentially different host clock.
-    return detail::ClassifyRecentIncidentWindow(std::move(timestamps),
-        incidentWindowSeconds, aggressiveThreshold);
+    WardenIncidentWindowState state =
+        detail::ClassifyRecentIncidentWindow(std::move(timestamps),
+            incidentWindowSeconds, aggressiveThreshold);
+    state.databaseNow = databaseNow;
+    return state;
 }
 
 WardenIncidentWriteResult WardenIncidentStore::Record(
@@ -85,12 +96,6 @@ WardenIncidentWriteResult WardenIncidentStore::Record(
     {
         return failed;
     }
-
-    std::optional<WardenIncidentWindowState> const before = Load(
-        context.accountId, configuration.incidentWindowSeconds,
-        configuration.aggressiveThreshold);
-    if (!before)
-        return failed;
 
     std::string safeLocale = context.clientLocale;
     LoginDatabase.escape_string(safeLocale);
@@ -157,12 +162,15 @@ WardenIncidentWriteResult WardenIncidentStore::Record(
     std::optional<WardenIncidentWindowState> const after = Load(
         context.accountId, configuration.incidentWindowSeconds,
         configuration.aggressiveThreshold);
-    std::unique_ptr<QueryResult> latest(LoginDatabase.PQuery(
-        "SELECT `ban_triggered` FROM `warden_incident` "
-        "WHERE `account_id` = %u "
-        "ORDER BY `incident_id` DESC LIMIT 1",
+    std::unique_ptr<QueryResult> permanentBan(LoginDatabase.PQuery(
+        "SELECT EXISTS("
+        "SELECT 1 FROM `account_banned` "
+        "WHERE `id` = %u AND `active` = 1 "
+        "AND `bandate` = `unbandate` "
+        "AND `bannedby` = 'MaNGOS Warden'"
+        ") AS `permanent_ban_active`",
         context.accountId));
-    if (!after || !latest)
+    if (!after || !permanentBan)
     {
         WardenIncidentWriteResult unknown;
         unknown.status =
@@ -173,11 +181,7 @@ WardenIncidentWriteResult WardenIncidentStore::Record(
     WardenIncidentWriteResult committed;
     committed.status = WardenIncidentWriteStatus::Committed;
     committed.recentCount = after->recentCount;
-    committed.aggressiveUntil = after->aggressiveUntil;
-    committed.aggressiveTransition =
-        before->recentCount < configuration.aggressiveThreshold &&
-        after->recentCount >= configuration.aggressiveThreshold;
-    committed.permanentBanTriggered = latest->Fetch()[0].GetBool();
+    committed.permanentBanActive = permanentBan->Fetch()[0].GetBool();
     return committed;
 }
 }
