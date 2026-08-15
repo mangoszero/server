@@ -24,11 +24,11 @@
 
 #include "Common/GitRevision.h"
 
-TEST(CoreDatabaseVersion_requires_exact_client_locale_realm_structure)
+TEST(CoreDatabaseVersion_requires_warden_incident_realm_structure)
 {
     CHECK_STR(GitRevision::GetRealmDBVersion(), "22");
-    CHECK_STR(GitRevision::GetRealmDBStructure(), "2");
+    CHECK_STR(GitRevision::GetRealmDBStructure(), "3");
     CHECK_STR(GitRevision::GetRealmDBContent(), "1");
     CHECK_STR(GitRevision::GetRealmDBUpdateDescription(),
-        "Exact client locale");
+        "Warden incidents");
 }

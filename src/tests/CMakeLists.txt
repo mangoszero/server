@@ -49,6 +49,7 @@ set(SRC_GRP_TESTS
     WardenPacketCodecTest.cpp
     WardenCheckPlannerTest.cpp
     WardenEnforcementPolicyTest.cpp
+    WardenIncidentStoreTest.cpp
     WardenServerTest.cpp
     DatabaseConcurrencyTest.cpp
     DatabaseVersionTest.cpp
