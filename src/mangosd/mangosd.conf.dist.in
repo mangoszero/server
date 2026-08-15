@@ -234,6 +234,48 @@ CleanCharacterDB                  = 1
 MaxWhoListReturns                 = 49
 
 ################################################################################
+# WARDEN
+#
+#    Warden.EnforcementMode
+#        Response to confirmed Warden memory violations and protocol failures.
+#        0 = observe and log only
+#        1 = kick confirmed violations; never permanently ban
+#        2 = kick confirmed violations and permanently ban at BanThreshold
+#        Default: 2
+#
+#    Warden.CheckIntervalMin / Warden.CheckIntervalMax
+#        Inclusive random interval, in seconds, between normal check batches.
+#        Default: 30 / 60
+#
+#    Warden.AggressiveIntervalMin / Warden.AggressiveIntervalMax
+#        Inclusive random interval, in seconds, between aggressive batches.
+#        Default: 10 / 20
+#
+#    Warden.AggressiveThreshold
+#        Confirmed incidents in the rolling window that enable aggressive mode.
+#        Default: 5
+#
+#    Warden.BanThreshold
+#        Confirmed incidents in the rolling window required for a permanent
+#        account ban when EnforcementMode is 2.
+#        Default: 10
+#
+#    Warden.IncidentWindow
+#        Rolling incident window in seconds.
+#        Default: 900
+#
+################################################################################
+
+Warden.EnforcementMode       = 2
+Warden.CheckIntervalMin      = 30
+Warden.CheckIntervalMax      = 60
+Warden.AggressiveIntervalMin = 10
+Warden.AggressiveIntervalMax = 20
+Warden.AggressiveThreshold   = 5
+Warden.BanThreshold          = 10
+Warden.IncidentWindow        = 900
+
+################################################################################
 # SERVER LOGGING
 #
 #    LogSQL
