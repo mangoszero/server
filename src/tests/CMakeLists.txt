@@ -48,6 +48,7 @@ set(SRC_GRP_TESTS
     WardenCryptoContextTest.cpp
     WardenPacketCodecTest.cpp
     WardenCheckPlannerTest.cpp
+    WardenEnforcementPolicyTest.cpp
     WardenServerTest.cpp
     DatabaseConcurrencyTest.cpp
     DatabaseVersionTest.cpp
@@ -71,6 +72,7 @@ set(SRC_GRP_TESTS
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenPacketCodec.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenCheckPlanner.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenEvidence.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenEnforcementPolicy.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenServer.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenManager.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenModuleWin5875Data.cpp
