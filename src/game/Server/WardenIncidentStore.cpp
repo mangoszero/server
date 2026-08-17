@@ -91,13 +91,12 @@ WardenIncidentWriteResult WardenIncidentStore::Record(
 {
     WardenIncidentWriteResult failed;
     if (configuration.enforcementMode == WardenEnforcementMode::Observe ||
-        context.accountId == 0 || context.clientBuild > 0xFFFFu ||
-        context.clientLocale.size() != 4u || context.checkId == 0)
-    {
+        !IsValidWardenIncidentContext(context))
         return failed;
-    }
 
+    std::string safePlatform = context.clientPlatform;
     std::string safeLocale = context.clientLocale;
+    LoginDatabase.escape_string(safePlatform);
     LoginDatabase.escape_string(safeLocale);
 
     if (!LoginDatabase.BeginTransaction())
@@ -111,10 +110,13 @@ WardenIncidentWriteResult WardenIncidentStore::Record(
     queued = queued && LoginDatabase.PExecute(
         "INSERT INTO `warden_incident` "
         "(`account_id`,`occurred_at`,`realm_id`,`client_build`,"
-        "`client_locale`,`check_id`,`outcome`,`ban_triggered`) "
-        "VALUES (%u,UNIX_TIMESTAMP(),%u,%u,'%s',%u,%u,0)",
+        "`client_platform`,`client_locale`,`check_id`,`check_type`,"
+        "`evidence_class`,`outcome`,`ban_triggered`) "
+        "VALUES (%u,UNIX_TIMESTAMP(),%u,%u,'%s','%s',%u,%u,%u,%u,0)",
         context.accountId, context.realmId, context.clientBuild,
-        safeLocale.c_str(), context.checkId, uint32(context.outcome));
+        safePlatform.c_str(), safeLocale.c_str(), context.checkId,
+        uint32(context.checkType), uint32(context.evidenceClass),
+        uint32(context.outcome));
 
     if (queued && configuration.enforcementMode ==
         WardenEnforcementMode::KickAndBan)
@@ -144,7 +146,7 @@ WardenIncidentWriteResult WardenIncidentStore::Record(
             "(`id`,`bandate`,`unbandate`,`bannedby`,`banreason`,`active`) "
             "SELECT `account_id`,`occurred_at`,`occurred_at`,"
             "'MaNGOS Warden',"
-            "'Repeated confirmed Warden memory violations',1 "
+            "'Repeated confirmed Warden violations',1 "
             "FROM `warden_incident` "
             "WHERE `incident_id` = LAST_INSERT_ID() "
             "AND `ban_triggered` = 1");

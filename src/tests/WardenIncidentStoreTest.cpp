@@ -80,20 +80,54 @@ TEST(WardenIncidentDeadline_rebases_database_clock_to_server_clock)
         maximum - 5u), maximum);
 }
 
-TEST(WardenIncidentOutcome_accepts_only_negative_memory_classifications)
+TEST(WardenIncidentOutcome_accepts_only_actionable_mismatch)
 {
     CHECK(!warden::ToIncidentOutcome(
-        warden::MemOutcome::Match).has_value());
+        warden::WardenCheckOutcome::Match).has_value());
+    CHECK(!warden::ToIncidentOutcome(
+        warden::WardenCheckOutcome::Unavailable).has_value());
+    CHECK(!warden::ToIncidentOutcome(
+        warden::WardenCheckOutcome::Stable).has_value());
 
     auto const mismatch = warden::ToIncidentOutcome(
-        warden::MemOutcome::ByteMismatch);
+        warden::WardenCheckOutcome::Mismatch);
     REQUIRE(mismatch.has_value());
     CHECK_EQ(uint32(*mismatch), uint32(1));
+}
 
-    auto const unavailable = warden::ToIncidentOutcome(
-        warden::MemOutcome::Unavailable);
-    REQUIRE(unavailable.has_value());
-    CHECK_EQ(uint32(*unavailable), uint32(2));
+TEST(WardenIncidentContext_requires_exact_actionable_mismatch)
+{
+    warden::WardenIncidentContext context;
+    context.accountId = 6;
+    context.realmId = 1;
+    context.clientBuild = 5875;
+    context.clientPlatform = "Win";
+    context.clientLocale = "enUS";
+    context.checkId = 1566;
+    context.checkType = warden::WardenCheckType::Mem;
+    context.evidenceClass = warden::WardenEvidenceClass::ThreatSignature;
+    context.outcome = warden::WardenIncidentOutcome::Mismatch;
+    CHECK(warden::IsValidWardenIncidentContext(context));
+
+    context.accountId = 0;
+    CHECK(!warden::IsValidWardenIncidentContext(context));
+    context.accountId = 6;
+    context.clientPlatform.assign("W\0in", 4);
+    CHECK(!warden::IsValidWardenIncidentContext(context));
+    context.clientPlatform = "Win";
+    context.clientLocale = "en S";
+    CHECK(!warden::IsValidWardenIncidentContext(context));
+    context.clientLocale = "enUS";
+    context.checkType = warden::WardenCheckType::Timing;
+    CHECK(!warden::IsValidWardenIncidentContext(context));
+    context.checkType = warden::WardenCheckType::Lua;
+    CHECK(!warden::IsValidWardenIncidentContext(context));
+    context.checkType = warden::WardenCheckType::Mem;
+    context.evidenceClass = warden::WardenEvidenceClass::Corroboration;
+    CHECK(!warden::IsValidWardenIncidentContext(context));
+    context.evidenceClass = warden::WardenEvidenceClass::ThreatSignature;
+    context.outcome = warden::WardenIncidentOutcome::HistoricalUnavailable;
+    CHECK(!warden::IsValidWardenIncidentContext(context));
 }
 
 TEST(WardenIncidentApplication_failed_write_kicks_without_durable_summary)

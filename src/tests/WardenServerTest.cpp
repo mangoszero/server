@@ -952,12 +952,13 @@ TEST(WardenServer_sends_one_timing_check_after_eligibility_and_reports_stable)
         warden::CheckPlanPurpose::Initial);
     REQUIRE(harness.evidenceBatches[0].evidence.size() == 1u);
     REQUIRE(harness.evidenceEvents.size() == 1u);
-    REQUIRE(std::holds_alternative<warden::TimingEvidence>(
-        harness.evidenceEvents[0]));
-    warden::TimingEvidence const& evidence =
-        std::get<warden::TimingEvidence>(harness.evidenceEvents[0]);
+    warden::WardenEvidence const& evidence = harness.evidenceEvents[0];
     CHECK_EQ(evidence.requestId, uint32(1));
-    CHECK(evidence.outcome == warden::TimingOutcome::Stable);
+    CHECK_EQ(evidence.checkId, uint32(65536));
+    CHECK(evidence.checkType == warden::WardenCheckType::Timing);
+    CHECK(evidence.evidenceClass ==
+        warden::WardenEvidenceClass::ProtocolHealth);
+    CHECK(evidence.outcome == warden::WardenCheckOutcome::Stable);
     CHECK_EQ(evidence.clientTick, uint32(0x12345678));
 
     harness.server->Update(true, 60000);
@@ -976,9 +977,12 @@ TEST(WardenServer_reports_unstable_timing_without_protocol_failure)
     CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
     CHECK(harness.server->GetFailure() == warden::WardenFailure::None);
     REQUIRE(harness.evidenceEvents.size() == 1u);
-    warden::TimingEvidence const& evidence =
-        std::get<warden::TimingEvidence>(harness.evidenceEvents[0]);
-    CHECK(evidence.outcome == warden::TimingOutcome::Unstable);
+    warden::WardenEvidence const& evidence = harness.evidenceEvents[0];
+    CHECK_EQ(evidence.checkId, uint32(65536));
+    CHECK(evidence.checkType == warden::WardenCheckType::Timing);
+    CHECK(evidence.evidenceClass ==
+        warden::WardenEvidenceClass::ProtocolHealth);
+    CHECK(evidence.outcome == warden::WardenCheckOutcome::Unstable);
     CHECK_EQ(evidence.clientTick, uint32(0x12345678));
 }
 
@@ -998,21 +1002,22 @@ TEST(WardenServer_combined_check_preserves_stream_and_reports_ordered_match)
     REQUIRE(harness.evidenceBatches[0].evidence.size() == 2u);
     REQUIRE(harness.evidenceEvents.size() == 2u);
 
-    REQUIRE(std::holds_alternative<warden::TimingEvidence>(
-        harness.evidenceEvents[0]));
-    warden::TimingEvidence const& timing =
-        std::get<warden::TimingEvidence>(harness.evidenceEvents[0]);
+    warden::WardenEvidence const& timing = harness.evidenceEvents[0];
     CHECK_EQ(timing.requestId, uint32(1));
-    CHECK(timing.outcome == warden::TimingOutcome::Stable);
+    CHECK_EQ(timing.checkId, uint32(65536));
+    CHECK(timing.checkType == warden::WardenCheckType::Timing);
+    CHECK(timing.evidenceClass ==
+        warden::WardenEvidenceClass::ProtocolHealth);
+    CHECK(timing.outcome == warden::WardenCheckOutcome::Stable);
     CHECK_EQ(timing.clientTick, uint32(0x01020304));
 
-    REQUIRE(std::holds_alternative<warden::MpqEvidence>(
-        harness.evidenceEvents[1]));
-    warden::MpqEvidence const& mpq =
-        std::get<warden::MpqEvidence>(harness.evidenceEvents[1]);
+    warden::WardenEvidence const& mpq = harness.evidenceEvents[1];
     CHECK_EQ(mpq.requestId, uint32(1));
     CHECK_EQ(mpq.checkId, uint32(1));
-    CHECK(mpq.outcome == warden::MpqOutcome::Match);
+    CHECK(mpq.checkType == warden::WardenCheckType::Mpq);
+    CHECK(mpq.evidenceClass ==
+        warden::WardenEvidenceClass::Corroboration);
+    CHECK(mpq.outcome == warden::WardenCheckOutcome::Match);
 
     harness.SendClient(ModuleOk());
     CHECK(harness.server->GetState() == warden::WardenState::Failed);
@@ -1028,8 +1033,12 @@ TEST(WardenServer_valid_mpq_negatives_are_observation_only)
     CHECK(unavailable.server->GetState() == warden::WardenState::ModuleReady);
     CHECK(unavailable.server->GetFailure() == warden::WardenFailure::None);
     REQUIRE(unavailable.evidenceEvents.size() == 2u);
-    CHECK(std::get<warden::MpqEvidence>(unavailable.evidenceEvents[1]).outcome ==
-        warden::MpqOutcome::Unavailable);
+    CHECK(unavailable.evidenceEvents[1].outcome ==
+        warden::WardenCheckOutcome::Unavailable);
+    CHECK(unavailable.evidenceEvents[1].checkType ==
+        warden::WardenCheckType::Mpq);
+    CHECK(unavailable.evidenceEvents[1].evidenceClass ==
+        warden::WardenEvidenceClass::Corroboration);
 
     Harness mismatch(true, TestChecks(5875, "enUS", {65536, 1}));
     REQUIRE(StartTimingMpqCheck(mismatch));
@@ -1039,8 +1048,8 @@ TEST(WardenServer_valid_mpq_negatives_are_observation_only)
     CHECK(mismatch.server->GetState() == warden::WardenState::ModuleReady);
     CHECK(mismatch.server->GetFailure() == warden::WardenFailure::None);
     REQUIRE(mismatch.evidenceEvents.size() == 2u);
-    CHECK(std::get<warden::MpqEvidence>(mismatch.evidenceEvents[1]).outcome ==
-        warden::MpqOutcome::DigestMismatch);
+    CHECK(mismatch.evidenceEvents[1].outcome ==
+        warden::WardenCheckOutcome::Mismatch);
 
     Harness bothNegative(true, TestChecks(5875, "enUS", {65536, 1}));
     REQUIRE(StartTimingMpqCheck(bothNegative));
@@ -1048,12 +1057,10 @@ TEST(WardenServer_valid_mpq_negatives_are_observation_only)
     CHECK(bothNegative.server->GetState() ==
         warden::WardenState::ModuleReady);
     REQUIRE(bothNegative.evidenceEvents.size() == 2u);
-    CHECK(std::get<warden::TimingEvidence>(
-        bothNegative.evidenceEvents[0]).outcome ==
-        warden::TimingOutcome::Unstable);
-    CHECK(std::get<warden::MpqEvidence>(
-        bothNegative.evidenceEvents[1]).outcome ==
-        warden::MpqOutcome::Unavailable);
+    CHECK(bothNegative.evidenceEvents[0].outcome ==
+        warden::WardenCheckOutcome::Unstable);
+    CHECK(bothNegative.evidenceEvents[1].outcome ==
+        warden::WardenCheckOutcome::Unavailable);
 }
 
 TEST(WardenServer_combined_lua_match_is_classified_without_text_evidence)
@@ -1068,17 +1075,16 @@ TEST(WardenServer_combined_lua_match_is_classified_without_text_evidence)
     CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
     CHECK(harness.server->GetFailure() == warden::WardenFailure::None);
     REQUIRE(harness.evidenceEvents.size() == 3u);
-    CHECK(std::holds_alternative<warden::TimingEvidence>(
-        harness.evidenceEvents[0]));
-    CHECK(std::holds_alternative<warden::MpqEvidence>(
-        harness.evidenceEvents[1]));
-    REQUIRE(std::holds_alternative<warden::LuaEvidence>(
-        harness.evidenceEvents[2]));
-    warden::LuaEvidence const& lua =
-        std::get<warden::LuaEvidence>(harness.evidenceEvents[2]);
+    CHECK(harness.evidenceEvents[0].checkType ==
+        warden::WardenCheckType::Timing);
+    CHECK(harness.evidenceEvents[1].checkType ==
+        warden::WardenCheckType::Mpq);
+    warden::WardenEvidence const& lua = harness.evidenceEvents[2];
     CHECK_EQ(lua.requestId, uint32(1));
     CHECK_EQ(lua.checkId, uint32(2));
-    CHECK(lua.outcome == warden::LuaOutcome::Match);
+    CHECK(lua.checkType == warden::WardenCheckType::Lua);
+    CHECK(lua.evidenceClass == warden::WardenEvidenceClass::Corroboration);
+    CHECK(lua.outcome == warden::WardenCheckOutcome::Match);
 
     harness.SendClient(ModuleOk());
     CHECK(harness.server->GetState() == warden::WardenState::Failed);
@@ -1121,14 +1127,14 @@ TEST(WardenServer_crosslocale_content_vectors_report_ordered_matches)
         CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
         CHECK(harness.server->GetFailure() == warden::WardenFailure::None);
         REQUIRE(harness.evidenceEvents.size() == 3u);
-        REQUIRE(std::holds_alternative<warden::MpqEvidence>(
-            harness.evidenceEvents[1]));
-        CHECK(std::get<warden::MpqEvidence>(
-            harness.evidenceEvents[1]).outcome == warden::MpqOutcome::Match);
-        REQUIRE(std::holds_alternative<warden::LuaEvidence>(
-            harness.evidenceEvents[2]));
-        CHECK(std::get<warden::LuaEvidence>(
-            harness.evidenceEvents[2]).outcome == warden::LuaOutcome::Match);
+        CHECK(harness.evidenceEvents[1].checkType ==
+            warden::WardenCheckType::Mpq);
+        CHECK(harness.evidenceEvents[1].outcome ==
+            warden::WardenCheckOutcome::Match);
+        CHECK(harness.evidenceEvents[2].checkType ==
+            warden::WardenCheckType::Lua);
+        CHECK(harness.evidenceEvents[2].outcome ==
+            warden::WardenCheckOutcome::Match);
     }
 }
 
@@ -1143,11 +1149,10 @@ TEST(WardenServer_valid_lua_negatives_are_observation_only)
     CHECK(unavailable.server->GetState() == warden::WardenState::ModuleReady);
     CHECK(unavailable.server->GetFailure() == warden::WardenFailure::None);
     REQUIRE(unavailable.evidenceEvents.size() == 3u);
-    REQUIRE(std::holds_alternative<warden::LuaEvidence>(
-        unavailable.evidenceEvents[2]));
-    CHECK(std::get<warden::LuaEvidence>(
-        unavailable.evidenceEvents[2]).outcome ==
-        warden::LuaOutcome::Unavailable);
+    CHECK(unavailable.evidenceEvents[2].checkType ==
+        warden::WardenCheckType::Lua);
+    CHECK(unavailable.evidenceEvents[2].outcome ==
+        warden::WardenCheckOutcome::Unavailable);
 
     Harness mismatch(true, TestChecks(5875, "enUS", {65536, 1, 2}));
     REQUIRE(StartTimingMpqLuaCheck(mismatch));
@@ -1158,10 +1163,10 @@ TEST(WardenServer_valid_lua_negatives_are_observation_only)
     CHECK(mismatch.server->GetState() == warden::WardenState::ModuleReady);
     CHECK(mismatch.server->GetFailure() == warden::WardenFailure::None);
     REQUIRE(mismatch.evidenceEvents.size() == 3u);
-    REQUIRE(std::holds_alternative<warden::LuaEvidence>(
-        mismatch.evidenceEvents[2]));
-    CHECK(std::get<warden::LuaEvidence>(mismatch.evidenceEvents[2]).outcome ==
-        warden::LuaOutcome::TextMismatch);
+    CHECK(mismatch.evidenceEvents[2].checkType ==
+        warden::WardenCheckType::Lua);
+    CHECK(mismatch.evidenceEvents[2].outcome ==
+        warden::WardenCheckOutcome::Mismatch);
 }
 
 TEST(WardenServer_malformed_lua_result_publishes_no_partial_evidence)
@@ -1191,19 +1196,25 @@ TEST(WardenServer_mem_results_are_identifier_only_and_ordered)
     CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
     CHECK(harness.server->GetFailure() == warden::WardenFailure::None);
     REQUIRE(harness.evidenceEvents.size() == 5u);
-    CHECK(std::holds_alternative<warden::TimingEvidence>(
-        harness.evidenceEvents[0]));
+    CHECK(harness.evidenceEvents[0].checkType ==
+        warden::WardenCheckType::Timing);
     uint32 const expectedIds[] = {1107u, 827u, 1566u, 1135u};
+    warden::WardenEvidenceClass const expectedClasses[] =
+    {
+        warden::WardenEvidenceClass::IntegrityInvariant,
+        warden::WardenEvidenceClass::IntegrityInvariant,
+        warden::WardenEvidenceClass::ThreatSignature,
+        warden::WardenEvidenceClass::Corroboration
+    };
     for (size_t index = 0; index < 4u; ++index)
     {
-        REQUIRE(std::holds_alternative<warden::MemEvidence>(
-            harness.evidenceEvents[index + 1u]));
-        warden::MemEvidence const& evidence =
-            std::get<warden::MemEvidence>(
-                harness.evidenceEvents[index + 1u]);
+        warden::WardenEvidence const& evidence =
+            harness.evidenceEvents[index + 1u];
         CHECK_EQ(evidence.requestId, uint32(1));
         CHECK_EQ(evidence.checkId, expectedIds[index]);
-        CHECK(evidence.outcome == warden::MemOutcome::Match);
+        CHECK(evidence.checkType == warden::WardenCheckType::Mem);
+        CHECK(evidence.evidenceClass == expectedClasses[index]);
+        CHECK(evidence.outcome == warden::WardenCheckOutcome::Match);
     }
 }
 
@@ -1242,9 +1253,10 @@ TEST(WardenServer_valid_mem_negatives_are_observation_only)
     REQUIRE(unavailable.evidenceEvents.size() == 5u);
     for (size_t index = 1; index < unavailable.evidenceEvents.size(); ++index)
     {
-        CHECK(std::get<warden::MemEvidence>(
-            unavailable.evidenceEvents[index]).outcome ==
-            warden::MemOutcome::Unavailable);
+        CHECK(unavailable.evidenceEvents[index].checkType ==
+            warden::WardenCheckType::Mem);
+        CHECK(unavailable.evidenceEvents[index].outcome ==
+            warden::WardenCheckOutcome::Unavailable);
     }
 
     Harness mismatch(true, TestMemChecks());
@@ -1256,14 +1268,14 @@ TEST(WardenServer_valid_mem_negatives_are_observation_only)
     CHECK(mismatch.server->GetState() == warden::WardenState::ModuleReady);
     CHECK(mismatch.server->GetFailure() == warden::WardenFailure::None);
     REQUIRE(mismatch.evidenceEvents.size() == 5u);
-    CHECK(std::get<warden::MemEvidence>(
-        mismatch.evidenceEvents[1]).outcome ==
-        warden::MemOutcome::ByteMismatch);
+    CHECK(mismatch.evidenceEvents[1].outcome ==
+        warden::WardenCheckOutcome::Mismatch);
+    CHECK(mismatch.evidenceEvents[1].evidenceClass ==
+        warden::WardenEvidenceClass::IntegrityInvariant);
     for (size_t index = 2; index < mismatch.evidenceEvents.size(); ++index)
     {
-        CHECK(std::get<warden::MemEvidence>(
-            mismatch.evidenceEvents[index]).outcome ==
-            warden::MemOutcome::Match);
+        CHECK(mismatch.evidenceEvents[index].outcome ==
+            warden::WardenCheckOutcome::Match);
     }
 }
 

@@ -39,42 +39,61 @@ std::vector<WardenPolicyDecision> WardenEnforcementPolicy::EvaluateBatch(
         if (batch.evidence.size() != 1u)
             return {ConfirmationContractViolation()};
 
-        MemEvidence const* memory =
-            std::get_if<MemEvidence>(&batch.evidence.front());
-        if (!memory || m_pendingConfirmations.find(memory->checkId) ==
-            m_pendingConfirmations.end())
-        {
+        WardenEvidence const& evidence = batch.evidence.front();
+        auto const pending = m_pendingConfirmations.find(evidence.checkId);
+        if (pending == m_pendingConfirmations.end() ||
+            evidence.checkType == WardenCheckType::Timing ||
+            pending->second.checkType != evidence.checkType ||
+            pending->second.evidenceClass != evidence.evidenceClass)
             return {ConfirmationContractViolation()};
-        }
 
-        m_pendingConfirmations.erase(memory->checkId);
-        if (memory->outcome == MemOutcome::Match)
+        m_pendingConfirmations.erase(pending);
+        WardenConfirmedDisposition const disposition =
+            ClassifyConfirmedEvidence(m_mode, evidence);
+        if (disposition == WardenConfirmedDisposition::Invalid)
+            return {ConfirmationContractViolation()};
+
+        WardenPolicyDecision decision;
+        decision.checkId = evidence.checkId;
+        decision.checkType = evidence.checkType;
+        decision.evidenceClass = evidence.evidenceClass;
+        decision.outcome = evidence.outcome;
+        switch (disposition)
         {
-            return {{WardenPolicyAction::ConfirmationCleared,
-                memory->checkId, memory->outcome}};
+            case WardenConfirmedDisposition::Cleared:
+                decision.action = WardenPolicyAction::ConfirmationCleared;
+                break;
+            case WardenConfirmedDisposition::Audit:
+                decision.action = m_confirmedAudits.insert(
+                    AuditKey(evidence.checkId, evidence.outcome)).second ?
+                    WardenPolicyAction::PersistAudit :
+                    WardenPolicyAction::None;
+                break;
+            case WardenConfirmedDisposition::Incident:
+                decision.action = WardenPolicyAction::PersistAndKick;
+                break;
+            case WardenConfirmedDisposition::Invalid:
+                return {ConfirmationContractViolation()};
         }
-
-        WardenPolicyAction const action =
-            m_mode == WardenEnforcementMode::Observe ?
-                WardenPolicyAction::ConfirmedObservation :
-                WardenPolicyAction::PersistAndKick;
-        return {{action, memory->checkId, memory->outcome}};
+        return {decision};
     }
 
     std::vector<WardenPolicyDecision> decisions;
     for (WardenEvidence const& evidence : batch.evidence)
     {
-        MemEvidence const* memory = std::get_if<MemEvidence>(&evidence);
-        if (!memory || memory->outcome == MemOutcome::Match)
+        if (!NeedsConfirmation(evidence) ||
+            m_confirmedAudits.find(AuditKey(evidence.checkId,
+                evidence.outcome)) != m_confirmedAudits.end() ||
+            m_pendingConfirmations.find(evidence.checkId) !=
+                m_pendingConfirmations.end())
             continue;
 
-        if (!m_pendingConfirmations.insert(memory->checkId).second)
-            continue;
-
+        m_pendingConfirmations.emplace(evidence.checkId,
+            PendingConfirmation{evidence.checkType, evidence.evidenceClass});
         decisions.push_back({WardenPolicyAction::QueueConfirmation,
-            memory->checkId, memory->outcome});
+            evidence.checkId, evidence.checkType, evidence.evidenceClass,
+            evidence.outcome});
     }
-
     return decisions;
 }
 
@@ -87,7 +106,6 @@ WardenPolicyDecision WardenEnforcementPolicy::EvaluateLifecycle(
     m_pendingConfirmations.clear();
     if (m_mode == WardenEnforcementMode::Observe)
         return {};
-
     return {WardenPolicyAction::Kick};
 }
 
@@ -96,7 +114,12 @@ WardenEnforcementPolicy::ConfirmationContractViolation() const
 {
     if (m_mode == WardenEnforcementMode::Observe)
         return {};
-
     return {WardenPolicyAction::Kick};
+}
+
+uint64 WardenEnforcementPolicy::AuditKey(uint32 checkId,
+    WardenCheckOutcome outcome)
+{
+    return (uint64(checkId) << 8u) | uint8(outcome);
 }
 }

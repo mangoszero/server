@@ -479,6 +479,11 @@ void WardenServer::HandleCheckResult(Bytes& plain)
             WardenCheckDefinition const& definition =
                 completedPlan.checks[index];
             CheckResult const& returned = result.checks[index];
+            WardenEvidence evidence;
+            evidence.requestId = completedPlan.requestId;
+            evidence.checkId = GetWardenCheckId(definition);
+            evidence.checkType = GetWardenCheckType(definition);
+            evidence.evidenceClass = definition.evidenceClass;
             if (std::holds_alternative<TimingCheckProfile>(
                     definition.payload))
             {
@@ -489,13 +494,10 @@ void WardenServer::HandleCheckResult(Bytes& plain)
                     Fail(WardenFailure::MalformedPayload);
                     return;
                 }
-                batch.evidence.emplace_back(TimingEvidence
-                {
-                    completedPlan.requestId,
-                    timing->stable ? TimingOutcome::Stable :
-                        TimingOutcome::Unstable,
-                    timing->clientTick
-                });
+                evidence.outcome = timing->stable ?
+                    WardenCheckOutcome::Stable : WardenCheckOutcome::Unstable;
+                evidence.clientTick = timing->clientTick;
+                batch.evidence.push_back(evidence);
                 continue;
             }
 
@@ -509,19 +511,15 @@ void WardenServer::HandleCheckResult(Bytes& plain)
                     return;
                 }
 
-                MpqOutcome outcome = MpqOutcome::Unavailable;
+                evidence.outcome = WardenCheckOutcome::Unavailable;
                 if (mpq->status == MpqResultStatus::Success)
                 {
-                    outcome = CRYPTO_memcmp(mpq->digest.data(),
+                    evidence.outcome = CRYPTO_memcmp(mpq->digest.data(),
                         profile->expectedSha1.data(), mpq->digest.size()) == 0 ?
-                        MpqOutcome::Match : MpqOutcome::DigestMismatch;
+                        WardenCheckOutcome::Match :
+                        WardenCheckOutcome::Mismatch;
                 }
-                batch.evidence.emplace_back(MpqEvidence
-                {
-                    completedPlan.requestId,
-                    profile->checkId,
-                    outcome
-                });
+                batch.evidence.push_back(evidence);
                 continue;
             }
 
@@ -537,18 +535,14 @@ void WardenServer::HandleCheckResult(Bytes& plain)
 
                 // Returned script text is compared only inside this private
                 // boundary. Observers receive catalogue identity and outcome.
-                LuaOutcome outcome = LuaOutcome::Unavailable;
+                evidence.outcome = WardenCheckOutcome::Unavailable;
                 if (lua->status == LuaResultStatus::Success)
                 {
-                    outcome = lua->text == profile->expectedText ?
-                        LuaOutcome::Match : LuaOutcome::TextMismatch;
+                    evidence.outcome = lua->text == profile->expectedText ?
+                        WardenCheckOutcome::Match :
+                        WardenCheckOutcome::Mismatch;
                 }
-                batch.evidence.emplace_back(LuaEvidence
-                {
-                    completedPlan.requestId,
-                    profile->checkId,
-                    outcome
-                });
+                batch.evidence.push_back(evidence);
                 continue;
             }
 
@@ -562,7 +556,7 @@ void WardenServer::HandleCheckResult(Bytes& plain)
             }
 
             // Raw process bytes are compared and cleansed inside this scope.
-            MemOutcome outcome = MemOutcome::Unavailable;
+            evidence.outcome = WardenCheckOutcome::Unavailable;
             if (memory->status == MemResultStatus::Success)
             {
                 if (memory->actualBytes.size() !=
@@ -571,17 +565,13 @@ void WardenServer::HandleCheckResult(Bytes& plain)
                     Fail(WardenFailure::MalformedPayload);
                     return;
                 }
-                outcome = CRYPTO_memcmp(memory->actualBytes.data(),
+                evidence.outcome = CRYPTO_memcmp(memory->actualBytes.data(),
                     profile->expectedBytes.data(),
-                    profile->expectedBytes.size()) == 0 ? MemOutcome::Match :
-                    MemOutcome::ByteMismatch;
+                    profile->expectedBytes.size()) == 0 ?
+                    WardenCheckOutcome::Match :
+                    WardenCheckOutcome::Mismatch;
             }
-            batch.evidence.emplace_back(MemEvidence
-            {
-                completedPlan.requestId,
-                profile->checkId,
-                outcome
-            });
+            batch.evidence.push_back(evidence);
         }
     }
 

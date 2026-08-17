@@ -24,79 +24,36 @@
 #define MANGOS_WARDEN_EVIDENCE_H
 
 #include "WardenCheckPlan.h"
-#include "WardenProtocol.h"
+#include "WardenConfiguration.h"
 
-#include <variant>
 #include <vector>
 
 namespace warden
 {
-enum class TimingOutcome : uint8
-{
-    Stable,
-    Unstable
-};
-
-/** Validated timing evidence only; no keys or raw packet bytes cross here. */
-struct TimingEvidence
+/** Secret-free classification for one exact ordered check definition. */
+struct WardenEvidence
 {
     uint32 requestId = 0;
-    TimingOutcome outcome = TimingOutcome::Unstable;
+    uint32 checkId = 0;
+    WardenCheckType checkType = WardenCheckType::Timing;
+    WardenEvidenceClass evidenceClass = WardenEvidenceClass::ProtocolHealth;
+    WardenCheckOutcome outcome = WardenCheckOutcome::Unstable;
     uint32 clientTick = 0;
 };
 
-enum class MpqOutcome : uint8
+enum class WardenConfirmedDisposition : uint8
 {
-    Match,
-    DigestMismatch,
-    Unavailable
+    Invalid,
+    Cleared,
+    Audit,
+    Incident
 };
 
-/** Validated archive evidence containing only stable catalogue identity. */
-struct MpqEvidence
-{
-    uint32 requestId = 0;
-    uint32 checkId = 0;
-    MpqOutcome outcome = MpqOutcome::Unavailable;
-};
+bool NeedsConfirmation(WardenEvidence const& evidence);
+WardenConfirmedDisposition ClassifyConfirmedEvidence(
+    WardenEnforcementMode mode, WardenEvidence const& evidence);
 
-enum class LuaOutcome : uint8
-{
-    Match,
-    TextMismatch,
-    Unavailable
-};
-
-/** Validated script evidence containing no query or returned client text. */
-struct LuaEvidence
-{
-    uint32 requestId = 0;
-    uint32 checkId = 0;
-    LuaOutcome outcome = LuaOutcome::Unavailable;
-};
-
-enum class MemOutcome : uint8
-{
-    Match,
-    ByteMismatch,
-    Unavailable
-};
-
-/** Validated memory evidence containing no address or returned client bytes. */
-struct MemEvidence
-{
-    uint32 requestId = 0;
-    uint32 checkId = 0;
-    MemOutcome outcome = MemOutcome::Unavailable;
-};
-
-using WardenEvidence =
-    std::variant<TimingEvidence, MpqEvidence, LuaEvidence, MemEvidence>;
-
-/**
- * One fully validated request result. The batch contains only classifications
- * and catalogue identifiers; decoded client buffers never cross this boundary.
- */
+/** One fully validated request result with no raw client payload. */
 struct WardenEvidenceBatch
 {
     uint32 requestId = 0;
@@ -104,11 +61,9 @@ struct WardenEvidenceBatch
     std::vector<WardenEvidence> evidence;
 };
 
-// Fixed labels are safe for operator summaries and contain no client data.
-char const* ToString(TimingOutcome outcome);
-char const* ToString(MpqOutcome outcome);
-char const* ToString(LuaOutcome outcome);
-char const* ToString(MemOutcome outcome);
+char const* ToString(WardenCheckType type);
+char const* ToString(WardenEvidenceClass evidenceClass);
+char const* ToString(WardenCheckOutcome outcome);
 }
 
 #endif

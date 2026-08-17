@@ -101,8 +101,9 @@ require_count("${SESSION_CPP}" "WardenEvidenceBatch const&" 1
 require_count("${SESSION_CPP}"
     "void WorldSession::HandleWardenEvidenceBatch[ \\t]*\\(" 1
     "complete-batch policy application must have one session owner")
-require_count("${SESSION_CPP}" "std::visit[ \\t]*\\(" 1
-    "session adapter must dispatch typed Warden evidence exactly once")
+require_count("${SESSION_CPP}"
+    "for[ \\t]*\\([ \\t]*warden::WardenEvidence const& evidence[ \\t]*:[ \\t]*batch\\.evidence[ \\t]*\\)" 1
+    "session adapter must consume normalized Warden evidence exactly once")
 require_count("${SESSION_CPP}" "m_warden->QueueConfirmation[ \\t]*\\(" 1
     "session policy must own one isolated confirmation path")
 require_count("${SESSION_CPP}" "IsWardenEnforcementProfile[ \\t]*\\(" 1
@@ -159,13 +160,17 @@ string(FIND "${SESSION_CPP}"
 string(FIND "${SESSION_CPP}"
     "void WorldSession::HandleWardenEvidenceBatch(" EVIDENCE_BEGIN)
 string(FIND "${SESSION_CPP}"
+    "void WorldSession::PersistWardenAudit(" AUDIT_BEGIN)
+string(FIND "${SESSION_CPP}"
     "void WorldSession::PersistWardenIncidentAndKick(" PERSIST_BEGIN)
 string(FIND "${SESSION_CPP}"
     "void WorldSession::StartWardenBootstrap()" WARDEN_START_BEGIN)
 if(LIFECYCLE_BEGIN EQUAL -1 OR EVIDENCE_BEGIN EQUAL -1 OR
-    PERSIST_BEGIN EQUAL -1 OR WARDEN_START_BEGIN EQUAL -1 OR
+    AUDIT_BEGIN EQUAL -1 OR PERSIST_BEGIN EQUAL -1 OR
+    WARDEN_START_BEGIN EQUAL -1 OR
     EVIDENCE_BEGIN LESS_EQUAL LIFECYCLE_BEGIN OR
-    PERSIST_BEGIN LESS_EQUAL EVIDENCE_BEGIN OR
+    AUDIT_BEGIN LESS_EQUAL EVIDENCE_BEGIN OR
+    PERSIST_BEGIN LESS_EQUAL AUDIT_BEGIN OR
     WARDEN_START_BEGIN LESS_EQUAL PERSIST_BEGIN)
     message(FATAL_ERROR
         "Warden boundary: cannot locate ordered session enforcement helpers")
@@ -191,6 +196,15 @@ if(NOT ENFORCEMENT_BODY MATCHES "CheckPlanPurpose::Initial" OR
     NOT ENFORCEMENT_BODY MATCHES "DEBUG_LOG[ \\t]*\\(")
     message(FATAL_ERROR
         "Warden boundary: recurring clean evidence must use debug logging")
+endif()
+
+math(EXPR AUDIT_LENGTH "${PERSIST_BEGIN} - ${AUDIT_BEGIN}")
+string(SUBSTRING "${SESSION_CPP}" ${AUDIT_BEGIN} ${AUDIT_LENGTH}
+    AUDIT_BODY)
+if(AUDIT_BODY MATCHES
+    "KickPlayer|WardenIncidentStore|account_banned|m_wardenAggressive|m_wardenEnforcementClosed")
+    message(FATAL_ERROR
+        "Warden boundary: audit persistence must never enforce or alter escalation")
 endif()
 
 math(EXPR PERSIST_LENGTH "${WARDEN_START_BEGIN} - ${PERSIST_BEGIN}")
@@ -364,6 +378,22 @@ foreach(SOURCE IN LISTS INCIDENT_STORE_FILES)
     if(NOT SERVER_PREFIX_AT EQUAL 0)
         message(FATAL_ERROR
             "Warden boundary: incident store escaped src/game/Server: ${SOURCE}")
+    endif()
+endforeach()
+
+file(GLOB_RECURSE AUDIT_STORE_FILES
+    "${GAME_ROOT}/*WardenAuditStore.h"
+    "${GAME_ROOT}/*WardenAuditStore.cpp")
+list(LENGTH AUDIT_STORE_FILES AUDIT_STORE_COUNT)
+if(NOT AUDIT_STORE_COUNT EQUAL 2)
+    message(FATAL_ERROR
+        "Warden boundary: expected one audit-store header/source pair")
+endif()
+foreach(SOURCE IN LISTS AUDIT_STORE_FILES)
+    string(FIND "${SOURCE}" "${GAME_ROOT}/Server/" SERVER_PREFIX_AT)
+    if(NOT SERVER_PREFIX_AT EQUAL 0)
+        message(FATAL_ERROR
+            "Warden boundary: audit store escaped src/game/Server: ${SOURCE}")
     endif()
 endforeach()
 

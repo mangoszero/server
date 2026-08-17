@@ -931,6 +931,8 @@ class WorldSession
             warden::WardenLifecycleEvent const& event);
         void HandleWardenEvidenceBatch(
             warden::WardenEvidenceBatch const& batch);
+        void PersistWardenAudit(
+            warden::WardenPolicyDecision const& decision);
         void PersistWardenIncidentAndKick(
             warden::WardenPolicyDecision const& decision);
 
@@ -947,6 +949,7 @@ class WorldSession
         std::unique_ptr<warden::WardenEnforcementPolicy> m_wardenPolicy;
         warden::WardenConfiguration m_wardenConfiguration;
         uint32 m_wardenBuild = 0;
+        std::string m_wardenClientPlatform;
         std::string m_wardenClientLocale;
         uint64 m_wardenAggressiveUntil = 0;
         bool m_wardenAggressive = false;

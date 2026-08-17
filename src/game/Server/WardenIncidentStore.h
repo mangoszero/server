@@ -38,8 +38,8 @@ namespace warden
 {
 enum class WardenIncidentOutcome : uint8
 {
-    ByteMismatch = 1,
-    Unavailable = 2
+    Mismatch = 1,
+    HistoricalUnavailable = 2
 };
 
 struct WardenIncidentContext
@@ -47,9 +47,12 @@ struct WardenIncidentContext
     uint32 accountId = 0;
     uint32 realmId = 0;
     uint32 clientBuild = 0;
+    std::string clientPlatform;
     std::string clientLocale;
     uint32 checkId = 0;
-    WardenIncidentOutcome outcome = WardenIncidentOutcome::Unavailable;
+    WardenCheckType checkType = WardenCheckType::Timing;
+    WardenEvidenceClass evidenceClass = WardenEvidenceClass::ProtocolHealth;
+    WardenIncidentOutcome outcome = WardenIncidentOutcome::Mismatch;
 };
 
 struct WardenIncidentWindowState
@@ -109,19 +112,41 @@ inline WardenIncidentWindowState ClassifyRecentIncidentWindow(
 }
 
 inline std::optional<WardenIncidentOutcome> ToIncidentOutcome(
-    MemOutcome outcome)
+    WardenCheckOutcome outcome)
 {
-    switch (outcome)
-    {
-        case MemOutcome::ByteMismatch:
-            return WardenIncidentOutcome::ByteMismatch;
-        case MemOutcome::Unavailable:
-            return WardenIncidentOutcome::Unavailable;
-        case MemOutcome::Match:
-            return std::nullopt;
-    }
-
+    if (outcome == WardenCheckOutcome::Mismatch)
+        return WardenIncidentOutcome::Mismatch;
     return std::nullopt;
+}
+
+inline bool IsValidWardenIncidentContext(
+    WardenIncidentContext const& context)
+{
+    auto validToken = [](std::string const& value, size_t minimum,
+        size_t maximum)
+    {
+        if (value.size() < minimum || value.size() > maximum)
+            return false;
+        for (unsigned char byte : value)
+        {
+            if (byte == 0 || byte == 0x09 || byte == 0x0A || byte == 0x0B ||
+                byte == 0x0C || byte == 0x0D || byte == 0x20)
+                return false;
+        }
+        return true;
+    };
+    bool const legalActionablePair =
+        (context.checkType == WardenCheckType::Mpq &&
+            context.evidenceClass ==
+                WardenEvidenceClass::IntegrityInvariant) ||
+        (context.checkType == WardenCheckType::Mem &&
+            IsActionableEvidenceClass(context.evidenceClass));
+
+    return context.accountId != 0 && context.checkId != 0 &&
+        context.clientBuild != 0 && context.clientBuild <= 0xFFFFu &&
+        validToken(context.clientPlatform, 1, 4) &&
+        validToken(context.clientLocale, 4, 4) && legalActionablePair &&
+        context.outcome == WardenIncidentOutcome::Mismatch;
 }
 
 /** Applies the same exclusive lower boundary used by the Realm query. */

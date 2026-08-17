@@ -57,8 +57,6 @@
 #include <string>
 #include <set>
 #include <memory>
-#include <type_traits>
-#include <variant>
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
 #include "OpcodeTable.h"
@@ -73,6 +71,7 @@
 #include "Guild.h"
 #include "GuildMgr.h"
 #include "World.h"
+#include "WardenAuditStore.h"
 #include "WardenEnforcementPolicy.h"
 #include "WardenIncidentStore.h"
 #include "WardenManager.h"
@@ -361,6 +360,7 @@ void WorldSession::OnAuthenticatedAdmission()
 
     m_wardenConfiguration = SnapshotWardenConfiguration();
     m_wardenBuild = admission.build;
+    m_wardenClientPlatform = admission.platform;
     m_wardenClientLocale = std::move(admission.clientLocale);
     m_wardenAggressiveUntil = 0;
     m_wardenAggressive = false;
@@ -372,7 +372,7 @@ void WorldSession::OnAuthenticatedAdmission()
             warden::WardenEnforcementMode::Observe;
     bool const exactEnforcementProfile =
         warden::IsWardenEnforcementProfile(m_wardenBuild,
-            admission.platform, m_wardenClientLocale);
+            m_wardenClientPlatform, m_wardenClientLocale);
     warden::WardenProfileDisposition const profileDisposition =
         warden::ClassifyWardenProfile(m_wardenConfiguration.enforcementMode,
             m_wardenConfiguration.requireExactProfile,
@@ -382,7 +382,7 @@ void WorldSession::OnAuthenticatedAdmission()
         sLog.outError("Warden rejected an unprofiled client claim for account "
             "%u (build %u; platform %s; locale %s; enforcement mode %u); "
             "strict exact-profile admission is enabled.", accountId,
-            m_wardenBuild, admission.platform.c_str(),
+            m_wardenBuild, m_wardenClientPlatform.c_str(),
             m_wardenClientLocale.c_str(),
             static_cast<uint32>(m_wardenConfiguration.enforcementMode));
         admission.Clear();
@@ -398,7 +398,7 @@ void WorldSession::OnAuthenticatedAdmission()
         sLog.outError("Warden exact-profile admission is disabled for "
             "unprofiled client account %u (build %u; platform %s; locale "
             "%s); forcing observation-only checks.", accountId, m_wardenBuild,
-            admission.platform.c_str(), m_wardenClientLocale.c_str());
+            m_wardenClientPlatform.c_str(), m_wardenClientLocale.c_str());
     }
 
     if (exactEnforcementProfile)
@@ -432,7 +432,8 @@ void WorldSession::OnAuthenticatedAdmission()
     // an already encrypted, complete inner body and advances its own stream.
     std::unique_ptr<warden::WardenServer> server =
         warden::WardenManager::Instance().Create(m_wardenBuild,
-            admission.platform, m_wardenClientLocale, admission.sessionKey,
+            m_wardenClientPlatform, m_wardenClientLocale,
+            admission.sessionKey,
             [this](warden::Bytes const& payload)
             {
                 if (!m_link || m_link->IsClosed())
@@ -526,171 +527,107 @@ void WorldSession::HandleWardenEvidenceBatch(
             (uint64(outcome) << 48u) | uint64(checkId);
         return m_wardenLoggedAnomalies.insert(key).second;
     };
+    auto const evidenceCategory = [](warden::WardenCheckType type)
+    {
+        switch (type)
+        {
+            case warden::WardenCheckType::Timing: return 1u;
+            case warden::WardenCheckType::Mpq: return 2u;
+            case warden::WardenCheckType::Lua: return 3u;
+            case warden::WardenCheckType::Mem: return 4u;
+        }
+        return 0u;
+    };
 
-    // Only typed classifications and catalogue IDs cross this boundary.
+    // Only normalized classifications and catalogue identity cross this
+    // boundary. Definition payloads and client-returned bytes remain private.
     for (warden::WardenEvidence const& evidence : batch.evidence)
     {
-        std::visit([this, accountId, operatorPass, confirmation,
-            &firstAnomaly](
-            auto const& typedEvidence)
+        Player* const player = GetPlayer();
+        bool const playerInWorld = player && player->IsInWorld();
+        if (evidence.checkType == warden::WardenCheckType::Timing)
         {
-            using Evidence = std::decay_t<decltype(typedEvidence)>;
-            Player* const player = GetPlayer();
-            bool const playerInWorld = player && player->IsInWorld();
-
-            if constexpr (std::is_same_v<Evidence,
-                    warden::TimingEvidence>)
+            if (evidence.outcome == warden::WardenCheckOutcome::Stable)
             {
-                if (typedEvidence.outcome == warden::TimingOutcome::Stable)
+                if (operatorPass && playerInWorld)
                 {
-                    if (operatorPass && playerInWorld)
-                    {
-                        sLog.outString("Warden healthy for player %s "
-                            "(account %u).", player->GetName(), accountId);
-                    }
-                    else if (operatorPass)
-                    {
-                        sLog.outString("Warden healthy for account %u.",
-                            accountId);
-                    }
-                    else
-                    {
-                        DEBUG_LOG("Warden timing check passed for account %u.",
-                            accountId);
-                    }
-                    return;
+                    sLog.outString("Warden healthy for player %s "
+                        "(account %u).", player->GetName(), accountId);
                 }
-
-                if (firstAnomaly(1u, 0u,
-                    static_cast<uint32>(typedEvidence.outcome)))
+                else if (operatorPass)
                 {
-                    sLog.outError("Warden timing check %s for account %u "
-                        "(observation only).",
-                        warden::ToString(typedEvidence.outcome), accountId);
+                    sLog.outString("Warden healthy for account %u.",
+                        accountId);
                 }
                 else
                 {
-                    DEBUG_LOG("Warden timing check %s for account %u "
-                        "(repeat observation).",
-                        warden::ToString(typedEvidence.outcome), accountId);
+                    DEBUG_LOG("Warden timing check passed for account %u.",
+                        accountId);
                 }
+                continue;
             }
-            else if constexpr (std::is_same_v<Evidence,
-                    warden::MpqEvidence>)
-            {
-                if (typedEvidence.outcome == warden::MpqOutcome::Match)
-                {
-                    if (operatorPass)
-                    {
-                        sLog.outString("Warden archive check passed for account "
-                            "%u (check %u).", accountId,
-                            typedEvidence.checkId);
-                    }
-                    else
-                    {
-                        DEBUG_LOG("Warden archive check passed for account %u "
-                            "(check %u).", accountId, typedEvidence.checkId);
-                    }
-                    return;
-                }
 
-                if (firstAnomaly(2u, typedEvidence.checkId,
-                    static_cast<uint32>(typedEvidence.outcome)))
-                {
-                    sLog.outError("Warden archive check %s for account %u "
-                        "(check %u; observation only).",
-                        warden::ToString(typedEvidence.outcome), accountId,
-                        typedEvidence.checkId);
-                }
-                else
-                {
-                    DEBUG_LOG("Warden archive check %s for account %u "
-                        "(check %u; repeat observation).",
-                        warden::ToString(typedEvidence.outcome), accountId,
-                        typedEvidence.checkId);
-                }
-            }
-            else if constexpr (std::is_same_v<Evidence,
-                    warden::LuaEvidence>)
+            if (firstAnomaly(evidenceCategory(evidence.checkType),
+                evidence.checkId,
+                uint32(evidence.outcome)))
             {
-                if (typedEvidence.outcome == warden::LuaOutcome::Match)
-                {
-                    if (operatorPass)
-                    {
-                        sLog.outString("Warden script check passed for account "
-                            "%u (check %u).", accountId,
-                            typedEvidence.checkId);
-                    }
-                    else
-                    {
-                        DEBUG_LOG("Warden script check passed for account %u "
-                            "(check %u).", accountId, typedEvidence.checkId);
-                    }
-                    return;
-                }
-
-                if (firstAnomaly(3u, typedEvidence.checkId,
-                    static_cast<uint32>(typedEvidence.outcome)))
-                {
-                    sLog.outError("Warden script check %s for account %u "
-                        "(check %u; observation only).",
-                        warden::ToString(typedEvidence.outcome), accountId,
-                        typedEvidence.checkId);
-                }
-                else
-                {
-                    DEBUG_LOG("Warden script check %s for account %u "
-                        "(check %u; repeat observation).",
-                        warden::ToString(typedEvidence.outcome), accountId,
-                        typedEvidence.checkId);
-                }
+                sLog.outError("Warden timing check %s for account %u "
+                    "(observation only).", warden::ToString(evidence.outcome),
+                    accountId);
             }
             else
             {
-                static_assert(std::is_same_v<Evidence,
-                    warden::MemEvidence>);
-                if (typedEvidence.outcome == warden::MemOutcome::Match)
-                {
-                    if (confirmation)
-                    {
-                        DEBUG_LOG("Warden memory confirmation matched for "
-                            "account %u (check %u).", accountId,
-                            typedEvidence.checkId);
-                    }
-                    else if (operatorPass)
-                    {
-                        sLog.outString("Warden memory check passed for account "
-                            "%u (check %u).", accountId,
-                            typedEvidence.checkId);
-                    }
-                    else
-                    {
-                        DEBUG_LOG("Warden memory check passed for account %u "
-                            "(check %u).", accountId, typedEvidence.checkId);
-                    }
-                    return;
-                }
-
-                uint32 const category = confirmation ? 5u : 4u;
-                if (firstAnomaly(category, typedEvidence.checkId,
-                    static_cast<uint32>(typedEvidence.outcome)))
-                {
-                    sLog.outError("Warden memory %s %s for account %u "
-                        "(check %u).",
-                        confirmation ? "confirmation" : "check",
-                        warden::ToString(typedEvidence.outcome), accountId,
-                        typedEvidence.checkId);
-                }
-                else
-                {
-                    DEBUG_LOG("Warden memory %s %s for account %u "
-                        "(check %u; repeat observation).",
-                        confirmation ? "confirmation" : "check",
-                        warden::ToString(typedEvidence.outcome), accountId,
-                        typedEvidence.checkId);
-                }
+                DEBUG_LOG("Warden timing check %s for account %u "
+                    "(repeat observation).",
+                    warden::ToString(evidence.outcome), accountId);
             }
-        }, evidence);
+            continue;
+        }
+
+        if (evidence.outcome == warden::WardenCheckOutcome::Match)
+        {
+            if (confirmation)
+            {
+                DEBUG_LOG("Warden %s confirmation matched for account %u "
+                    "(check %u).", warden::ToString(evidence.checkType),
+                    accountId, evidence.checkId);
+            }
+            else if (operatorPass)
+            {
+                sLog.outString("Warden %s check passed for account %u "
+                    "(check %u).", warden::ToString(evidence.checkType),
+                    accountId, evidence.checkId);
+            }
+            else
+            {
+                DEBUG_LOG("Warden %s check passed for account %u "
+                    "(check %u).", warden::ToString(evidence.checkType),
+                    accountId, evidence.checkId);
+            }
+            continue;
+        }
+
+        uint32 const category = evidenceCategory(evidence.checkType) +
+            (confirmation ? 4u : 0u);
+        if (firstAnomaly(category, evidence.checkId,
+            uint32(evidence.outcome)))
+        {
+            sLog.outError("Warden %s %s %s for account %u "
+                "(check %u; class %s).",
+                warden::ToString(evidence.checkType),
+                confirmation ? "confirmation" : "check",
+                warden::ToString(evidence.outcome), accountId,
+                evidence.checkId, warden::ToString(evidence.evidenceClass));
+        }
+        else
+        {
+            DEBUG_LOG("Warden %s %s %s for account %u "
+                "(check %u; class %s; repeat observation).",
+                warden::ToString(evidence.checkType),
+                confirmation ? "confirmation" : "check",
+                warden::ToString(evidence.outcome), accountId,
+                evidence.checkId, warden::ToString(evidence.evidenceClass));
+        }
     }
 
     if (!m_wardenPolicy)
@@ -715,27 +652,31 @@ void WorldSession::HandleWardenEvidenceBatch(
                 if (m_warden &&
                     m_warden->QueueConfirmation(decision.checkId))
                 {
-                    if (firstAnomaly(6u, decision.checkId,
-                        static_cast<uint32>(decision.outcome)))
+                    if (firstAnomaly(8u +
+                            evidenceCategory(decision.checkType),
+                        decision.checkId, uint32(decision.outcome)))
                     {
                         sLog.outError("Warden isolated confirmation queued for "
-                            "account %u (check %u; initial outcome %s).",
-                            accountId, decision.checkId,
+                            "account %u (check %u; type %s; class %s; initial "
+                            "outcome %s).", accountId, decision.checkId,
+                            warden::ToString(decision.checkType),
+                            warden::ToString(decision.evidenceClass),
                             warden::ToString(decision.outcome));
                     }
                     else
                     {
                         DEBUG_LOG("Warden isolated confirmation queued again "
-                            "for account %u (check %u; outcome %s).",
+                            "for account %u (check %u; type %s; outcome %s).",
                             accountId, decision.checkId,
+                            warden::ToString(decision.checkType),
                             warden::ToString(decision.outcome));
                     }
                     break;
                 }
 
                 sLog.outError("Warden could not queue an isolated confirmation "
-                    "for account %u (check %u).", accountId,
-                    decision.checkId);
+                    "for account %u (check %u; type %s).", accountId,
+                    decision.checkId, warden::ToString(decision.checkType));
                 if (m_wardenConfiguration.enforcementMode !=
                     warden::WardenEnforcementMode::Observe)
                 {
@@ -744,36 +685,25 @@ void WorldSession::HandleWardenEvidenceBatch(
                 }
                 return;
             case warden::WardenPolicyAction::ConfirmationCleared:
-                if (firstAnomaly(7u, decision.checkId,
-                    static_cast<uint32>(decision.outcome)))
+                if (firstAnomaly(12u +
+                        evidenceCategory(decision.checkType),
+                    decision.checkId, uint32(decision.outcome)))
                 {
-                    sLog.outString("Warden memory confirmation cleared for "
-                        "account %u (check %u); no incident recorded.",
-                        accountId, decision.checkId);
+                    sLog.outString("Warden %s confirmation cleared for account "
+                        "%u (check %u); no finding recorded.",
+                        warden::ToString(decision.checkType), accountId,
+                        decision.checkId);
                 }
                 else
                 {
-                    DEBUG_LOG("Warden memory confirmation cleared again for "
-                        "account %u (check %u).", accountId,
+                    DEBUG_LOG("Warden %s confirmation cleared again for "
+                        "account %u (check %u).",
+                        warden::ToString(decision.checkType), accountId,
                         decision.checkId);
                 }
                 break;
-            case warden::WardenPolicyAction::ConfirmedObservation:
-                if (firstAnomaly(8u, decision.checkId,
-                    static_cast<uint32>(decision.outcome)))
-                {
-                    sLog.outError("Warden confirmed memory %s for account %u "
-                        "(check %u; observe mode, no incident or kick).",
-                        warden::ToString(decision.outcome), accountId,
-                        decision.checkId);
-                }
-                else
-                {
-                    DEBUG_LOG("Warden confirmed memory %s again for account %u "
-                        "(check %u; observe mode).",
-                        warden::ToString(decision.outcome), accountId,
-                        decision.checkId);
-                }
+            case warden::WardenPolicyAction::PersistAudit:
+                PersistWardenAudit(decision);
                 break;
             case warden::WardenPolicyAction::PersistAndKick:
                 PersistWardenIncidentAndKick(decision);
@@ -788,6 +718,55 @@ void WorldSession::HandleWardenEvidenceBatch(
             case warden::WardenPolicyAction::None:
                 break;
         }
+    }
+}
+
+void WorldSession::PersistWardenAudit(
+    warden::WardenPolicyDecision const& decision)
+{
+    uint32 const accountId = GetAccountId();
+    std::optional<warden::WardenAuditOutcome> const outcome =
+        warden::ToAuditOutcome(decision.outcome);
+    if (!outcome)
+    {
+        sLog.outError("Warden rejected a non-auditable classification for "
+            "account %u (check %u; type %s; outcome %s).", accountId,
+            decision.checkId, warden::ToString(decision.checkType),
+            warden::ToString(decision.outcome));
+        return;
+    }
+
+    warden::WardenAuditContext context;
+    context.accountId = accountId;
+    context.realmId = realmID;
+    context.clientBuild = m_wardenBuild;
+    context.clientPlatform = m_wardenClientPlatform;
+    context.clientLocale = m_wardenClientLocale;
+    context.checkId = decision.checkId;
+    context.checkType = decision.checkType;
+    context.evidenceClass = decision.evidenceClass;
+    context.outcome = *outcome;
+    bool const recorded = warden::WardenAuditStore::Instance().Record(context);
+
+    if (recorded)
+    {
+        sLog.outString("Warden audit recorded for account %u (build %u; "
+            "platform %s; locale %s; check %u; type %s; class %s; outcome "
+            "%s).", accountId, m_wardenBuild, m_wardenClientPlatform.c_str(),
+            m_wardenClientLocale.c_str(), decision.checkId,
+            warden::ToString(decision.checkType),
+            warden::ToString(decision.evidenceClass),
+            warden::ToString(decision.outcome));
+    }
+    else
+    {
+        sLog.outError("Warden audit write failed for account %u (build %u; "
+            "platform %s; locale %s; check %u; type %s; class %s; outcome "
+            "%s); no enforcement action taken.", accountId, m_wardenBuild,
+            m_wardenClientPlatform.c_str(), m_wardenClientLocale.c_str(),
+            decision.checkId, warden::ToString(decision.checkType),
+            warden::ToString(decision.evidenceClass),
+            warden::ToString(decision.outcome));
     }
 }
 
@@ -808,50 +787,66 @@ void WorldSession::PersistWardenIncidentAndKick(
         context.accountId = accountId;
         context.realmId = realmID;
         context.clientBuild = m_wardenBuild;
+        context.clientPlatform = m_wardenClientPlatform;
         context.clientLocale = m_wardenClientLocale;
         context.checkId = decision.checkId;
+        context.checkType = decision.checkType;
+        context.evidenceClass = decision.evidenceClass;
         context.outcome = *outcome;
         writeResult = warden::WardenIncidentStore::Instance().Record(context,
             m_wardenConfiguration);
     }
     else
     {
-        sLog.outError("Warden rejected a non-negative incident classification "
-            "for account %u (check %u).", accountId, decision.checkId);
+        sLog.outError("Warden rejected a non-actionable incident "
+            "classification for account %u (check %u; type %s; class %s; "
+            "outcome %s).", accountId, decision.checkId,
+            warden::ToString(decision.checkType),
+            warden::ToString(decision.evidenceClass),
+            warden::ToString(decision.outcome));
     }
 
     warden::WardenIncidentApplication const application =
         warden::ClassifyIncidentWriteResult(writeResult);
     if (!application.durable)
     {
-        sLog.outError("Warden confirmed memory %s for account %u (build %u; "
-            "locale %s; check %u), but the incident transaction failed; "
+        sLog.outError("Warden confirmed %s for account %u (build %u; "
+            "platform %s; locale %s; check %u; type %s; class %s), but the "
+            "incident transaction failed; "
             "kicking without a durable incident.",
             warden::ToString(decision.outcome), accountId, m_wardenBuild,
-            m_wardenClientLocale.c_str(), decision.checkId);
+            m_wardenClientPlatform.c_str(), m_wardenClientLocale.c_str(),
+            decision.checkId, warden::ToString(decision.checkType),
+            warden::ToString(decision.evidenceClass));
     }
     else if (!application.summaryKnown)
     {
-        sLog.outError("Warden confirmed memory %s for account %u (build %u; "
-            "locale %s; check %u); the incident committed but its summary "
+        sLog.outError("Warden confirmed %s for account %u (build %u; "
+            "platform %s; locale %s; check %u; type %s; class %s); the "
+            "incident committed but its summary "
             "could not be reloaded; kicking without inventing a count.",
             warden::ToString(decision.outcome), accountId, m_wardenBuild,
-            m_wardenClientLocale.c_str(), decision.checkId);
+            m_wardenClientPlatform.c_str(), m_wardenClientLocale.c_str(),
+            decision.checkId, warden::ToString(decision.checkType),
+            warden::ToString(decision.evidenceClass));
     }
     else
     {
-        sLog.outError("Warden confirmed memory %s for account %u (build %u; "
-            "locale %s; check %u; recent count %u); kicking.",
+        sLog.outError("Warden confirmed %s for account %u (build %u; "
+            "platform %s; locale %s; check %u; type %s; class %s; recent "
+            "count %u); kicking.",
             warden::ToString(decision.outcome), accountId, m_wardenBuild,
-            m_wardenClientLocale.c_str(), decision.checkId,
-            application.recentCount);
+            m_wardenClientPlatform.c_str(), m_wardenClientLocale.c_str(),
+            decision.checkId, warden::ToString(decision.checkType),
+            warden::ToString(decision.evidenceClass), application.recentCount);
 
         if (application.recentCount ==
             m_wardenConfiguration.aggressiveThreshold)
         {
             if (m_wardenConfiguration.incidentWindowSeconds % 60u == 0u)
             {
-                sLog.outError("Warden: account %u reached %u confirmed memory "
+                sLog.outError("Warden: account %u reached %u confirmed "
+                    "Warden "
                     "kicks within %u minutes; aggressive interrogation "
                     "enabled.", accountId,
                     m_wardenConfiguration.aggressiveThreshold,
@@ -859,7 +854,8 @@ void WorldSession::PersistWardenIncidentAndKick(
             }
             else
             {
-                sLog.outError("Warden: account %u reached %u confirmed memory "
+                sLog.outError("Warden: account %u reached %u confirmed "
+                    "Warden "
                     "kicks within %u seconds; aggressive interrogation "
                     "enabled.", accountId,
                     m_wardenConfiguration.aggressiveThreshold,
@@ -870,7 +866,7 @@ void WorldSession::PersistWardenIncidentAndKick(
         if (application.permanentBanActive)
         {
             sLog.outError("Warden permanent account ban is active for account "
-                "%u after %u confirmed memory incidents within the active "
+                "%u after %u confirmed Warden incidents within the active "
                 "window.",
                 accountId, application.recentCount);
         }

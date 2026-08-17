@@ -26,6 +26,7 @@
 #include "WardenConfiguration.h"
 #include "WardenEvidence.h"
 
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -39,7 +40,7 @@ enum class WardenPolicyAction : uint8
     None,
     QueueConfirmation,
     ConfirmationCleared,
-    ConfirmedObservation,
+    PersistAudit,
     PersistAndKick,
     Kick
 };
@@ -48,11 +49,13 @@ struct WardenPolicyDecision
 {
     WardenPolicyAction action = WardenPolicyAction::None;
     uint32 checkId = 0;
-    MemOutcome outcome = MemOutcome::Match;
+    WardenCheckType checkType = WardenCheckType::Timing;
+    WardenEvidenceClass evidenceClass = WardenEvidenceClass::ProtocolHealth;
+    WardenCheckOutcome outcome = WardenCheckOutcome::Match;
 };
 
 /**
- * Confirms negative memory evidence without knowing accounts, sessions,
+ * Confirms typed Warden evidence without knowing accounts, sessions,
  * databases, logs, packet bytes, addresses, or expected/returned bytes.
  */
 class WardenEnforcementPolicy
@@ -66,10 +69,19 @@ public:
         WardenLifecycleEvent const& event);
 
 private:
+    struct PendingConfirmation
+    {
+        WardenCheckType checkType = WardenCheckType::Timing;
+        WardenEvidenceClass evidenceClass =
+            WardenEvidenceClass::ProtocolHealth;
+    };
+
     WardenPolicyDecision ConfirmationContractViolation() const;
+    static uint64 AuditKey(uint32 checkId, WardenCheckOutcome outcome);
 
     WardenEnforcementMode m_mode;
-    std::unordered_set<uint32> m_pendingConfirmations;
+    std::unordered_map<uint32, PendingConfirmation> m_pendingConfirmations;
+    std::unordered_set<uint64> m_confirmedAudits;
 };
 }
 

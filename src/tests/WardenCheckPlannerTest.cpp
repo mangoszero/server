@@ -112,37 +112,20 @@ std::vector<warden::WardenCheckDefinition> ObservationOnlyChecks()
 }
 }
 
-TEST(WardenEvidence_timing_outcomes_have_secret_free_fixed_labels)
+TEST(WardenEvidence_normalized_values_have_secret_free_fixed_labels)
 {
-    CHECK_STR(warden::ToString(warden::TimingOutcome::Stable), "Stable");
-    CHECK_STR(warden::ToString(warden::TimingOutcome::Unstable), "Unstable");
-}
-
-TEST(WardenEvidence_mpq_outcomes_have_secret_free_fixed_labels)
-{
-    CHECK_STR(warden::ToString(warden::MpqOutcome::Match), "Match");
-    CHECK_STR(warden::ToString(warden::MpqOutcome::DigestMismatch),
-        "DigestMismatch");
-    CHECK_STR(warden::ToString(warden::MpqOutcome::Unavailable),
+    CHECK_STR(warden::ToString(warden::WardenCheckType::Timing), "Timing");
+    CHECK_STR(warden::ToString(warden::WardenCheckType::Mpq), "MPQ");
+    CHECK_STR(warden::ToString(
+        warden::WardenEvidenceClass::ThreatSignature), "ThreatSignature");
+    CHECK_STR(warden::ToString(warden::WardenCheckOutcome::Match), "Match");
+    CHECK_STR(warden::ToString(warden::WardenCheckOutcome::Mismatch),
+        "Mismatch");
+    CHECK_STR(warden::ToString(warden::WardenCheckOutcome::Unavailable),
         "Unavailable");
-}
-
-TEST(WardenEvidence_lua_outcomes_have_secret_free_fixed_labels)
-{
-    CHECK_STR(warden::ToString(warden::LuaOutcome::Match), "Match");
-    CHECK_STR(warden::ToString(warden::LuaOutcome::TextMismatch),
-        "TextMismatch");
-    CHECK_STR(warden::ToString(warden::LuaOutcome::Unavailable),
-        "Unavailable");
-}
-
-TEST(WardenEvidence_mem_outcomes_have_secret_free_fixed_labels)
-{
-    CHECK_STR(warden::ToString(warden::MemOutcome::Match), "Match");
-    CHECK_STR(warden::ToString(warden::MemOutcome::ByteMismatch),
-        "ByteMismatch");
-    CHECK_STR(warden::ToString(warden::MemOutcome::Unavailable),
-        "Unavailable");
+    CHECK_STR(warden::ToString(warden::WardenCheckOutcome::Stable), "Stable");
+    CHECK_STR(warden::ToString(warden::WardenCheckOutcome::Unstable),
+        "Unstable");
 }
 
 TEST(WardenCheckPlanner_profileless_planner_remains_inert)
