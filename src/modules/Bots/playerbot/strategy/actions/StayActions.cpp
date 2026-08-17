@@ -5,17 +5,18 @@
 #include "StayActions.h"
 #include "../values/LastMovementValue.h"
 #include "MovementGenerator.h"
+#include "movement/MoveSpline.h"
 
 using namespace ai;
 
-void StayActionBase::Stay()
+bool StayActionBase::Stay()
 {
     AI_VALUE(LastMovement&, "last movement").Set(NULL);
 
     MotionMaster &mm = *bot->GetMotionMaster();
     if (mm.GetCurrentMovementGeneratorType() == FLIGHT_MOTION_TYPE || bot->IsTaxiFlying())
     {
-        return;
+        return false;
     }
 
     mm.Clear();
@@ -27,6 +28,8 @@ void StayActionBase::Stay()
     {
         bot->SetStandState(UNIT_STAND_STATE_STAND);
     }
+
+    return true;
 }
 
 bool StayActionBase::StayLine(vector<Player*> line, float diff, float cx, float cy, float cz, float orientation, float range)
@@ -61,7 +64,10 @@ bool StayActionBase::StayLine(vector<Player*> line, float diff, float cx, float 
 
 bool StayActionBase::StaySingleLine(vector<Player*> line, float diff, float cx, float cy, float cz, float orientation, float range)
 {
-    Stay();
+    if (!Stay())
+    {
+        return false;
+    }
 
     float count = line.size();
     float angle = orientation - M_PI / 2.0f;
@@ -89,19 +95,31 @@ bool StayActionBase::StaySingleLine(vector<Player*> line, float diff, float cx, 
 
 bool StayAction::Execute(Event event)
 {
-    Stay();
+    if (!Stay())
+    {
+        return false;
+    }
 
+    // Circle and line formations use Stay() only to prepare for a replacement move.
+    // Plain stay has no replacement, so it must also stop the live spline that
+    // MotionMaster::Clear leaves running after it installs the idle generator.
+    ai->StopMovement();
     return true;
 }
 
 bool StayAction::isUseful()
 {
-    return !AI_VALUE2(bool, "moving", "self target");
+    // The value follows the generator, which can already be idle while its old spline
+    // is still carrying the bot. Stay must remain reachable until both agree it stopped.
+    return AI_VALUE2(bool, "moving", "self target") || !bot->movespline->Finalized();
 }
 
 bool StayCircleAction::Execute(Event event)
 {
-    Stay();
+    if (!Stay())
+    {
+        return false;
+    }
 
     float range = 2.0f;
 
@@ -252,28 +270,24 @@ bool StayCombatAction::Execute(Event event)
 
     if (ai->IsTank(bot) && ai->IsTank(master))
     {
-        StayLine(tanks, 0.0f, x, y, z, orientation, range);
-        return true;
+        return StayLine(tanks, 0.0f, x, y, z, orientation, range);
     }
 
     if (!ai->IsTank(bot) && !ai->IsTank(master))
     {
-        StayLine(dps, 0.0f, x, y, z, orientation, range);
-        return true;
+        return StayLine(dps, 0.0f, x, y, z, orientation, range);
     }
 
     if (ai->IsTank(bot) && !ai->IsTank(master))
     {
         float diff = tanks.size() % 2 == 0 ? -range / 2.0f : 0.0f;
-        StayLine(tanks, diff, x + cos(orientation) * range, y + sin(orientation) * range, z, orientation, range);
-        return true;
+        return StayLine(tanks, diff, x + cos(orientation) * range, y + sin(orientation) * range, z, orientation, range);
     }
 
     if (!ai->IsTank(bot) && ai->IsTank(master))
     {
         float diff = dps.size() % 2 == 0 ? -range / 2.0f : 0.0f;
-        StayLine(dps, diff, x - cos(orientation) * range, y - sin(orientation) * range, z, orientation, range);
-        return true;
+        return StayLine(dps, diff, x - cos(orientation) * range, y - sin(orientation) * range, z, orientation, range);
     }
-    return true;
+    return false;
 }
