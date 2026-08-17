@@ -124,9 +124,28 @@ require_count("${MANGOSD_ACTIVE_EXACT_PROFILE}"
     "distributed strict-profile admission must have one active default-on setting")
 foreach(EXACT_PROFILE IN ITEMS "5875/Win/enUS" "6005/Win/enGB"
     "6141/Win/zhCN")
-    if(NOT MANGOSD_CONFIG MATCHES "${EXACT_PROFILE}")
+    if(MANGOSD_CONFIG MATCHES "${EXACT_PROFILE}")
         message(FATAL_ERROR
-            "Warden boundary: distributed config must identify exact profile ${EXACT_PROFILE}")
+            "Warden boundary: distributed config must not hardcode profile ${EXACT_PROFILE}")
+    endif()
+endforeach()
+foreach(REQUIRED_TEXT IN ITEMS
+    "confirmed Warden violations and protocol failures"
+    "required World table `warden_checks`"
+    "complete \\(build,platform,locale\\) profile published from `warden_checks`"
+    "compatible-module bootstrap with no check plan for an unprofiled Observe session")
+    if(NOT MANGOSD_CONFIG MATCHES "${REQUIRED_TEXT}")
+        message(FATAL_ERROR
+            "Warden boundary: distributed config is missing ${REQUIRED_TEXT}")
+    endif()
+endforeach()
+foreach(FORBIDDEN_TEXT IN ITEMS
+    "confirmed Warden memory violations"
+    "memory-check profile"
+    "memory catalogue")
+    if(MANGOSD_CONFIG MATCHES "${FORBIDDEN_TEXT}")
+        message(FATAL_ERROR
+            "Warden boundary: distributed config contains obsolete wording ${FORBIDDEN_TEXT}")
     endif()
 endforeach()
 if(NOT MANGOSD_CONFIG MATCHES

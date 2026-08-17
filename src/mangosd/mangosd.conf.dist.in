@@ -237,23 +237,20 @@ MaxWhoListReturns                 = 49
 # WARDEN
 #
 #    Warden.EnforcementMode
-#        Response to confirmed Warden memory violations and protocol failures.
+#        Response to confirmed Warden violations and protocol failures.
 #        0 = observe and log only
 #        1 = kick confirmed violations; never permanently ban
 #        2 = kick confirmed violations and permanently ban at BanThreshold
 #        Default: 2
 #
 #    Warden.RequireExactProfile
-#        Require an exact build, platform, locale, module, and memory-check
-#        profile whenever EnforcementMode is 1 or 2.
-#        0 = allow unprofiled clients with observation-only Warden checks
-#        1 = reject unprofiled clients before Warden bootstrap
-#        Exact enforcement profiles:
-#          5875/Win/enUS
-#          6005/Win/enGB
-#          6141/Win/zhCN
+#        Require a complete (build,platform,locale) profile published from `warden_checks`
+#        whenever EnforcementMode is 1 or 2. Exact profiles are rows published
+#        from the required World table `warden_checks`.
+#        0 = allow compatible-module bootstrap with no check plan for an unprofiled Observe session
+#        1 = require a complete published profile and disconnect unprofiled clients
 #        With value 1, all other build/platform/locale combinations are disconnected
-#        after world authentication. Use value 0 for observation-only compatibility.
+#        after authentication. Use value 0 for observation-only compatibility.
 #        Default: 1
 #
 #    Warden.CheckIntervalMin / Warden.CheckIntervalMax

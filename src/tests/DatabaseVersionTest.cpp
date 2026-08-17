@@ -24,11 +24,21 @@
 
 #include "Common/GitRevision.h"
 
-TEST(CoreDatabaseVersion_requires_warden_incident_realm_structure)
+TEST(CoreDatabaseVersion_requires_database_backed_warden_catalogue)
 {
     CHECK_STR(GitRevision::GetRealmDBVersion(), "22");
-    CHECK_STR(GitRevision::GetRealmDBStructure(), "3");
+    CHECK_STR(GitRevision::GetRealmDBStructure(), "4");
     CHECK_STR(GitRevision::GetRealmDBContent(), "1");
-    CHECK_STR(GitRevision::GetRealmDBUpdateDescription(),
-        "Warden incidents");
+    CHECK_STR(GitRevision::GetRealmDBUpdateDescription(), "Warden audit");
+
+    CHECK_STR(GitRevision::GetCharDBVersion(), "22");
+    CHECK_STR(GitRevision::GetCharDBStructure(), "5");
+    CHECK_STR(GitRevision::GetCharDBContent(), "4");
+    CHECK_STR(GitRevision::GetCharDBUpdateDescription(),
+        "Remove_Warden_Action");
+
+    CHECK_STR(GitRevision::GetWorldDBVersion(), "22");
+    CHECK_STR(GitRevision::GetWorldDBStructure(), "6");
+    CHECK_STR(GitRevision::GetWorldDBContent(), "3");
+    CHECK_STR(GitRevision::GetWorldDBUpdateDescription(), "Warden_Checks");
 }
