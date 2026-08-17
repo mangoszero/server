@@ -11,6 +11,8 @@ namespace ai
             PossibleTargetsValue(PlayerbotAI* ai, float range = sPlayerbotAIConfig.sightDistance) :
             NearestUnitsValue(ai) {}
 
+            static bool IsVisibleForBot(Player const* bot, Unit const* candidate);
+
         protected:
             virtual void FindUnits(list<Unit*> &targets);
             virtual bool AcceptUnit(Unit* unit);

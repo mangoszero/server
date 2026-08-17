@@ -2,16 +2,15 @@
 #include "ObjectLookup.h"
 #include "../../playerbot.h"
 #include "CurrentTargetValue.h"
+#include "PossibleTargetsValue.h"
 
 using namespace ai;
 
-// How long a line-of-sight answer stays good for. Every read used to be a fresh vmap
-// raycast, and "current target" is consulted several times per tick by triggers and
-// actions alike -- on the order of tens of thousands of raycasts a second across a fleet
-// of 200. Sight of a target that has not changed does not need re-deciding at 20Hz, and a
-// quarter second of staleness costs nothing: the server re-checks line of sight itself
-// when the spell is actually cast.
-#define CURRENT_TARGET_LOS_CACHE_MS 250
+// How long a visibility answer stays good for. "Current target" is consulted several
+// times per tick by triggers and actions alike, so neither detection nor its vmap raycast
+// needs re-deciding at 20Hz. A quarter second of staleness costs nothing: the server
+// re-checks visibility and line of sight when the spell is actually cast.
+#define CURRENT_TARGET_VISIBILITY_CACHE_MS 250
 
 Unit* CurrentTargetValue::Get()
 {
@@ -28,14 +27,16 @@ Unit* CurrentTargetValue::Get()
     }
 
     uint32 now = getMSTime();
-    if (m_losTarget != selection || getMSTimeDiff(m_losChecked, now) >= CURRENT_TARGET_LOS_CACHE_MS)
+    if (m_visibilityTarget != selection ||
+        getMSTimeDiff(m_visibilityChecked, now) >= CURRENT_TARGET_VISIBILITY_CACHE_MS)
     {
-        m_losTarget = selection;
-        m_losChecked = now;
-        m_inLos = bot->IsWithinLOSInMap(unit);
+        m_visibilityTarget = selection;
+        m_visibilityChecked = now;
+        m_targetVisible = PossibleTargetsValue::IsVisibleForBot(bot, unit) &&
+            bot->IsWithinLOSInMap(unit);
     }
 
-    return m_inLos ? unit : NULL;
+    return m_targetVisible ? unit : NULL;
 }
 
 void CurrentTargetValue::Set(Unit* target)
@@ -43,7 +44,7 @@ void CurrentTargetValue::Set(Unit* target)
     selection = target ? target->GetObjectGuid() : ObjectGuid();
 
     // A new target must be judged on its own, not on the last one's answer.
-    m_losTarget = ObjectGuid();
-    m_losChecked = 0;
-    m_inLos = false;
+    m_visibilityTarget = ObjectGuid();
+    m_visibilityChecked = 0;
+    m_targetVisible = false;
 }

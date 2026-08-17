@@ -12,6 +12,7 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "strategy/values/LastMovementValue.h"
+#include "strategy/values/PossibleTargetsValue.h"
 #include "strategy/actions/LogLevelAction.h"
 #include "strategy/values/LastSpellCastValue.h"
 #include "LootObjectStack.h"
@@ -1248,6 +1249,12 @@ bool PlayerbotAI::HasNonCombatantInRange(float range,
             dist = bot->GetDistance(unit);
         }
         if (dist > range || unit->IsStunned())
+        {
+            continue;
+        }
+        // An unseen unit cannot tell the bot to withhold area damage, even when
+        // server-side state reveals that it is idle or crowd-controlled.
+        if (!PossibleTargetsValue::IsVisibleForBot(bot, unit))
         {
             continue;
         }
