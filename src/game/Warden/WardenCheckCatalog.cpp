@@ -71,6 +71,46 @@ MpqCatalogRecord const& Windows5875EnUsMpqRecord()
     return record;
 }
 
+MpqCatalogRecord const& Windows6005EnGbMpqRecord()
+{
+    static MpqCatalogRecord const record
+    {
+        6005,
+        "Win",
+        "enGB",
+        {
+            1,
+            "DBFilesClient\\AreaTable.dbc",
+            {
+                0x7D, 0x88, 0x15, 0x4D, 0x34, 0x11, 0x81, 0x19,
+                0x85, 0xF5, 0xD8, 0x11, 0x77, 0xC5, 0x45, 0x32,
+                0x48, 0x13, 0x34, 0x43
+            }
+        }
+    };
+    return record;
+}
+
+MpqCatalogRecord const& Windows6141ZhCnMpqRecord()
+{
+    static MpqCatalogRecord const record
+    {
+        6141,
+        "Win",
+        "zhCN",
+        {
+            1,
+            "DBFilesClient\\AreaTable.dbc",
+            {
+                0xC5, 0xA1, 0xDE, 0x4C, 0x1C, 0xD4, 0x12, 0xEB,
+                0x4D, 0x2E, 0x02, 0xAF, 0xAB, 0x61, 0x31, 0xB7,
+                0x37, 0xEF, 0xCA, 0xF0
+            }
+        }
+    };
+    return record;
+}
+
 LuaCatalogRecord const& Windows5875EnUsLuaRecord()
 {
     static LuaCatalogRecord const record
@@ -79,6 +119,31 @@ LuaCatalogRecord const& Windows5875EnUsLuaRecord()
         "Win",
         "enUS",
         {2, "OKAY", "Okay"}
+    };
+    return record;
+}
+
+LuaCatalogRecord const& Windows6005EnGbLuaRecord()
+{
+    static LuaCatalogRecord const record
+    {
+        6005,
+        "Win",
+        "enGB",
+        {2, "OKAY", "Okay"}
+    };
+    return record;
+}
+
+LuaCatalogRecord const& Windows6141ZhCnLuaRecord()
+{
+    static LuaCatalogRecord const record
+    {
+        6141,
+        "Win",
+        "zhCN",
+        // Exact UTF-8 bytes for U+786E U+5B9A avoid source-code-page drift.
+        {2, "OKAY", "\xE7\xA1\xAE\xE5\xAE\x9A"}
     };
     return record;
 }
@@ -205,25 +270,39 @@ namespace warden
 MpqCheckProfile const* WardenCheckCatalog::FindMpq(uint32 build,
     std::string const& platform, std::string const& locale) const
 {
-    MpqCatalogRecord const& record = Windows5875EnUsMpqRecord();
-    if (record.build != build || platform != record.platform ||
-        locale != record.locale || Validate(record.profile) !=
-            CheckCatalogValidation::Valid)
-        return nullptr;
-
-    return &record.profile;
+    std::array<MpqCatalogRecord const*, 3> const records =
+    {
+        &Windows5875EnUsMpqRecord(),
+        &Windows6005EnGbMpqRecord(),
+        &Windows6141ZhCnMpqRecord()
+    };
+    for (MpqCatalogRecord const* record : records)
+    {
+        if (record->build == build && platform == record->platform &&
+            locale == record->locale && Validate(record->profile) ==
+                CheckCatalogValidation::Valid)
+            return &record->profile;
+    }
+    return nullptr;
 }
 
 LuaCheckProfile const* WardenCheckCatalog::FindLua(uint32 build,
     std::string const& platform, std::string const& locale) const
 {
-    LuaCatalogRecord const& record = Windows5875EnUsLuaRecord();
-    if (record.build != build || platform != record.platform ||
-        locale != record.locale || Validate(record.profile) !=
-            CheckCatalogValidation::Valid)
-        return nullptr;
-
-    return &record.profile;
+    std::array<LuaCatalogRecord const*, 3> const records =
+    {
+        &Windows5875EnUsLuaRecord(),
+        &Windows6005EnGbLuaRecord(),
+        &Windows6141ZhCnLuaRecord()
+    };
+    for (LuaCatalogRecord const* record : records)
+    {
+        if (record->build == build && platform == record->platform &&
+            locale == record->locale && Validate(record->profile) ==
+                CheckCatalogValidation::Valid)
+            return &record->profile;
+    }
+    return nullptr;
 }
 
 std::vector<MemCheckProfile> const* WardenCheckCatalog::FindMem(uint32 build,

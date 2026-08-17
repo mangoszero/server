@@ -1027,6 +1027,56 @@ TEST(WardenServer_combined_lua_match_is_classified_without_text_evidence)
     CHECK_EQ(harness.evidenceEvents.size(), 3u);
 }
 
+TEST(WardenServer_crosslocale_content_vectors_report_ordered_matches)
+{
+    struct ProfileVector
+    {
+        uint32 build;
+        char const* locale;
+        char const* result;
+    };
+    ProfileVector const vectors[] =
+    {
+        {
+            6005, "enGB",
+            "022000376F4E370104030201007D88154D3411811985F5D81177C5453248133443"
+            "00044F6B6179"
+        },
+        {
+            6141, "zhCN",
+            "022200951FDF53010403020100C5A1DE4C1CD412EB4D2E02AFAB6131B737EFCAF0"
+            "0006E7A1AEE5AE9A"
+        }
+    };
+
+    warden::WardenCheckCatalog catalog;
+    for (ProfileVector const& vector : vectors)
+    {
+        warden::MpqCheckProfile const* mpq =
+            catalog.FindMpq(vector.build, "Win", vector.locale);
+        warden::LuaCheckProfile const* lua =
+            catalog.FindLua(vector.build, "Win", vector.locale);
+        REQUIRE(mpq != nullptr);
+        REQUIRE(lua != nullptr);
+
+        Harness harness(true, *mpq, *lua);
+        REQUIRE(StartTimingMpqLuaCheck(harness));
+        harness.SendClient(FromHex(vector.result));
+
+        CHECK(harness.server->GetState() == warden::WardenState::ModuleReady);
+        CHECK(harness.server->GetFailure() == warden::WardenFailure::None);
+        REQUIRE(harness.evidenceEvents.size() == 3u);
+        REQUIRE(std::holds_alternative<warden::MpqEvidence>(
+            harness.evidenceEvents[1]));
+        CHECK(std::get<warden::MpqEvidence>(
+            harness.evidenceEvents[1]).outcome == warden::MpqOutcome::Match);
+        REQUIRE(std::holds_alternative<warden::LuaEvidence>(
+            harness.evidenceEvents[2]));
+        CHECK(std::get<warden::LuaEvidence>(
+            harness.evidenceEvents[2]).outcome == warden::LuaOutcome::Match);
+    }
+}
+
 TEST(WardenServer_valid_lua_negatives_are_observation_only)
 {
     Harness unavailable(true, TestMpqProfile(), TestLuaProfile());

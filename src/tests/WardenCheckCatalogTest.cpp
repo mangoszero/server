@@ -27,22 +27,44 @@
 #include <string>
 #include <vector>
 
-TEST(WardenCheckCatalog_selects_only_exact_5875_windows_enUS_profile)
+TEST(WardenCheckCatalog_selects_only_three_exact_windows_mpq_profiles)
 {
     warden::WardenCheckCatalog catalog;
-    warden::MpqCheckProfile const* profile =
+    warden::MpqCheckProfile const* enUS =
         catalog.FindMpq(5875, "Win", "enUS");
 
-    REQUIRE(profile != nullptr);
-    CHECK_EQ(profile->checkId, uint32(1));
-    CHECK_STR(profile->path.c_str(), "DBFilesClient\\AreaTable.dbc");
-    CHECK_HEX(profile->expectedSha1.data(), profile->expectedSha1.size(),
+    REQUIRE(enUS != nullptr);
+    CHECK_EQ(enUS->checkId, uint32(1));
+    CHECK_STR(enUS->path.c_str(), "DBFilesClient\\AreaTable.dbc");
+    CHECK_HEX(enUS->expectedSha1.data(), enUS->expectedSha1.size(),
         "7d88154d3411811985f5d81177c5453248133443");
-    CHECK(catalog.Validate(*profile) ==
+    CHECK(catalog.Validate(*enUS) ==
+        warden::CheckCatalogValidation::Valid);
+
+    warden::MpqCheckProfile const* enGB =
+        catalog.FindMpq(6005, "Win", "enGB");
+    REQUIRE(enGB != nullptr);
+    CHECK_EQ(enGB->checkId, uint32(1));
+    CHECK_STR(enGB->path.c_str(), "DBFilesClient\\AreaTable.dbc");
+    CHECK_HEX(enGB->expectedSha1.data(), enGB->expectedSha1.size(),
+        "7d88154d3411811985f5d81177c5453248133443");
+    CHECK(catalog.Validate(*enGB) ==
+        warden::CheckCatalogValidation::Valid);
+
+    warden::MpqCheckProfile const* zhCN =
+        catalog.FindMpq(6141, "Win", "zhCN");
+    REQUIRE(zhCN != nullptr);
+    CHECK_EQ(zhCN->checkId, uint32(1));
+    CHECK_STR(zhCN->path.c_str(), "DBFilesClient\\AreaTable.dbc");
+    CHECK_HEX(zhCN->expectedSha1.data(), zhCN->expectedSha1.size(),
+        "c5a1de4c1cd412eb4d2e02afab6131b737efcaf0");
+    CHECK(catalog.Validate(*zhCN) ==
         warden::CheckCatalogValidation::Valid);
 
     CHECK(catalog.FindMpq(6005, "Win", "enUS") == nullptr);
     CHECK(catalog.FindMpq(6141, "Win", "enUS") == nullptr);
+    CHECK(catalog.FindMpq(6005, "Win", "zhCN") == nullptr);
+    CHECK(catalog.FindMpq(6141, "Win", "enGB") == nullptr);
     CHECK(catalog.FindMpq(5875, "OSX", "enUS") == nullptr);
     CHECK(catalog.FindMpq(5875, "Win", "enGB") == nullptr);
     CHECK(catalog.FindMpq(5875, "Win", "frFR") == nullptr);
@@ -88,21 +110,42 @@ TEST(WardenCheckCatalog_enforces_the_one_byte_path_length_boundary)
         warden::CheckCatalogValidation::Valid);
 }
 
-TEST(WardenCheckCatalog_selects_only_exact_5875_windows_enUS_lua_profile)
+TEST(WardenCheckCatalog_selects_only_three_exact_windows_lua_profiles)
 {
     warden::WardenCheckCatalog catalog;
-    warden::LuaCheckProfile const* profile =
+    warden::LuaCheckProfile const* enUS =
         catalog.FindLua(5875, "Win", "enUS");
 
-    REQUIRE(profile != nullptr);
-    CHECK_EQ(profile->checkId, uint32(2));
-    CHECK_STR(profile->query.c_str(), "OKAY");
-    CHECK_STR(profile->expectedText.c_str(), "Okay");
-    CHECK(catalog.Validate(*profile) ==
+    REQUIRE(enUS != nullptr);
+    CHECK_EQ(enUS->checkId, uint32(2));
+    CHECK_STR(enUS->query.c_str(), "OKAY");
+    CHECK_STR(enUS->expectedText.c_str(), "Okay");
+    CHECK(catalog.Validate(*enUS) ==
+        warden::CheckCatalogValidation::Valid);
+
+    warden::LuaCheckProfile const* enGB =
+        catalog.FindLua(6005, "Win", "enGB");
+    REQUIRE(enGB != nullptr);
+    CHECK_EQ(enGB->checkId, uint32(2));
+    CHECK_STR(enGB->query.c_str(), "OKAY");
+    CHECK_STR(enGB->expectedText.c_str(), "Okay");
+    CHECK(catalog.Validate(*enGB) ==
+        warden::CheckCatalogValidation::Valid);
+
+    warden::LuaCheckProfile const* zhCN =
+        catalog.FindLua(6141, "Win", "zhCN");
+    REQUIRE(zhCN != nullptr);
+    CHECK_EQ(zhCN->checkId, uint32(2));
+    CHECK_STR(zhCN->query.c_str(), "OKAY");
+    CHECK_HEX(reinterpret_cast<uint8 const*>(zhCN->expectedText.data()),
+        zhCN->expectedText.size(), "e7a1aee5ae9a");
+    CHECK(catalog.Validate(*zhCN) ==
         warden::CheckCatalogValidation::Valid);
 
     CHECK(catalog.FindLua(6005, "Win", "enUS") == nullptr);
     CHECK(catalog.FindLua(6141, "Win", "enUS") == nullptr);
+    CHECK(catalog.FindLua(6005, "Win", "zhCN") == nullptr);
+    CHECK(catalog.FindLua(6141, "Win", "enGB") == nullptr);
     CHECK(catalog.FindLua(5875, "OSX", "enUS") == nullptr);
     CHECK(catalog.FindLua(5875, "Win", "enGB") == nullptr);
     CHECK(catalog.FindLua(5875, "Win", "frFR") == nullptr);
