@@ -174,9 +174,9 @@ warden::CheckPlanValidation AnalyzeCheckPlan(warden::CheckPlan const& plan,
     if (!plan.requestId)
         return warden::CheckPlanValidation::InvalidRequestId;
     if (plan.purpose == warden::CheckPlanPurpose::Confirmation &&
-        (plan.checks.size() != 1 || (plan.checks.size() == 1 &&
+        (plan.checks.size() != 1 ||
             warden::GetWardenCheckType(plan.checks[0]) ==
-                warden::WardenCheckType::Timing)))
+                warden::WardenCheckType::Timing))
         return warden::CheckPlanValidation::InvalidConfirmation;
     if (plan.checks.empty())
         return warden::CheckPlanValidation::Empty;

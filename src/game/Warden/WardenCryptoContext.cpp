@@ -130,12 +130,13 @@ bool WardenCryptoContext::Initialize(SessionKey const& sessionKey)
     Rc4State clientState;
     Rc4State serverState;
 
-    // Commit only after both streams initialize, leaving the current context
-    // untouched if either derivation or setup fails.
-    bool const success = DeriveInitialKeys(sessionKey, clientKey, serverKey) &&
-        clientState.Initialize(clientKey) && serverState.Initialize(serverKey);
+    // Commit only after derivation succeeds and both temporary streams are
+    // built, leaving the current context untouched on derivation failure.
+    bool const success = DeriveInitialKeys(sessionKey, clientKey, serverKey);
     if (success)
     {
+        clientState.Initialize(clientKey);
+        serverState.Initialize(serverKey);
         Clear();
         m_clientToServer = clientState;
         m_serverToClient = serverState;
@@ -173,12 +174,8 @@ bool WardenCryptoContext::InstallModuleKeys(Key16 const& clientKey,
 
     Rc4State clientState;
     Rc4State serverState;
-    if (!clientState.Initialize(clientKey) || !serverState.Initialize(serverKey))
-    {
-        clientState.Clear();
-        serverState.Clear();
-        return false;
-    }
+    clientState.Initialize(clientKey);
+    serverState.Initialize(serverKey);
 
     // Replace the directions as one operation only after both new states exist.
     m_clientToServer.Clear();
@@ -190,7 +187,7 @@ bool WardenCryptoContext::InstallModuleKeys(Key16 const& clientKey,
     return true;
 }
 
-bool WardenCryptoContext::Rc4State::Initialize(Key16 const& key)
+void WardenCryptoContext::Rc4State::Initialize(Key16 const& key)
 {
     for (size_t index = 0; index < permutation.size(); ++index)
         permutation[index] = uint8(index);
@@ -204,7 +201,6 @@ bool WardenCryptoContext::Rc4State::Initialize(Key16 const& key)
     i = 0;
     j = 0;
     initialized = true;
-    return true;
 }
 
 bool WardenCryptoContext::Rc4State::Transform(uint8* data, size_t size)

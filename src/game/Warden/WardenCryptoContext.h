@@ -59,7 +59,7 @@ public:
 private:
     struct Rc4State
     {
-        bool Initialize(Key16 const& key);
+        void Initialize(Key16 const& key);
         bool Transform(uint8* data, size_t size);
         void Clear();
 
