@@ -438,6 +438,19 @@ TEST(WardenCheckCatalog_rejects_conflicting_expectations_for_one_request)
 
     rows = FirstProfileRows();
     duplicate = rows[3];
+    duplicate.checkId = 9008;
+    duplicate.sortOrder = 41;
+    duplicate.address -= 2;
+    duplicate.length = 4;
+    duplicate.expectedHex = "0000" + rows[3].expectedHex.substr(0, 4);
+    duplicate.expectedHex[4] =
+        duplicate.expectedHex[4] == '0' ? '1' : '0';
+    rows.push_back(duplicate);
+    CHECK(BuildRows(rows) ==
+        warden::CheckCatalogValidation::ConflictingRequestExpectation);
+
+    rows = FirstProfileRows();
+    duplicate = rows[3];
     duplicate.checkId = 9006;
     duplicate.sortOrder = 41;
     duplicate.address += 2;
@@ -445,6 +458,22 @@ TEST(WardenCheckCatalog_rejects_conflicting_expectations_for_one_request)
     duplicate.expectedHex = rows[3].expectedHex.substr(4, 8);
     rows.push_back(duplicate);
     CHECK(BuildRows(rows) == warden::CheckCatalogValidation::Valid);
+
+    rows = FirstProfileRows();
+    warden::WardenCheckRowInput moduleName = rows[3];
+    moduleName.checkId = 9009;
+    moduleName.sortOrder = 41;
+    moduleName.moduleHex = "576F772E657865";
+    rows.push_back(moduleName);
+    duplicate = moduleName;
+    duplicate.checkId = 9010;
+    duplicate.sortOrder = 42;
+    duplicate.moduleHex = "776F772E657865";
+    duplicate.expectedHex[0] =
+        duplicate.expectedHex[0] == '0' ? '1' : '0';
+    rows.push_back(duplicate);
+    CHECK(BuildRows(rows) ==
+        warden::CheckCatalogValidation::ConflictingRequestExpectation);
 
     rows = FirstProfileRows();
     duplicate = rows[1];

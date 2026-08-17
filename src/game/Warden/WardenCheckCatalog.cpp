@@ -70,6 +70,19 @@ std::string BytesAsString(warden::Bytes const& bytes)
         bytes.size());
 }
 
+std::string CanonicalModuleName(std::string const& moduleName)
+{
+    std::string canonical = moduleName;
+    // Supported client module names are ASCII. Fold them without depending on
+    // the host locale so validation matches Win32's case-insensitive lookup.
+    for (char& value : canonical)
+    {
+        if (value >= 'a' && value <= 'z')
+            value = static_cast<char>(value - ('a' - 'A'));
+    }
+    return canonical;
+}
+
 bool IsAsciiWhitespace(uint8 value)
 {
     return value == 0x09 || value == 0x0A || value == 0x0B ||
@@ -491,7 +504,7 @@ CheckCatalogValidation WardenCheckCatalogBuilder::Build(
                 // Absolute and module-relative address spaces cannot be
                 // cross-resolved here; overlaps are exact within each space.
                 std::vector<MemExpectationRange>& ranges =
-                    memExpectations[payload.moduleName];
+                    memExpectations[CanonicalModuleName(payload.moduleName)];
                 for (MemExpectationRange const& range : ranges)
                 {
                     if (!OverlappingExpectedBytesAgree(range,
