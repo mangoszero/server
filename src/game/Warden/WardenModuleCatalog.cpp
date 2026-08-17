@@ -162,6 +162,18 @@ ModuleProfile const* WardenModuleCatalog::Find(uint32 build,
     return nullptr;
 }
 
+std::vector<ModuleProfile const*> WardenModuleCatalog::Profiles() const
+{
+    std::vector<ModuleProfile const*> profiles;
+    profiles.reserve(ModuleProfiles.size());
+    for (ModuleProfile const* profile : ModuleProfiles)
+    {
+        if (Validate(*profile) == ModuleValidation::Valid)
+            profiles.push_back(profile);
+    }
+    return profiles;
+}
+
 ModuleValidation WardenModuleCatalog::Validate(ModuleProfile const& profile) const
 {
     if (profile.module.size != WardenModuleWin5875Size)

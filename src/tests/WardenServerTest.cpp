@@ -750,15 +750,20 @@ TEST(WardenManager_publishes_one_immutable_check_catalogue_snapshot)
     std::shared_ptr<warden::WardenCheckCatalog const> second =
         std::make_shared<warden::WardenCheckCatalog>(
             warden::test::BuildInitialWardenCatalog());
+    std::shared_ptr<warden::WardenCheckCatalog const> empty =
+        std::make_shared<warden::WardenCheckCatalog>();
 
     CHECK(!manager.HasPublishedCheckCatalog());
     CHECK(!manager.PublishCheckCatalog(nullptr));
+    CHECK(!manager.PublishCheckCatalog(empty));
+    CHECK(!manager.HasPublishedCheckCatalog());
     REQUIRE(manager.PublishCheckCatalog(first));
     CHECK(manager.HasPublishedCheckCatalog());
     warden::WardenCheckProfile const* selected =
         manager.FindCheckProfile(5875, "Win", "enUS");
     REQUIRE(selected != nullptr);
     CHECK_EQ(selected->checks.size(), size_t(7));
+    CHECK(!manager.PublishCheckCatalog(empty));
     CHECK(!manager.PublishCheckCatalog(second));
     CHECK(manager.FindCheckProfile(5875, "Win", "enUS") == selected);
 }

@@ -22,12 +22,35 @@
 
 #include "TestHarness.h"
 
+#include "WardenCheckCatalogLoader.h"
+#include "WardenCheckFixtures.h"
 #include "WardenModuleCatalog.h"
 
 #include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
+
+namespace
+{
+warden::WardenCheckCatalog BuildCheckCatalog(
+    std::vector<warden::WardenCheckRowInput> const& rows)
+{
+    warden::WardenCheckCatalogBuilder builder;
+    warden::WardenCheckDiagnostic diagnostic;
+    for (warden::WardenCheckRowInput const& row : rows)
+    {
+        if (builder.Add(row, diagnostic) !=
+            warden::CheckCatalogValidation::Valid)
+            return {};
+    }
+    warden::WardenCheckCatalog catalog;
+    if (builder.Build(catalog, diagnostic) !=
+        warden::CheckCatalogValidation::Valid)
+        return {};
+    return catalog;
+}
+}
 
 TEST(WardenCatalog_selects_only_the_three_exact_windows_builds)
 {
@@ -40,6 +63,44 @@ TEST(WardenCatalog_selects_only_the_three_exact_windows_builds)
     CHECK(catalog.Find(6005, "OSX") == nullptr);
     CHECK(catalog.Find(6141, "OSX") == nullptr);
     CHECK(catalog.Find(9999, "Win") == nullptr);
+}
+
+TEST(WardenCatalog_enumerates_three_validated_profiles_in_order)
+{
+    warden::WardenModuleCatalog catalog;
+    std::vector<warden::ModuleProfile const*> const profiles =
+        catalog.Profiles();
+    REQUIRE(profiles.size() == 3u);
+    CHECK_EQ(profiles[0]->build, uint32(5875));
+    CHECK_STR(profiles[0]->platform, "Win");
+    CHECK_EQ(profiles[1]->build, uint32(6005));
+    CHECK_STR(profiles[1]->platform, "Win");
+    CHECK_EQ(profiles[2]->build, uint32(6141));
+    CHECK_STR(profiles[2]->platform, "Win");
+    for (warden::ModuleProfile const* profile : profiles)
+        CHECK(catalog.Validate(*profile) == warden::ModuleValidation::Valid);
+}
+
+TEST(WardenCatalog_coverage_requires_profiles_and_modules_both_directions)
+{
+    warden::WardenModuleCatalog modules;
+    warden::WardenCheckCatalog full =
+        warden::test::BuildInitialWardenCatalog();
+    CHECK(warden::ValidateWardenCatalogCoverage(full, modules) ==
+        warden::WardenCheckCatalogLoadFailure::None);
+
+    std::vector<warden::WardenCheckRowInput> rows =
+        warden::test::InitialWardenRows();
+    rows.resize(7);
+    warden::WardenCheckCatalog missingModule = BuildCheckCatalog(rows);
+    CHECK(warden::ValidateWardenCatalogCoverage(missingModule, modules) ==
+        warden::WardenCheckCatalogLoadFailure::ModuleWithoutProfile);
+
+    for (warden::WardenCheckRowInput& row : rows)
+        row.build = 12340;
+    warden::WardenCheckCatalog unknownBuild = BuildCheckCatalog(rows);
+    CHECK(warden::ValidateWardenCatalogCoverage(unknownBuild, modules) ==
+        warden::WardenCheckCatalogLoadFailure::ProfileWithoutModule);
 }
 
 TEST(WardenCatalog_exact_module_identity_is_custody_pinned)

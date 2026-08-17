@@ -27,6 +27,7 @@
 
 #include <array>
 #include <string>
+#include <vector>
 
 namespace warden
 {
@@ -98,6 +99,7 @@ class WardenModuleCatalog
 public:
     // Returns null rather than falling back across builds or platforms.
     ModuleProfile const* Find(uint32 build, std::string const& platform) const;
+    std::vector<ModuleProfile const*> Profiles() const;
 
     // Recomputes both the wire MD5 identity and server-only SHA-256 identity.
     ModuleValidation Validate(ModuleProfile const& profile) const;

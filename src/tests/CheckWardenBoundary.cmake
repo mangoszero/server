@@ -64,6 +64,9 @@ read_code("${GAME_ROOT}/WorldHandlers/CharacterHandler.cpp" CHARACTER_HANDLER)
 read_code("${GAME_ROOT}/Server/WorldSession.cpp" SESSION_CPP)
 read_code("${GAME_ROOT}/WorldHandlers/WorldConfig.cpp" WORLD_CONFIG)
 read_code("${GAME_ROOT}/WorldHandlers/Map.cpp" MAP_CPP)
+read_code("${GAME_ROOT}/Server/WardenCheckCatalogLoader.cpp"
+    CATALOG_LOADER)
+read_code("${SOURCE_ROOT}/src/mangosd/Master.cpp" MASTER_CPP)
 file(READ "${SOURCE_ROOT}/src/mangosd/mangosd.conf.dist.in"
     MANGOSD_CONFIG)
 file(STRINGS "${SOURCE_ROOT}/src/mangosd/mangosd.conf.dist.in"
@@ -349,6 +352,32 @@ if(MAP_CPP MATCHES "(^|[^A-Za-z0-9_])Warden([^A-Za-z0-9_]|$)")
     message(FATAL_ERROR "Warden boundary: Map.cpp must not own Warden updates")
 endif()
 
+require_count("${CATALOG_LOADER}"
+    "SELECT COUNT\\(\\*\\) FROM `warden_checks`" 1
+    "catalogue loader must perform one explicit emptiness query")
+foreach(BINARY_FIELD IN ITEMS platform locale module request expected)
+    require_count("${CATALOG_LOADER}"
+        "HEX\\(`${BINARY_FIELD}`\\)" 1
+        "catalogue loader must project ${BINARY_FIELD} through HEX exactly once")
+endforeach()
+if(CATALOG_LOADER MATCHES "GetCppString[ \\t]*\\(")
+    message(FATAL_ERROR
+        "Warden boundary: catalogue loader must not read binary SQL fields as C++ strings")
+endif()
+require_count("${MASTER_CPP}"
+    "WardenCheckCatalogLoader[ \\t]*\\([ \\t]*\\)[ \\t]*\\.LoadAndPublish[ \\t]*\\(" 1
+    "mangosd must publish the required catalogue exactly once")
+string(FIND "${MASTER_CPP}" "ClearOnlineAccounts();" MASTER_CLEAR_AT)
+string(FIND "${MASTER_CPP}"
+    "WardenCheckCatalogLoader().LoadAndPublish()" MASTER_WARDEN_AT)
+string(FIND "${MASTER_CPP}" "sWorld.SetInitialWorldSettings()" MASTER_WORLD_AT)
+if(MASTER_CLEAR_AT EQUAL -1 OR MASTER_WARDEN_AT EQUAL -1 OR
+    MASTER_WORLD_AT EQUAL -1 OR MASTER_WARDEN_AT LESS_EQUAL MASTER_CLEAR_AT OR
+    MASTER_WORLD_AT LESS_EQUAL MASTER_WARDEN_AT)
+    message(FATAL_ERROR
+        "Warden boundary: catalogue publication must precede world initialization")
+endif()
+
 file(GLOB WARDEN_SOURCES
     "${GAME_ROOT}/Warden/*.h" "${GAME_ROOT}/Warden/*.hpp"
     "${GAME_ROOT}/Warden/*.cpp" "${GAME_ROOT}/Warden/*.cc")
@@ -378,6 +407,22 @@ foreach(SOURCE IN LISTS INCIDENT_STORE_FILES)
     if(NOT SERVER_PREFIX_AT EQUAL 0)
         message(FATAL_ERROR
             "Warden boundary: incident store escaped src/game/Server: ${SOURCE}")
+    endif()
+endforeach()
+
+file(GLOB_RECURSE CATALOG_LOADER_FILES
+    "${GAME_ROOT}/*WardenCheckCatalogLoader.h"
+    "${GAME_ROOT}/*WardenCheckCatalogLoader.cpp")
+list(LENGTH CATALOG_LOADER_FILES CATALOG_LOADER_COUNT)
+if(NOT CATALOG_LOADER_COUNT EQUAL 2)
+    message(FATAL_ERROR
+        "Warden boundary: expected one catalogue-loader header/source pair")
+endif()
+foreach(SOURCE IN LISTS CATALOG_LOADER_FILES)
+    string(FIND "${SOURCE}" "${GAME_ROOT}/Server/" SERVER_PREFIX_AT)
+    if(NOT SERVER_PREFIX_AT EQUAL 0)
+        message(FATAL_ERROR
+            "Warden boundary: catalogue loader escaped src/game/Server: ${SOURCE}")
     endif()
 endforeach()
 
