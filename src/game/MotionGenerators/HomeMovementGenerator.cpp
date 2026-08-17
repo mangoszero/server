@@ -35,13 +35,17 @@ namespace
     /// finally placed on.
     constexpr float HOME_ARRIVAL_TOLERANCE = 2.0f;
 
-    /// A resume must close at least this much distance to count as progress.
+    /// Movement within one path segment must cover this much to count as progress. The
+    /// direction is deliberately irrelevant: a sound route may initially lead away from
+    /// home to get around an obstacle.
     constexpr float HOME_PROGRESS_EPSILON = 0.5f;
 
-    /// How long a creature may keep failing to get nearer before evade gives up. Evade
-    /// MUST always terminate: a player can stop a creature from the outside as often as
-    /// they like -- opening a gossip window does it, once per packet -- so resuming has
-    /// to be bounded by something the player cannot keep resetting.
+    /// How much HomeMovementGenerator update time may pass without progress before evade
+    /// gives up. This is not wall-clock time: root, stun and a covering generator prevent
+    /// MotionMaster from ticking us and therefore do not spend it. Evade nevertheless MUST
+    /// always terminate while it is active: a player can stop a creature from the outside
+    /// as often as they like -- opening a gossip window does it, once per packet -- so
+    /// resuming has to be bounded by something those stops cannot keep resetting.
     constexpr uint32 HOME_STALL_BUDGET = 10000;
 }
 
@@ -49,8 +53,12 @@ void HomeMovementGenerator::Initialize(Unit& owner)
 {
     m_arrived = false;
     m_haveHome = false;
-    m_closest = 0.0f;
+    m_pathIndex = 0;
+    m_homeIntentIssued = false;
+    m_expectHomeLeg = false;
+    m_onHomeLeg = false;
     m_stalled = 0;
+    RefreshSpeedRates(owner);
     ResetLeg();
 
     if (owner.hasUnitState(UNIT_STAT_NOT_MOVE))
@@ -89,6 +97,11 @@ void HomeMovementGenerator::Interrupt(Unit& owner)
 {
     owner.InterruptMoving();
     owner.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+    m_pathIndex = 0;
+    m_homeIntentIssued = false;
+    m_expectHomeLeg = false;
+    m_onHomeLeg = false;
+    RefreshSpeedRates(owner);
     ResetLeg();
 }
 
@@ -104,6 +117,13 @@ void HomeMovementGenerator::Reset(Unit& owner)
         owner.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
     }
 
+    // ResetLeg means the next Intent must establish a new home-leg sequence. Keep the
+    // accumulated stall charge: covering this generator must not buy another budget.
+    m_pathIndex = 0;
+    m_homeIntentIssued = false;
+    m_expectHomeLeg = false;
+    m_onHomeLeg = false;
+    RefreshSpeedRates(owner);
     ResetLeg();
 }
 
@@ -116,6 +136,13 @@ Motion::MoveIntent HomeMovementGenerator::Intent(Unit& owner,
     // state is set, so a rooted or stunned creature never reaches this function at all.
     // (PointMovementGenerator carries such a guard; it is unreachable for the same reason.)
     // What a root actually does to us is stop the spline, and that is caught below.
+
+    // IntentMovementGenerator has already told the driver about a speed-rate change. It
+    // will re-lay the home route after this Intent, which legitimately resets pathIndex;
+    // remember that now so the next tick does not classify the driver's own replacement as
+    // a foreign spline. SetSpeedRate propagates only real value changes, so comparing the
+    // same six rates observes exactly the event that matters here.
+    const bool speedChanged = RefreshSpeedRates(owner);
 
     // ARRIVAL IS A PLACE, NOT AN EVENT.
     //
@@ -134,11 +161,11 @@ Motion::MoveIntent HomeMovementGenerator::Intent(Unit& owner,
     // instead. If the creature is not at home, it has not reached home, whatever ended the
     // leg -- and it should carry on rather than announce it got there.
     // Accounted every tick, before anything else. Charging the budget only on an arrived
-    // edge undercounted it badly: a foreign leg that runs for thirty seconds and ends no
-    // nearer than it started contributes a single tick's worth, and something that keeps
-    // replacing the live spline before it ever finalizes contributes nothing at all -- so a
-    // creature could be held in evade indefinitely. Time passes whether or not a leg ended.
-    const bool spent = !Resumable(owner, diff);
+    // edge undercounted it badly: a foreign leg that runs for thirty seconds contributes a
+    // single tick's worth, and something that keeps replacing the live spline before it ever
+    // finalizes contributes nothing at all. Resumable therefore charges every update which
+    // cannot prove progress on the home leg, whether or not a leg ended.
+    const bool spent = !Resumable(owner, status, diff);
 
     if (status.arrived && m_haveHome && !AtHome(owner))
     {
@@ -149,6 +176,13 @@ Motion::MoveIntent HomeMovementGenerator::Intent(Unit& owner,
         }
 
         owner.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+
+        // The finalized spline is gone, so the Move below necessarily asks the driver for
+        // a fresh home leg. Its first status sample seeds the new path sequence; merely
+        // launching it is not progress and does not erase charge accumulated across stops.
+        m_expectHomeLeg = true;
+        m_onHomeLeg = false;
+        m_homeIntentIssued = true;
 
         return Motion::MoveIntent::Move(m_home, Motion::MOVE_NONE,
                                         Motion::Facing::ToAngle(m_facing));
@@ -177,6 +211,17 @@ Motion::MoveIntent HomeMovementGenerator::Intent(Unit& owner,
     // that strips it while the journey is still unfinished.
     owner.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
 
+    // On the first update the driver has no cached leg and will lay this Move even when an
+    // evacuated generator left a foreign spline running. Do not mistake that old spline's
+    // path index for ours; start observing on the following update instead. The same rule
+    // covers a finalized spline which reached us without producing an arrival edge.
+    if (!m_homeIntentIssued || !status.traveling || speedChanged)
+    {
+        m_expectHomeLeg = true;
+        m_onHomeLeg = false;
+        m_homeIntentIssued = true;
+    }
+
     return Motion::MoveIntent::Move(m_home, Motion::MOVE_NONE,
                                     Motion::Facing::ToAngle(m_facing));
 }
@@ -188,34 +233,95 @@ bool HomeMovementGenerator::AtHome(Unit const& owner) const
     return gap.squaredLength() <= HOME_ARRIVAL_TOLERANCE * HOME_ARRIVAL_TOLERANCE;
 }
 
-bool HomeMovementGenerator::Resumable(Unit const& owner, uint32 diff)
+bool HomeMovementGenerator::Resumable(Unit const& owner,
+                                      Motion::MoveStatus const& status,
+                                      uint32 diff)
 {
     if (!m_haveHome)
     {
         return false;
     }
 
-    const Motion::Vector3 gap = Motion::FrameFor(owner).MoverPosition(owner) - m_home;
-    const float distance = gap.length();
+    const Motion::Vector3 position = Motion::FrameFor(owner).MoverPosition(owner);
 
-    // Progress resets the budget, so an evade interrupted many times over a long return is
-    // not punished for it -- only one that stops getting nearer is. m_closest starts at
-    // zero and is seeded on the first resume, since until then there is nothing to beat.
-    if (m_stalled == 0 && m_closest == 0.0f)
+    // Intent runs before the driver applies its answer. m_expectHomeLeg bridges that one
+    // update: it is set only when the preceding answer made the driver attempt a fresh home
+    // leg, and the status below says whether one actually ran. Seed both observations
+    // without awarding progress; otherwise a player who stops every new leg before it
+    // advances could replenish the budget merely by making us relaunch.
+    if (m_expectHomeLeg)
     {
-        m_closest = distance;
+        m_expectHomeLeg = false;
+        m_onHomeLeg = status.traveling || status.arrived;
+        m_pathIndex = 0;
+        m_progressPosition = position;
     }
-    else if (distance < m_closest - HOME_PROGRESS_EPSILON)
+
+    bool progressed = false;
+
+    if (m_onHomeLeg)
     {
-        m_closest = distance;
+        // currentPathIdx is monotonic within one non-cyclic home spline. A lower index
+        // therefore means something launched a replacement straight past MotionDriver;
+        // progress on that foreign spline must not buy more evade time. A higher index
+        // while it is still travelling is route progress regardless of whether that route
+        // runs toward, sideways to, or temporarily away from home.
+        //
+        // One case slips through and is worth knowing the shape of: a foreign spline that
+        // replaces the home leg while that leg is still on its first point regresses no
+        // index, so the displacement it causes can be credited as ours. MoveStatus carries
+        // no ownership or generation marker that would settle it. What it costs is bounded
+        // though -- such a creature keeps being told to go home, so the failure is that
+        // evade takes longer to give up, not that it gives up in the wrong place. Arrival
+        // is still decided by AtHome, which asks the ground.
+        if (status.pathIndex < m_pathIndex)
+        {
+            m_onHomeLeg = false;
+        }
+        else
+        {
+            const Motion::Vector3 travelled = position - m_progressPosition;
+            progressed = (status.traveling && status.pathIndex > m_pathIndex) ||
+                travelled.squaredLength() >= HOME_PROGRESS_EPSILON * HOME_PROGRESS_EPSILON;
+            m_pathIndex = status.pathIndex;
+
+            if (progressed)
+            {
+                m_progressPosition = position;
+            }
+        }
+    }
+
+    if (progressed)
+    {
         m_stalled = 0;
     }
     else
     {
-        m_stalled += diff;
+        // Saturate rather than wrap if an update itself is exceptionally large.
+        m_stalled = diff >= HOME_STALL_BUDGET - m_stalled
+            ? HOME_STALL_BUDGET
+            : m_stalled + diff;
     }
 
     return m_stalled < HOME_STALL_BUDGET;
+}
+
+bool HomeMovementGenerator::RefreshSpeedRates(Unit const& owner)
+{
+    static_assert(MAX_MOVE_TYPE == 6,
+                  "HomeMovementGenerator must track every speed that can re-lay its route");
+
+    bool changed = false;
+
+    for (uint32 i = 0; i < m_speedRates.size(); ++i)
+    {
+        const float rate = owner.GetSpeedRate(UnitMoveType(i));
+        changed = changed || m_speedRates[i] != rate;
+        m_speedRates[i] = rate;
+    }
+
+    return changed;
 }
 
 void HomeMovementGenerator::Finalize(Unit& owner)

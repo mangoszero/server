@@ -199,11 +199,10 @@ namespace Movement
         // creature asking whether it is home to a path routed from its feet, was answered
         // from the stale one.
         //
-        // Unit::InterruptMoving has always done exactly this; the difference between it and
-        // a plain StopMoving was only ever that it committed the position first. Doing it
-        // here makes every stop agree with the packet it sends. The relocation is safe to
-        // repeat -- InterruptMoving still relocates, then calls through to here, and both
-        // land on the same coordinate.
+        // Once a stop reaches MoveSplineInit::Stop, doing the relocation here makes the
+        // server agree with the packet it sends. Unit::InterruptMoving still relocates
+        // first and then calls through to here; that duplicate is safe because both use the
+        // same spline coordinate.
         if (unit.IsInWorld())
         {
             if (unit.GetTypeId() == TYPEID_PLAYER)

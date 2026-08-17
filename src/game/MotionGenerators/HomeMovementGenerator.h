@@ -28,6 +28,8 @@
 
 #include "IntentMovementGenerator.h"
 
+#include <array>
+
 /**
  * @brief Evade: run back to where the creature belongs, then hand back to its default
  *        movement.
@@ -77,16 +79,26 @@ class HomeMovementGenerator final : public IntentMovementGenerator
         /// Whether the creature is actually standing at its home position.
         bool AtHome(Unit const& owner) const;
 
-        /// Whether a leg that ended away from home is still worth resuming. Accumulates
-        /// time spent getting no nearer, so that evade always terminates.
-        bool Resumable(Unit const& owner, uint32 diff);
+        /// Whether the return is still worth pursuing. Accumulates generator update time
+        /// without progress on the home leg, so that evade always terminates.
+        bool Resumable(Unit const& owner, Motion::MoveStatus const& status, uint32 diff);
+
+        /// Refresh the movement-rate snapshot and report whether MotionDriver will re-lay
+        /// its route for a speed change after this Intent.
+        bool RefreshSpeedRates(Unit const& owner);
 
         Motion::Vector3 m_home;  ///< Where home is, captured before we were pushed.
         float m_facing = 0.0f;   ///< The orientation to hold once there.
         bool m_haveHome = false; ///< False when the creature could not be sent home.
         bool m_arrived = false;  ///< Whether Finalize should fire JustReachedHome.
-        float m_closest = 0.0f;  ///< Nearest we have got to home, for progress detection.
-        uint32 m_stalled = 0;    ///< Time spent resuming without getting any nearer.
+
+        Motion::Vector3 m_progressPosition; ///< Last position credited on the home leg.
+        int32 m_pathIndex = 0;               ///< Last point reached on that same leg.
+        bool m_homeIntentIssued = false;     ///< This activation has asked for a home leg.
+        bool m_expectHomeLeg = false;        ///< The driver should have laid one last tick.
+        bool m_onHomeLeg = false;            ///< The live spline still follows that leg.
+        std::array<float, 6> m_speedRates{};  ///< Every Vanilla UnitMoveType rate.
+        uint32 m_stalled = 0;                ///< Update time without home-leg progress.
 };
 
 #endif // MANGOS_HOMEMOVEMENTGENERATOR_H
