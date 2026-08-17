@@ -180,7 +180,8 @@ MemCatalogRecord const& Windows5875EnUsMemRecord()
                 {0xA1, 0xC0, 0xEA, 0xCE, 0x00}
             },
             // Zzuk names this exact wall-climb constant, but its mutation is
-            // disabled in the inspected source. It remains observation-only.
+            // disabled in the inspected source. Any negative still requires
+            // the standard isolated confirmation before enforcement.
             {
                 1135, "", 0x0080DFFC,
                 {0xBB, 0x8D, 0x24, 0x3F}

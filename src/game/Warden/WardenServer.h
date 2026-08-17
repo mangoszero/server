@@ -79,7 +79,7 @@ public:
     void HandleEncrypted(ByteView encryptedBody);
 
     // Advances the current deadline and supplies only the session's derived
-    // in-world eligibility fact to the pure one-shot planner.
+    // in-world eligibility fact to the pure recurring-check planner.
     void Update(bool eligible, uint32 diffMs);
 
     WardenState GetState() const;
