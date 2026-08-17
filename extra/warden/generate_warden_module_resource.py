@@ -139,7 +139,8 @@ def main() -> int:
     data = args.input.read_bytes()
     if len(data) != EXPECTED_LENGTH:
         raise SystemExit(f"module length {len(data)} != {EXPECTED_LENGTH}")
-    if hashlib.md5(data).hexdigest() != EXPECTED_MD5:
+    # MD5 is Blizzard's protocol identifier; SHA-256 below pins the content.
+    if hashlib.md5(data, usedforsecurity=False).hexdigest() != EXPECTED_MD5:
         raise SystemExit("module MD5 does not match the custody manifest")
     if hashlib.sha256(data).hexdigest() != EXPECTED_SHA256:
         raise SystemExit("module SHA-256 does not match the custody manifest")
