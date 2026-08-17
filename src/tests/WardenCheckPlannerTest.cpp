@@ -22,47 +22,17 @@
 
 #include "TestHarness.h"
 
-#include "WardenCheckCatalog.h"
+#include "WardenCheckFixtures.h"
 #include "WardenCheckPlanner.h"
 #include "WardenEvidence.h"
 
+#include <algorithm>
 #include <deque>
 #include <map>
-#include <variant>
 #include <vector>
 
 namespace
 {
-warden::MpqCheckProfile TestMpqProfile()
-{
-    warden::MpqCheckProfile profile;
-    profile.checkId = 1;
-    profile.path = "DBFilesClient\\AreaTable.dbc";
-    profile.expectedSha1 =
-    {
-        0x7D, 0x88, 0x15, 0x4D, 0x34, 0x11, 0x81, 0x19,
-        0x85, 0xF5, 0xD8, 0x11, 0x77, 0xC5, 0x45, 0x32,
-        0x48, 0x13, 0x34, 0x43
-    };
-    return profile;
-}
-
-warden::LuaCheckProfile TestLuaProfile()
-{
-    return {2, "OKAY", "Okay"};
-}
-
-std::vector<warden::MemCheckProfile> TestMemProfiles()
-{
-    return
-    {
-        {1107, "", 0x00618900, {0x55, 0x8B, 0xEC}},
-        {827, "", 0x007C6206, {0x25, 0xFF, 0xFF}},
-        {1566, "", 0x00494A50, {0xA1, 0xC0, 0xEA, 0xCE, 0x00}},
-        {1135, "", 0x0080DFFC, {0xBB, 0x8D, 0x24, 0x3F}}
-    };
-}
-
 struct ScriptedRandom
 {
     std::deque<uint32> normalIntervals;
@@ -79,8 +49,6 @@ struct ScriptedRandom
             else if (minimum == 10 && maximum == 20)
                 samples = &aggressiveIntervals;
 
-            // Shuffle selections use other ranges and deterministically choose
-            // their lower bound. Cadence samples must be supplied explicitly.
             if (!samples)
             {
                 if (shuffleSelections.empty())
@@ -90,6 +58,7 @@ struct ScriptedRandom
                 CHECK(value >= minimum && value <= maximum);
                 return value;
             }
+
             CHECK(!samples->empty());
             if (samples->empty())
                 return minimum;
@@ -101,15 +70,45 @@ struct ScriptedRandom
     }
 };
 
-std::vector<uint32> MemIds(warden::CheckPlan const& plan)
+std::vector<warden::WardenCheckDefinition> ExactChecks()
+{
+    warden::WardenCheckCatalog const catalog =
+        warden::test::BuildInitialWardenCatalog();
+    warden::WardenCheckProfile const* profile =
+        catalog.Find(5875, "Win", "enUS");
+    return profile ? profile->checks :
+        std::vector<warden::WardenCheckDefinition>();
+}
+
+std::vector<uint32> CheckIds(warden::CheckPlan const& plan)
 {
     std::vector<uint32> ids;
-    for (warden::PlannedCheck const& check : plan.checks)
+    for (warden::WardenCheckDefinition const& check : plan.checks)
+        ids.push_back(warden::GetWardenCheckId(check));
+    return ids;
+}
+
+std::vector<uint32> NonTimingIds(warden::CheckPlan const& plan)
+{
+    std::vector<uint32> ids;
+    for (warden::WardenCheckDefinition const& check : plan.checks)
     {
-        if (auto const* mem = std::get_if<warden::MemCheckProfile>(&check))
-            ids.push_back(mem->checkId);
+        if (warden::GetWardenCheckType(check) !=
+            warden::WardenCheckType::Timing)
+            ids.push_back(warden::GetWardenCheckId(check));
     }
     return ids;
+}
+
+std::vector<warden::WardenCheckDefinition> ObservationOnlyChecks()
+{
+    std::vector<warden::WardenCheckDefinition> checks = ExactChecks();
+    checks.erase(std::remove_if(checks.begin(), checks.end(),
+        [](warden::WardenCheckDefinition const& check)
+        {
+            return warden::IsActionableEvidenceClass(check.evidenceClass);
+        }), checks.end());
+    return checks;
 }
 }
 
@@ -146,325 +145,216 @@ TEST(WardenEvidence_mem_outcomes_have_secret_free_fixed_labels)
         "Unavailable");
 }
 
-TEST(WardenCheckPlanner_initial_plan_waits_one_cumulative_eligible_second)
+TEST(WardenCheckPlanner_profileless_planner_remains_inert)
 {
-    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000);
+    ScriptedRandom random{{30, 30}, {10, 10}, {}};
+    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
+        {}, random.Callback());
+    CHECK(!planner.Update(false, 60000).has_value());
+    CHECK(!planner.Update(true, 1000).has_value());
+    CHECK(!planner.QueueConfirmation(1));
+    planner.SetAggressive(true);
+    CHECK(!planner.Update(false, 60000).has_value());
+    CHECK(!planner.Update(true, 60000).has_value());
+}
+
+TEST(WardenCheckPlanner_initial_plan_waits_and_preserves_catalogue_order)
+{
+    std::vector<warden::WardenCheckDefinition> const checks = ExactChecks();
+    REQUIRE(checks.size() == 7u);
+    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
+        checks);
 
     CHECK(!planner.Update(false, 5000).has_value());
     CHECK(!planner.Update(true, 600).has_value());
     CHECK(!planner.Update(true, 399).has_value());
-
-    auto const plan = planner.Update(true, 1);
+    std::optional<warden::CheckPlan> const plan = planner.Update(true, 1);
     REQUIRE(plan.has_value());
     CHECK_EQ(plan->requestId, uint32(1));
     CHECK(plan->purpose == warden::CheckPlanPurpose::Initial);
-    REQUIRE(plan->checks.size() == 1u);
-    CHECK(std::holds_alternative<warden::TimingCheck>(plan->checks[0]));
-
-    // The planner must not overlap a second request before completion.
+    REQUIRE(plan->checks.size() == 7u);
+    for (size_t index = 1; index < plan->checks.size(); ++index)
+        CHECK(plan->checks[index - 1].sortOrder < plan->checks[index].sortOrder);
+    CHECK_EQ(warden::GetWardenCheckId(plan->checks.front()), uint32(65536));
+    CHECK_EQ(warden::GetWardenCheckId(plan->checks.back()), uint32(1135));
     CHECK(!planner.Update(true, 60000).has_value());
 }
 
-TEST(WardenCheckPlanner_resets_partial_delay_when_ineligible)
+TEST(WardenCheckPlanner_resets_partial_initial_delay_when_ineligible)
 {
-    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000);
-
+    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
+        ExactChecks());
     CHECK(!planner.Update(true, 900).has_value());
     CHECK(!planner.Update(false, 1).has_value());
     CHECK(!planner.Update(true, 999).has_value());
-
-    auto const plan = planner.Update(true, 1);
-    REQUIRE(plan.has_value());
-    REQUIRE(plan->checks.size() == 1u);
-    CHECK(std::holds_alternative<warden::TimingCheck>(plan->checks[0]));
+    CHECK(planner.Update(true, 1).has_value());
 }
 
-TEST(WardenCheckPlanner_emits_timing_then_exact_mpq_once)
+TEST(WardenCheckPlanner_normal_rotation_covers_every_nonhealth_check_once)
 {
+    ScriptedRandom random{{30, 30, 30, 30}, {}, {}};
     warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
-        TestMpqProfile());
-
-    auto const plan = planner.Update(true, 1000);
-    REQUIRE(plan.has_value());
-    CHECK_EQ(plan->requestId, uint32(1));
-    CHECK(plan->purpose == warden::CheckPlanPurpose::Initial);
-    REQUIRE(plan->checks.size() == 2u);
-    CHECK(std::holds_alternative<warden::TimingCheck>(plan->checks[0]));
-    REQUIRE(std::holds_alternative<warden::MpqCheckProfile>(
-        plan->checks[1]));
-    warden::MpqCheckProfile const& mpq =
-        std::get<warden::MpqCheckProfile>(plan->checks[1]);
-    CHECK_EQ(mpq.checkId, uint32(1));
-    CHECK_STR(mpq.path.c_str(), "DBFilesClient\\AreaTable.dbc");
-    CHECK_HEX(mpq.expectedSha1.data(), mpq.expectedSha1.size(),
-        "7d88154d3411811985f5d81177c5453248133443");
-
-    CHECK(!planner.Update(true, 60000).has_value());
-}
-
-TEST(WardenCheckPlanner_emits_timing_mpq_then_exact_lua_once)
-{
-    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
-        TestMpqProfile(), TestLuaProfile());
-
-    auto const plan = planner.Update(true, 1000);
-    REQUIRE(plan.has_value());
-    CHECK_EQ(plan->requestId, uint32(1));
-    REQUIRE(plan->checks.size() == 3u);
-    CHECK(std::holds_alternative<warden::TimingCheck>(plan->checks[0]));
-    CHECK(std::holds_alternative<warden::MpqCheckProfile>(plan->checks[1]));
-    REQUIRE(std::holds_alternative<warden::LuaCheckProfile>(plan->checks[2]));
-    warden::LuaCheckProfile const& lua =
-        std::get<warden::LuaCheckProfile>(plan->checks[2]);
-    CHECK_EQ(lua.checkId, uint32(2));
-    CHECK_STR(lua.query.c_str(), "OKAY");
-    CHECK_STR(lua.expectedText.c_str(), "Okay");
-
-    CHECK(!planner.Update(true, 60000).has_value());
-}
-
-TEST(WardenCheckPlanner_emits_timing_then_lua_without_mpq)
-{
-    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
-        std::nullopt, TestLuaProfile());
-
-    auto const plan = planner.Update(true, 1000);
-    REQUIRE(plan.has_value());
-    REQUIRE(plan->checks.size() == 2u);
-    CHECK(std::holds_alternative<warden::TimingCheck>(plan->checks[0]));
-    CHECK(std::holds_alternative<warden::LuaCheckProfile>(plan->checks[1]));
-}
-
-TEST(WardenCheckPlanner_initial_plan_preserves_content_and_mem_order)
-{
-    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
-        TestMpqProfile(), TestLuaProfile(), TestMemProfiles());
-
-    auto const plan = planner.Update(true, 1000);
-    REQUIRE(plan.has_value());
-    CHECK(plan->purpose == warden::CheckPlanPurpose::Initial);
-    REQUIRE(plan->checks.size() == 7u);
-    CHECK(std::holds_alternative<warden::TimingCheck>(plan->checks[0]));
-    CHECK(std::holds_alternative<warden::MpqCheckProfile>(plan->checks[1]));
-    CHECK(std::holds_alternative<warden::LuaCheckProfile>(plan->checks[2]));
-    std::vector<uint32> const ids = MemIds(*plan);
-    REQUIRE(ids.size() == 4u);
-    CHECK_EQ(ids[0], uint32(1107));
-    CHECK_EQ(ids[1], uint32(827));
-    CHECK_EQ(ids[2], uint32(1566));
-    CHECK_EQ(ids[3], uint32(1135));
-}
-
-TEST(WardenCheckPlanner_emits_timing_then_mem_without_content_checks)
-{
-    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
-        std::nullopt, std::nullopt, TestMemProfiles());
-
-    auto const plan = planner.Update(true, 1000);
-    REQUIRE(plan.has_value());
-    REQUIRE(plan->checks.size() == 5u);
-    CHECK(std::holds_alternative<warden::TimingCheck>(plan->checks[0]));
-    CHECK(std::holds_alternative<warden::MemCheckProfile>(plan->checks[1]));
-    CHECK(std::holds_alternative<warden::MemCheckProfile>(plan->checks[2]));
-}
-
-TEST(WardenCheckPlanner_normal_recurring_interval_is_inclusive)
-{
-    ScriptedRandom random{{30, 60}, {}};
-    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
-        std::nullopt, std::nullopt, TestMemProfiles(), random.Callback());
-
-    auto const initial = planner.Update(true, 1000);
-    REQUIRE(initial.has_value());
-    planner.Complete(*initial);
-
-    CHECK(!planner.Update(true, 29999).has_value());
-    auto const first = planner.Update(true, 1);
-    REQUIRE(first.has_value());
-    CHECK(first->purpose == warden::CheckPlanPurpose::Recurring);
-    REQUIRE(first->checks.size() == 3u);
-    CHECK(std::holds_alternative<warden::TimingCheck>(first->checks[0]));
-    CHECK_EQ(MemIds(*first).size(), size_t(2));
-    planner.Complete(*first);
-
-    CHECK(!planner.Update(true, 59999).has_value());
-    auto const second = planner.Update(true, 1);
-    REQUIRE(second.has_value());
-    CHECK(second->purpose == warden::CheckPlanPurpose::Recurring);
-}
-
-TEST(WardenCheckPlanner_recurring_countdown_pauses_without_catch_up)
-{
-    ScriptedRandom random{{30, 30}, {}};
-    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
-        std::nullopt, std::nullopt, TestMemProfiles(), random.Callback());
-
-    auto const initial = planner.Update(true, 1000);
-    REQUIRE(initial.has_value());
-    planner.Complete(*initial);
-
-    CHECK(!planner.Update(true, 10000).has_value());
-    CHECK(!planner.Update(false, 60000).has_value());
-    CHECK(!planner.Update(true, 19999).has_value());
-    auto const recurring = planner.Update(true, 1);
-    REQUIRE(recurring.has_value());
-    planner.Complete(*recurring);
-
-    // Excess time from the prior update is discarded, never caught up.
-    CHECK(!planner.Update(true, 0).has_value());
-}
-
-TEST(WardenCheckPlanner_two_normal_plans_cover_the_four_mem_checks_once)
-{
-    ScriptedRandom random{{30, 30, 30}, {}};
-    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
-        std::nullopt, std::nullopt, TestMemProfiles(), random.Callback());
-
-    auto const initial = planner.Update(true, 1000);
+        ExactChecks(), random.Callback());
+    std::optional<warden::CheckPlan> initial = planner.Update(true, 1000);
     REQUIRE(initial.has_value());
     planner.Complete(*initial);
 
     std::map<uint32, uint32> counts;
-    for (uint32 batch = 0; batch < 2; ++batch)
+    for (uint32 batch = 0; batch < 3; ++batch)
     {
-        auto const recurring = planner.Update(true, 30000);
+        std::optional<warden::CheckPlan> recurring =
+            planner.Update(true, 30000);
         REQUIRE(recurring.has_value());
-        std::vector<uint32> const ids = MemIds(*recurring);
+        CHECK(recurring->purpose == warden::CheckPlanPurpose::Recurring);
+        REQUIRE(recurring->checks.size() == 3u);
+        CHECK(warden::GetWardenCheckType(recurring->checks[0]) ==
+            warden::WardenCheckType::Timing);
+        for (size_t index = 1; index < recurring->checks.size(); ++index)
+            CHECK(recurring->checks[index - 1].sortOrder <
+                recurring->checks[index].sortOrder);
+        std::vector<uint32> const ids = NonTimingIds(*recurring);
         REQUIRE(ids.size() == 2u);
         for (uint32 id : ids)
             ++counts[id];
         planner.Complete(*recurring);
     }
 
-    CHECK_EQ(counts.size(), size_t(4));
-    CHECK_EQ(counts[1107], uint32(1));
-    CHECK_EQ(counts[827], uint32(1));
-    CHECK_EQ(counts[1566], uint32(1));
-    CHECK_EQ(counts[1135], uint32(1));
+    CHECK_EQ(counts.size(), size_t(6));
+    for (uint32 id : {uint32(1), uint32(2), uint32(1107), uint32(827),
+            uint32(1566), uint32(1135)})
+        CHECK_EQ(counts[id], uint32(1));
 }
 
-TEST(WardenCheckPlanner_aggressive_immediate_runs_at_character_selection)
+TEST(WardenCheckPlanner_recurring_countdown_pauses_without_catch_up)
 {
-    ScriptedRandom random{{}, {10}};
+    ScriptedRandom random{{30, 30}, {}, {}};
     warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
-        std::nullopt, std::nullopt, TestMemProfiles(), random.Callback());
+        ExactChecks(), random.Callback());
+    std::optional<warden::CheckPlan> initial = planner.Update(true, 1000);
+    REQUIRE(initial.has_value());
+    planner.Complete(*initial);
+    CHECK(!planner.Update(true, 10000).has_value());
+    CHECK(!planner.Update(false, 60000).has_value());
+    CHECK(!planner.Update(true, 19999).has_value());
+    std::optional<warden::CheckPlan> recurring = planner.Update(true, 1);
+    REQUIRE(recurring.has_value());
+    planner.Complete(*recurring);
+    CHECK(!planner.Update(true, 0).has_value());
+}
+
+TEST(WardenCheckPlanner_aggressive_plans_include_only_actionable_checks)
+{
+    ScriptedRandom random{{}, {10, 20}, {}};
+    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
+        ExactChecks(), random.Callback());
     planner.SetAggressive(true);
 
-    auto const immediate = planner.Update(false, 0);
+    std::optional<warden::CheckPlan> immediate = planner.Update(false, 0);
     REQUIRE(immediate.has_value());
     CHECK(immediate->purpose ==
         warden::CheckPlanPurpose::AggressiveImmediate);
-    CHECK_EQ(MemIds(*immediate).size(), size_t(4));
-    CHECK_EQ(immediate->checks.size(), size_t(4));
+    CHECK(CheckIds(*immediate) ==
+        std::vector<uint32>({1107, 827, 1566}));
     planner.Complete(*immediate);
 
-    CHECK(!planner.Update(false, 60000).has_value());
-}
-
-TEST(WardenCheckPlanner_aggressive_recurring_interval_is_inclusive)
-{
-    ScriptedRandom random{{}, {10, 20}};
-    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
-        std::nullopt, std::nullopt, TestMemProfiles(), random.Callback());
-    planner.SetAggressive(true);
-
-    auto const immediate = planner.Update(false, 0);
-    REQUIRE(immediate.has_value());
-    planner.Complete(*immediate);
-    auto const initial = planner.Update(true, 1000);
+    std::optional<warden::CheckPlan> initial = planner.Update(true, 1000);
     REQUIRE(initial.has_value());
     planner.Complete(*initial);
-
     CHECK(!planner.Update(true, 9999).has_value());
-    auto const first = planner.Update(true, 1);
-    REQUIRE(first.has_value());
-    CHECK(first->purpose == warden::CheckPlanPurpose::AggressiveRecurring);
-    CHECK_EQ(first->checks.size(), size_t(4));
-    CHECK_EQ(MemIds(*first).size(), size_t(4));
-    planner.Complete(*first);
-
-    CHECK(!planner.Update(true, 19999).has_value());
-    auto const second = planner.Update(true, 1);
-    REQUIRE(second.has_value());
-    CHECK(second->purpose == warden::CheckPlanPurpose::AggressiveRecurring);
-}
-
-TEST(WardenCheckPlanner_aggressive_recurring_reshuffles_each_batch)
-{
-    ScriptedRandom random{{}, {10, 10}, {0, 0, 0, 3, 2, 1}};
-    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
-        std::nullopt, std::nullopt, TestMemProfiles(), random.Callback());
-    planner.SetAggressive(true);
-
-    auto const immediate = planner.Update(false, 0);
-    REQUIRE(immediate.has_value());
-    planner.Complete(*immediate);
-    auto const initial = planner.Update(true, 1000);
-    REQUIRE(initial.has_value());
-    planner.Complete(*initial);
-
-    auto const first = planner.Update(true, 10000);
-    REQUIRE(first.has_value());
-    std::vector<uint32> const firstIds = MemIds(*first);
-    planner.Complete(*first);
-    auto const second = planner.Update(true, 10000);
-    REQUIRE(second.has_value());
-    std::vector<uint32> const secondIds = MemIds(*second);
-
-    REQUIRE(firstIds.size() == 4u);
-    REQUIRE(secondIds.size() == 4u);
-    CHECK(firstIds != secondIds);
-}
-
-TEST(WardenCheckPlanner_aggressive_expiry_returns_to_normal_cadence)
-{
-    ScriptedRandom random{{30}, {10}};
-    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
-        std::nullopt, std::nullopt, TestMemProfiles(), random.Callback());
-    planner.SetAggressive(true);
-
-    auto const immediate = planner.Update(false, 0);
-    REQUIRE(immediate.has_value());
-    planner.Complete(*immediate);
-    auto const initial = planner.Update(true, 1000);
-    REQUIRE(initial.has_value());
-    planner.Complete(*initial);
-
-    planner.SetAggressive(false);
-    CHECK(!planner.Update(true, 29999).has_value());
-    auto const normal = planner.Update(true, 1);
-    REQUIRE(normal.has_value());
-    CHECK(normal->purpose == warden::CheckPlanPurpose::Recurring);
-    CHECK(std::holds_alternative<warden::TimingCheck>(normal->checks[0]));
-    CHECK_EQ(MemIds(*normal).size(), size_t(2));
-}
-
-TEST(WardenCheckPlanner_confirmation_preempts_and_resets_recurring_work)
-{
-    ScriptedRandom random{{30, 60}, {}};
-    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
-        std::nullopt, std::nullopt, TestMemProfiles(), random.Callback());
-
-    auto const initial = planner.Update(true, 1000);
-    REQUIRE(initial.has_value());
-    planner.Complete(*initial);
-
-    CHECK(planner.QueueConfirmation(1566));
-    CHECK(!planner.QueueConfirmation(1566));
-    CHECK(!planner.QueueConfirmation(999999));
-    auto const confirmation = planner.Update(true, 30000);
-    REQUIRE(confirmation.has_value());
-    CHECK(confirmation->purpose == warden::CheckPlanPurpose::Confirmation);
-    REQUIRE(confirmation->checks.size() == 1u);
-    REQUIRE(std::holds_alternative<warden::MemCheckProfile>(
-        confirmation->checks[0]));
-    CHECK_EQ(std::get<warden::MemCheckProfile>(
-        confirmation->checks[0]).checkId, uint32(1566));
-
-    CHECK(!planner.Update(true, 60000).has_value());
-    planner.Complete(*confirmation);
-    CHECK(!planner.Update(true, 59999).has_value());
-    auto const recurring = planner.Update(true, 1);
+    std::optional<warden::CheckPlan> recurring = planner.Update(true, 1);
     REQUIRE(recurring.has_value());
-    CHECK(recurring->purpose == warden::CheckPlanPurpose::Recurring);
+    CHECK(recurring->purpose ==
+        warden::CheckPlanPurpose::AggressiveRecurring);
+    CHECK(CheckIds(*recurring) ==
+        std::vector<uint32>({1107, 827, 1566}));
+}
+
+TEST(WardenCheckPlanner_observation_only_aggressive_mode_schedules_without_spin)
+{
+    ScriptedRandom random{{}, {10, 10, 10}, {}};
+    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
+        ObservationOnlyChecks(), random.Callback());
+    planner.SetAggressive(true);
+    CHECK(!planner.Update(false, 0).has_value());
+
+    std::optional<warden::CheckPlan> initial = planner.Update(true, 1000);
+    REQUIRE(initial.has_value());
+    planner.Complete(*initial);
+    CHECK(!planner.Update(true, 9999).has_value());
+    CHECK(!planner.Update(true, 1).has_value());
+    CHECK(!planner.Update(true, 9999).has_value());
+    CHECK(!planner.Update(true, 1).has_value());
+}
+
+TEST(WardenCheckPlanner_generic_confirmation_preempts_and_resets_cadence)
+{
+    ScriptedRandom random{{30, 60, 30, 30}, {}, {}};
+    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
+        ExactChecks(), random.Callback());
+    std::optional<warden::CheckPlan> initial = planner.Update(true, 1000);
+    REQUIRE(initial.has_value());
+    planner.Complete(*initial);
+
+    CHECK(planner.QueueConfirmation(1));
+    CHECK(planner.QueueConfirmation(2));
+    CHECK(planner.QueueConfirmation(1566));
+    CHECK(!planner.QueueConfirmation(65536));
+    CHECK(!planner.QueueConfirmation(999999));
+    CHECK(!planner.QueueConfirmation(1));
+
+    for (uint32 expected : {uint32(1), uint32(2), uint32(1566)})
+    {
+        std::optional<warden::CheckPlan> confirmation =
+            planner.Update(true, 30000);
+        REQUIRE(confirmation.has_value());
+        CHECK(confirmation->purpose ==
+            warden::CheckPlanPurpose::Confirmation);
+        REQUIRE(confirmation->checks.size() == 1u);
+        CHECK_EQ(warden::GetWardenCheckId(confirmation->checks[0]), expected);
+        CHECK(!planner.Update(true, 60000).has_value());
+        planner.Complete(*confirmation);
+    }
+
+    CHECK(!planner.Update(true, 29999).has_value());
+    CHECK(planner.Update(true, 1).has_value());
+}
+
+TEST(WardenCheckPlanner_preflight_is_linear_and_uses_exact_purposes)
+{
+    warden::WardenCheckCatalog const catalog =
+        warden::test::BuildInitialWardenCatalog();
+    warden::WardenCheckProfile const* exact =
+        catalog.Find(5875, "Win", "enUS");
+    REQUIRE(exact != nullptr);
+    std::vector<warden::CheckPlan> plans =
+        warden::BuildWardenPreflightPlans(*exact);
+    REQUIRE(plans.size() == 7u);
+    CHECK(plans[0].purpose == warden::CheckPlanPurpose::Initial);
+    CHECK_EQ(plans[0].requestId, uint32(1));
+    CHECK_EQ(plans[0].checks.size(), size_t(7));
+    for (size_t index = 1; index < plans.size(); ++index)
+    {
+        CHECK(plans[index].purpose ==
+            warden::CheckPlanPurpose::Confirmation);
+        CHECK_EQ(plans[index].requestId, uint32(1));
+        CHECK_EQ(plans[index].checks.size(), size_t(1));
+    }
+
+    warden::WardenCheckProfile large;
+    large.key = {5875, "Win", "enUS"};
+    large.checks.push_back(exact->checks[0]);
+    warden::WardenCheckDefinition prototype = exact->checks[3];
+    warden::MemCheckProfile mem =
+        std::get<warden::MemCheckProfile>(prototype.payload);
+    mem.expectedBytes.assign(1, 0x90);
+    for (uint32 index = 0; index < 1000; ++index)
+    {
+        prototype.sortOrder = static_cast<uint16>(index + 1);
+        mem.checkId = 100000 + index;
+        prototype.payload = mem;
+        large.checks.push_back(prototype);
+    }
+    large.totalRows = static_cast<uint32>(large.checks.size());
+    plans = warden::BuildWardenPreflightPlans(large);
+    CHECK_EQ(plans.size(), size_t(1001));
 }

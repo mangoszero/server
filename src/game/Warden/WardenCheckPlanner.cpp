@@ -26,18 +26,35 @@
 #include <algorithm>
 #include <utility>
 
+namespace
+{
+bool DefinitionOrder(warden::WardenCheckDefinition const& left,
+    warden::WardenCheckDefinition const& right)
+{
+    if (left.sortOrder != right.sortOrder)
+        return left.sortOrder < right.sortOrder;
+    return warden::GetWardenCheckId(left) < warden::GetWardenCheckId(right);
+}
+}
+
 namespace warden
 {
 WardenCheckPlanner::WardenCheckPlanner(WardenConfiguration configuration,
-    uint32 eligibilityDelayMs,
-    std::optional<MpqCheckProfile> mpqCheck,
-    std::optional<LuaCheckProfile> luaCheck,
-    std::vector<MemCheckProfile> memChecks, WardenRandomRange randomRange)
+    uint32 eligibilityDelayMs, std::vector<WardenCheckDefinition> checks,
+    WardenRandomRange randomRange)
     : m_configuration(configuration),
-      m_eligibilityDelayMs(eligibilityDelayMs), m_mpqCheck(std::move(mpqCheck)),
-      m_luaCheck(std::move(luaCheck)), m_memChecks(std::move(memChecks)),
+      m_eligibilityDelayMs(eligibilityDelayMs), m_checks(std::move(checks)),
       m_randomRange(std::move(randomRange))
 {
+    std::sort(m_checks.begin(), m_checks.end(), DefinitionOrder);
+    for (WardenCheckDefinition const& check : m_checks)
+    {
+        if (GetWardenCheckType(check) != WardenCheckType::Timing)
+            m_nonHealthChecks.push_back(check);
+        if (IsActionableEvidenceClass(check.evidenceClass))
+            m_actionableChecks.push_back(check);
+    }
+
     if (!m_randomRange)
     {
         m_randomRange = [](uint32 minimum, uint32 maximum)
@@ -50,36 +67,34 @@ WardenCheckPlanner::WardenCheckPlanner(WardenConfiguration configuration,
 std::optional<CheckPlan> WardenCheckPlanner::Update(bool eligible,
     uint32 diffMs)
 {
-    if (m_outstanding)
+    if (m_outstanding || m_checks.empty())
         return std::nullopt;
 
     // Confirmations are immediate and isolated, even if eligibility changed
     // after the originating batch completed.
-    if (!m_confirmationQueue.empty())
+    while (!m_confirmationQueue.empty())
     {
         uint32 const checkId = m_confirmationQueue.front();
         m_confirmationQueue.pop_front();
-        auto const position = std::find_if(m_memChecks.begin(),
-            m_memChecks.end(), [checkId](MemCheckProfile const& profile)
+        auto const position = std::find_if(m_nonHealthChecks.begin(),
+            m_nonHealthChecks.end(), [checkId](WardenCheckDefinition const& check)
             {
-                return profile.checkId == checkId;
+                return GetWardenCheckId(check) == checkId;
             });
-        if (position != m_memChecks.end())
+        if (position != m_nonHealthChecks.end())
         {
-            std::vector<PlannedCheck> checks;
-            checks.emplace_back(*position);
-            return BeginPlan(CheckPlanPurpose::Confirmation,
-                std::move(checks));
+            return BeginPlan(CheckPlanPurpose::Confirmation, {*position});
         }
         m_queuedConfirmationIds.erase(checkId);
     }
 
-    // Repeated offenders receive one MEM-only batch as soon as the module is
-    // ready at character selection. Empty catalogues cannot form a wire plan.
+    // Repeated offenders receive one actionable-only batch as soon as the
+    // module is ready at character selection. Observation-only profiles stay
+    // inert without retrying the empty batch on every update.
     if (m_aggressive && !m_aggressiveImmediateIssued)
     {
         m_aggressiveImmediateIssued = true;
-        std::vector<PlannedCheck> checks = BuildAggressiveChecks(false);
+        std::vector<WardenCheckDefinition> checks = BuildAggressiveChecks();
         if (!checks.empty())
         {
             return BeginPlan(CheckPlanPurpose::AggressiveImmediate,
@@ -95,15 +110,12 @@ std::optional<CheckPlan> WardenCheckPlanner::Update(bool eligible,
             return std::nullopt;
         }
 
-        // Compare against the remaining delay before adding, so a large world
-        // update cannot wrap the cumulative initial timer.
         if (m_eligibleMs < m_eligibilityDelayMs &&
             diffMs < m_eligibilityDelayMs - m_eligibleMs)
         {
             m_eligibleMs += diffMs;
             return std::nullopt;
         }
-
         return BeginPlan(CheckPlanPurpose::Initial, BuildInitialChecks());
     }
 
@@ -122,25 +134,36 @@ std::optional<CheckPlan> WardenCheckPlanner::Update(bool eligible,
 
     if (m_aggressive)
     {
+        std::vector<WardenCheckDefinition> checks = BuildAggressiveChecks();
+        if (checks.empty())
+        {
+            ScheduleNextInterval();
+            return std::nullopt;
+        }
         return BeginPlan(CheckPlanPurpose::AggressiveRecurring,
-            BuildAggressiveChecks(true));
+            std::move(checks));
     }
-    return BeginPlan(CheckPlanPurpose::Recurring,
-        BuildNormalRecurringChecks());
+
+    std::vector<WardenCheckDefinition> checks = BuildNormalRecurringChecks();
+    if (checks.empty())
+    {
+        ScheduleNextInterval();
+        return std::nullopt;
+    }
+    return BeginPlan(CheckPlanPurpose::Recurring, std::move(checks));
 }
 
 bool WardenCheckPlanner::QueueConfirmation(uint32 checkId)
 {
-    auto const profile = std::find_if(m_memChecks.begin(), m_memChecks.end(),
-        [checkId](MemCheckProfile const& candidate)
+    auto const definition = std::find_if(m_nonHealthChecks.begin(),
+        m_nonHealthChecks.end(), [checkId](WardenCheckDefinition const& check)
         {
-            return candidate.checkId == checkId;
+            return GetWardenCheckId(check) == checkId &&
+                IsConfirmationEligible(check);
         });
-    if (profile == m_memChecks.end() ||
+    if (definition == m_nonHealthChecks.end() ||
         !m_queuedConfirmationIds.insert(checkId).second)
-    {
         return false;
-    }
 
     m_confirmationQueue.push_back(checkId);
     return true;
@@ -153,18 +176,9 @@ void WardenCheckPlanner::Complete(CheckPlan const& plan)
 
     m_outstanding = false;
     m_outstandingRequestId = 0;
-
-    if (plan.purpose == CheckPlanPurpose::Confirmation)
-    {
-        for (PlannedCheck const& check : plan.checks)
-        {
-            if (auto const* mem = std::get_if<MemCheckProfile>(&check))
-            {
-                m_queuedConfirmationIds.erase(mem->checkId);
-                break;
-            }
-        }
-    }
+    if (plan.purpose == CheckPlanPurpose::Confirmation &&
+        plan.checks.size() == 1)
+        m_queuedConfirmationIds.erase(GetWardenCheckId(plan.checks[0]));
     else if (plan.purpose == CheckPlanPurpose::Initial)
     {
         m_initialComplete = true;
@@ -175,9 +189,7 @@ void WardenCheckPlanner::Complete(CheckPlan const& plan)
         plan.purpose == CheckPlanPurpose::Recurring ||
         plan.purpose == CheckPlanPurpose::AggressiveRecurring ||
         plan.purpose == CheckPlanPurpose::Confirmation)
-    {
         ScheduleNextInterval();
-    }
 }
 
 void WardenCheckPlanner::SetAggressive(bool aggressive)
@@ -190,7 +202,7 @@ void WardenCheckPlanner::SetAggressive(bool aggressive)
 }
 
 CheckPlan WardenCheckPlanner::BeginPlan(CheckPlanPurpose purpose,
-    std::vector<PlannedCheck> checks)
+    std::vector<WardenCheckDefinition> checks)
 {
     CheckPlan plan;
     plan.requestId = m_nextRequestId++;
@@ -201,56 +213,59 @@ CheckPlan WardenCheckPlanner::BeginPlan(CheckPlanPurpose purpose,
     return plan;
 }
 
-std::vector<PlannedCheck> WardenCheckPlanner::BuildInitialChecks() const
+std::vector<WardenCheckDefinition>
+WardenCheckPlanner::BuildInitialChecks() const
 {
-    std::vector<PlannedCheck> checks;
-    checks.emplace_back(TimingCheck{});
-    if (m_mpqCheck)
-        checks.emplace_back(*m_mpqCheck);
-    if (m_luaCheck)
-        checks.emplace_back(*m_luaCheck);
-    for (MemCheckProfile const& memCheck : m_memChecks)
-        checks.emplace_back(memCheck);
-    return checks;
+    return m_checks;
 }
 
-std::vector<PlannedCheck> WardenCheckPlanner::BuildNormalRecurringChecks()
+std::vector<WardenCheckDefinition>
+WardenCheckPlanner::BuildNormalRecurringChecks()
 {
-    if (m_normalMemBagOffset >= m_normalMemBag.size())
+    if (m_nonHealthChecks.empty())
     {
-        m_normalMemBag = m_memChecks;
-        Shuffle(m_normalMemBag);
-        m_normalMemBagOffset = 0;
+        auto const timing = std::find_if(m_checks.begin(), m_checks.end(),
+            [](WardenCheckDefinition const& check)
+            {
+                return GetWardenCheckType(check) == WardenCheckType::Timing;
+            });
+        return timing == m_checks.end() ?
+            std::vector<WardenCheckDefinition>() :
+            std::vector<WardenCheckDefinition>{*timing};
+    }
+    if (m_normalBagOffset >= m_normalBag.size())
+    {
+        m_normalBag = m_nonHealthChecks;
+        Shuffle(m_normalBag);
+        m_normalBagOffset = 0;
     }
 
-    std::vector<PlannedCheck> checks;
-    checks.emplace_back(TimingCheck{});
+    std::vector<WardenCheckDefinition> checks;
+    auto const timing = std::find_if(m_checks.begin(), m_checks.end(),
+        [](WardenCheckDefinition const& check)
+        {
+            return GetWardenCheckType(check) == WardenCheckType::Timing;
+        });
+    if (timing != m_checks.end())
+        checks.push_back(*timing);
     for (uint32 count = 0;
-        count < 2 && m_normalMemBagOffset < m_normalMemBag.size(); ++count)
-    {
-        checks.emplace_back(m_normalMemBag[m_normalMemBagOffset++]);
-    }
+        count < 2 && m_normalBagOffset < m_normalBag.size(); ++count)
+        checks.push_back(m_normalBag[m_normalBagOffset++]);
+    std::sort(checks.begin(), checks.end(), DefinitionOrder);
     return checks;
 }
 
-std::vector<PlannedCheck> WardenCheckPlanner::BuildAggressiveChecks(
-    bool shuffle)
+std::vector<WardenCheckDefinition>
+WardenCheckPlanner::BuildAggressiveChecks() const
 {
-    std::vector<MemCheckProfile> profiles = m_memChecks;
-    if (shuffle)
-        Shuffle(profiles);
-
-    std::vector<PlannedCheck> checks;
-    checks.reserve(profiles.size());
-    for (MemCheckProfile const& profile : profiles)
-        checks.emplace_back(profile);
-    return checks;
+    return m_actionableChecks;
 }
 
-void WardenCheckPlanner::Shuffle(std::vector<MemCheckProfile>& checks)
+void WardenCheckPlanner::Shuffle(
+    std::vector<WardenCheckDefinition>& checks)
 {
-    // Fisher-Yates uses the same injectable inclusive range source as cadence,
-    // making exact coverage and order deterministic in tests.
+    // Fisher-Yates controls selection only. The chosen wire subset is sorted
+    // back into canonical catalogue order before BeginPlan.
     for (size_t remaining = checks.size(); remaining > 1; --remaining)
     {
         uint32 const selected = m_randomRange(0,
@@ -268,5 +283,44 @@ void WardenCheckPlanner::ScheduleNextInterval()
             m_configuration.normalMaxSeconds);
     m_recurringElapsedMs = 0;
     m_recurringTargetMs = seconds * uint32(1000);
+}
+
+std::vector<CheckPlan> BuildWardenPreflightPlans(
+    WardenCheckProfile const& profile)
+{
+    if (profile.checks.empty())
+        return {};
+
+    bool hasTiming = false;
+    bool hasNonHealth = false;
+    for (WardenCheckDefinition const& check : profile.checks)
+    {
+        if (GetWardenCheckType(check) == WardenCheckType::Timing)
+            hasTiming = true;
+        else
+            hasNonHealth = true;
+    }
+    if (!hasTiming || !hasNonHealth)
+        return {};
+
+    std::vector<CheckPlan> plans;
+    plans.reserve(1 + profile.checks.size());
+    CheckPlan initial;
+    initial.requestId = 1;
+    initial.purpose = CheckPlanPurpose::Initial;
+    initial.checks = profile.checks;
+    plans.push_back(std::move(initial));
+
+    for (WardenCheckDefinition const& check : profile.checks)
+    {
+        if (!IsConfirmationEligible(check))
+            continue;
+        CheckPlan confirmation;
+        confirmation.requestId = 1;
+        confirmation.purpose = CheckPlanPurpose::Confirmation;
+        confirmation.checks.push_back(check);
+        plans.push_back(std::move(confirmation));
+    }
+    return plans;
 }
 }

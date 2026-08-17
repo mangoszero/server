@@ -30,9 +30,8 @@ namespace warden
 bool IsWardenEnforcementProfile(uint32 build,
     std::string const& platform, std::string const& locale)
 {
-    // Presence identifies a profile even when later validation fails; exact
-    // enforcing clients must fail closed on invalid catalogue custody.
-    return WardenCheckCatalog().FindMem(build, platform, locale) != nullptr;
+    return WardenManager::Instance().FindCheckProfile(build, platform,
+        locale) != nullptr;
 }
 
 WardenProfileDisposition ClassifyWardenProfile(
@@ -53,6 +52,28 @@ WardenManager& WardenManager::Instance()
     return manager;
 }
 
+bool WardenManager::PublishCheckCatalog(
+    std::shared_ptr<WardenCheckCatalog const> catalog)
+{
+    if (m_checkCatalog || !catalog || catalog->Profiles().empty() ||
+        !catalog->TotalRows())
+        return false;
+    m_checkCatalog = std::move(catalog);
+    return true;
+}
+
+bool WardenManager::HasPublishedCheckCatalog() const
+{
+    return m_checkCatalog != nullptr;
+}
+
+WardenCheckProfile const* WardenManager::FindCheckProfile(uint32 build,
+    std::string const& platform, std::string const& locale) const
+{
+    return m_checkCatalog ? m_checkCatalog->Find(build, platform, locale) :
+        nullptr;
+}
+
 std::unique_ptr<WardenServer> WardenManager::Create(uint32 build,
     std::string const& platform, std::string const& locale,
     SessionKey const& sessionKey, SendEncrypted send,
@@ -68,35 +89,19 @@ std::unique_ptr<WardenServer> WardenManager::Create(uint32 build,
     WardenCryptoContext crypto;
     crypto.Initialize(sessionKey);
 
-    std::optional<MpqCheckProfile> mpqCheck;
-    MpqCheckProfile const* selected =
-        m_checkCatalog.FindMpq(build, platform, locale);
-    if (selected && m_checkCatalog.Validate(*selected) ==
-            CheckCatalogValidation::Valid)
-        mpqCheck = *selected;
-
-    std::optional<LuaCheckProfile> luaCheck;
-    LuaCheckProfile const* selectedLua =
-        m_checkCatalog.FindLua(build, platform, locale);
-    if (selectedLua && m_checkCatalog.Validate(*selectedLua) ==
-            CheckCatalogValidation::Valid)
-        luaCheck = *selectedLua;
-
-    std::vector<MemCheckProfile> memChecks;
-    std::vector<MemCheckProfile> const* selectedMem =
-        m_checkCatalog.FindMem(build, platform, locale);
-    if (selectedMem && m_checkCatalog.Validate(*selectedMem) ==
-            CheckCatalogValidation::Valid)
-        memChecks = *selectedMem;
+    WardenCheckProfile const* selected =
+        FindCheckProfile(build, platform, locale);
     bool const enforcing = options.configuration.enforcementMode !=
         WardenEnforcementMode::Observe;
-    if ((options.requireMemCatalog || enforcing) && memChecks.size() != 4u)
+    if (enforcing && !selected)
         return nullptr;
+    std::vector<WardenCheckDefinition> checks;
+    if (selected)
+        checks = selected->checks;
 
     return std::make_unique<WardenServer>(*profile, std::move(crypto),
         std::move(send), options.limits, options.configuration,
         options.initialAggressive, std::move(lifecycleObserver),
-        std::move(evidenceObserver), std::move(mpqCheck), std::move(luaCheck),
-        std::move(memChecks));
+        std::move(evidenceObserver), std::move(checks));
 }
 }

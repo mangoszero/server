@@ -26,6 +26,7 @@
 #include "WardenCheckPlan.h"
 #include "WardenModuleCatalog.h"
 
+#include <cstddef>
 #include <variant>
 #include <vector>
 
@@ -48,6 +49,29 @@ enum class EncodeStatus : uint8
     InvalidProfile,
     InvalidPlan,
     CryptoFailure
+};
+
+struct WardenCheckPlanBudget
+{
+    size_t stringCount = 0;
+    size_t stringTableBytes = 0;
+    size_t requestBodyBytes = 0;
+    size_t maximumResultBytes = 0;
+};
+
+enum class CheckPlanValidation : uint8
+{
+    Valid,
+    InvalidRequestId,
+    Empty,
+    InvalidDefinition,
+    DuplicateCheckId,
+    DuplicateTiming,
+    InvalidConfirmation,
+    TooManyStrings,
+    StringTableTooLarge,
+    RequestBodyTooLarge,
+    ResultBodyTooLarge
 };
 
 struct TimingResult
@@ -120,6 +144,9 @@ EncodeStatus EncodeModuleInitialize(ModuleProfile const& profile, Bytes& output)
 // Builds a complete command-2 request privately; output changes only on Ok.
 EncodeStatus EncodeCheckRequest(ModuleProfile const& profile,
     CheckPlan const& plan, Bytes& output);
+CheckPlanValidation InspectCheckPlan(CheckPlan const& plan,
+    WardenCheckPlanBudget& budget);
+char const* ToString(CheckPlanValidation validation);
 
 // Parses exactly the pending ordered plan and publishes no partial result.
 DecodeStatus DecodeCheckResult(ByteView body, CheckPlan const& plan,

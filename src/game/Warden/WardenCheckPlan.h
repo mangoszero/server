@@ -25,19 +25,10 @@
 
 #include "WardenCheckCatalog.h"
 
-#include <variant>
 #include <vector>
 
 namespace warden
 {
-struct TimingCheck
-{
-};
-
-using PlannedCheck =
-    std::variant<TimingCheck, MpqCheckProfile, LuaCheckProfile,
-        MemCheckProfile>;
-
 /** Server-only purpose metadata; it is never encoded into the Warden body. */
 enum class CheckPlanPurpose : uint8
 {
@@ -52,7 +43,7 @@ struct CheckPlan
 {
     uint32 requestId = 0;
     CheckPlanPurpose purpose = CheckPlanPurpose::Initial;
-    std::vector<PlannedCheck> checks;
+    std::vector<WardenCheckDefinition> checks;
 };
 }
 

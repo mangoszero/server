@@ -23,6 +23,7 @@
 #include "TestHarness.h"
 
 #include "WardenCheckCatalog.h"
+#include "WardenCheckFixtures.h"
 #include "WardenManager.h"
 #include "WardenServer.h"
 
@@ -32,6 +33,7 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <string>
@@ -78,27 +80,52 @@ std::array<uint8, Size> FixedBytes(char const* text)
     return result;
 }
 
-warden::MpqCheckProfile TestMpqProfile()
+warden::WardenCheckCatalog const& TestCheckCatalog()
 {
-    warden::MpqCheckProfile profile;
-    profile.checkId = 1;
-    profile.path = "DBFilesClient\\AreaTable.dbc";
-    profile.expectedSha1 = FixedBytes<20>(
-        "7D88154D3411811985F5D81177C5453248133443");
-    return profile;
+    static warden::WardenCheckCatalog const catalog =
+        warden::test::BuildInitialWardenCatalog();
+    return catalog;
 }
 
-warden::LuaCheckProfile TestLuaProfile()
+std::vector<warden::WardenCheckDefinition> TestChecks(uint32 build,
+    std::string const& locale, std::initializer_list<uint32> checkIds)
 {
-    return {2, "OKAY", "Okay"};
+    std::vector<warden::WardenCheckDefinition> checks;
+    warden::WardenCheckProfile const* profile =
+        TestCheckCatalog().Find(build, "Win", locale);
+    if (!profile)
+        return checks;
+    for (uint32 checkId : checkIds)
+    {
+        auto const found = std::find_if(profile->checks.begin(),
+            profile->checks.end(), [checkId](auto const& definition)
+            {
+                return warden::GetWardenCheckId(definition) == checkId;
+            });
+        if (found != profile->checks.end())
+            checks.push_back(*found);
+    }
+    return checks;
 }
 
-std::vector<warden::MemCheckProfile> TestMemProfiles()
+std::vector<warden::WardenCheckDefinition> TestTimingChecks()
 {
-    warden::WardenCheckCatalog const catalog;
-    std::vector<warden::MemCheckProfile> const* profiles =
-        catalog.FindMem(5875, "Win", "enUS");
-    return profiles ? *profiles : std::vector<warden::MemCheckProfile>{};
+    return TestChecks(5875, "enUS", {65536});
+}
+
+std::vector<warden::WardenCheckDefinition> TestMemChecks()
+{
+    return TestChecks(5875, "enUS", {65536, 1107, 827, 1566, 1135});
+}
+
+bool EnsureTestCatalogPublished()
+{
+    warden::WardenManager& manager = warden::WardenManager::Instance();
+    if (manager.HasPublishedCheckCatalog())
+        return true;
+    return manager.PublishCheckCatalog(
+        std::make_shared<warden::WardenCheckCatalog const>(
+            warden::test::BuildInitialWardenCatalog()));
 }
 
 bool Digest(EVP_MD const* algorithm, uint8 const* data, size_t size,
@@ -238,9 +265,8 @@ struct ManagerLocale
 struct Harness
 {
     explicit Harness(bool allowSend = true,
-        std::optional<warden::MpqCheckProfile> mpqCheck = std::nullopt,
-        std::optional<warden::LuaCheckProfile> luaCheck = std::nullopt,
-        std::vector<warden::MemCheckProfile> memChecks = {})
+        std::vector<warden::WardenCheckDefinition> checks =
+            TestTimingChecks())
         : peer(TestSessionKey()), sendSucceeds(allowSend)
     {
         warden::WardenModuleCatalog catalog;
@@ -252,13 +278,15 @@ struct Harness
         server = std::make_unique<warden::WardenServer>(*profile,
             std::move(crypto), MakeSend(), warden::WardenLimits{},
             warden::WardenConfiguration{}, false, MakeLifecycleObserver(),
-            MakeEvidenceObserver(), mpqCheck, luaCheck, std::move(memChecks));
+            MakeEvidenceObserver(), std::move(checks));
     }
 
     explicit Harness(ManagerLocale locale, bool allowSend = true,
         warden::WardenCreationOptions options = {})
         : peer(TestSessionKey()), sendSucceeds(allowSend)
     {
+        if (!EnsureTestCatalogPublished())
+            return;
         server = warden::WardenManager::Instance().Create(5875, "Win",
             locale.value, TestSessionKey(), MakeSend(), options,
             MakeLifecycleObserver(), MakeEvidenceObserver());
@@ -672,6 +700,7 @@ TEST(WardenServer_deadlines_are_cumulative_in_each_waiting_state)
 
 TEST(WardenManager_creation_is_inert_for_exact_builds_and_rejects_unknown_ones)
 {
+    REQUIRE(EnsureTestCatalogPublished());
     size_t calls = 0;
     auto send = [&calls](warden::Bytes const&)
     {
@@ -712,6 +741,28 @@ TEST(WardenManager_creation_is_inert_for_exact_builds_and_rejects_unknown_ones)
     CHECK_EQ(calls, 3u);
 }
 
+TEST(WardenManager_publishes_one_immutable_check_catalogue_snapshot)
+{
+    warden::WardenManager manager;
+    std::shared_ptr<warden::WardenCheckCatalog const> first =
+        std::make_shared<warden::WardenCheckCatalog>(
+            warden::test::BuildInitialWardenCatalog());
+    std::shared_ptr<warden::WardenCheckCatalog const> second =
+        std::make_shared<warden::WardenCheckCatalog>(
+            warden::test::BuildInitialWardenCatalog());
+
+    CHECK(!manager.HasPublishedCheckCatalog());
+    CHECK(!manager.PublishCheckCatalog(nullptr));
+    REQUIRE(manager.PublishCheckCatalog(first));
+    CHECK(manager.HasPublishedCheckCatalog());
+    warden::WardenCheckProfile const* selected =
+        manager.FindCheckProfile(5875, "Win", "enUS");
+    REQUIRE(selected != nullptr);
+    CHECK_EQ(selected->checks.size(), size_t(7));
+    CHECK(!manager.PublishCheckCatalog(second));
+    CHECK(manager.FindCheckProfile(5875, "Win", "enUS") == selected);
+}
+
 TEST(WardenManager_selects_content_checks_only_for_the_exact_locale)
 {
     Harness enUS(ManagerLocale{"enUS"});
@@ -721,11 +772,16 @@ TEST(WardenManager_selects_content_checks_only_for_the_exact_locale)
     observe.configuration.enforcementMode =
         warden::WardenEnforcementMode::Observe;
     Harness frFR(ManagerLocale{"frFR"}, true, observe);
-    REQUIRE(StartTimingCheck(frFR));
+    REQUIRE(ReachModuleReady(frFR));
+    frFR.server->Update(true, 60000);
+    CHECK(frFR.server->GetState() == warden::WardenState::ModuleReady);
+    CHECK_EQ(frFR.sent.size(), size_t(3));
+    CHECK(frFR.evidenceEvents.empty());
 }
 
-TEST(WardenManager_enforcing_modes_require_exact_mem_catalogues)
+TEST(WardenManager_enforcing_modes_require_exact_check_profiles)
 {
+    REQUIRE(EnsureTestCatalogPublished());
     auto send = [](warden::Bytes const&) { return true; };
     struct Profile
     {
@@ -758,8 +814,9 @@ TEST(WardenManager_enforcing_modes_require_exact_mem_catalogues)
     }
 }
 
-TEST(WardenManager_observe_mode_allows_missing_mem_catalogue)
+TEST(WardenManager_observe_mode_allows_missing_check_profile)
 {
+    REQUIRE(EnsureTestCatalogPublished());
     warden::WardenCreationOptions options;
     options.configuration.enforcementMode =
         warden::WardenEnforcementMode::Observe;
@@ -771,6 +828,7 @@ TEST(WardenManager_observe_mode_allows_missing_mem_catalogue)
 
 TEST(WardenManager_identifies_only_exact_enforcement_profiles)
 {
+    REQUIRE(EnsureTestCatalogPublished());
     CHECK(warden::IsWardenEnforcementProfile(5875, "Win", "enUS"));
     CHECK(warden::IsWardenEnforcementProfile(6005, "Win", "enGB"));
     CHECK(warden::IsWardenEnforcementProfile(6141, "Win", "zhCN"));
@@ -845,6 +903,7 @@ TEST(WardenServer_uninitialized_crypto_fails_before_sending)
 
 TEST(WardenServer_ignores_prestart_data_and_can_start)
 {
+    REQUIRE(EnsureTestCatalogPublished());
     size_t calls = 0;
     std::unique_ptr<warden::WardenServer> server =
         warden::WardenManager::Instance().Create(5875, "Win", "enUS",
@@ -925,7 +984,7 @@ TEST(WardenServer_reports_unstable_timing_without_protocol_failure)
 
 TEST(WardenServer_combined_check_preserves_stream_and_reports_ordered_match)
 {
-    Harness harness(true, TestMpqProfile());
+    Harness harness(true, TestChecks(5875, "enUS", {65536, 1}));
     REQUIRE(StartTimingMpqCheck(harness));
 
     harness.SendClient(FromHex(
@@ -963,7 +1022,7 @@ TEST(WardenServer_combined_check_preserves_stream_and_reports_ordered_match)
 
 TEST(WardenServer_valid_mpq_negatives_are_observation_only)
 {
-    Harness unavailable(true, TestMpqProfile());
+    Harness unavailable(true, TestChecks(5875, "enUS", {65536, 1}));
     REQUIRE(StartTimingMpqCheck(unavailable));
     unavailable.SendClient(FromHex("020600C06DA567010403020101"));
     CHECK(unavailable.server->GetState() == warden::WardenState::ModuleReady);
@@ -972,7 +1031,7 @@ TEST(WardenServer_valid_mpq_negatives_are_observation_only)
     CHECK(std::get<warden::MpqEvidence>(unavailable.evidenceEvents[1]).outcome ==
         warden::MpqOutcome::Unavailable);
 
-    Harness mismatch(true, TestMpqProfile());
+    Harness mismatch(true, TestChecks(5875, "enUS", {65536, 1}));
     REQUIRE(StartTimingMpqCheck(mismatch));
     mismatch.SendClient(FromHex(
         "021A000F45480201040302010000000000"
@@ -983,7 +1042,7 @@ TEST(WardenServer_valid_mpq_negatives_are_observation_only)
     CHECK(std::get<warden::MpqEvidence>(mismatch.evidenceEvents[1]).outcome ==
         warden::MpqOutcome::DigestMismatch);
 
-    Harness bothNegative(true, TestMpqProfile());
+    Harness bothNegative(true, TestChecks(5875, "enUS", {65536, 1}));
     REQUIRE(StartTimingMpqCheck(bothNegative));
     bothNegative.SendClient(FromHex("02060071EF43C6000403020101"));
     CHECK(bothNegative.server->GetState() ==
@@ -999,7 +1058,7 @@ TEST(WardenServer_valid_mpq_negatives_are_observation_only)
 
 TEST(WardenServer_combined_lua_match_is_classified_without_text_evidence)
 {
-    Harness harness(true, TestMpqProfile(), TestLuaProfile());
+    Harness harness(true, TestChecks(5875, "enUS", {65536, 1, 2}));
     REQUIRE(StartTimingMpqLuaCheck(harness));
 
     harness.SendClient(FromHex(
@@ -1049,17 +1108,13 @@ TEST(WardenServer_crosslocale_content_vectors_report_ordered_matches)
         }
     };
 
-    warden::WardenCheckCatalog catalog;
     for (ProfileVector const& vector : vectors)
     {
-        warden::MpqCheckProfile const* mpq =
-            catalog.FindMpq(vector.build, "Win", vector.locale);
-        warden::LuaCheckProfile const* lua =
-            catalog.FindLua(vector.build, "Win", vector.locale);
-        REQUIRE(mpq != nullptr);
-        REQUIRE(lua != nullptr);
+        REQUIRE(TestCheckCatalog().Find(vector.build, "Win",
+            vector.locale) != nullptr);
 
-        Harness harness(true, *mpq, *lua);
+        Harness harness(true, TestChecks(vector.build, vector.locale,
+            {65536, 1, 2}));
         REQUIRE(StartTimingMpqLuaCheck(harness));
         harness.SendClient(FromHex(vector.result));
 
@@ -1079,7 +1134,8 @@ TEST(WardenServer_crosslocale_content_vectors_report_ordered_matches)
 
 TEST(WardenServer_valid_lua_negatives_are_observation_only)
 {
-    Harness unavailable(true, TestMpqProfile(), TestLuaProfile());
+    Harness unavailable(true,
+        TestChecks(5875, "enUS", {65536, 1, 2}));
     REQUIRE(StartTimingMpqLuaCheck(unavailable));
     unavailable.SendClient(FromHex(
         "021B007362FCCC0104030201007D88154D"
@@ -1093,7 +1149,7 @@ TEST(WardenServer_valid_lua_negatives_are_observation_only)
         unavailable.evidenceEvents[2]).outcome ==
         warden::LuaOutcome::Unavailable);
 
-    Harness mismatch(true, TestMpqProfile(), TestLuaProfile());
+    Harness mismatch(true, TestChecks(5875, "enUS", {65536, 1, 2}));
     REQUIRE(StartTimingMpqLuaCheck(mismatch));
     mismatch.SendClient(FromHex(
         "021F00D71749220104030201007D88154D"
@@ -1110,7 +1166,7 @@ TEST(WardenServer_valid_lua_negatives_are_observation_only)
 
 TEST(WardenServer_malformed_lua_result_publishes_no_partial_evidence)
 {
-    Harness harness(true, TestMpqProfile(), TestLuaProfile());
+    Harness harness(true, TestChecks(5875, "enUS", {65536, 1, 2}));
     REQUIRE(StartTimingMpqLuaCheck(harness));
 
     harness.SendClient(FromHex(
@@ -1125,7 +1181,7 @@ TEST(WardenServer_malformed_lua_result_publishes_no_partial_evidence)
 
 TEST(WardenServer_mem_results_are_identifier_only_and_ordered)
 {
-    Harness harness(true, std::nullopt, std::nullopt, TestMemProfiles());
+    Harness harness(true, TestMemChecks());
     REQUIRE(StartTimingMemCheck(harness));
 
     harness.SendClient(FromHex(
@@ -1153,7 +1209,7 @@ TEST(WardenServer_mem_results_are_identifier_only_and_ordered)
 
 TEST(WardenServer_batch_observer_can_queue_confirmation_after_state_commit)
 {
-    Harness harness(true, std::nullopt, std::nullopt, TestMemProfiles());
+    Harness harness(true, TestMemChecks());
     harness.queueConfirmationId = 1566;
     REQUIRE(StartTimingMemCheck(harness));
 
@@ -1178,8 +1234,7 @@ TEST(WardenServer_batch_observer_can_queue_confirmation_after_state_commit)
 
 TEST(WardenServer_valid_mem_negatives_are_observation_only)
 {
-    Harness unavailable(true, std::nullopt, std::nullopt,
-        TestMemProfiles());
+    Harness unavailable(true, TestMemChecks());
     REQUIRE(StartTimingMemCheck(unavailable));
     unavailable.SendClient(FromHex("0209005848324D010403020101010101"));
     CHECK(unavailable.server->GetState() == warden::WardenState::ModuleReady);
@@ -1192,7 +1247,7 @@ TEST(WardenServer_valid_mem_negatives_are_observation_only)
             warden::MemOutcome::Unavailable);
     }
 
-    Harness mismatch(true, std::nullopt, std::nullopt, TestMemProfiles());
+    Harness mismatch(true, TestMemChecks());
     REQUIRE(StartTimingMemCheck(mismatch));
     mismatch.SendClient(FromHex(
         "023F009A7787510104030201000000000000000000000000000000000000"
@@ -1214,7 +1269,7 @@ TEST(WardenServer_valid_mem_negatives_are_observation_only)
 
 TEST(WardenServer_malformed_mem_result_publishes_no_partial_evidence)
 {
-    Harness harness(true, std::nullopt, std::nullopt, TestMemProfiles());
+    Harness harness(true, TestMemChecks());
     REQUIRE(StartTimingMemCheck(harness));
 
     harness.SendClient(FromHex("0206008AFC74C1010403020102"));
@@ -1227,7 +1282,7 @@ TEST(WardenServer_malformed_mem_result_publishes_no_partial_evidence)
 
 TEST(WardenServer_combined_malformed_result_publishes_no_partial_evidence)
 {
-    Harness harness(true, TestMpqProfile());
+    Harness harness(true, TestChecks(5875, "enUS", {65536, 1}));
     REQUIRE(StartTimingMpqCheck(harness));
 
     harness.SendClient(FromHex("0206008AFC74C1010403020102"));
@@ -1240,8 +1295,10 @@ TEST(WardenServer_combined_malformed_result_publishes_no_partial_evidence)
 
 TEST(WardenServer_invalid_internal_mpq_plan_fails_before_sending)
 {
-    warden::MpqCheckProfile invalid = TestMpqProfile();
-    invalid.checkId = 0;
+    std::vector<warden::WardenCheckDefinition> invalid =
+        TestChecks(5875, "enUS", {65536, 1});
+    REQUIRE(invalid.size() == 2u);
+    std::get<warden::MpqCheckProfile>(invalid[1].payload).checkId = 0;
     Harness harness(true, invalid);
     REQUIRE(ReachModuleReady(harness));
 
@@ -1281,7 +1338,7 @@ TEST(WardenServer_timing_timeout_malformed_unexpected_and_send_fail_are_terminal
         warden::WardenFailure::UnexpectedCommand);
     CHECK(unexpected.evidenceEvents.empty());
 
-    Harness sendFailure(true, TestMpqProfile());
+    Harness sendFailure(true, TestChecks(5875, "enUS", {65536, 1}));
     REQUIRE(ReachModuleReady(sendFailure));
     sendFailure.sendSucceeds = false;
     sendFailure.server->Update(true, 1000);

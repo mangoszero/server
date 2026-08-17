@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <limits>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -136,100 +137,187 @@ bool AppendInitializationRecord(warden::Bytes& encoded,
     return true;
 }
 
-bool ValidateCheckPlan(warden::CheckPlan const& plan,
-    std::vector<std::string>& strings)
+struct CheckPlanAnalysis
 {
-    if (!plan.requestId || plan.checks.empty())
-        return false;
+    warden::WardenCheckPlanBudget budget;
+    std::vector<std::string> strings;
+};
 
+bool IsLegalDefinitionClass(warden::WardenCheckType type,
+    warden::WardenEvidenceClass evidenceClass)
+{
+    switch (type)
+    {
+        case warden::WardenCheckType::Timing:
+            return evidenceClass ==
+                warden::WardenEvidenceClass::ProtocolHealth;
+        case warden::WardenCheckType::Mpq:
+            return evidenceClass ==
+                    warden::WardenEvidenceClass::IntegrityInvariant ||
+                evidenceClass == warden::WardenEvidenceClass::Corroboration;
+        case warden::WardenCheckType::Lua:
+            return evidenceClass ==
+                warden::WardenEvidenceClass::Corroboration;
+        case warden::WardenCheckType::Mem:
+            return evidenceClass ==
+                    warden::WardenEvidenceClass::IntegrityInvariant ||
+                evidenceClass ==
+                    warden::WardenEvidenceClass::ThreatSignature ||
+                evidenceClass == warden::WardenEvidenceClass::Corroboration;
+    }
+    return false;
+}
+
+warden::CheckPlanValidation AnalyzeCheckPlan(warden::CheckPlan const& plan,
+    CheckPlanAnalysis& output)
+{
+    if (!plan.requestId)
+        return warden::CheckPlanValidation::InvalidRequestId;
+    if (plan.purpose == warden::CheckPlanPurpose::Confirmation &&
+        (plan.checks.size() != 1 || (plan.checks.size() == 1 &&
+            warden::GetWardenCheckType(plan.checks[0]) ==
+                warden::WardenCheckType::Timing)))
+        return warden::CheckPlanValidation::InvalidConfirmation;
+    if (plan.checks.empty())
+        return warden::CheckPlanValidation::Empty;
+
+    CheckPlanAnalysis candidate;
+    candidate.budget.stringTableBytes = 1;
+    // Command, string-table terminator, and final XOR byte.
+    candidate.budget.requestBodyBytes = 3;
     size_t timingCount = 0;
-    size_t mpqCount = 0;
-    size_t luaCount = 0;
-    size_t stringTableSize = 1; // Final zero-length string terminator.
-    size_t maximumResultSize = 0;
-    std::vector<uint32> checkIds;
+    std::unordered_set<uint32> checkIds;
 
     auto addCheckId = [&](uint32 checkId)
     {
-        if (!checkId ||
-            std::find(checkIds.begin(), checkIds.end(), checkId) !=
-                checkIds.end())
-            return false;
-        checkIds.push_back(checkId);
-        return true;
-    };
-
-    auto addMaximumResultSize = [&](size_t size)
-    {
-        if (size > std::numeric_limits<uint16>::max() - maximumResultSize)
-            return false;
-        maximumResultSize += size;
-        return true;
+        return checkId && checkIds.insert(checkId).second;
     };
 
     auto addString = [&](std::string const& value)
     {
-        auto const existing = std::find(strings.begin(), strings.end(), value);
-        if (existing != strings.end())
-            return true;
+        auto const existing = std::find(candidate.strings.begin(),
+            candidate.strings.end(), value);
+        if (existing != candidate.strings.end())
+            return warden::CheckPlanValidation::Valid;
+        if (candidate.strings.size() >=
+            std::numeric_limits<uint8>::max())
+            return warden::CheckPlanValidation::TooManyStrings;
 
-        stringTableSize += 1 + value.size();
-        if (stringTableSize > 512 ||
-            strings.size() >= std::numeric_limits<uint8>::max())
+        size_t const bytes = 1 + value.size();
+        if (bytes > 512 - candidate.budget.stringTableBytes)
+            return warden::CheckPlanValidation::StringTableTooLarge;
+        candidate.budget.stringTableBytes += bytes;
+        candidate.budget.requestBodyBytes += bytes;
+        candidate.strings.push_back(value);
+        candidate.budget.stringCount = candidate.strings.size();
+        return warden::CheckPlanValidation::Valid;
+    };
+
+    auto addRequestBytes = [&](size_t bytes)
+    {
+        if (bytes > std::numeric_limits<uint16>::max() -
+                candidate.budget.requestBodyBytes)
             return false;
-        strings.push_back(value);
+        candidate.budget.requestBodyBytes += bytes;
         return true;
     };
 
-    for (warden::PlannedCheck const& check : plan.checks)
+    auto addResultBytes = [&](size_t bytes)
     {
-        if (std::holds_alternative<warden::TimingCheck>(check))
+        if (bytes > std::numeric_limits<uint16>::max() -
+                candidate.budget.maximumResultBytes)
+            return false;
+        candidate.budget.maximumResultBytes += bytes;
+        return true;
+    };
+
+    for (warden::WardenCheckDefinition const& definition : plan.checks)
+    {
+        uint32 const checkId = warden::GetWardenCheckId(definition);
+        if (!checkId)
+            return warden::CheckPlanValidation::InvalidDefinition;
+        if (!addCheckId(checkId))
+            return warden::CheckPlanValidation::DuplicateCheckId;
+        warden::WardenCheckType const type =
+            warden::GetWardenCheckType(definition);
+        if (!IsLegalDefinitionClass(type, definition.evidenceClass))
+            return warden::CheckPlanValidation::InvalidDefinition;
+
+        if (auto const* timing = std::get_if<warden::TimingCheckProfile>(
+                &definition.payload))
         {
-            if (++timingCount > 1 || !addMaximumResultSize(5))
-                return false;
+            if (!timing->checkId)
+                return warden::CheckPlanValidation::InvalidDefinition;
+            if (++timingCount > 1)
+                return warden::CheckPlanValidation::DuplicateTiming;
+            if (!addRequestBytes(1))
+                return warden::CheckPlanValidation::RequestBodyTooLarge;
+            if (!addResultBytes(5))
+                return warden::CheckPlanValidation::ResultBodyTooLarge;
             continue;
         }
 
         if (warden::MpqCheckProfile const* mpq =
-                std::get_if<warden::MpqCheckProfile>(&check))
+                std::get_if<warden::MpqCheckProfile>(&definition.payload))
         {
-            if (++mpqCount > 1 || !addCheckId(mpq->checkId) ||
-                mpq->path.empty() ||
+            if (mpq->path.empty() ||
                 mpq->path.size() > std::numeric_limits<uint8>::max() ||
-                mpq->path.find('\0') != std::string::npos ||
-                !addString(mpq->path) || !addMaximumResultSize(21))
-                return false;
+                mpq->path.find('\0') != std::string::npos)
+                return warden::CheckPlanValidation::InvalidDefinition;
+            warden::CheckPlanValidation const stringStatus =
+                addString(mpq->path);
+            if (stringStatus != warden::CheckPlanValidation::Valid)
+                return stringStatus;
+            if (!addRequestBytes(2))
+                return warden::CheckPlanValidation::RequestBodyTooLarge;
+            if (!addResultBytes(21))
+                return warden::CheckPlanValidation::ResultBodyTooLarge;
             continue;
         }
 
         if (warden::LuaCheckProfile const* lua =
-                std::get_if<warden::LuaCheckProfile>(&check))
+                std::get_if<warden::LuaCheckProfile>(&definition.payload))
         {
-            if (++luaCount > 1 || !addCheckId(lua->checkId) ||
-                lua->query.empty() ||
+            if (lua->query.empty() ||
                 lua->query.size() > std::numeric_limits<uint8>::max() ||
                 lua->query.find('\0') != std::string::npos ||
-                lua->expectedText.size() > 64 ||
-                lua->expectedText.find('\0') != std::string::npos ||
-                !addString(lua->query) || !addMaximumResultSize(66))
-                return false;
+                lua->expectedText.empty() || lua->expectedText.size() > 64 ||
+                lua->expectedText.find('\0') != std::string::npos)
+                return warden::CheckPlanValidation::InvalidDefinition;
+            warden::CheckPlanValidation const stringStatus =
+                addString(lua->query);
+            if (stringStatus != warden::CheckPlanValidation::Valid)
+                return stringStatus;
+            if (!addRequestBytes(2))
+                return warden::CheckPlanValidation::RequestBodyTooLarge;
+            if (!addResultBytes(66))
+                return warden::CheckPlanValidation::ResultBodyTooLarge;
             continue;
         }
 
         warden::MemCheckProfile const* mem =
-            std::get_if<warden::MemCheckProfile>(&check);
-        if (!mem || !addCheckId(mem->checkId) || !mem->addressOrRva ||
+            std::get_if<warden::MemCheckProfile>(&definition.payload);
+        if (!mem || !mem->addressOrRva ||
             mem->moduleName.size() > std::numeric_limits<uint8>::max() ||
             mem->moduleName.find('\0') != std::string::npos ||
-            mem->expectedBytes.empty() ||
-            mem->expectedBytes.size() >
-                std::numeric_limits<uint8>::max() ||
-            (!mem->moduleName.empty() && !addString(mem->moduleName)) ||
-            !addMaximumResultSize(1 + mem->expectedBytes.size()))
-            return false;
+            mem->expectedBytes.empty() || mem->expectedBytes.size() >
+                std::numeric_limits<uint8>::max())
+            return warden::CheckPlanValidation::InvalidDefinition;
+        if (!mem->moduleName.empty())
+        {
+            warden::CheckPlanValidation const stringStatus =
+                addString(mem->moduleName);
+            if (stringStatus != warden::CheckPlanValidation::Valid)
+                return stringStatus;
+        }
+        if (!addRequestBytes(7))
+            return warden::CheckPlanValidation::RequestBodyTooLarge;
+        if (!addResultBytes(1 + mem->expectedBytes.size()))
+            return warden::CheckPlanValidation::ResultBodyTooLarge;
     }
 
-    return true;
+    output = std::move(candidate);
+    return warden::CheckPlanValidation::Valid;
 }
 }
 
@@ -322,12 +410,42 @@ EncodeStatus EncodeModuleInitialize(ModuleProfile const& profile, Bytes& output)
     return EncodeStatus::Ok;
 }
 
+CheckPlanValidation InspectCheckPlan(CheckPlan const& plan,
+    WardenCheckPlanBudget& budget)
+{
+    CheckPlanAnalysis analysis;
+    CheckPlanValidation const validation = AnalyzeCheckPlan(plan, analysis);
+    if (validation == CheckPlanValidation::Valid)
+        budget = analysis.budget;
+    return validation;
+}
+
+char const* ToString(CheckPlanValidation validation)
+{
+    switch (validation)
+    {
+        case CheckPlanValidation::Valid: return "Valid";
+        case CheckPlanValidation::InvalidRequestId: return "InvalidRequestId";
+        case CheckPlanValidation::Empty: return "Empty";
+        case CheckPlanValidation::InvalidDefinition: return "InvalidDefinition";
+        case CheckPlanValidation::DuplicateCheckId: return "DuplicateCheckId";
+        case CheckPlanValidation::DuplicateTiming: return "DuplicateTiming";
+        case CheckPlanValidation::InvalidConfirmation: return "InvalidConfirmation";
+        case CheckPlanValidation::TooManyStrings: return "TooManyStrings";
+        case CheckPlanValidation::StringTableTooLarge: return "StringTableTooLarge";
+        case CheckPlanValidation::RequestBodyTooLarge: return "RequestBodyTooLarge";
+        case CheckPlanValidation::ResultBodyTooLarge: return "ResultBodyTooLarge";
+    }
+    return "Unknown";
+}
+
 EncodeStatus EncodeCheckRequest(ModuleProfile const& profile,
     CheckPlan const& plan, Bytes& output)
 {
-    std::vector<std::string> strings;
-    if (!ValidateCheckPlan(plan, strings))
+    CheckPlanAnalysis analysis;
+    if (AnalyzeCheckPlan(plan, analysis) != CheckPlanValidation::Valid)
         return EncodeStatus::InvalidPlan;
+    std::vector<std::string> const& strings = analysis.strings;
 
     uint8 const xorByte = profile.clientKeySeed[0];
     Bytes encoded;
@@ -339,16 +457,16 @@ EncodeStatus EncodeCheckRequest(ModuleProfile const& profile,
     }
     encoded.push_back(0);
 
-    for (PlannedCheck const& check : plan.checks)
+    for (WardenCheckDefinition const& definition : plan.checks)
     {
-        if (std::holds_alternative<TimingCheck>(check))
+        if (std::holds_alternative<TimingCheckProfile>(definition.payload))
         {
             encoded.push_back(uint8(0x57 ^ xorByte));
             continue;
         }
 
         if (MemCheckProfile const* mem =
-                std::get_if<MemCheckProfile>(&check))
+                std::get_if<MemCheckProfile>(&definition.payload))
         {
             uint8 moduleIndex = 0;
             if (!mem->moduleName.empty())
@@ -375,13 +493,13 @@ EncodeStatus EncodeCheckRequest(ModuleProfile const& profile,
         std::string const* value = nullptr;
         uint8 decodedType = 0;
         if (MpqCheckProfile const* mpq =
-                std::get_if<MpqCheckProfile>(&check))
+                std::get_if<MpqCheckProfile>(&definition.payload))
         {
             value = &mpq->path;
             decodedType = 0x98;
         }
         else if (LuaCheckProfile const* lua =
-                     std::get_if<LuaCheckProfile>(&check))
+                     std::get_if<LuaCheckProfile>(&definition.payload))
         {
             value = &lua->query;
             decodedType = 0x8B;
@@ -428,8 +546,8 @@ DecodeStatus DecodeCheckResult(ByteView body, CheckPlan const& plan,
     if (ReadUint32LE(body.data + 3) != calculatedChecksum)
         return DecodeStatus::ChecksumMismatch;
 
-    std::vector<std::string> strings;
-    if (!ValidateCheckPlan(plan, strings))
+    CheckPlanAnalysis analysis;
+    if (AnalyzeCheckPlan(plan, analysis) != CheckPlanValidation::Valid)
         return DecodeStatus::InvalidValue;
 
     CheckBatchResult decoded;
@@ -439,9 +557,9 @@ DecodeStatus DecodeCheckResult(ByteView body, CheckPlan const& plan,
     CleanseDecodedCheckBatch const cleanseDecoded(decoded);
     decoded.checks.reserve(plan.checks.size());
     size_t offset = 0;
-    for (PlannedCheck const& check : plan.checks)
+    for (WardenCheckDefinition const& definition : plan.checks)
     {
-        if (std::holds_alternative<TimingCheck>(check))
+        if (std::holds_alternative<TimingCheckProfile>(definition.payload))
         {
             if (resultLength - offset < 5)
                 return DecodeStatus::WrongSize;
@@ -458,7 +576,7 @@ DecodeStatus DecodeCheckResult(ByteView body, CheckPlan const& plan,
             continue;
         }
 
-        if (std::holds_alternative<MpqCheckProfile>(check))
+        if (std::holds_alternative<MpqCheckProfile>(definition.payload))
         {
             if (resultLength - offset < 1)
                 return DecodeStatus::WrongSize;
@@ -481,7 +599,7 @@ DecodeStatus DecodeCheckResult(ByteView body, CheckPlan const& plan,
             continue;
         }
 
-        if (std::holds_alternative<LuaCheckProfile>(check))
+        if (std::holds_alternative<LuaCheckProfile>(definition.payload))
         {
             if (resultLength - offset < 1)
                 return DecodeStatus::WrongSize;
@@ -509,7 +627,8 @@ DecodeStatus DecodeCheckResult(ByteView body, CheckPlan const& plan,
             continue;
         }
 
-        MemCheckProfile const* mem = std::get_if<MemCheckProfile>(&check);
+        MemCheckProfile const* mem =
+            std::get_if<MemCheckProfile>(&definition.payload);
         if (!mem || resultLength - offset < 1)
             return DecodeStatus::WrongSize;
         uint8 const status = resultBody.data[offset++];

@@ -190,20 +190,6 @@ public:
     uint32 TotalRows() const;
     uint32 EnabledRows() const;
 
-    // Transitional fixed selectors remain until all runtime consumers switch
-    // to generic definitions in the next atomic change.
-    MpqCheckProfile const* FindMpq(uint32 build,
-        std::string const& platform, std::string const& locale) const;
-    LuaCheckProfile const* FindLua(uint32 build,
-        std::string const& platform, std::string const& locale) const;
-    std::vector<MemCheckProfile> const* FindMem(uint32 build,
-        std::string const& platform, std::string const& locale) const;
-    CheckCatalogValidation Validate(MpqCheckProfile const& profile) const;
-    CheckCatalogValidation Validate(LuaCheckProfile const& profile) const;
-    CheckCatalogValidation Validate(MemCheckProfile const& profile) const;
-    CheckCatalogValidation Validate(
-        std::vector<MemCheckProfile> const& profiles) const;
-
 private:
     friend class WardenCheckCatalogBuilder;
 

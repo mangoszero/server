@@ -52,18 +52,23 @@ struct WardenCreationOptions
     WardenLimits limits{};
     WardenConfiguration configuration{};
     bool initialAggressive = false;
-    bool requireMemCatalog = false;
 };
 
 /**
- * Stateless factory boundary between authenticated session inputs and the
- * exact delivered-module profile. Creating a server is inert; Start owns the
- * first wire write after WorldSession admission completes.
+ * Startup-owned immutable check snapshot and per-session factory boundary.
+ * Creating a server is inert; Start owns the first wire write after
+ * WorldSession admission completes.
  */
 class WardenManager
 {
 public:
+    WardenManager() = default;
     static WardenManager& Instance();
+    bool PublishCheckCatalog(
+        std::shared_ptr<WardenCheckCatalog const> catalog);
+    bool HasPublishedCheckCatalog() const;
+    WardenCheckProfile const* FindCheckProfile(uint32 build,
+        std::string const& platform, std::string const& locale) const;
 
     // Returns null for unsupported or custody-invalid profiles. The observer
     // receives typed terminal facts only and may be omitted by tests/tools.
@@ -76,7 +81,7 @@ public:
 
 private:
     WardenModuleCatalog m_catalog;
-    WardenCheckCatalog m_checkCatalog;
+    std::shared_ptr<WardenCheckCatalog const> m_checkCatalog;
 };
 }
 

@@ -67,9 +67,7 @@ public:
         WardenConfiguration configuration = {}, bool initialAggressive = false,
         LifecycleObserver observer = {},
         EvidenceBatchObserver evidenceObserver = {},
-        std::optional<MpqCheckProfile> mpqCheck = std::nullopt,
-        std::optional<LuaCheckProfile> luaCheck = std::nullopt,
-        std::vector<MemCheckProfile> memChecks = {});
+        std::vector<WardenCheckDefinition> checks = {});
 
     // Idempotently emits MODULE_USE and begins the module-status deadline.
     bool Start();

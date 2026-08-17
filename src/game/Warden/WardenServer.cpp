@@ -87,14 +87,11 @@ WardenServer::WardenServer(ModuleProfile const& profile,
     WardenCryptoContext&& crypto, SendEncrypted send, WardenLimits limits,
     WardenConfiguration configuration, bool initialAggressive,
     LifecycleObserver observer, EvidenceBatchObserver evidenceObserver,
-    std::optional<MpqCheckProfile> mpqCheck,
-    std::optional<LuaCheckProfile> luaCheck,
-    std::vector<MemCheckProfile> memChecks)
+    std::vector<WardenCheckDefinition> checks)
     : m_profile(profile), m_crypto(std::move(crypto)), m_send(std::move(send)),
       m_limits(limits), m_observer(std::move(observer)),
       m_evidenceObserver(std::move(evidenceObserver)),
-      m_planner(configuration, 1000, std::move(mpqCheck), std::move(luaCheck),
-          std::move(memChecks))
+      m_planner(configuration, 1000, std::move(checks))
 {
     m_planner.SetAggressive(initialAggressive);
 }
@@ -479,9 +476,11 @@ void WardenServer::HandleCheckResult(Bytes& plain)
         batch.evidence.reserve(result.checks.size());
         for (size_t index = 0; index < result.checks.size(); ++index)
         {
-            PlannedCheck const& planned = completedPlan.checks[index];
+            WardenCheckDefinition const& definition =
+                completedPlan.checks[index];
             CheckResult const& returned = result.checks[index];
-            if (std::holds_alternative<TimingCheck>(planned))
+            if (std::holds_alternative<TimingCheckProfile>(
+                    definition.payload))
             {
                 TimingResult const* timing =
                     std::get_if<TimingResult>(&returned);
@@ -501,7 +500,7 @@ void WardenServer::HandleCheckResult(Bytes& plain)
             }
 
             if (MpqCheckProfile const* profile =
-                    std::get_if<MpqCheckProfile>(&planned))
+                    std::get_if<MpqCheckProfile>(&definition.payload))
             {
                 MpqResult const* mpq = std::get_if<MpqResult>(&returned);
                 if (!mpq)
@@ -527,7 +526,7 @@ void WardenServer::HandleCheckResult(Bytes& plain)
             }
 
             if (LuaCheckProfile const* profile =
-                    std::get_if<LuaCheckProfile>(&planned))
+                    std::get_if<LuaCheckProfile>(&definition.payload))
             {
                 LuaResult const* lua = std::get_if<LuaResult>(&returned);
                 if (!lua)
@@ -554,7 +553,7 @@ void WardenServer::HandleCheckResult(Bytes& plain)
             }
 
             MemCheckProfile const* profile =
-                std::get_if<MemCheckProfile>(&planned);
+                std::get_if<MemCheckProfile>(&definition.payload);
             MemResult const* memory = std::get_if<MemResult>(&returned);
             if (!profile || !memory)
             {

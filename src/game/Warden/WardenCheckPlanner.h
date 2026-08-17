@@ -46,9 +46,7 @@ class WardenCheckPlanner
 public:
     explicit WardenCheckPlanner(WardenConfiguration configuration = {},
         uint32 eligibilityDelayMs = 1000,
-        std::optional<MpqCheckProfile> mpqCheck = std::nullopt,
-        std::optional<LuaCheckProfile> luaCheck = std::nullopt,
-        std::vector<MemCheckProfile> memChecks = {},
+        std::vector<WardenCheckDefinition> checks = {},
         WardenRandomRange randomRange = {});
 
     std::optional<CheckPlan> Update(bool eligible, uint32 diffMs);
@@ -58,18 +56,18 @@ public:
 
 private:
     CheckPlan BeginPlan(CheckPlanPurpose purpose,
-        std::vector<PlannedCheck> checks);
-    std::vector<PlannedCheck> BuildInitialChecks() const;
-    std::vector<PlannedCheck> BuildNormalRecurringChecks();
-    std::vector<PlannedCheck> BuildAggressiveChecks(bool shuffle);
-    void Shuffle(std::vector<MemCheckProfile>& checks);
+        std::vector<WardenCheckDefinition> checks);
+    std::vector<WardenCheckDefinition> BuildInitialChecks() const;
+    std::vector<WardenCheckDefinition> BuildNormalRecurringChecks();
+    std::vector<WardenCheckDefinition> BuildAggressiveChecks() const;
+    void Shuffle(std::vector<WardenCheckDefinition>& checks);
     void ScheduleNextInterval();
 
     WardenConfiguration m_configuration;
     uint32 m_eligibilityDelayMs;
-    std::optional<MpqCheckProfile> m_mpqCheck;
-    std::optional<LuaCheckProfile> m_luaCheck;
-    std::vector<MemCheckProfile> m_memChecks;
+    std::vector<WardenCheckDefinition> m_checks;
+    std::vector<WardenCheckDefinition> m_nonHealthChecks;
+    std::vector<WardenCheckDefinition> m_actionableChecks;
     WardenRandomRange m_randomRange;
 
     uint32 m_eligibleMs = 0;
@@ -82,11 +80,14 @@ private:
     bool m_aggressive = false;
     bool m_aggressiveImmediateIssued = false;
 
-    std::vector<MemCheckProfile> m_normalMemBag;
-    size_t m_normalMemBagOffset = 0;
+    std::vector<WardenCheckDefinition> m_normalBag;
+    size_t m_normalBagOffset = 0;
     std::deque<uint32> m_confirmationQueue;
     std::unordered_set<uint32> m_queuedConfirmationIds;
 };
+
+std::vector<CheckPlan> BuildWardenPreflightPlans(
+    WardenCheckProfile const& profile);
 }
 
 #endif

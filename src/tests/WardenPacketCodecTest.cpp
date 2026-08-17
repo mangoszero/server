@@ -23,6 +23,7 @@
 #include "TestHarness.h"
 
 #include "WardenCheckCatalog.h"
+#include "WardenCheckFixtures.h"
 #include "WardenModuleCatalog.h"
 #include "WardenPacketCodec.h"
 
@@ -72,89 +73,98 @@ warden::ModuleProfile const* WindowsProfile(uint32 build)
     return catalog.Find(build, "Win");
 }
 
-warden::MpqCheckProfile TestMpqProfile()
+warden::WardenCheckCatalog const& TestCheckCatalog()
 {
-    warden::MpqCheckProfile profile;
-    profile.checkId = 1;
-    profile.path = "DBFilesClient\\AreaTable.dbc";
-    profile.expectedSha1 =
-    {
-        0x7D, 0x88, 0x15, 0x4D, 0x34, 0x11, 0x81, 0x19,
-        0x85, 0xF5, 0xD8, 0x11, 0x77, 0xC5, 0x45, 0x32,
-        0x48, 0x13, 0x34, 0x43
-    };
-    return profile;
+    static warden::WardenCheckCatalog const catalog =
+        warden::test::BuildInitialWardenCatalog();
+    return catalog;
 }
 
-warden::LuaCheckProfile TestLuaProfile()
+warden::WardenCheckProfile const* TestCheckProfile(uint32 build,
+    std::string const& locale)
 {
-    return {2, "OKAY", "Okay"};
+    return TestCheckCatalog().Find(build, "Win", locale);
+}
+
+warden::WardenCheckDefinition TestDefinition(uint32 checkId)
+{
+    warden::WardenCheckProfile const* profile =
+        TestCheckProfile(5875, "enUS");
+    if (profile)
+    {
+        auto const found = std::find_if(profile->checks.begin(),
+            profile->checks.end(), [checkId](auto const& definition)
+            {
+                return warden::GetWardenCheckId(definition) == checkId;
+            });
+        if (found != profile->checks.end())
+            return *found;
+    }
+    return {};
 }
 
 warden::CheckPlan TimingPlan()
 {
     warden::CheckPlan plan;
     plan.requestId = 1;
-    plan.checks.emplace_back(warden::TimingCheck{});
+    plan.checks.push_back(TestDefinition(65536));
     return plan;
 }
 
 warden::CheckPlan TimingMpqPlan()
 {
     warden::CheckPlan plan = TimingPlan();
-    plan.checks.emplace_back(TestMpqProfile());
+    plan.checks.push_back(TestDefinition(1));
     return plan;
 }
 
 warden::CheckPlan TimingLuaPlan()
 {
     warden::CheckPlan plan = TimingPlan();
-    plan.checks.emplace_back(TestLuaProfile());
+    plan.checks.push_back(TestDefinition(2));
     return plan;
 }
 
 warden::CheckPlan TimingMpqLuaPlan()
 {
     warden::CheckPlan plan = TimingMpqPlan();
-    plan.checks.emplace_back(TestLuaProfile());
+    plan.checks.push_back(TestDefinition(2));
     return plan;
 }
 
 warden::CheckPlan TimingMemPlan(uint32 build, std::string const& locale)
 {
-    static warden::WardenCheckCatalog const catalog;
-    std::vector<warden::MemCheckProfile> const* profiles =
-        catalog.FindMem(build, "Win", locale);
-    warden::CheckPlan plan = TimingPlan();
-    if (profiles)
+    warden::WardenCheckProfile const* profile =
+        TestCheckProfile(build, locale);
+    warden::CheckPlan plan;
+    plan.requestId = 1;
+    if (profile)
     {
-        for (warden::MemCheckProfile const& profile : *profiles)
-            plan.checks.emplace_back(profile);
+        for (warden::WardenCheckDefinition const& check : profile->checks)
+        {
+            if (warden::GetWardenCheckType(check) ==
+                    warden::WardenCheckType::Timing ||
+                warden::GetWardenCheckType(check) ==
+                    warden::WardenCheckType::Mem)
+                plan.checks.push_back(check);
+        }
     }
     return plan;
 }
 
 warden::CheckPlan TimingSingleMemPlan()
 {
-    static warden::WardenCheckCatalog const catalog;
-    std::vector<warden::MemCheckProfile> const* profiles =
-        catalog.FindMem(5875, "Win", "enUS");
     warden::CheckPlan plan = TimingPlan();
-    if (profiles && profiles->size() > 1u)
-        plan.checks.emplace_back((*profiles)[1]);
+    plan.checks.push_back(TestDefinition(827));
     return plan;
 }
 
 warden::CheckPlan ConfirmationMemPlan()
 {
-    static warden::WardenCheckCatalog const catalog;
-    std::vector<warden::MemCheckProfile> const* profiles =
-        catalog.FindMem(5875, "Win", "enUS");
     warden::CheckPlan plan;
     plan.requestId = 7;
     plan.purpose = warden::CheckPlanPurpose::Confirmation;
-    if (profiles && profiles->size() > 2u)
-        plan.checks.emplace_back((*profiles)[2]);
+    plan.checks.push_back(TestDefinition(1566));
     return plan;
 }
 
@@ -372,106 +382,113 @@ TEST(WardenPacket_rejects_invalid_check_plans_without_replacing_output)
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingPlan();
-    plan.checks.emplace_back(warden::TimingCheck{});
+    plan.checks.push_back(plan.checks[0]);
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingMpqPlan();
-    plan.checks.emplace_back(TestMpqProfile());
+    plan.checks.push_back(TestDefinition(1));
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingMpqPlan();
-    std::get<warden::MpqCheckProfile>(plan.checks[1]).checkId = 0;
+    std::get<warden::MpqCheckProfile>(plan.checks[1].payload).checkId = 0;
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingMpqPlan();
-    std::get<warden::MpqCheckProfile>(plan.checks[1]).path.clear();
+    std::get<warden::MpqCheckProfile>(plan.checks[1].payload).path.clear();
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingMpqPlan();
-    std::get<warden::MpqCheckProfile>(plan.checks[1]).path.assign(
+    std::get<warden::MpqCheckProfile>(plan.checks[1].payload).path.assign(
         "DBFiles\0Client", 14);
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingMpqPlan();
-    std::get<warden::MpqCheckProfile>(plan.checks[1]).path.assign(256, 'A');
+    std::get<warden::MpqCheckProfile>(plan.checks[1].payload).path.assign(
+        256, 'A');
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingLuaPlan();
-    plan.checks.emplace_back(TestLuaProfile());
+    plan.checks.push_back(TestDefinition(2));
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingLuaPlan();
-    std::get<warden::LuaCheckProfile>(plan.checks[1]).checkId = 0;
+    std::get<warden::LuaCheckProfile>(plan.checks[1].payload).checkId = 0;
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingLuaPlan();
-    std::get<warden::LuaCheckProfile>(plan.checks[1]).query.clear();
+    std::get<warden::LuaCheckProfile>(plan.checks[1].payload).query.clear();
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingLuaPlan();
-    std::get<warden::LuaCheckProfile>(plan.checks[1]).query.assign(
+    std::get<warden::LuaCheckProfile>(plan.checks[1].payload).query.assign(
         "OK\0AY", 5);
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingLuaPlan();
-    std::get<warden::LuaCheckProfile>(plan.checks[1]).query.assign(256, 'Q');
+    std::get<warden::LuaCheckProfile>(plan.checks[1].payload).query.assign(
+        256, 'Q');
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingLuaPlan();
-    std::get<warden::LuaCheckProfile>(plan.checks[1]).expectedText.assign(
+    std::get<warden::LuaCheckProfile>(
+        plan.checks[1].payload).expectedText.assign(
         "Ok\0ay", 5);
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingLuaPlan();
-    std::get<warden::LuaCheckProfile>(plan.checks[1]).expectedText.assign(
+    std::get<warden::LuaCheckProfile>(
+        plan.checks[1].payload).expectedText.assign(
         65, 'R');
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingMemPlan(5875, "enUS");
-    std::get<warden::MemCheckProfile>(plan.checks[1]).checkId = 0;
+    std::get<warden::MemCheckProfile>(plan.checks[1].payload).checkId = 0;
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingMemPlan(5875, "enUS");
-    std::get<warden::MemCheckProfile>(plan.checks[1]).addressOrRva = 0;
+    std::get<warden::MemCheckProfile>(
+        plan.checks[1].payload).addressOrRva = 0;
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingMemPlan(5875, "enUS");
-    std::get<warden::MemCheckProfile>(plan.checks[1]).expectedBytes.clear();
+    std::get<warden::MemCheckProfile>(
+        plan.checks[1].payload).expectedBytes.clear();
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingMemPlan(5875, "enUS");
-    std::get<warden::MemCheckProfile>(plan.checks[1]).expectedBytes.assign(
+    std::get<warden::MemCheckProfile>(
+        plan.checks[1].payload).expectedBytes.assign(
         256, 0);
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingMemPlan(5875, "enUS");
-    std::get<warden::MemCheckProfile>(plan.checks[1]).moduleName.assign(
+    std::get<warden::MemCheckProfile>(
+        plan.checks[1].payload).moduleName.assign(
         "WoW\0.exe", 8);
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingMemPlan(5875, "enUS");
-    std::get<warden::MemCheckProfile>(plan.checks[2]).checkId =
-        std::get<warden::MemCheckProfile>(plan.checks[1]).checkId;
+    std::get<warden::MemCheckProfile>(plan.checks[2].payload).checkId =
+        std::get<warden::MemCheckProfile>(
+            plan.checks[1].payload).checkId;
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingMpqPlan();
-    warden::MemCheckProfile duplicate =
-        std::get<warden::MemCheckProfile>(
-            TimingMemPlan(5875, "enUS").checks[1]);
-    duplicate.checkId = std::get<warden::MpqCheckProfile>(
-        plan.checks[1]).checkId;
-    plan.checks.emplace_back(std::move(duplicate));
+    warden::WardenCheckDefinition duplicate = TestDefinition(1107);
+    std::get<warden::MemCheckProfile>(duplicate.payload).checkId =
+        std::get<warden::MpqCheckProfile>(plan.checks[1].payload).checkId;
+    plan.checks.push_back(std::move(duplicate));
     CheckInvalidPlanLeavesOutput(*profile, plan);
 
     plan = TimingPlan();
-    warden::MemCheckProfile oversized =
-        std::get<warden::MemCheckProfile>(
-            TimingMemPlan(5875, "enUS").checks[1]);
-    oversized.expectedBytes.assign(255, 0);
+    warden::WardenCheckDefinition oversized = TestDefinition(1107);
+    std::get<warden::MemCheckProfile>(
+        oversized.payload).expectedBytes.assign(255, 0);
     for (uint32 index = 0; index < 256; ++index)
     {
-        oversized.checkId = 1000 + index;
-        plan.checks.emplace_back(oversized);
+        std::get<warden::MemCheckProfile>(oversized.payload).checkId =
+            1000 + index;
+        plan.checks.push_back(oversized);
     }
     CheckInvalidPlanLeavesOutput(*profile, plan);
 }
@@ -917,4 +934,195 @@ TEST(WardenPacket_rejects_empty_wrong_sized_and_unsupported_client_shapes)
         CHECK(warden::DecodeClient(View(body), message) ==
             warden::DecodeStatus::UnsupportedCommand);
     }
+}
+
+TEST(WardenPacket_repeats_mpq_and_lua_definitions_with_shared_strings)
+{
+    warden::WardenCheckCatalog const catalog =
+        warden::test::BuildInitialWardenCatalog();
+    warden::WardenCheckProfile const* checks =
+        catalog.Find(5875, "Win", "enUS");
+    warden::ModuleProfile const* module = Windows5875Profile();
+    REQUIRE(checks != nullptr);
+    REQUIRE(module != nullptr);
+
+    warden::WardenCheckDefinition mpqSecond = checks->checks[1];
+    std::get<warden::MpqCheckProfile>(mpqSecond.payload).checkId = 3;
+    mpqSecond.sortOrder = 25;
+    warden::WardenCheckDefinition luaSecond = checks->checks[2];
+    std::get<warden::LuaCheckProfile>(luaSecond.payload).checkId = 4;
+    luaSecond.sortOrder = 35;
+
+    warden::CheckPlan plan;
+    plan.requestId = 1;
+    plan.checks = {checks->checks[0], checks->checks[1], mpqSecond,
+        checks->checks[2], luaSecond};
+    warden::WardenCheckPlanBudget budget;
+    REQUIRE(warden::InspectCheckPlan(plan, budget) ==
+        warden::CheckPlanValidation::Valid);
+    CHECK_EQ(budget.stringCount, size_t(2));
+    CHECK_EQ(budget.stringTableBytes, size_t(34));
+    CHECK_EQ(budget.requestBodyBytes, size_t(45));
+    CHECK_EQ(budget.maximumResultBytes, size_t(179));
+
+    warden::Bytes encoded;
+    REQUIRE(warden::EncodeCheckRequest(*module, plan, encoded) ==
+        warden::EncodeStatus::Ok);
+    CHECK_HEX(encoded.data(), encoded.size(),
+        "021b444246696c6573436c69656e745c417265615461626c652e646263"
+        "044f4b41590028e701e701f402f4027f");
+
+    warden::Bytes const response = FromHex(
+        "0226007e858a430178563412"
+        "007d88154d3411811985f5d81177c5453248133443"
+        "0100044f6b61790003426164");
+    warden::CheckBatchResult decoded;
+    REQUIRE(warden::DecodeCheckResult(View(response), plan, decoded) ==
+        warden::DecodeStatus::Ok);
+    REQUIRE(decoded.checks.size() == 5u);
+    CHECK(std::holds_alternative<warden::TimingResult>(decoded.checks[0]));
+    CHECK(std::holds_alternative<warden::MpqResult>(decoded.checks[1]));
+    CHECK(std::holds_alternative<warden::MpqResult>(decoded.checks[2]));
+    CHECK(std::holds_alternative<warden::LuaResult>(decoded.checks[3]));
+    CHECK(std::holds_alternative<warden::LuaResult>(decoded.checks[4]));
+    CHECK(std::get<warden::MpqResult>(decoded.checks[2]).status ==
+        warden::MpqResultStatus::Unavailable);
+    CHECK_STR(std::get<warden::LuaResult>(decoded.checks[3]).text.c_str(),
+        "Okay");
+    CHECK_STR(std::get<warden::LuaResult>(decoded.checks[4]).text.c_str(),
+        "Bad");
+}
+
+TEST(WardenPacket_inspects_plan_identity_and_confirmation_contracts)
+{
+    warden::WardenCheckCatalog const catalog =
+        warden::test::BuildInitialWardenCatalog();
+    warden::WardenCheckProfile const* profile =
+        catalog.Find(5875, "Win", "enUS");
+    REQUIRE(profile != nullptr);
+
+    warden::CheckPlan plan;
+    plan.requestId = 1;
+    plan.checks = profile->checks;
+    warden::WardenCheckPlanBudget budget;
+    CHECK(warden::InspectCheckPlan(plan, budget) ==
+        warden::CheckPlanValidation::Valid);
+
+    plan.checks.push_back(plan.checks[1]);
+    CHECK(warden::InspectCheckPlan(plan, budget) ==
+        warden::CheckPlanValidation::DuplicateCheckId);
+    plan.checks = profile->checks;
+    warden::WardenCheckDefinition secondTiming = plan.checks[0];
+    std::get<warden::TimingCheckProfile>(secondTiming.payload).checkId = 65537;
+    secondTiming.sortOrder = 11;
+    plan.checks.push_back(secondTiming);
+    CHECK(warden::InspectCheckPlan(plan, budget) ==
+        warden::CheckPlanValidation::DuplicateTiming);
+
+    plan.purpose = warden::CheckPlanPurpose::Confirmation;
+    plan.checks.clear();
+    CHECK(warden::InspectCheckPlan(plan, budget) ==
+        warden::CheckPlanValidation::InvalidConfirmation);
+    plan.checks = {profile->checks[1], profile->checks[2]};
+    CHECK(warden::InspectCheckPlan(plan, budget) ==
+        warden::CheckPlanValidation::InvalidConfirmation);
+    plan.checks = {profile->checks[0]};
+    CHECK(warden::InspectCheckPlan(plan, budget) ==
+        warden::CheckPlanValidation::InvalidConfirmation);
+}
+
+TEST(WardenPacket_inspects_exact_string_and_body_budget_boundaries)
+{
+    warden::WardenCheckCatalog const catalog =
+        warden::test::BuildInitialWardenCatalog();
+    warden::WardenCheckProfile const* profile =
+        catalog.Find(5875, "Win", "enUS");
+    REQUIRE(profile != nullptr);
+
+    warden::CheckPlan plan;
+    plan.requestId = 1;
+    warden::WardenCheckDefinition mpq = profile->checks[1];
+    for (uint32 index = 1; index <= 255; ++index)
+    {
+        warden::MpqCheckProfile& payload =
+            std::get<warden::MpqCheckProfile>(mpq.payload);
+        payload.checkId = 1000 + index;
+        payload.path.assign(1, static_cast<char>(index));
+        mpq.sortOrder = static_cast<uint16>(index);
+        plan.checks.push_back(mpq);
+    }
+    warden::WardenCheckPlanBudget budget;
+    REQUIRE(warden::InspectCheckPlan(plan, budget) ==
+        warden::CheckPlanValidation::Valid);
+    CHECK_EQ(budget.stringCount, size_t(255));
+    CHECK_EQ(budget.stringTableBytes, size_t(511));
+    std::get<warden::MpqCheckProfile>(mpq.payload).checkId = 2000;
+    std::get<warden::MpqCheckProfile>(mpq.payload).path = "XX";
+    plan.checks.push_back(mpq);
+    CHECK(warden::InspectCheckPlan(plan, budget) ==
+        warden::CheckPlanValidation::TooManyStrings);
+
+    plan.checks.clear();
+    for (uint32 index = 0; index < 2; ++index)
+    {
+        warden::MpqCheckProfile& payload =
+            std::get<warden::MpqCheckProfile>(mpq.payload);
+        payload.checkId = 3000 + index;
+        payload.path.assign(255, static_cast<char>('A' + index));
+        plan.checks.push_back(mpq);
+    }
+    CHECK(warden::InspectCheckPlan(plan, budget) ==
+        warden::CheckPlanValidation::StringTableTooLarge);
+
+    plan.checks.clear();
+    warden::WardenCheckDefinition mem = profile->checks[3];
+    std::get<warden::MemCheckProfile>(mem.payload).expectedBytes.assign(1,
+        uint8(0x90));
+    for (uint32 index = 0; index < 9362; ++index)
+    {
+        std::get<warden::MemCheckProfile>(mem.payload).checkId = 100000 + index;
+        plan.checks.push_back(mem);
+    }
+    CHECK(warden::InspectCheckPlan(plan, budget) ==
+        warden::CheckPlanValidation::RequestBodyTooLarge);
+
+    plan.checks.clear();
+    warden::WardenCheckDefinition lua = profile->checks[2];
+    std::get<warden::LuaCheckProfile>(lua.payload).query = "Q";
+    std::get<warden::LuaCheckProfile>(lua.payload).expectedText.assign(64, 'R');
+    for (uint32 index = 0; index < 1000; ++index)
+    {
+        std::get<warden::LuaCheckProfile>(lua.payload).checkId = 200000 + index;
+        plan.checks.push_back(lua);
+    }
+    CHECK(warden::InspectCheckPlan(plan, budget) ==
+        warden::CheckPlanValidation::ResultBodyTooLarge);
+}
+
+TEST(WardenPacket_failed_inspection_and_encoding_leave_outputs_unchanged)
+{
+    warden::WardenCheckCatalog const catalog =
+        warden::test::BuildInitialWardenCatalog();
+    warden::WardenCheckProfile const* profile =
+        catalog.Find(5875, "Win", "enUS");
+    warden::ModuleProfile const* module = Windows5875Profile();
+    REQUIRE(profile != nullptr);
+    REQUIRE(module != nullptr);
+
+    warden::CheckPlan plan;
+    plan.requestId = 1;
+    plan.checks = {profile->checks[1], profile->checks[1]};
+    warden::WardenCheckPlanBudget budget{9, 8, 7, 6};
+    CHECK(warden::InspectCheckPlan(plan, budget) ==
+        warden::CheckPlanValidation::DuplicateCheckId);
+    CHECK_EQ(budget.stringCount, size_t(9));
+    CHECK_EQ(budget.stringTableBytes, size_t(8));
+    CHECK_EQ(budget.requestBodyBytes, size_t(7));
+    CHECK_EQ(budget.maximumResultBytes, size_t(6));
+
+    warden::Bytes output{0xA5};
+    CHECK(warden::EncodeCheckRequest(*module, plan, output) ==
+        warden::EncodeStatus::InvalidPlan);
+    REQUIRE(output.size() == 1u);
+    CHECK_EQ(output[0], uint8(0xA5));
 }

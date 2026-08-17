@@ -427,8 +427,6 @@ void WorldSession::OnAuthenticatedAdmission()
     warden::WardenCreationOptions options;
     options.configuration = m_wardenConfiguration;
     options.initialAggressive = m_wardenAggressive;
-    options.requireMemCatalog =
-        profileDisposition == warden::WardenProfileDisposition::Enforce;
 
     // The send adapter owns only the outer world packet. WardenServer supplies
     // an already encrypted, complete inner body and advances its own stream.
@@ -459,10 +457,10 @@ void WorldSession::OnAuthenticatedAdmission()
         sLog.outError("Warden unavailable for account %u (build %u): "
             "unsupported or invalid profile for locale %s.", accountId,
             m_wardenBuild, m_wardenClientLocale.c_str());
-        if (options.requireMemCatalog)
+        if (profileDisposition == warden::WardenProfileDisposition::Enforce)
         {
-            sLog.outError("Warden enforcement requires an exact memory "
-                "catalogue for account %u; closing the client link.",
+            sLog.outError("Warden enforcement requires an exact check "
+                "profile for account %u; closing the client link.",
                 accountId);
             m_wardenEnforcementClosed = true;
             KickPlayer();
