@@ -323,6 +323,9 @@ TEST(WardenCheckCatalog_enforces_mem_contract)
     row.expectedHex.resize(row.expectedHex.size() - 2);
     CHECK(AddOne(row) ==
         warden::CheckCatalogValidation::InvalidExpectedBytes);
+    row = FirstProfileRows()[3];
+    row.address = 0xFFFFFFF0u;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidAddress);
 }
 
 TEST(WardenCheckCatalog_pins_legal_type_evidence_class_pairs)
@@ -423,8 +426,29 @@ TEST(WardenCheckCatalog_rejects_conflicting_expectations_for_one_request)
     CHECK(BuildRows(rows) == warden::CheckCatalogValidation::Valid);
 
     rows = FirstProfileRows();
-    duplicate = rows[1];
+    duplicate = rows[3];
     duplicate.checkId = 9005;
+    duplicate.sortOrder = 41;
+    duplicate.address += 2;
+    duplicate.length = 4;
+    duplicate.expectedHex = "FFFFFFFF";
+    rows.push_back(duplicate);
+    CHECK(BuildRows(rows) ==
+        warden::CheckCatalogValidation::ConflictingRequestExpectation);
+
+    rows = FirstProfileRows();
+    duplicate = rows[3];
+    duplicate.checkId = 9006;
+    duplicate.sortOrder = 41;
+    duplicate.address += 2;
+    duplicate.length = 4;
+    duplicate.expectedHex = rows[3].expectedHex.substr(4, 8);
+    rows.push_back(duplicate);
+    CHECK(BuildRows(rows) == warden::CheckCatalogValidation::Valid);
+
+    rows = FirstProfileRows();
+    duplicate = rows[1];
+    duplicate.checkId = 9007;
     duplicate.sortOrder = 21;
     duplicate.enabled = 0;
     duplicate.expectedHex[0] = duplicate.expectedHex[0] == '0' ? '1' : '0';

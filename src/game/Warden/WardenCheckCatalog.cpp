@@ -144,11 +144,32 @@ bool IsLegalEvidenceClass(warden::WardenCheckType type,
     return false;
 }
 
-bool ExpectedPrefixesAgree(warden::Bytes const& left,
-    warden::Bytes const& right)
+struct MemExpectationRange
 {
-    size_t const compared = std::min(left.size(), right.size());
-    return std::equal(left.begin(), left.begin() + compared, right.begin());
+    uint32 address = 0;
+    warden::Bytes expectedBytes;
+};
+
+bool OverlappingExpectedBytesAgree(MemExpectationRange const& left,
+    uint32 rightAddress, warden::Bytes const& rightBytes)
+{
+    uint64 const leftBegin = left.address;
+    uint64 const leftEnd = leftBegin + left.expectedBytes.size();
+    uint64 const rightBegin = rightAddress;
+    uint64 const rightEnd = rightBegin + rightBytes.size();
+    uint64 const overlapBegin = std::max(leftBegin, rightBegin);
+    uint64 const overlapEnd = std::min(leftEnd, rightEnd);
+    if (overlapBegin >= overlapEnd)
+    {
+        return true;
+    }
+
+    size_t const leftOffset = static_cast<size_t>(overlapBegin - leftBegin);
+    size_t const rightOffset = static_cast<size_t>(overlapBegin - rightBegin);
+    size_t const overlapSize = static_cast<size_t>(overlapEnd - overlapBegin);
+    return std::equal(left.expectedBytes.begin() + leftOffset,
+        left.expectedBytes.begin() + leftOffset + overlapSize,
+        rightBytes.begin() + rightOffset);
 }
 }
 
@@ -345,6 +366,13 @@ CheckCatalogValidation WardenCheckCatalogBuilder::Add(
                 return SetDiagnostic(diagnostic,
                     CheckCatalogValidation::InvalidLength,
                     key, input.checkId);
+            if (uint64(input.address) + input.length >
+                uint64(std::numeric_limits<uint32>::max()) + 1)
+            {
+                return SetDiagnostic(diagnostic,
+                    CheckCatalogValidation::InvalidAddress,
+                    key, input.checkId);
+            }
             if (!requestBytes.empty())
                 return SetDiagnostic(diagnostic,
                     CheckCatalogValidation::InvalidUnusedField,
@@ -409,7 +437,7 @@ CheckCatalogValidation WardenCheckCatalogBuilder::Build(
         std::set<uint16> sortOrders;
         std::map<std::string, Digest20> mpqExpectations;
         std::map<std::string, std::string> luaExpectations;
-        std::map<std::pair<std::string, uint32>, Bytes> memExpectations;
+        std::map<std::string, std::vector<MemExpectationRange>> memExpectations;
         uint32 timingCount = 0;
         bool timingEnabled = false;
         bool hasEnabledNonHealth = false;
@@ -460,26 +488,23 @@ CheckCatalogValidation WardenCheckCatalogBuilder::Build(
             {
                 MemCheckProfile const& payload =
                     std::get<MemCheckProfile>(row.definition.payload);
-                auto const key = std::make_pair(payload.moduleName,
-                    payload.addressOrRva);
-                auto inserted = memExpectations.emplace(key,
-                    payload.expectedBytes);
-                if (!inserted.second)
+                // Absolute and module-relative address spaces cannot be
+                // cross-resolved here; overlaps are exact within each space.
+                std::vector<MemExpectationRange>& ranges =
+                    memExpectations[payload.moduleName];
+                for (MemExpectationRange const& range : ranges)
                 {
-                    if (!ExpectedPrefixesAgree(inserted.first->second,
-                            payload.expectedBytes))
+                    if (!OverlappingExpectedBytesAgree(range,
+                            payload.addressOrRva, payload.expectedBytes))
                     {
                         return SetDiagnostic(diagnostic,
                             CheckCatalogValidation::
                                 ConflictingRequestExpectation,
                             row.key, row.checkId);
                     }
-                    if (payload.expectedBytes.size() >
-                        inserted.first->second.size())
-                    {
-                        inserted.first->second = payload.expectedBytes;
-                    }
                 }
+                ranges.push_back(
+                    {payload.addressOrRva, payload.expectedBytes});
             }
             if (type == WardenCheckType::Timing)
             {

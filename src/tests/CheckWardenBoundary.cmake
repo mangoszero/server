@@ -116,6 +116,10 @@ require_count("${SESSION_CPP}" "ClassifyWardenProfile[ \\t]*\\(" 1
 require_count("${SESSION_CPP}"
     "CONFIG_BOOL_WARDEN_REQUIRE_EXACT_PROFILE" 1
     "session admission must snapshot the strict-profile setting once")
+if(SESSION_CPP MATCHES "m_wardenClientPlatform\\.c_str[ \\t]*\\(")
+    message(FATAL_ERROR
+        "Warden boundary: raw authenticated platform bytes must not reach logs")
+endif()
 require_count("${WORLD_CONFIG}"
     "Warden\\.RequireExactProfile\"[ \\t]*,[ \\t]*true" 1
     "strict exact-profile admission must default on in world configuration")

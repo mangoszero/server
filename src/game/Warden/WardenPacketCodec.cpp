@@ -187,6 +187,7 @@ warden::CheckPlanValidation AnalyzeCheckPlan(warden::CheckPlan const& plan,
     candidate.budget.requestBodyBytes = 3;
     size_t timingCount = 0;
     std::unordered_set<uint32> checkIds;
+    size_t constexpr MaxBodyBytes = std::numeric_limits<uint16>::max();
 
     auto addCheckId = [&](uint32 checkId)
     {
@@ -204,8 +205,12 @@ warden::CheckPlanValidation AnalyzeCheckPlan(warden::CheckPlan const& plan,
             return warden::CheckPlanValidation::TooManyStrings;
 
         size_t const bytes = 1 + value.size();
-        if (bytes > 512 - candidate.budget.stringTableBytes)
+        if (candidate.budget.stringTableBytes > 512 ||
+            bytes > 512 - candidate.budget.stringTableBytes)
             return warden::CheckPlanValidation::StringTableTooLarge;
+        if (candidate.budget.requestBodyBytes > MaxBodyBytes ||
+            bytes > MaxBodyBytes - candidate.budget.requestBodyBytes)
+            return warden::CheckPlanValidation::RequestBodyTooLarge;
         candidate.budget.stringTableBytes += bytes;
         candidate.budget.requestBodyBytes += bytes;
         candidate.strings.push_back(value);
@@ -215,8 +220,8 @@ warden::CheckPlanValidation AnalyzeCheckPlan(warden::CheckPlan const& plan,
 
     auto addRequestBytes = [&](size_t bytes)
     {
-        if (bytes > std::numeric_limits<uint16>::max() -
-                candidate.budget.requestBodyBytes)
+        if (candidate.budget.requestBodyBytes > MaxBodyBytes ||
+            bytes > MaxBodyBytes - candidate.budget.requestBodyBytes)
             return false;
         candidate.budget.requestBodyBytes += bytes;
         return true;
@@ -224,8 +229,8 @@ warden::CheckPlanValidation AnalyzeCheckPlan(warden::CheckPlan const& plan,
 
     auto addResultBytes = [&](size_t bytes)
     {
-        if (bytes > std::numeric_limits<uint16>::max() -
-                candidate.budget.maximumResultBytes)
+        if (candidate.budget.maximumResultBytes > MaxBodyBytes ||
+            bytes > MaxBodyBytes - candidate.budget.maximumResultBytes)
             return false;
         candidate.budget.maximumResultBytes += bytes;
         return true;

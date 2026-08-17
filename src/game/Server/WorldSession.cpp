@@ -138,6 +138,26 @@ static warden::WardenConfiguration SnapshotWardenConfiguration()
     return warden::NormalizeWardenConfiguration(raw).value;
 }
 
+/** Return a printable token for security-sensitive Warden log fields. */
+static std::string SafeWardenLogToken(std::string const& value)
+{
+    if (value.empty())
+    {
+        return "<unavailable>";
+    }
+    for (unsigned char byte : value)
+    {
+        bool const alphaNumeric = (byte >= '0' && byte <= '9') ||
+            (byte >= 'A' && byte <= 'Z') ||
+            (byte >= 'a' && byte <= 'z');
+        if (!alphaNumeric)
+        {
+            return "<invalid>";
+        }
+    }
+    return value;
+}
+
 /**
  * @brief Process packet in Map context
  * @param packet Packet to process
@@ -366,6 +386,9 @@ void WorldSession::OnAuthenticatedAdmission()
     m_wardenAggressive = false;
     m_wardenEnforcementClosed = false;
     m_wardenLoggedAnomalies.clear();
+    std::string const logPlatform =
+        SafeWardenLogToken(m_wardenClientPlatform);
+    std::string const logLocale = SafeWardenLogToken(m_wardenClientLocale);
 
     bool const configuredToEnforce =
         m_wardenConfiguration.enforcementMode !=
@@ -382,8 +405,7 @@ void WorldSession::OnAuthenticatedAdmission()
         sLog.outError("Warden rejected an unprofiled client claim for account "
             "%u (build %u; platform %s; locale %s; enforcement mode %u); "
             "strict exact-profile admission is enabled.", accountId,
-            m_wardenBuild, m_wardenClientPlatform.c_str(),
-            m_wardenClientLocale.c_str(),
+            m_wardenBuild, logPlatform.c_str(), logLocale.c_str(),
             static_cast<uint32>(m_wardenConfiguration.enforcementMode));
         admission.Clear();
         m_wardenEnforcementClosed = true;
@@ -398,7 +420,7 @@ void WorldSession::OnAuthenticatedAdmission()
         sLog.outError("Warden exact-profile admission is disabled for "
             "unprofiled client account %u (build %u; platform %s; locale "
             "%s); forcing observation-only checks.", accountId, m_wardenBuild,
-            m_wardenClientPlatform.c_str(), m_wardenClientLocale.c_str());
+            logPlatform.c_str(), logLocale.c_str());
     }
 
     if (exactEnforcementProfile)
@@ -420,7 +442,7 @@ void WorldSession::OnAuthenticatedAdmission()
         {
             sLog.outError("Warden incident history unavailable for account %u "
                 "(build %u; locale %s); using normal cadence.", accountId,
-                m_wardenBuild, m_wardenClientLocale.c_str());
+                m_wardenBuild, logLocale.c_str());
         }
     }
 
@@ -457,7 +479,7 @@ void WorldSession::OnAuthenticatedAdmission()
     {
         sLog.outError("Warden unavailable for account %u (build %u): "
             "unsupported or invalid profile for locale %s.", accountId,
-            m_wardenBuild, m_wardenClientLocale.c_str());
+            m_wardenBuild, logLocale.c_str());
         if (profileDisposition == warden::WardenProfileDisposition::Enforce)
         {
             sLog.outError("Warden enforcement requires an exact check "
@@ -725,6 +747,9 @@ void WorldSession::PersistWardenAudit(
     warden::WardenPolicyDecision const& decision)
 {
     uint32 const accountId = GetAccountId();
+    std::string const logPlatform =
+        SafeWardenLogToken(m_wardenClientPlatform);
+    std::string const logLocale = SafeWardenLogToken(m_wardenClientLocale);
     std::optional<warden::WardenAuditOutcome> const outcome =
         warden::ToAuditOutcome(decision.outcome);
     if (!outcome)
@@ -746,24 +771,24 @@ void WorldSession::PersistWardenAudit(
     context.checkType = decision.checkType;
     context.evidenceClass = decision.evidenceClass;
     context.outcome = *outcome;
-    bool const recorded = warden::WardenAuditStore::Instance().Record(context);
+    bool const queued = warden::WardenAuditStore::Instance().Record(context);
 
-    if (recorded)
+    if (queued)
     {
-        sLog.outString("Warden audit recorded for account %u (build %u; "
+        sLog.outString("Warden audit queued for account %u (build %u; "
             "platform %s; locale %s; check %u; type %s; class %s; outcome "
-            "%s).", accountId, m_wardenBuild, m_wardenClientPlatform.c_str(),
-            m_wardenClientLocale.c_str(), decision.checkId,
+            "%s).", accountId, m_wardenBuild, logPlatform.c_str(),
+            logLocale.c_str(), decision.checkId,
             warden::ToString(decision.checkType),
             warden::ToString(decision.evidenceClass),
             warden::ToString(decision.outcome));
     }
     else
     {
-        sLog.outError("Warden audit write failed for account %u (build %u; "
+        sLog.outError("Warden audit enqueue failed for account %u (build %u; "
             "platform %s; locale %s; check %u; type %s; class %s; outcome "
             "%s); no enforcement action taken.", accountId, m_wardenBuild,
-            m_wardenClientPlatform.c_str(), m_wardenClientLocale.c_str(),
+            logPlatform.c_str(), logLocale.c_str(),
             decision.checkId, warden::ToString(decision.checkType),
             warden::ToString(decision.evidenceClass),
             warden::ToString(decision.outcome));
@@ -778,6 +803,9 @@ void WorldSession::PersistWardenIncidentAndKick(
     m_wardenEnforcementClosed = true;
 
     uint32 const accountId = GetAccountId();
+    std::string const logPlatform =
+        SafeWardenLogToken(m_wardenClientPlatform);
+    std::string const logLocale = SafeWardenLogToken(m_wardenClientLocale);
     std::optional<warden::WardenIncidentOutcome> const outcome =
         warden::ToIncidentOutcome(decision.outcome);
     warden::WardenIncidentWriteResult writeResult;
@@ -815,7 +843,7 @@ void WorldSession::PersistWardenIncidentAndKick(
             "incident transaction failed; "
             "kicking without a durable incident.",
             warden::ToString(decision.outcome), accountId, m_wardenBuild,
-            m_wardenClientPlatform.c_str(), m_wardenClientLocale.c_str(),
+            logPlatform.c_str(), logLocale.c_str(),
             decision.checkId, warden::ToString(decision.checkType),
             warden::ToString(decision.evidenceClass));
     }
@@ -826,7 +854,7 @@ void WorldSession::PersistWardenIncidentAndKick(
             "incident committed but its summary "
             "could not be reloaded; kicking without inventing a count.",
             warden::ToString(decision.outcome), accountId, m_wardenBuild,
-            m_wardenClientPlatform.c_str(), m_wardenClientLocale.c_str(),
+            logPlatform.c_str(), logLocale.c_str(),
             decision.checkId, warden::ToString(decision.checkType),
             warden::ToString(decision.evidenceClass));
     }
@@ -836,7 +864,7 @@ void WorldSession::PersistWardenIncidentAndKick(
             "platform %s; locale %s; check %u; type %s; class %s; recent "
             "count %u); kicking.",
             warden::ToString(decision.outcome), accountId, m_wardenBuild,
-            m_wardenClientPlatform.c_str(), m_wardenClientLocale.c_str(),
+            logPlatform.c_str(), logLocale.c_str(),
             decision.checkId, warden::ToString(decision.checkType),
             warden::ToString(decision.evidenceClass), application.recentCount);
 

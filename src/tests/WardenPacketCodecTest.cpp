@@ -1087,6 +1087,18 @@ TEST(WardenPacket_inspects_exact_string_and_body_budget_boundaries)
         warden::CheckPlanValidation::RequestBodyTooLarge);
 
     plan.checks.clear();
+    for (uint32 index = 0; index < 9361; ++index)
+    {
+        std::get<warden::MemCheckProfile>(mem.payload).checkId = 110000 + index;
+        plan.checks.push_back(mem);
+    }
+    std::get<warden::MpqCheckProfile>(mpq.payload).checkId = 300000;
+    std::get<warden::MpqCheckProfile>(mpq.payload).path.assign(255, 'P');
+    plan.checks.push_back(mpq);
+    CHECK(warden::InspectCheckPlan(plan, budget) ==
+        warden::CheckPlanValidation::RequestBodyTooLarge);
+
+    plan.checks.clear();
     warden::WardenCheckDefinition lua = profile->checks[2];
     std::get<warden::LuaCheckProfile>(lua.payload).query = "Q";
     std::get<warden::LuaCheckProfile>(lua.payload).expectedText.assign(64, 'R');

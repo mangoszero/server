@@ -199,6 +199,8 @@ bool WardenCheckCatalogLoader::LoadAndPublish() const
 
     for (WardenCheckProfile const& profile : candidate.Profiles())
     {
+        std::string const platform = SafeToken(profile.key.platform);
+        std::string const locale = SafeToken(profile.key.locale);
         std::vector<CheckPlan> const plans =
             BuildWardenPreflightPlans(profile);
         if (plans.empty())
@@ -216,8 +218,8 @@ bool WardenCheckCatalogLoader::LoadAndPublish() const
                 sLog.outError("Warden catalogue load failed: %s (build %u; "
                     "platform %s; locale %s; purpose %s; validation %s).",
                     ToString(WardenCheckCatalogLoadFailure::InvalidPlan),
-                    profile.key.build, profile.key.platform.c_str(),
-                    profile.key.locale.c_str(), PurposeName(plan.purpose),
+                    profile.key.build, platform.c_str(), locale.c_str(),
+                    PurposeName(plan.purpose),
                     ToString(validation));
                 return false;
             }
@@ -238,6 +240,8 @@ bool WardenCheckCatalogLoader::LoadAndPublish() const
         uint32(snapshot->Profiles().size()));
     for (WardenCheckProfile const& profile : snapshot->Profiles())
     {
+        std::string const platform = SafeToken(profile.key.platform);
+        std::string const locale = SafeToken(profile.key.locale);
         std::array<uint32, 4> typeCounts{};
         std::array<uint32, 4> classCounts{};
         for (WardenCheckDefinition const& definition : profile.checks)
@@ -254,14 +258,14 @@ bool WardenCheckCatalogLoader::LoadAndPublish() const
         sLog.outString("Warden profile %u/%s/%s: Timing %u, MPQ %u, Lua %u, "
             "MEM %u; ProtocolHealth %u, IntegrityInvariant %u, "
             "ThreatSignature %u, Corroboration %u.", profile.key.build,
-            profile.key.platform.c_str(), profile.key.locale.c_str(),
+            platform.c_str(), locale.c_str(),
             typeCounts[0], typeCounts[1], typeCounts[2], typeCounts[3],
             classCounts[0], classCounts[1], classCounts[2], classCounts[3]);
         if (!profile.hasActionableChecks)
         {
             sLog.outError("Warden profile %u/%s/%s is observation-only and "
                 "cannot create incidents.", profile.key.build,
-                profile.key.platform.c_str(), profile.key.locale.c_str());
+                platform.c_str(), locale.c_str());
         }
     }
     return true;
