@@ -54,6 +54,7 @@ enum class CheckCatalogValidation : uint8
     InvalidExpectedBytes,
     DuplicateId,
     DuplicateSortOrder,
+    ConflictingRequestExpectation,
     EmptyCatalog,
     MissingTiming,
     MultipleTiming,

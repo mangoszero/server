@@ -135,13 +135,13 @@ std::optional<CheckPlan> WardenCheckPlanner::Update(bool eligible,
     if (m_aggressive)
     {
         std::vector<WardenCheckDefinition> checks = BuildAggressiveChecks();
-        if (checks.empty())
+        if (!checks.empty())
         {
-            ScheduleNextInterval();
-            return std::nullopt;
+            return BeginPlan(CheckPlanPurpose::AggressiveRecurring,
+                std::move(checks));
         }
-        return BeginPlan(CheckPlanPurpose::AggressiveRecurring,
-            std::move(checks));
+        // A profile without actionable evidence retains its normal scan
+        // content while the aggressive cadence remains in effect.
     }
 
     std::vector<WardenCheckDefinition> checks = BuildNormalRecurringChecks();
@@ -233,13 +233,6 @@ WardenCheckPlanner::BuildNormalRecurringChecks()
             std::vector<WardenCheckDefinition>() :
             std::vector<WardenCheckDefinition>{*timing};
     }
-    if (m_normalBagOffset >= m_normalBag.size())
-    {
-        m_normalBag = m_nonHealthChecks;
-        Shuffle(m_normalBag);
-        m_normalBagOffset = 0;
-    }
-
     std::vector<WardenCheckDefinition> checks;
     auto const timing = std::find_if(m_checks.begin(), m_checks.end(),
         [](WardenCheckDefinition const& check)
@@ -248,9 +241,33 @@ WardenCheckPlanner::BuildNormalRecurringChecks()
         });
     if (timing != m_checks.end())
         checks.push_back(*timing);
-    for (uint32 count = 0;
-        count < 2 && m_normalBagOffset < m_normalBag.size(); ++count)
-        checks.push_back(m_normalBag[m_normalBagOffset++]);
+
+    std::unordered_set<uint32> availableIds;
+    for (WardenCheckDefinition const& check : m_nonHealthChecks)
+    {
+        availableIds.insert(GetWardenCheckId(check));
+    }
+
+    std::unordered_set<uint32> selectedIds;
+    size_t const selectionTarget = std::min<size_t>(2, availableIds.size());
+    // Refill inside the batch so an odd-sized pool still yields two distinct
+    // non-health checks whenever the profile contains at least two.
+    while (selectedIds.size() < selectionTarget)
+    {
+        if (m_normalBagOffset >= m_normalBag.size())
+        {
+            m_normalBag = m_nonHealthChecks;
+            Shuffle(m_normalBag);
+            m_normalBagOffset = 0;
+        }
+
+        WardenCheckDefinition const& selected =
+            m_normalBag[m_normalBagOffset++];
+        if (selectedIds.insert(GetWardenCheckId(selected)).second)
+        {
+            checks.push_back(selected);
+        }
+    }
     std::sort(checks.begin(), checks.end(), DefinitionOrder);
     return checks;
 }

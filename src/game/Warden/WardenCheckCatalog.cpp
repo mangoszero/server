@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <map>
 #include <set>
 #include <utility>
 
@@ -141,6 +142,13 @@ bool IsLegalEvidenceClass(warden::WardenCheckType type,
             return evidenceClass != warden::WardenEvidenceClass::ProtocolHealth;
     }
     return false;
+}
+
+bool ExpectedPrefixesAgree(warden::Bytes const& left,
+    warden::Bytes const& right)
+{
+    size_t const compared = std::min(left.size(), right.size());
+    return std::equal(left.begin(), left.begin() + compared, right.begin());
 }
 }
 
@@ -399,6 +407,9 @@ CheckCatalogValidation WardenCheckCatalogBuilder::Build(
         profile.totalRows = static_cast<uint32>(end - begin);
         std::set<uint32> checkIds;
         std::set<uint16> sortOrders;
+        std::map<std::string, Digest20> mpqExpectations;
+        std::map<std::string, std::string> luaExpectations;
+        std::map<std::pair<std::string, uint32>, Bytes> memExpectations;
         uint32 timingCount = 0;
         bool timingEnabled = false;
         bool hasEnabledNonHealth = false;
@@ -417,6 +428,59 @@ CheckCatalogValidation WardenCheckCatalogBuilder::Build(
                     row.key, row.checkId);
 
             WardenCheckType const type = GetWardenCheckType(row.definition);
+            if (row.enabled && type == WardenCheckType::Mpq)
+            {
+                MpqCheckProfile const& payload =
+                    std::get<MpqCheckProfile>(row.definition.payload);
+                auto const inserted = mpqExpectations.emplace(payload.path,
+                    payload.expectedSha1);
+                if (!inserted.second &&
+                    inserted.first->second != payload.expectedSha1)
+                {
+                    return SetDiagnostic(diagnostic,
+                        CheckCatalogValidation::ConflictingRequestExpectation,
+                        row.key, row.checkId);
+                }
+            }
+            else if (row.enabled && type == WardenCheckType::Lua)
+            {
+                LuaCheckProfile const& payload =
+                    std::get<LuaCheckProfile>(row.definition.payload);
+                auto const inserted = luaExpectations.emplace(payload.query,
+                    payload.expectedText);
+                if (!inserted.second &&
+                    inserted.first->second != payload.expectedText)
+                {
+                    return SetDiagnostic(diagnostic,
+                        CheckCatalogValidation::ConflictingRequestExpectation,
+                        row.key, row.checkId);
+                }
+            }
+            else if (row.enabled && type == WardenCheckType::Mem)
+            {
+                MemCheckProfile const& payload =
+                    std::get<MemCheckProfile>(row.definition.payload);
+                auto const key = std::make_pair(payload.moduleName,
+                    payload.addressOrRva);
+                auto inserted = memExpectations.emplace(key,
+                    payload.expectedBytes);
+                if (!inserted.second)
+                {
+                    if (!ExpectedPrefixesAgree(inserted.first->second,
+                            payload.expectedBytes))
+                    {
+                        return SetDiagnostic(diagnostic,
+                            CheckCatalogValidation::
+                                ConflictingRequestExpectation,
+                            row.key, row.checkId);
+                    }
+                    if (payload.expectedBytes.size() >
+                        inserted.first->second.size())
+                    {
+                        inserted.first->second = payload.expectedBytes;
+                    }
+                }
+            }
             if (type == WardenCheckType::Timing)
             {
                 ++timingCount;
@@ -490,6 +554,8 @@ char const* ToString(CheckCatalogValidation validation)
         case CheckCatalogValidation::InvalidExpectedBytes: return "InvalidExpectedBytes";
         case CheckCatalogValidation::DuplicateId: return "DuplicateId";
         case CheckCatalogValidation::DuplicateSortOrder: return "DuplicateSortOrder";
+        case CheckCatalogValidation::ConflictingRequestExpectation:
+            return "ConflictingRequestExpectation";
         case CheckCatalogValidation::EmptyCatalog: return "EmptyCatalog";
         case CheckCatalogValidation::MissingTiming: return "MissingTiming";
         case CheckCatalogValidation::MultipleTiming: return "MultipleTiming";

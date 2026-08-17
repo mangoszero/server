@@ -384,6 +384,54 @@ TEST(WardenCheckCatalog_rejects_duplicate_ids_and_sort_orders_when_disabled)
         warden::CheckCatalogValidation::DuplicateSortOrder);
 }
 
+TEST(WardenCheckCatalog_rejects_conflicting_expectations_for_one_request)
+{
+    std::vector<warden::WardenCheckRowInput> rows = FirstProfileRows();
+    warden::WardenCheckRowInput duplicate = rows[1];
+    duplicate.checkId = 9001;
+    duplicate.sortOrder = 21;
+    duplicate.expectedHex[0] = duplicate.expectedHex[0] == '0' ? '1' : '0';
+    rows.push_back(duplicate);
+    CHECK(BuildRows(rows) ==
+        warden::CheckCatalogValidation::ConflictingRequestExpectation);
+
+    rows = FirstProfileRows();
+    duplicate = rows[2];
+    duplicate.checkId = 9002;
+    duplicate.sortOrder = 31;
+    duplicate.expectedHex[0] = duplicate.expectedHex[0] == '0' ? '1' : '0';
+    rows.push_back(duplicate);
+    CHECK(BuildRows(rows) ==
+        warden::CheckCatalogValidation::ConflictingRequestExpectation);
+
+    rows = FirstProfileRows();
+    duplicate = rows[3];
+    duplicate.checkId = 9003;
+    duplicate.sortOrder = 41;
+    duplicate.expectedHex[0] = duplicate.expectedHex[0] == '0' ? '1' : '0';
+    rows.push_back(duplicate);
+    CHECK(BuildRows(rows) ==
+        warden::CheckCatalogValidation::ConflictingRequestExpectation);
+
+    rows = FirstProfileRows();
+    duplicate = rows[3];
+    duplicate.checkId = 9004;
+    duplicate.sortOrder = 41;
+    duplicate.length /= 2;
+    duplicate.expectedHex.resize(duplicate.length * 2);
+    rows.push_back(duplicate);
+    CHECK(BuildRows(rows) == warden::CheckCatalogValidation::Valid);
+
+    rows = FirstProfileRows();
+    duplicate = rows[1];
+    duplicate.checkId = 9005;
+    duplicate.sortOrder = 21;
+    duplicate.enabled = 0;
+    duplicate.expectedHex[0] = duplicate.expectedHex[0] == '0' ? '1' : '0';
+    rows.push_back(duplicate);
+    CHECK(BuildRows(rows) == warden::CheckCatalogValidation::Valid);
+}
+
 TEST(WardenCheckCatalog_enforces_complete_profiles_and_atomic_build)
 {
     std::vector<warden::WardenCheckRowInput> rows;
@@ -441,4 +489,7 @@ TEST(WardenCheckCatalog_exposes_stable_validation_names)
     CHECK_STR(warden::ToString(
         warden::CheckCatalogValidation::MissingNonHealth),
         "MissingNonHealth");
+    CHECK_STR(warden::ToString(
+        warden::CheckCatalogValidation::ConflictingRequestExpectation),
+        "ConflictingRequestExpectation");
 }

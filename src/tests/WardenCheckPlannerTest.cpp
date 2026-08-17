@@ -110,6 +110,20 @@ std::vector<warden::WardenCheckDefinition> ObservationOnlyChecks()
         }), checks.end());
     return checks;
 }
+
+std::vector<warden::WardenCheckDefinition> OddNonHealthChecks()
+{
+    std::vector<warden::WardenCheckDefinition> checks;
+    for (warden::WardenCheckDefinition const& check : ExactChecks())
+    {
+        uint32 const id = warden::GetWardenCheckId(check);
+        if (warden::GetWardenCheckType(check) ==
+                warden::WardenCheckType::Timing ||
+            id == 1 || id == 2 || id == 1107)
+            checks.push_back(check);
+    }
+    return checks;
+}
 }
 
 TEST(WardenEvidence_normalized_values_have_secret_free_fixed_labels)
@@ -208,6 +222,30 @@ TEST(WardenCheckPlanner_normal_rotation_covers_every_nonhealth_check_once)
         CHECK_EQ(counts[id], uint32(1));
 }
 
+TEST(WardenCheckPlanner_odd_rotation_refills_each_two_check_batch)
+{
+    // The second shuffle puts the just-consumed final ID first, forcing the
+    // duplicate-skip branch before the batch can select its second ID.
+    ScriptedRandom random{{30, 30, 30, 30, 30}, {}, {0, 0, 2, 1}};
+    warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
+        OddNonHealthChecks(), random.Callback());
+    std::optional<warden::CheckPlan> initial = planner.Update(true, 1000);
+    REQUIRE(initial.has_value());
+    planner.Complete(*initial);
+
+    for (uint32 batch = 0; batch < 4; ++batch)
+    {
+        std::optional<warden::CheckPlan> recurring =
+            planner.Update(true, 30000);
+        REQUIRE(recurring.has_value());
+        REQUIRE(recurring->checks.size() == 3u);
+        std::vector<uint32> const ids = NonTimingIds(*recurring);
+        REQUIRE(ids.size() == 2u);
+        CHECK(ids[0] != ids[1]);
+        planner.Complete(*recurring);
+    }
+}
+
 TEST(WardenCheckPlanner_recurring_countdown_pauses_without_catch_up)
 {
     ScriptedRandom random{{30, 30}, {}, {}};
@@ -252,7 +290,7 @@ TEST(WardenCheckPlanner_aggressive_plans_include_only_actionable_checks)
         std::vector<uint32>({1107, 827, 1566}));
 }
 
-TEST(WardenCheckPlanner_observation_only_aggressive_mode_schedules_without_spin)
+TEST(WardenCheckPlanner_observation_only_aggressive_mode_uses_normal_checks)
 {
     ScriptedRandom random{{}, {10, 10, 10}, {}};
     warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
@@ -264,9 +302,14 @@ TEST(WardenCheckPlanner_observation_only_aggressive_mode_schedules_without_spin)
     REQUIRE(initial.has_value());
     planner.Complete(*initial);
     CHECK(!planner.Update(true, 9999).has_value());
-    CHECK(!planner.Update(true, 1).has_value());
+    std::optional<warden::CheckPlan> recurring = planner.Update(true, 1);
+    REQUIRE(recurring.has_value());
+    CHECK(recurring->purpose == warden::CheckPlanPurpose::Recurring);
+    REQUIRE(recurring->checks.size() == 3u);
+    CHECK_EQ(NonTimingIds(*recurring).size(), size_t(2));
+    planner.Complete(*recurring);
     CHECK(!planner.Update(true, 9999).has_value());
-    CHECK(!planner.Update(true, 1).has_value());
+    CHECK(planner.Update(true, 1).has_value());
 }
 
 TEST(WardenCheckPlanner_generic_confirmation_preempts_and_resets_cadence)

@@ -380,18 +380,52 @@ endif()
 
 file(GLOB WARDEN_SOURCES
     "${GAME_ROOT}/Warden/*.h" "${GAME_ROOT}/Warden/*.hpp"
-    "${GAME_ROOT}/Warden/*.cpp" "${GAME_ROOT}/Warden/*.cc")
+    "${GAME_ROOT}/Warden/*.cpp" "${GAME_ROOT}/Warden/*.cc"
+    "${GAME_ROOT}/Server/Warden*.h" "${GAME_ROOT}/Server/Warden*.hpp"
+    "${GAME_ROOT}/Server/Warden*.cpp" "${GAME_ROOT}/Server/Warden*.cc")
 set(FORBIDDEN
     "LoginDatabase" "CharacterDatabase" "WorldDatabase" "KickPlayer"
     "BanAccount" "ByteArrayToHexStr" "hexlike[ \\t]*\\(")
+set(FORBIDDEN_CHECK_CONTENT
+    "DBFILESCLIENT" "AREATABLE\\.DBC" "OKAY"
+    "44424669" "7D88154D" "C5A1DE4C" "4F4B4159" "4F6B6179"
+    "E7A1AEE5" "558BEC8B" "25FFFFDF" "A1C0EACE" "A1E031CF"
+    "BB8D243F"
+    "6392064" "6401184" "8151558" "8151622" "8165094"
+    "4803152" "4806720" "8445948" "8462780"
+    "0X618900" "0X61ACA0" "0X7C6206" "0X7C6246" "0X7C96E6"
+    "0X494A50" "0X495840" "0X80DFFC" "0X8121BC"
+    "0X44[ \\t]*,[ \\t]*0X42[ \\t]*,[ \\t]*0X46[ \\t]*,[ \\t]*0X69"
+    "0X7D[ \\t]*,[ \\t]*0X88[ \\t]*,[ \\t]*0X15[ \\t]*,[ \\t]*0X4D"
+    "0XC5[ \\t]*,[ \\t]*0XA1[ \\t]*,[ \\t]*0XDE[ \\t]*,[ \\t]*0X4C"
+    "0X4F[ \\t]*,[ \\t]*0X4B[ \\t]*,[ \\t]*0X41[ \\t]*,[ \\t]*0X59"
+    "0X4F[ \\t]*,[ \\t]*0X6B[ \\t]*,[ \\t]*0X61[ \\t]*,[ \\t]*0X79"
+    "0XE7[ \\t]*,[ \\t]*0XA1[ \\t]*,[ \\t]*0XAE[ \\t]*,[ \\t]*0XE5"
+    "0X55[ \\t]*,[ \\t]*0X8B[ \\t]*,[ \\t]*0XEC[ \\t]*,[ \\t]*0X8B"
+    "0X25[ \\t]*,[ \\t]*0XFF[ \\t]*,[ \\t]*0XFF[ \\t]*,[ \\t]*0XDF"
+    "0XA1[ \\t]*,[ \\t]*0XC0[ \\t]*,[ \\t]*0XEA[ \\t]*,[ \\t]*0XCE"
+    "0XA1[ \\t]*,[ \\t]*0XE0[ \\t]*,[ \\t]*0X31[ \\t]*,[ \\t]*0XCF"
+    "0XBB[ \\t]*,[ \\t]*0X8D[ \\t]*,[ \\t]*0X24[ \\t]*,[ \\t]*0X3F")
 foreach(SOURCE IN LISTS WARDEN_SOURCES)
     read_code("${SOURCE}" WARDEN_CODE)
-    foreach(PATTERN IN LISTS FORBIDDEN)
-        if(WARDEN_CODE MATCHES "${PATTERN}")
-            message(FATAL_ERROR
-                "Warden boundary: forbidden production dependency ${PATTERN} in ${SOURCE}")
-        endif()
-    endforeach()
+    string(FIND "${SOURCE}" "${GAME_ROOT}/Warden/" WARDEN_LAYER_AT)
+    if(WARDEN_LAYER_AT EQUAL 0)
+        foreach(PATTERN IN LISTS FORBIDDEN)
+            if(WARDEN_CODE MATCHES "${PATTERN}")
+                message(FATAL_ERROR
+                    "Warden boundary: forbidden production dependency ${PATTERN} in ${SOURCE}")
+            endif()
+        endforeach()
+    endif()
+    if(NOT SOURCE MATCHES "WardenModuleWin[0-9]+Data\\.cpp$")
+        string(TOUPPER "${WARDEN_CODE}" WARDEN_CODE_UPPER)
+        foreach(PATTERN IN LISTS FORBIDDEN_CHECK_CONTENT)
+            if(WARDEN_CODE_UPPER MATCHES "${PATTERN}")
+                message(FATAL_ERROR
+                    "Warden boundary: active check content ${PATTERN} in ${SOURCE}")
+            endif()
+        endforeach()
+    endif()
 endforeach()
 
 file(GLOB_RECURSE INCIDENT_STORE_FILES
