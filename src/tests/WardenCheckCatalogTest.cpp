@@ -23,299 +23,422 @@
 #include "TestHarness.h"
 
 #include "WardenCheckCatalog.h"
+#include "WardenCheckFixtures.h"
 
+#include <algorithm>
 #include <string>
+#include <variant>
 #include <vector>
 
-TEST(WardenCheckCatalog_selects_only_three_exact_windows_mpq_profiles)
+namespace
 {
-    warden::WardenCheckCatalog catalog;
-    warden::MpqCheckProfile const* enUS =
-        catalog.FindMpq(5875, "Win", "enUS");
-
-    REQUIRE(enUS != nullptr);
-    CHECK_EQ(enUS->checkId, uint32(1));
-    CHECK_STR(enUS->path.c_str(), "DBFilesClient\\AreaTable.dbc");
-    CHECK_HEX(enUS->expectedSha1.data(), enUS->expectedSha1.size(),
-        "7d88154d3411811985f5d81177c5453248133443");
-    CHECK(catalog.Validate(*enUS) ==
-        warden::CheckCatalogValidation::Valid);
-
-    warden::MpqCheckProfile const* enGB =
-        catalog.FindMpq(6005, "Win", "enGB");
-    REQUIRE(enGB != nullptr);
-    CHECK_EQ(enGB->checkId, uint32(1));
-    CHECK_STR(enGB->path.c_str(), "DBFilesClient\\AreaTable.dbc");
-    CHECK_HEX(enGB->expectedSha1.data(), enGB->expectedSha1.size(),
-        "7d88154d3411811985f5d81177c5453248133443");
-    CHECK(catalog.Validate(*enGB) ==
-        warden::CheckCatalogValidation::Valid);
-
-    warden::MpqCheckProfile const* zhCN =
-        catalog.FindMpq(6141, "Win", "zhCN");
-    REQUIRE(zhCN != nullptr);
-    CHECK_EQ(zhCN->checkId, uint32(1));
-    CHECK_STR(zhCN->path.c_str(), "DBFilesClient\\AreaTable.dbc");
-    CHECK_HEX(zhCN->expectedSha1.data(), zhCN->expectedSha1.size(),
-        "c5a1de4c1cd412eb4d2e02afab6131b737efcaf0");
-    CHECK(catalog.Validate(*zhCN) ==
-        warden::CheckCatalogValidation::Valid);
-
-    CHECK(catalog.FindMpq(6005, "Win", "enUS") == nullptr);
-    CHECK(catalog.FindMpq(6141, "Win", "enUS") == nullptr);
-    CHECK(catalog.FindMpq(6005, "Win", "zhCN") == nullptr);
-    CHECK(catalog.FindMpq(6141, "Win", "enGB") == nullptr);
-    CHECK(catalog.FindMpq(5875, "OSX", "enUS") == nullptr);
-    CHECK(catalog.FindMpq(5875, "Win", "enGB") == nullptr);
-    CHECK(catalog.FindMpq(5875, "Win", "frFR") == nullptr);
+warden::CheckCatalogValidation AddOne(
+    warden::WardenCheckRowInput const& row)
+{
+    warden::WardenCheckCatalogBuilder builder;
+    warden::WardenCheckDiagnostic diagnostic;
+    return builder.Add(row, diagnostic);
 }
 
-TEST(WardenCheckCatalog_rejects_zero_id_empty_and_embedded_nul_paths)
+warden::CheckCatalogValidation BuildRows(
+    std::vector<warden::WardenCheckRowInput> const& rows,
+    warden::WardenCheckCatalog& catalog)
 {
-    warden::WardenCheckCatalog catalog;
-    warden::MpqCheckProfile profile =
-        *catalog.FindMpq(5875, "Win", "enUS");
-
-    profile.checkId = 0;
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::InvalidId);
-
-    profile = *catalog.FindMpq(5875, "Win", "enUS");
-    profile.path.clear();
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::InvalidPath);
-
-    profile.path.assign("DBFiles\0Client", 14);
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::InvalidPath);
+    warden::WardenCheckCatalogBuilder builder;
+    warden::WardenCheckDiagnostic diagnostic;
+    for (warden::WardenCheckRowInput const& row : rows)
+    {
+        warden::CheckCatalogValidation const validation =
+            builder.Add(row, diagnostic);
+        if (validation != warden::CheckCatalogValidation::Valid)
+            return validation;
+    }
+    return builder.Build(catalog, diagnostic);
 }
 
-TEST(WardenCheckCatalog_enforces_the_one_byte_path_length_boundary)
+warden::CheckCatalogValidation BuildRows(
+    std::vector<warden::WardenCheckRowInput> const& rows)
 {
     warden::WardenCheckCatalog catalog;
-    warden::MpqCheckProfile profile =
-        *catalog.FindMpq(5875, "Win", "enUS");
-
-    profile.path.assign(255, 'A');
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::Valid);
-
-    profile.path.push_back('B');
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::InvalidPath);
-
-    profile = *catalog.FindMpq(5875, "Win", "enUS");
-    profile.expectedSha1.fill(0);
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::Valid);
+    return BuildRows(rows, catalog);
 }
 
-TEST(WardenCheckCatalog_selects_only_three_exact_windows_lua_profiles)
+std::vector<warden::WardenCheckRowInput> FirstProfileRows()
 {
-    warden::WardenCheckCatalog catalog;
-    warden::LuaCheckProfile const* enUS =
-        catalog.FindLua(5875, "Win", "enUS");
-
-    REQUIRE(enUS != nullptr);
-    CHECK_EQ(enUS->checkId, uint32(2));
-    CHECK_STR(enUS->query.c_str(), "OKAY");
-    CHECK_STR(enUS->expectedText.c_str(), "Okay");
-    CHECK(catalog.Validate(*enUS) ==
-        warden::CheckCatalogValidation::Valid);
-
-    warden::LuaCheckProfile const* enGB =
-        catalog.FindLua(6005, "Win", "enGB");
-    REQUIRE(enGB != nullptr);
-    CHECK_EQ(enGB->checkId, uint32(2));
-    CHECK_STR(enGB->query.c_str(), "OKAY");
-    CHECK_STR(enGB->expectedText.c_str(), "Okay");
-    CHECK(catalog.Validate(*enGB) ==
-        warden::CheckCatalogValidation::Valid);
-
-    warden::LuaCheckProfile const* zhCN =
-        catalog.FindLua(6141, "Win", "zhCN");
-    REQUIRE(zhCN != nullptr);
-    CHECK_EQ(zhCN->checkId, uint32(2));
-    CHECK_STR(zhCN->query.c_str(), "OKAY");
-    CHECK_HEX(reinterpret_cast<uint8 const*>(zhCN->expectedText.data()),
-        zhCN->expectedText.size(), "e7a1aee5ae9a");
-    CHECK(catalog.Validate(*zhCN) ==
-        warden::CheckCatalogValidation::Valid);
-
-    CHECK(catalog.FindLua(6005, "Win", "enUS") == nullptr);
-    CHECK(catalog.FindLua(6141, "Win", "enUS") == nullptr);
-    CHECK(catalog.FindLua(6005, "Win", "zhCN") == nullptr);
-    CHECK(catalog.FindLua(6141, "Win", "enGB") == nullptr);
-    CHECK(catalog.FindLua(5875, "OSX", "enUS") == nullptr);
-    CHECK(catalog.FindLua(5875, "Win", "enGB") == nullptr);
-    CHECK(catalog.FindLua(5875, "Win", "frFR") == nullptr);
+    std::vector<warden::WardenCheckRowInput> rows =
+        warden::test::InitialWardenRows();
+    rows.resize(7);
+    return rows;
+}
 }
 
-TEST(WardenCheckCatalog_rejects_invalid_lua_identity_and_text)
+TEST(WardenCheckCatalog_decodes_and_selects_three_exact_profiles)
 {
+    warden::WardenCheckCatalogBuilder builder;
+    warden::WardenCheckDiagnostic diagnostic;
+    for (warden::WardenCheckRowInput const& row :
+        warden::test::InitialWardenRows())
+    {
+        REQUIRE(builder.Add(row, diagnostic) ==
+            warden::CheckCatalogValidation::Valid);
+    }
+
     warden::WardenCheckCatalog catalog;
-    warden::LuaCheckProfile profile =
-        *catalog.FindLua(5875, "Win", "enUS");
+    REQUIRE(builder.Build(catalog, diagnostic) ==
+        warden::CheckCatalogValidation::Valid);
+    CHECK_EQ(catalog.TotalRows(), uint32(21));
+    CHECK_EQ(catalog.EnabledRows(), uint32(21));
+    CHECK_EQ(catalog.Profiles().size(), size_t(3));
 
-    profile.checkId = 0;
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::InvalidId);
+    warden::WardenCheckProfile const* profile =
+        catalog.Find(6141, "Win", "zhCN");
+    REQUIRE(profile != nullptr);
+    REQUIRE(profile->checks.size() == 7u);
+    CHECK(profile->hasActionableChecks);
+    CHECK_EQ(profile->totalRows, uint32(7));
+    CHECK_EQ(warden::GetWardenCheckId(profile->checks[0]), uint32(65536));
+    CHECK(warden::GetWardenCheckType(profile->checks[0]) ==
+        warden::WardenCheckType::Timing);
+    CHECK(!warden::IsConfirmationEligible(profile->checks[0]));
+    CHECK(warden::IsConfirmationEligible(profile->checks[1]));
+    CHECK(warden::IsActionableEvidenceClass(
+        warden::WardenEvidenceClass::IntegrityInvariant));
+    CHECK(warden::IsActionableEvidenceClass(
+        warden::WardenEvidenceClass::ThreatSignature));
+    CHECK(!warden::IsActionableEvidenceClass(
+        warden::WardenEvidenceClass::ProtocolHealth));
+    CHECK(!warden::IsActionableEvidenceClass(
+        warden::WardenEvidenceClass::Corroboration));
 
-    profile = *catalog.FindLua(5875, "Win", "enUS");
-    profile.query.clear();
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::InvalidQuery);
+    warden::LuaCheckProfile const& lua =
+        std::get<warden::LuaCheckProfile>(profile->checks[2].payload);
+    CHECK_HEX(reinterpret_cast<uint8 const*>(lua.expectedText.data()),
+        lua.expectedText.size(), "e7a1aee5ae9a");
+    CHECK(catalog.Find(5875, "Win", "enUS") != nullptr);
+    CHECK(catalog.Find(6005, "Win", "enGB") != nullptr);
+    CHECK(catalog.Find(6005, "Win", "enUS") == nullptr);
+    CHECK(catalog.Find(6141, "OSX", "zhCN") == nullptr);
+}
 
-    profile.query.assign("OK\0AY", 5);
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::InvalidQuery);
+TEST(WardenCheckCatalog_preserves_embedded_zero_bytes)
+{
+    std::vector<warden::WardenCheckRowInput> rows = FirstProfileRows();
+    rows.resize(2);
+    rows[1] = warden::test::MakeRow(5875, "656E5553", 9001,
+        warden::WardenCheckType::Mem, 20,
+        warden::WardenEvidenceClass::IntegrityInvariant);
+    rows[1].address = 0x00400000;
+    rows[1].length = 3;
+    rows[1].expectedHex = "A100B2";
 
-    profile = *catalog.FindLua(5875, "Win", "enUS");
-    profile.expectedText.assign("Ok\0ay", 5);
-    CHECK(catalog.Validate(profile) ==
+    warden::WardenCheckCatalog catalog;
+    REQUIRE(BuildRows(rows, catalog) ==
+        warden::CheckCatalogValidation::Valid);
+    warden::WardenCheckProfile const* profile =
+        catalog.Find(5875, "Win", "enUS");
+    REQUIRE(profile != nullptr);
+    REQUIRE(profile->checks.size() == 2u);
+    warden::MemCheckProfile const& decoded =
+        std::get<warden::MemCheckProfile>(profile->checks[1].payload);
+    REQUIRE(decoded.expectedBytes.size() == 3u);
+    CHECK_HEX(decoded.expectedBytes.data(), decoded.expectedBytes.size(),
+        "a100b2");
+}
+
+TEST(WardenCheckCatalog_rejects_noncanonical_hex)
+{
+    warden::WardenCheckRowInput row = FirstProfileRows()[3];
+    row.expectedHex = "ABC";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidHex);
+    row.expectedHex = "GG";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidHex);
+    row.expectedHex = "AA BB";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidHex);
+}
+
+TEST(WardenCheckCatalog_rejects_invalid_profile_identity)
+{
+    warden::WardenCheckRowInput row = FirstProfileRows()[3];
+    row.build = 0;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidBuild);
+    row.build = 65536;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidBuild);
+
+    row = FirstProfileRows()[3];
+    row.platformHex.clear();
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidPlatform);
+    row.platformHex = "4142434445";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidPlatform);
+    row.platformHex = "5700696E";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidPlatform);
+    row.platformHex = "57696E20";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidPlatform);
+
+    row = FirstProfileRows()[3];
+    row.localeHex = "656E55";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidLocale);
+    row.localeHex = "656E555300";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidLocale);
+    row.localeHex = "65005553";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidLocale);
+    row.localeHex = "656E2053";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidLocale);
+}
+
+TEST(WardenCheckCatalog_rejects_invalid_scalar_fields_before_narrowing)
+{
+    warden::WardenCheckRowInput row = FirstProfileRows()[3];
+    row.checkId = 0;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidId);
+    row = FirstProfileRows()[3];
+    row.enabled = 2;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidEnabled);
+    row.enabled = 256;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidEnabled);
+    row = FirstProfileRows()[3];
+    row.sortOrder = 65536;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidSortOrder);
+    row = FirstProfileRows()[3];
+    row.type = 1;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidType);
+    row.type = 0x1F3;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidType);
+    row = FirstProfileRows()[3];
+    row.evidenceClass = 4;
+    CHECK(AddOne(row) ==
+        warden::CheckCatalogValidation::InvalidEvidenceClass);
+    row.evidenceClass = 259;
+    CHECK(AddOne(row) ==
+        warden::CheckCatalogValidation::InvalidEvidenceClass);
+}
+
+TEST(WardenCheckCatalog_enforces_timing_contract_and_cardinality)
+{
+    warden::WardenCheckRowInput row = FirstProfileRows()[0];
+    row.moduleHex = "41";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidUnusedField);
+    row = FirstProfileRows()[0];
+    row.requestHex = "41";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidUnusedField);
+    row = FirstProfileRows()[0];
+    row.expectedHex = "41";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidUnusedField);
+    row = FirstProfileRows()[0];
+    row.address = 1;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidUnusedField);
+    row = FirstProfileRows()[0];
+    row.length = 1;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidUnusedField);
+    row = FirstProfileRows()[0];
+    row.evidenceClass = 1;
+    CHECK(AddOne(row) ==
+        warden::CheckCatalogValidation::IllegalTypeEvidenceClass);
+
+    std::vector<warden::WardenCheckRowInput> rows = FirstProfileRows();
+    rows[0].enabled = 0;
+    CHECK(BuildRows(rows) == warden::CheckCatalogValidation::DisabledTiming);
+    rows = FirstProfileRows();
+    warden::WardenCheckRowInput secondTiming = rows[0];
+    secondTiming.checkId = 65537;
+    secondTiming.sortOrder = 11;
+    rows.push_back(secondTiming);
+    CHECK(BuildRows(rows) == warden::CheckCatalogValidation::MultipleTiming);
+}
+
+TEST(WardenCheckCatalog_enforces_mpq_contract)
+{
+    warden::WardenCheckRowInput row = FirstProfileRows()[1];
+    row.requestHex.clear();
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidPath);
+    row.requestHex = "410042";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidPath);
+    row.requestHex.assign(512, '4');
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidPath);
+    row = FirstProfileRows()[1];
+    row.expectedHex.assign(38, 'A');
+    CHECK(AddOne(row) ==
+        warden::CheckCatalogValidation::InvalidExpectedBytes);
+    row = FirstProfileRows()[1];
+    row.moduleHex = "41";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidUnusedField);
+    row = FirstProfileRows()[1];
+    row.address = 1;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidUnusedField);
+    row = FirstProfileRows()[1];
+    row.length = 1;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidUnusedField);
+}
+
+TEST(WardenCheckCatalog_enforces_lua_contract)
+{
+    warden::WardenCheckRowInput row = FirstProfileRows()[2];
+    row.requestHex.clear();
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidQuery);
+    row.requestHex = "410042";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidQuery);
+    row.requestHex.assign(512, '5');
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidQuery);
+    row = FirstProfileRows()[2];
+    row.expectedHex.clear();
+    CHECK(AddOne(row) ==
         warden::CheckCatalogValidation::InvalidExpectedText);
-}
-
-TEST(WardenCheckCatalog_enforces_lua_query_and_result_boundaries)
-{
-    warden::WardenCheckCatalog catalog;
-    warden::LuaCheckProfile profile =
-        *catalog.FindLua(5875, "Win", "enUS");
-
-    profile.query.assign(255, 'Q');
-    profile.expectedText.assign(64, 'R');
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::Valid);
-
-    profile.query.push_back('Q');
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::InvalidQuery);
-
-    profile = *catalog.FindLua(5875, "Win", "enUS");
-    profile.expectedText.assign(65, 'R');
-    CHECK(catalog.Validate(profile) ==
+    row.expectedHex = "410042";
+    CHECK(AddOne(row) ==
         warden::CheckCatalogValidation::InvalidExpectedText);
-
-    profile.expectedText.clear();
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::Valid);
+    row.expectedHex.assign(130, '6');
+    CHECK(AddOne(row) ==
+        warden::CheckCatalogValidation::InvalidExpectedText);
+    row = FirstProfileRows()[2];
+    row.moduleHex = "41";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidUnusedField);
+    row = FirstProfileRows()[2];
+    row.address = 1;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidUnusedField);
+    row = FirstProfileRows()[2];
+    row.length = 1;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidUnusedField);
 }
 
-TEST(WardenCheckCatalog_selects_four_exact_mem_checks_per_supported_profile)
+TEST(WardenCheckCatalog_enforces_mem_contract)
 {
-    warden::WardenCheckCatalog catalog;
-
-    std::vector<warden::MemCheckProfile> const* checks5875 =
-        catalog.FindMem(5875, "Win", "enUS");
-    REQUIRE(checks5875 != nullptr);
-    REQUIRE(checks5875->size() == 4u);
-    CHECK_EQ((*checks5875)[0].checkId, uint32(1107));
-    CHECK((*checks5875)[0].moduleName.empty());
-    CHECK_EQ((*checks5875)[0].addressOrRva, uint32(0x00618900));
-    CHECK_HEX((*checks5875)[0].expectedBytes.data(),
-        (*checks5875)[0].expectedBytes.size(),
-        "558bec8b51408b450c81e2ff7da075508950108b450850e824da1a005dc20800");
-    CHECK_EQ((*checks5875)[1].checkId, uint32(827));
-    CHECK_EQ((*checks5875)[1].addressOrRva, uint32(0x007C6206));
-    CHECK_HEX((*checks5875)[1].expectedBytes.data(),
-        (*checks5875)[1].expectedBytes.size(),
-        "25ffffdffb0d00200000894640");
-    CHECK_EQ((*checks5875)[2].checkId, uint32(1566));
-    CHECK((*checks5875)[2].moduleName.empty());
-    CHECK_EQ((*checks5875)[2].addressOrRva, uint32(0x00494A50));
-    CHECK_HEX((*checks5875)[2].expectedBytes.data(),
-        (*checks5875)[2].expectedBytes.size(), "a1c0eace00");
-    CHECK_EQ((*checks5875)[3].checkId, uint32(1135));
-    CHECK((*checks5875)[3].moduleName.empty());
-    CHECK_EQ((*checks5875)[3].addressOrRva, uint32(0x0080DFFC));
-    CHECK_HEX((*checks5875)[3].expectedBytes.data(),
-        (*checks5875)[3].expectedBytes.size(), "bb8d243f");
-
-    std::vector<warden::MemCheckProfile> const* checks6005 =
-        catalog.FindMem(6005, "Win", "enGB");
-    REQUIRE(checks6005 != nullptr);
-    REQUIRE(checks6005->size() == 4u);
-    CHECK_EQ((*checks6005)[0].addressOrRva, uint32(0x00618900));
-    CHECK_HEX((*checks6005)[0].expectedBytes.data(),
-        (*checks6005)[0].expectedBytes.size(),
-        "558bec8b51408b450c81e2ff7da075508950108b450850e864da1a005dc20800");
-    CHECK_EQ((*checks6005)[1].addressOrRva, uint32(0x007C6246));
-    CHECK_EQ((*checks6005)[2].checkId, uint32(1566));
-    CHECK((*checks6005)[2].moduleName.empty());
-    CHECK_EQ((*checks6005)[2].addressOrRva, uint32(0x00494A50));
-    CHECK_HEX((*checks6005)[2].expectedBytes.data(),
-        (*checks6005)[2].expectedBytes.size(), "a1c0eace00");
-    CHECK_EQ((*checks6005)[3].checkId, uint32(1135));
-    CHECK((*checks6005)[3].moduleName.empty());
-    CHECK_EQ((*checks6005)[3].addressOrRva, uint32(0x0080DFFC));
-    CHECK_HEX((*checks6005)[3].expectedBytes.data(),
-        (*checks6005)[3].expectedBytes.size(), "bb8d243f");
-
-    std::vector<warden::MemCheckProfile> const* checks6141 =
-        catalog.FindMem(6141, "Win", "zhCN");
-    REQUIRE(checks6141 != nullptr);
-    REQUIRE(checks6141->size() == 4u);
-    CHECK_EQ((*checks6141)[0].addressOrRva, uint32(0x0061ACA0));
-    CHECK_HEX((*checks6141)[0].expectedBytes.data(),
-        (*checks6141)[0].expectedBytes.size(),
-        "558bec8b51408b450c81e2ff7da075508950108b450850e864eb1a005dc20800");
-    CHECK_EQ((*checks6141)[1].addressOrRva, uint32(0x007C96E6));
-    CHECK_EQ((*checks6141)[2].checkId, uint32(1566));
-    CHECK((*checks6141)[2].moduleName.empty());
-    CHECK_EQ((*checks6141)[2].addressOrRva, uint32(0x00495840));
-    CHECK_HEX((*checks6141)[2].expectedBytes.data(),
-        (*checks6141)[2].expectedBytes.size(), "a1e031cf00");
-    CHECK_EQ((*checks6141)[3].checkId, uint32(1135));
-    CHECK((*checks6141)[3].moduleName.empty());
-    CHECK_EQ((*checks6141)[3].addressOrRva, uint32(0x008121BC));
-    CHECK_HEX((*checks6141)[3].expectedBytes.data(),
-        (*checks6141)[3].expectedBytes.size(), "bb8d243f");
-
-    CHECK(catalog.FindMem(5875, "Win", "frFR") == nullptr);
-    CHECK(catalog.FindMem(6005, "Win", "enUS") == nullptr);
-    CHECK(catalog.FindMem(6141, "Win", "enUS") == nullptr);
-    CHECK(catalog.FindMem(6141, "OSX", "zhCN") == nullptr);
-    CHECK(catalog.FindMem(9999, "Win", "enUS") == nullptr);
+    warden::WardenCheckRowInput row = FirstProfileRows()[3];
+    row.address = 0;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidAddress);
+    row = FirstProfileRows()[3];
+    row.moduleHex = "410042";
+    CHECK(AddOne(row) ==
+        warden::CheckCatalogValidation::InvalidModuleName);
+    row.moduleHex.assign(512, '4');
+    CHECK(AddOne(row) ==
+        warden::CheckCatalogValidation::InvalidModuleName);
+    row = FirstProfileRows()[3];
+    row.length = 0;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidLength);
+    row.length = 256;
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidLength);
+    row = FirstProfileRows()[3];
+    row.requestHex = "41";
+    CHECK(AddOne(row) == warden::CheckCatalogValidation::InvalidUnusedField);
+    row = FirstProfileRows()[3];
+    row.expectedHex.resize(row.expectedHex.size() - 2);
+    CHECK(AddOne(row) ==
+        warden::CheckCatalogValidation::InvalidExpectedBytes);
 }
 
-TEST(WardenCheckCatalog_rejects_invalid_mem_profiles_and_duplicate_ids)
+TEST(WardenCheckCatalog_pins_legal_type_evidence_class_pairs)
 {
-    warden::WardenCheckCatalog catalog;
-    std::vector<warden::MemCheckProfile> profiles =
-        *catalog.FindMem(5875, "Win", "enUS");
+    warden::WardenCheckRowInput timing = FirstProfileRows()[0];
+    for (uint32 value = 0; value <= 3; ++value)
+    {
+        timing.evidenceClass = value;
+        CHECK(AddOne(timing) == (value == 0 ?
+            warden::CheckCatalogValidation::Valid :
+            warden::CheckCatalogValidation::IllegalTypeEvidenceClass));
+    }
 
-    warden::MemCheckProfile profile = profiles[0];
-    profile.checkId = 0;
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::InvalidId);
+    warden::WardenCheckRowInput mpq = FirstProfileRows()[1];
+    for (uint32 value = 0; value <= 3; ++value)
+    {
+        mpq.evidenceClass = value;
+        bool const legal = value == 1 || value == 3;
+        CHECK(AddOne(mpq) == (legal ? warden::CheckCatalogValidation::Valid :
+            warden::CheckCatalogValidation::IllegalTypeEvidenceClass));
+    }
 
-    profile = profiles[0];
-    profile.addressOrRva = 0;
-    CHECK(catalog.Validate(profile) ==
+    warden::WardenCheckRowInput lua = FirstProfileRows()[2];
+    for (uint32 value = 0; value <= 3; ++value)
+    {
+        lua.evidenceClass = value;
+        CHECK(AddOne(lua) == (value == 3 ?
+            warden::CheckCatalogValidation::Valid :
+            warden::CheckCatalogValidation::IllegalTypeEvidenceClass));
+    }
+
+    warden::WardenCheckRowInput mem = FirstProfileRows()[3];
+    for (uint32 value = 0; value <= 3; ++value)
+    {
+        mem.evidenceClass = value;
+        CHECK(AddOne(mem) == (value == 0 ?
+            warden::CheckCatalogValidation::IllegalTypeEvidenceClass :
+            warden::CheckCatalogValidation::Valid));
+    }
+}
+
+TEST(WardenCheckCatalog_rejects_duplicate_ids_and_sort_orders_when_disabled)
+{
+    std::vector<warden::WardenCheckRowInput> rows = FirstProfileRows();
+    rows[2].checkId = rows[1].checkId;
+    CHECK(BuildRows(rows) == warden::CheckCatalogValidation::DuplicateId);
+    rows = FirstProfileRows();
+    rows[2].sortOrder = rows[1].sortOrder;
+    CHECK(BuildRows(rows) ==
+        warden::CheckCatalogValidation::DuplicateSortOrder);
+    rows = FirstProfileRows();
+    rows[2].enabled = 0;
+    rows[2].checkId = rows[1].checkId;
+    CHECK(BuildRows(rows) == warden::CheckCatalogValidation::DuplicateId);
+    rows = FirstProfileRows();
+    rows[2].enabled = 0;
+    rows[2].sortOrder = rows[1].sortOrder;
+    CHECK(BuildRows(rows) ==
+        warden::CheckCatalogValidation::DuplicateSortOrder);
+}
+
+TEST(WardenCheckCatalog_enforces_complete_profiles_and_atomic_build)
+{
+    std::vector<warden::WardenCheckRowInput> rows;
+    CHECK(BuildRows(rows) == warden::CheckCatalogValidation::EmptyCatalog);
+    rows = FirstProfileRows();
+    rows.erase(rows.begin());
+    CHECK(BuildRows(rows) == warden::CheckCatalogValidation::MissingTiming);
+    rows = FirstProfileRows();
+    rows[0].enabled = 0;
+    CHECK(BuildRows(rows) == warden::CheckCatalogValidation::DisabledTiming);
+    rows = FirstProfileRows();
+    for (size_t index = 1; index < rows.size(); ++index)
+        rows[index].enabled = 0;
+    CHECK(BuildRows(rows) ==
+        warden::CheckCatalogValidation::MissingNonHealth);
+
+    warden::WardenCheckRowInput malformed = FirstProfileRows()[3];
+    malformed.enabled = 0;
+    malformed.address = 0;
+    CHECK(AddOne(malformed) ==
         warden::CheckCatalogValidation::InvalidAddress);
 
-    profile = profiles[0];
-    profile.moduleName.assign("WoW\0.exe", 8);
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::InvalidModuleName);
-    profile.moduleName.assign(256, 'M');
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::InvalidModuleName);
-
-    profile = profiles[0];
-    profile.expectedBytes.clear();
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::InvalidExpectedBytes);
-    profile.expectedBytes.assign(256, 0);
-    CHECK(catalog.Validate(profile) ==
-        warden::CheckCatalogValidation::InvalidExpectedBytes);
-
-    CHECK(catalog.Validate(profiles) ==
+    rows = FirstProfileRows();
+    rows.resize(3);
+    rows[1].enabled = 0;
+    warden::WardenCheckCatalog observationOnly;
+    REQUIRE(BuildRows(rows, observationOnly) ==
         warden::CheckCatalogValidation::Valid);
-    profiles[1].checkId = profiles[0].checkId;
-    CHECK(catalog.Validate(profiles) ==
+    warden::WardenCheckProfile const* profile =
+        observationOnly.Find(5875, "Win", "enUS");
+    REQUIRE(profile != nullptr);
+    CHECK(!profile->hasActionableChecks);
+    CHECK_EQ(profile->totalRows, uint32(3));
+    CHECK_EQ(profile->checks.size(), size_t(2));
+    CHECK_EQ(observationOnly.EnabledRows(), uint32(2));
+
+    warden::WardenCheckCatalog unchanged =
+        warden::test::BuildInitialWardenCatalog();
+    REQUIRE(unchanged.TotalRows() == 21u);
+    rows = FirstProfileRows();
+    rows[2].checkId = rows[1].checkId;
+    CHECK(BuildRows(rows, unchanged) ==
         warden::CheckCatalogValidation::DuplicateId);
-    profiles.clear();
-    CHECK(catalog.Validate(profiles) ==
-        warden::CheckCatalogValidation::InvalidId);
+    CHECK_EQ(unchanged.TotalRows(), uint32(21));
+    CHECK(unchanged.Find(6141, "Win", "zhCN") != nullptr);
+}
+
+TEST(WardenCheckCatalog_exposes_stable_validation_names)
+{
+    CHECK_STR(warden::ToString(warden::CheckCatalogValidation::Valid),
+        "Valid");
+    CHECK_STR(warden::ToString(
+        warden::CheckCatalogValidation::IllegalTypeEvidenceClass),
+        "IllegalTypeEvidenceClass");
+    CHECK_STR(warden::ToString(
+        warden::CheckCatalogValidation::MissingNonHealth),
+        "MissingNonHealth");
 }

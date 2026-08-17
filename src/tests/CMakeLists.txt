@@ -43,6 +43,7 @@ set(SRC_GRP_TESTS
     SessionProtocolPolicyTest.cpp
     WorldGatewayAccountTest.cpp
     WardenModuleCatalogTest.cpp
+    WardenCheckFixtures.h
     WardenCheckCatalogTest.cpp
     WardenConfigurationTest.cpp
     WardenCryptoContextTest.cpp

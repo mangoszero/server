@@ -26,6 +26,7 @@
 #include "WardenProtocol.h"
 
 #include <string>
+#include <variant>
 #include <vector>
 
 namespace warden
@@ -33,14 +34,62 @@ namespace warden
 enum class CheckCatalogValidation : uint8
 {
     Valid,
+    InvalidHex,
+    InvalidBuild,
+    InvalidPlatform,
+    InvalidLocale,
     InvalidId,
+    InvalidType,
+    InvalidEnabled,
+    InvalidSortOrder,
+    InvalidEvidenceClass,
+    IllegalTypeEvidenceClass,
+    InvalidUnusedField,
     InvalidPath,
     InvalidQuery,
     InvalidExpectedText,
     InvalidAddress,
     InvalidModuleName,
+    InvalidLength,
     InvalidExpectedBytes,
-    DuplicateId
+    DuplicateId,
+    DuplicateSortOrder,
+    EmptyCatalog,
+    MissingTiming,
+    MultipleTiming,
+    DisabledTiming,
+    MissingNonHealth
+};
+
+enum class WardenCheckType : uint8
+{
+    Timing = 0x57,
+    Lua = 0x8B,
+    Mpq = 0x98,
+    Mem = 0xF3
+};
+
+enum class WardenEvidenceClass : uint8
+{
+    ProtocolHealth = 0,
+    IntegrityInvariant = 1,
+    ThreatSignature = 2,
+    Corroboration = 3
+};
+
+enum class WardenCheckOutcome : uint8
+{
+    Match = 0,
+    Mismatch = 1,
+    Unavailable = 2,
+    Stable = 3,
+    Unstable = 4
+};
+
+/** Immutable identity for the transport-health check. */
+struct TimingCheckProfile
+{
+    uint32 checkId = 0;
 };
 
 /** Immutable input needed to request and evaluate one client MPQ digest. */
@@ -69,6 +118,65 @@ struct MemCheckProfile
     Bytes expectedBytes;
 };
 
+using WardenCheckPayload = std::variant<TimingCheckProfile,
+    MpqCheckProfile, LuaCheckProfile, MemCheckProfile>;
+
+/** One enabled, decoded check in canonical profile order. */
+struct WardenCheckDefinition
+{
+    uint16 sortOrder = 0;
+    WardenEvidenceClass evidenceClass =
+        WardenEvidenceClass::ProtocolHealth;
+    WardenCheckPayload payload;
+};
+
+uint32 GetWardenCheckId(WardenCheckDefinition const& definition);
+WardenCheckType GetWardenCheckType(WardenCheckDefinition const& definition);
+bool IsActionableEvidenceClass(WardenEvidenceClass evidenceClass);
+bool IsConfirmationEligible(WardenCheckDefinition const& definition);
+
+struct WardenProfileKey
+{
+    uint32 build = 0;
+    std::string platform;
+    std::string locale;
+};
+
+/** Immutable, complete set of enabled checks for one exact client profile. */
+struct WardenCheckProfile
+{
+    WardenProfileKey key;
+    uint32 totalRows = 0;
+    std::vector<WardenCheckDefinition> checks;
+    bool hasActionableChecks = false;
+};
+
+/** Raw SQL projection retained at full width until validation succeeds. */
+struct WardenCheckRowInput
+{
+    uint32 build = 0;
+    std::string platformHex;
+    std::string localeHex;
+    uint32 checkId = 0;
+    uint32 type = 0;
+    uint32 enabled = 0;
+    uint32 sortOrder = 0;
+    uint32 evidenceClass = 0;
+    std::string moduleHex;
+    uint32 address = 0;
+    uint32 length = 0;
+    std::string requestHex;
+    std::string expectedHex;
+};
+
+/** Identifies the row or profile responsible for a validation failure. */
+struct WardenCheckDiagnostic
+{
+    CheckCatalogValidation validation = CheckCatalogValidation::Valid;
+    WardenProfileKey profile;
+    uint32 checkId = 0;
+};
+
 /**
  * Selects active checks independently of the delivered module catalogue.
  * Archive contents are locale/build scoped even when module bytes are shared.
@@ -76,6 +184,14 @@ struct MemCheckProfile
 class WardenCheckCatalog
 {
 public:
+    WardenCheckProfile const* Find(uint32 build,
+        std::string const& platform, std::string const& locale) const;
+    std::vector<WardenCheckProfile> const& Profiles() const;
+    uint32 TotalRows() const;
+    uint32 EnabledRows() const;
+
+    // Transitional fixed selectors remain until all runtime consumers switch
+    // to generic definitions in the next atomic change.
     MpqCheckProfile const* FindMpq(uint32 build,
         std::string const& platform, std::string const& locale) const;
     LuaCheckProfile const* FindLua(uint32 build,
@@ -87,7 +203,37 @@ public:
     CheckCatalogValidation Validate(MemCheckProfile const& profile) const;
     CheckCatalogValidation Validate(
         std::vector<MemCheckProfile> const& profiles) const;
+
+private:
+    friend class WardenCheckCatalogBuilder;
+
+    std::vector<WardenCheckProfile> m_profiles;
+    uint32 m_totalRows = 0;
+    uint32 m_enabledRows = 0;
 };
+
+/** Validates raw rows and atomically constructs an immutable catalogue. */
+class WardenCheckCatalogBuilder
+{
+public:
+    CheckCatalogValidation Add(WardenCheckRowInput const& input,
+        WardenCheckDiagnostic& diagnostic);
+    CheckCatalogValidation Build(WardenCheckCatalog& output,
+        WardenCheckDiagnostic& diagnostic);
+
+private:
+    struct PendingRow
+    {
+        WardenProfileKey key;
+        uint32 checkId = 0;
+        bool enabled = false;
+        WardenCheckDefinition definition;
+    };
+
+    std::vector<PendingRow> m_rows;
+};
+
+char const* ToString(CheckCatalogValidation validation);
 }
 
 #endif
