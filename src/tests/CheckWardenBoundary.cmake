@@ -83,6 +83,28 @@ endif()
 
 require_count("${WORLD_CPP}" "UpdateWarden[ \\t]*\\([ \\t]*diff[ \\t]*\\)" 1
     "World::UpdateSessions must own exactly one deadline update")
+string(FIND "${WORLD_CPP}" "void World::UpdateSessions(uint32 diff)"
+    UPDATE_SESSIONS_BEGIN)
+string(FIND "${WORLD_CPP}" "void World::ServerMaintenanceStart()"
+    UPDATE_SESSIONS_END)
+if(UPDATE_SESSIONS_BEGIN EQUAL -1 OR UPDATE_SESSIONS_END EQUAL -1 OR
+    UPDATE_SESSIONS_END LESS_EQUAL UPDATE_SESSIONS_BEGIN)
+    message(FATAL_ERROR
+        "Warden boundary: cannot locate World::UpdateSessions body")
+endif()
+math(EXPR UPDATE_SESSIONS_LENGTH
+    "${UPDATE_SESSIONS_END} - ${UPDATE_SESSIONS_BEGIN}")
+string(SUBSTRING "${WORLD_CPP}" ${UPDATE_SESSIONS_BEGIN}
+    ${UPDATE_SESSIONS_LENGTH} UPDATE_SESSIONS_BODY)
+string(FIND "${UPDATE_SESSIONS_BODY}" "pSession->UpdateWarden(diff)"
+    WARDEN_CLOCK_AT)
+string(FIND "${UPDATE_SESSIONS_BODY}" "pSession->Update(updater)"
+    PACKET_UPDATE_AT)
+if(WARDEN_CLOCK_AT EQUAL -1 OR PACKET_UPDATE_AT EQUAL -1 OR
+    WARDEN_CLOCK_AT GREATER_EQUAL PACKET_UPDATE_AT)
+    message(FATAL_ERROR
+        "Warden boundary: elapsed time must be charged before packet handlers can reset a deadline")
+endif()
 require_count("${WORLD_CPP}" "OnAuthenticatedAdmission[ \\t]*\\(" 1
     "immediate AUTH_OK path must admit exactly once")
 string(FIND "${WORLD_CPP}" "packet << uint8(AUTH_OK)" AUTH_OK_AT)

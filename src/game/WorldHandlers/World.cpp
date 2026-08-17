@@ -2415,15 +2415,15 @@ void World::UpdateSessions(uint32 diff)
         WorldSession* pSession = itr->second;
         WorldSessionFilter updater(pSession);
 
+        // Charge the elapsed interval to the state that owned it before a
+        // packet handler can advance Warden and create a fresh deadline.
+        pSession->UpdateWarden(diff);
+
         if (!pSession->Update(updater))
         {
             RemoveQueuedSession(pSession);
             m_sessions.erase(itr);
             delete pSession;
-        }
-        else
-        {
-            pSession->UpdateWarden(diff);
         }
     }
 }
