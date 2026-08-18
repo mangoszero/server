@@ -128,30 +128,30 @@ bool DebuffTrigger::IsActive()
 
 bool SpellTrigger::IsActive()
 {
-    // A spell the bot cannot resolve can never be cast, so a trigger named after one has
-    // nothing to schedule. It resolves through the bot's OWN spellbook, so this also stays
-    // quiet for a real spell not learned yet and starts firing the moment it is trained.
+    // DO NOT gate this on whether the spell resolves. It was tried and reverted, and the
+    // reason is architectural rather than incidental.
     //
-    // Scope is narrower than it looks, and deliberately so. It reaches only triggers that
-    // inherit this IsActive unchanged -- in practice icy veins, living bomb and arcane blast.
-    // It does NOT reach a subclass that overrides IsActive (tree of life, crusader aura),
-    // SpellCanBeCastTrigger (already safe via CanCastSpell), NeedCureTrigger, HasAuraTrigger
-    // (victory rush, and proc auras such as backlash and maelstrom weapon), ItemCountTrigger,
-    // or the many post-1.12 names reached through generic aoe/range/health triggers rather
-    // than by spell name. Those keep their old behaviour and are still stopped downstream by
-    // CastSpellAction::isPossible().
+    // A trigger's name is NOT an assertion that the spell exists or is trained. It is the
+    // entry label of an ActionNode cascade that resolves an INTENT down to whatever this bot
+    // can actually cast. MageBuffDpsStrategy shows the shape plainly: it triggers on
+    // "mage armor" and fires the action "molten armor", and neither has to be castable --
+    // the cascade steps down to Frost Armor, which a level 1 mage has. Refusing here severs
+    // the entry point and the whole ladder below it goes with it.
     //
-    // That bypass is load-bearing, not merely tolerated: the shaman cleansing totems hang off
-    // "party member cleanse spirit poison"/"...disease", whose own spell name is the
-    // unresolvable WotLK "cleanse spirit", and they work only because NeedCureTrigger
-    // overrides IsActive. Before widening this gate, check every trigger it would newly
-    // silence for an ActionNode alternative that is doing real work -- that is exactly how
-    // ShamanBuffManaStrategy was casting Lightning Shield through a dead "water shield".
-    if (!AI_VALUE2(uint32, "spell id", spell))
-    {
-        return false;
-    }
-
+    // Three regressions were found from a single such gate, and only after review:
+    //   - ShamanBuffManaStrategy reaches Lightning Shield through the WotLK "water shield",
+    //     the only shield route for Elemental, Restoration and untalented shamans.
+    //   - DpsPaladinStrategy reaches the real Judgement through "judgement of wisdom" then
+    //     "judgement of light", which are debuff names and never castable. Gating stopped
+    //     Retribution bots judging at all, while they kept maintaining a seal to judge.
+    //   - MageBuffManaStrategy/MageBuffDpsStrategy key on "mage armor", learned at 34, so
+    //     every mage below that lost its armor buff entirely.
+    //
+    // The last one generalises: any ladder that steps down from a higher-level spell breaks
+    // for every bot below that level, so the exposure is open-ended rather than a fixed list
+    // of post-1.12 names. Unresolvable names here are load-bearing scaffolding, not litter.
+    // The cost of leaving them is one cached value lookup per evaluation, and CastSpellAction
+    // ::isPossible -> CanCastSpell already refuses the cast itself.
     return GetTarget();
 }
 
