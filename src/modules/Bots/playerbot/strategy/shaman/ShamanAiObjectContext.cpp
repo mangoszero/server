@@ -107,13 +107,13 @@ namespace ai
                     creators["bloodlust"] = &TriggerFactoryInternal::bloodlust;
                     creators["maelstrom weapon"] = &TriggerFactoryInternal::maelstrom_weapon;
                     creators["earth shock on enemy healer"] = &TriggerFactoryInternal::earth_shock_on_enemy_healer;
-                    creators["ghost wolf"] = &TriggerFactoryInternal::ghost_wolf;
+                    creators["ghost wolf active"] = &TriggerFactoryInternal::ghost_wolf_active;
                     creators["tremor totem"] = &TriggerFactoryInternal::tremor_totem; // unwired intentionally
                 }
 
             private:
                 static Trigger* maelstrom_weapon(PlayerbotAI* ai) { return new MaelstromWeaponTrigger(ai); }
-                static Trigger* ghost_wolf(PlayerbotAI* ai) { return new GhostWolfTrigger(ai); }
+                static Trigger* ghost_wolf_active(PlayerbotAI* ai) { return new GhostWolfActiveTrigger(ai); }
                 static Trigger* tremor_totem(PlayerbotAI* ai) { return new TremorTotemTrigger(ai); }
                 static Trigger* heroism(PlayerbotAI* ai) { return new HeroismTrigger(ai); }
                 static Trigger* bloodlust(PlayerbotAI* ai) { return new BloodlustTrigger(ai); }
@@ -199,7 +199,7 @@ namespace ai
                     creators["cleansing totem"] = &AiObjectContextInternal::cleansing_totem;
                     creators["fire nova"] = &AiObjectContextInternal::fire_nova;
                     creators["thunderstorm"] = &AiObjectContextInternal::thunderstorm;
-                    creators["ghost wolf"] = &AiObjectContextInternal::ghost_wolf;
+                    creators["cancel ghost wolf"] = &AiObjectContextInternal::cancel_ghost_wolf;
                     creators["tremor totem"] = &AiObjectContextInternal::tremor_totem; // unwired intentionally
                 }
 
@@ -216,7 +216,7 @@ namespace ai
                 static Action* cleansing_totem(PlayerbotAI* ai) { return new CastCleansingTotemAction(ai); }
                 static Action* fire_nova(PlayerbotAI* ai) { return new CastFireNovaAction(ai); }
                 static Action* thunderstorm(PlayerbotAI* ai) { return new CastThunderstormAction(ai); }
-                static Action* ghost_wolf(PlayerbotAI* ai) { return new CastGhostWolfAction(ai); }
+                static Action* cancel_ghost_wolf(PlayerbotAI* ai) { return new CancelGhostWolfAction(ai); }
                 static Action* tremor_totem(PlayerbotAI* ai) { return new CastTremorTotemAction(ai); }
                 static Action* lightning_bolt(PlayerbotAI* ai) { return new CastLightningBoltAction(ai); }
                 static Action* chain_lightning(PlayerbotAI* ai) { return new CastChainLightningAction(ai); }

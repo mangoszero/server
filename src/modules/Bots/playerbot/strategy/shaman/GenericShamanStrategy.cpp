@@ -128,6 +128,10 @@ void GenericShamanStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     CombatStrategy::InitTriggers(triggers);
 
+    triggers.push_back(new TriggerNode(
+            "ghost wolf active",
+        NextAction::array(0, new NextAction("cancel ghost wolf", ACTION_EMERGENCY + 10), NULL)));
+
     // Earth Shock, not Wind Shear. No 1.12 spell is named Wind Shear -- it is a TBC ability --
     // so both of these interrupt routes were inert: the trigger fired and the action could
     // never resolve a spell id. Earth Shock carries the interrupt effect in vanilla (DBC

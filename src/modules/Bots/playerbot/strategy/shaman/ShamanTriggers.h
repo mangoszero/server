@@ -199,10 +199,15 @@ namespace ai
             EarthShockInterruptEnemyHealerSpellTrigger(PlayerbotAI* ai) : InterruptEnemyHealerTrigger(ai, "earth shock") {}
     };
 
-    class GhostWolfTrigger : public BuffTrigger
+    class GhostWolfActiveTrigger : public Trigger
     {
         public:
-            GhostWolfTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "ghost wolf") {}
+            GhostWolfActiveTrigger(PlayerbotAI* ai) : Trigger(ai, "ghost wolf active") {}
+
+            virtual bool IsActive()
+            {
+                return ai->HasAura("ghost wolf", bot);
+            }
     };
 
     class TremorTotemTrigger : public TotemTrigger

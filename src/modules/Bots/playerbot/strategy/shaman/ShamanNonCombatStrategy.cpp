@@ -42,9 +42,11 @@ void ShamanNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
             "medium aoe heal",
         NextAction::array(0, new NextAction("chain heal", 27.0f), NULL)));
 
+    // Automatic travel casting is deliberately disabled until Ghost Wolf has a complete
+    // travel lifecycle. This also clears persisted auras when an already-wolfed bot logs in.
     triggers.push_back(new TriggerNode(
-            "ghost wolf",
-        NextAction::array(0, new NextAction("ghost wolf", 9.0f), NULL)));
+            "ghost wolf active",
+        NextAction::array(0, new NextAction("cancel ghost wolf", ACTION_EMERGENCY + 10), NULL)));
 
     triggers.push_back(new TriggerNode(
             "party member cleanse spirit poison",
@@ -65,4 +67,3 @@ void ShamanNonCombatStrategy::InitMultipliers(std::list<Multiplier*> &multiplier
 {
     NonCombatStrategy::InitMultipliers(multipliers);
 }
-

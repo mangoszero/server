@@ -303,10 +303,37 @@ namespace ai
             }
     };
 
-    class CastGhostWolfAction : public CastBuffSpellAction
+    // Ghost Wolf (2645) has AuraInterruptFlags = 0x00000000 in vanilla. Damage, attacking,
+    // casting and entering combat therefore leave it active, while its shapeshift form makes
+    // every shaman spell with SPELL_ATTR_NOT_SHAPESHIFT fail. The aura is also persisted in
+    // character_aura, so a bot can log in already wolfed. PlayerbotAI::CanCastSpell() reports
+    // the shapeshift failure as false, so Engine marks the spell action IMPOSSIBLE before it
+    // can schedule an action prerequisite. Keep cancellation on its own high-priority trigger:
+    // a pre-cast cancel cannot run, and retaining the old automatic buff trigger alongside a
+    // cast-time cancel would re-arm Ghost Wolf and create a cancel/recast churn loop.
+    class CancelGhostWolfAction : public Action
     {
         public:
-            CastGhostWolfAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "ghost wolf") {}
+            CancelGhostWolfAction(PlayerbotAI* ai) : Action(ai, "cancel ghost wolf") {}
+
+            virtual bool isUseful()
+            {
+                return ai->HasAura("ghost wolf", bot);
+            }
+
+            virtual bool Execute(Event event)
+            {
+                ai->RemoveShapeshift();
+
+                // Report what the removal actually achieved. PlayerbotAI::RemoveAura() resolves
+                // the name through the bot's OWN SPELLBOOK and silently does nothing when the
+                // lookup fails, while HasAura() falls back to scanning the unit's auras by name.
+                // A bot holding the aura without knowing the spell would therefore satisfy the
+                // trigger forever against a removal that cannot fire, and a hardcoded true at
+                // this relevance ends the tick -- bricking the shaman far worse than the wolf
+                // form it is meant to clear. Returning false lets Engine fall through instead.
+                return !ai->HasAura("ghost wolf", bot);
+            }
     };
 
     class CastTremorTotemAction : public CastTotemAction
