@@ -4,6 +4,7 @@
 #include "Engine.h"
 #include "../PlayerbotAIConfig.h"
 #include <cstdarg>
+#include <mutex>
 
 using namespace ai;
 using namespace std;
@@ -139,6 +140,29 @@ void Engine::InitStrategies()
     }
 }
 
+// A name that resolves to no Action is not by itself a defect. Many names in this
+// module are pure intent labels: the head of an ActionNode cascade whose /*A*/
+// alternatives resolve to whatever the bot can actually cast ("molten armor" down
+// to "frost armor", "crusader strike" down to "melee"). Gating or warning on those
+// names removes real behaviour -- see the revert documented in GenericTriggers.cpp.
+// A name with no Action AND no alternatives is different: nothing can ever resolve
+// it, so every push of it is dropped without a trace. That exact combination is the
+// one safe signal of dead wiring, and it is reported once per name per process so
+// it surfaces without flooding the log. Bot engines run inside map updates, which
+// may be spread over several threads (mtmaps), hence the lock.
+static void WarnDeadEndActionName(const string& name)
+{
+    static std::mutex warnedLock;
+    static set<string> warned;
+
+    std::lock_guard<std::mutex> guard(warnedLock);
+    if (warned.insert(name).second)
+    {
+        sLog.outError("Playerbot: action name '%s' resolves to no action and has no "
+                      "alternatives; every push of it is dropped silently", name.c_str());
+    }
+}
+
 // Executes the next action in the queue
 bool Engine::DoNextAction(Unit* unit, int depth)
 {
@@ -182,7 +206,17 @@ bool Engine::DoNextAction(Unit* unit, int depth)
             if (!action)
             {
                 LogAction("A:%s - UNKNOWN", actionNode->getName().c_str());
-                MultiplyAndPush(actionNode->getAlternatives(), relevance + 0.03, false, event);
+                // getAlternatives() builds a fresh array on every call, so take it
+                // once: probe it here, then hand the same array to MultiplyAndPush,
+                // which frees it. An empty array (only the NULL terminator) is what
+                // a bare unregistered name produces -- see WarnDeadEndActionName
+                // above for why that combination, and only that one, is reported.
+                NextAction** alternatives = actionNode->getAlternatives();
+                if (!alternatives || !alternatives[0])
+                {
+                    WarnDeadEndActionName(actionNode->getName());
+                }
+                MultiplyAndPush(alternatives, relevance + 0.03, false, event);
             }
             else if (action->isUseful())
             {

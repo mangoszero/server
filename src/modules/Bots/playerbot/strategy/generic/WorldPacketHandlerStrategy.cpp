@@ -77,21 +77,14 @@ void WorldPacketHandlerStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
             "ready check finished",
         NextAction::array(0, new NextAction("ready check finished", relevance), NULL)));
 
-    triggers.push_back(new TriggerNode(
-            "no possible targets",
-        NextAction::array(0, new NextAction("lfg join", relevance), NULL)));
-
-    triggers.push_back(new TriggerNode(
-            "seldom",
-        NextAction::array(0, new NextAction("lfg leave", relevance), NULL)));
-
-    triggers.push_back(new TriggerNode(
-            "lfg proposal",
-        NextAction::array(0, new NextAction("lfg accept", relevance), NULL)));
-
-    triggers.push_back(new TriggerNode(
-            "lfg proposal active",
-        NextAction::array(0, new NextAction("lfg accept", relevance), NULL)));
+    // Four trigger nodes used to push "lfg join", "lfg leave" and "lfg accept"
+    // here. No action is registered under any of those names (LfgActions.cpp is
+    // entirely commented out and LfgActions.h declares nothing), and none heads an
+    // ActionNode cascade, so every push was dropped silently -- "lfg join" and
+    // "lfg leave" on every "no possible targets"/"seldom" firing. Random-bot LFG is
+    // handled outside the strategy engine by RandomPlayerbotMgr under
+    // AiPlayerbot.RandomBotJoinLfg; teaching bots to answer the 1.12 Meeting Stone
+    // flow through actions would be a new feature, not a re-wiring.
 
     triggers.push_back(new TriggerNode(
             "often",

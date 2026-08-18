@@ -127,6 +127,22 @@ namespace ai
             CastRapidFireAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "rapid fire") {}
     };
 
+    // Readiness resets the hunter's ability cooldowns and is the /*A*/ alternative
+    // behind "rapid fire" in the generic hunter strategies, so it is reached exactly
+    // when Rapid Fire could not be cast -- most usefully when Rapid Fire is on
+    // cooldown. Modeled on the mage's Cold Snap: a plain self-cast, since it applies
+    // no aura of its own. The module has no idiom for "only cast when something
+    // worth resetting is on cooldown", and Cold Snap does not gate on that either.
+    class CastReadinessAction : public CastSpellAction
+    {
+        public:
+            CastReadinessAction(PlayerbotAI* ai) : CastSpellAction(ai, "readiness") {}
+            virtual string GetTargetName()
+            {
+                return "self target";
+            }
+    };
+
     class CastFreezingTrap : public CastDebuffSpellAction
     {
         public:
