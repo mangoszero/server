@@ -83,7 +83,8 @@ void PacketHandlingHelper::AddPacket(const WorldPacket& packet)
  * Default constructor for PlayerbotAI.
  */
 PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL),
-    currentEngine(NULL), chatHelper(this), chatFilter(this), accountId(0), security(NULL), master(NULL), currentState(BOT_STATE_NON_COMBAT),
+    currentEngine(NULL), currentState(BOT_STATE_NON_COMBAT), m_targetContextRevision(0),
+    chatHelper(this), chatFilter(this), accountId(0), security(NULL), master(NULL),
     m_eatingUntil(0), m_drinkingUntil(0),
     m_isJumping(false), m_jumpStartTime(0),
     m_jumpStartX(0.f), m_jumpStartY(0.f), m_jumpStartZ(0.f),
@@ -102,8 +103,8 @@ PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL)
  * @param bot The player bot.
  */
 PlayerbotAI::PlayerbotAI(Player* bot)
-    : PlayerbotAIBase(), chatHelper(this), chatFilter(this), security(bot), master(NULL),
-    m_eatingUntil(0), m_drinkingUntil(0), m_wasDead(false),
+    : PlayerbotAIBase(), m_targetContextRevision(0), chatHelper(this), chatFilter(this),
+    security(bot), master(NULL), m_eatingUntil(0), m_drinkingUntil(0), m_wasDead(false),
     m_isJumping(false), m_jumpStartTime(0),
     m_jumpStartX(0.f), m_jumpStartY(0.f), m_jumpStartZ(0.f),
     m_jumpSinAngle(0.f), m_jumpCosAngle(1.f), m_jumpXYSpeed(0.f),
@@ -462,6 +463,7 @@ void PlayerbotAI::HandleTeleportAck()
 {
     // Before anything else: a jump must not survive a teleport. See CancelJump.
     CancelJump();
+    ++m_targetContextRevision;
 
     bot->GetMotionMaster()->Clear(true);
     bot->StopMoving(true);
@@ -613,6 +615,8 @@ void PlayerbotAI::Reset()
     {
         return;
     }
+
+    ++m_targetContextRevision;
 
     currentEngine = engines[BOT_STATE_NON_COMBAT];
     nextAICheckDelay = 0;
@@ -871,6 +875,7 @@ void PlayerbotAI::ChangeEngine(BotState type)
 
     if (currentEngine != engine)
     {
+        ++m_targetContextRevision;
         currentEngine = engine;
         currentState = type;
         ReInitCurrentEngine();
@@ -983,6 +988,11 @@ void PlayerbotAI::ChangeStrategy(string names, BotState type)
         return;
     }
 
+    if (type == currentState)
+    {
+        ++m_targetContextRevision;
+    }
+
     e->ChangeStrategy(names);
 }
 
@@ -1056,6 +1066,8 @@ bool PlayerbotAI::HasStrategy(const string& name, BotState type)
  */
 void PlayerbotAI::ResetStrategies()
 {
+    ++m_targetContextRevision;
+
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
     {
         engines[i]->removeAllStrategies();

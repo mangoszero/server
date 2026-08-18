@@ -108,6 +108,30 @@ namespace ai
 
             virtual bool Execute(Event event)
             {
+                // Preserve the raw combat target before the filtered value and selection are
+                // cleared. The selection fallback also covers a pet-only surviving attack.
+                Unit* victim = bot->getVictim();
+                if (!victim && !bot->GetSelectionGuid().IsEmpty())
+                {
+                    victim = ai->GetUnit(bot->GetSelectionGuid());
+                }
+
+                Pet* pet = bot->GetPet();
+
+                // Merely clearing the AI target leaves this bot in victim->getAttackers().
+                // That makes Unit::IsVisibleForOrDetect prove its own stealth visibility.
+                bot->AttackStop();
+
+                if (pet && victim && pet->getVictim() == victim)
+                {
+                    // Match PetAI::_stopAttack(): discard the chase generator, idle, then
+                    // remove the pet from the victim's attacker set.
+                    pet->GetMotionMaster()->Clear(false);
+                    pet->GetMotionMaster()->MoveIdle();
+                    pet->AttackStop();
+                }
+
+                ai->StopMovement();
                 context->GetValue<Unit*>("current target")->Set(NULL);
                 bot->SetSelectionGuid(ObjectGuid());
                 ai->ChangeEngine(BOT_STATE_NON_COMBAT);

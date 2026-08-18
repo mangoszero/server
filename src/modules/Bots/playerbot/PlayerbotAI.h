@@ -154,6 +154,7 @@ class PlayerbotAI : public PlayerbotAIBase
         bool HasStrategy(const string& name, BotState type);
         bool HasStrategy(const string& name) { return HasStrategy(name, currentState); }
         BotState GetState() const { return currentState; }
+        uint32 GetTargetContextRevision() const { return m_targetContextRevision; }
         void ResetStrategies();
         void ReInitCurrentEngine();
         void Reset();
@@ -277,6 +278,7 @@ class PlayerbotAI : public PlayerbotAIBase
         Engine* currentEngine;
         Engine* engines[BOT_STATE_MAX];
         BotState currentState;
+        uint32 m_targetContextRevision; ///< Invalidates target observations across AI context changes.
         ChatHelper chatHelper;
         stack<ChatCommandHolder> chatCommands;
         PacketHandlingHelper botOutgoingPacketHandlers;

@@ -3,6 +3,7 @@
 #include "../actions/GenericActions.h"
 #include "HunterActions.h"
 #include "../../PlayerbotFactory.h"
+#include "../values/PossibleTargetsValue.h"
 
 using namespace ai;
 
@@ -88,6 +89,13 @@ bool HunterMeleeAction::Execute(Event event)
 {
     Unit* target = AI_VALUE(Unit*, "current target");
     if (!target)
+    {
+        return false;
+    }
+
+    // This action calls Unit::Attack directly, so do not let a stale current-target read
+    // re-establish an attack after the target became concealed.
+    if (!PossibleTargetsValue::IsVisibleForBot(bot, target))
     {
         return false;
     }
