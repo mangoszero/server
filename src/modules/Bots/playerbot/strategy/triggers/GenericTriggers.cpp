@@ -128,6 +128,30 @@ bool DebuffTrigger::IsActive()
 
 bool SpellTrigger::IsActive()
 {
+    // A spell the bot cannot resolve can never be cast, so a trigger named after one has
+    // nothing to schedule. It resolves through the bot's OWN spellbook, so this also stays
+    // quiet for a real spell not learned yet and starts firing the moment it is trained.
+    //
+    // Scope is narrower than it looks, and deliberately so. It reaches only triggers that
+    // inherit this IsActive unchanged -- in practice icy veins, living bomb and arcane blast.
+    // It does NOT reach a subclass that overrides IsActive (tree of life, crusader aura),
+    // SpellCanBeCastTrigger (already safe via CanCastSpell), NeedCureTrigger, HasAuraTrigger
+    // (victory rush, and proc auras such as backlash and maelstrom weapon), ItemCountTrigger,
+    // or the many post-1.12 names reached through generic aoe/range/health triggers rather
+    // than by spell name. Those keep their old behaviour and are still stopped downstream by
+    // CastSpellAction::isPossible().
+    //
+    // That bypass is load-bearing, not merely tolerated: the shaman cleansing totems hang off
+    // "party member cleanse spirit poison"/"...disease", whose own spell name is the
+    // unresolvable WotLK "cleanse spirit", and they work only because NeedCureTrigger
+    // overrides IsActive. Before widening this gate, check every trigger it would newly
+    // silence for an ActionNode alternative that is doing real work -- that is exactly how
+    // ShamanBuffManaStrategy was casting Lightning Shield through a dead "water shield".
+    if (!AI_VALUE2(uint32, "spell id", spell))
+    {
+        return false;
+    }
+
     return GetTarget();
 }
 

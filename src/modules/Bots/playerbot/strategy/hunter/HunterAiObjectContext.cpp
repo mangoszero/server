@@ -67,7 +67,6 @@ namespace ai
             public:
                 TriggerFactoryInternal()
                 {
-                    creators["aspect of the viper"] = &TriggerFactoryInternal::aspect_of_the_viper;
                     creators["black arrow"] = &TriggerFactoryInternal::black_arrow;
                     creators["no stings"] = &TriggerFactoryInternal::NoStings;
                     creators["hunters pet dead"] = &TriggerFactoryInternal::hunters_pet_dead;
@@ -80,7 +79,6 @@ namespace ai
                     creators["bestial wrath"] = &TriggerFactoryInternal::bestial_wrath;
                     creators["aspect of the hawk"] = &TriggerFactoryInternal::aspect_of_the_hawk;
                     creators["aspect of the wild"] = &TriggerFactoryInternal::aspect_of_the_wild;
-                    creators["aspect of the viper"] = &TriggerFactoryInternal::aspect_of_the_viper;
                     creators["trueshot aura"] = &TriggerFactoryInternal::trueshot_aura;
                     creators["serpent sting on attacker"] = &TriggerFactoryInternal::serpent_sting_on_attacker;
                     creators["has feign death"] = &TriggerFactoryInternal::has_feign_death;
@@ -90,7 +88,6 @@ namespace ai
                 static Trigger* serpent_sting_on_attacker(PlayerbotAI* ai) { return new SerpentStingOnAttackerTrigger(ai); }
                 static Trigger* has_feign_death(PlayerbotAI* ai) { return new FeignDeathTrigger(ai); }
                 static Trigger* trueshot_aura(PlayerbotAI* ai) { return new TrueshotAuraTrigger(ai); }
-                static Trigger* aspect_of_the_viper(PlayerbotAI* ai) { return new HunterAspectOfTheViperTrigger(ai); }
                 static Trigger* black_arrow(PlayerbotAI* ai) { return new BlackArrowTrigger(ai); }
                 static Trigger* NoStings(PlayerbotAI* ai) { return new HunterNoStingsActiveTrigger(ai); }
                 static Trigger* hunters_pet_dead(PlayerbotAI* ai) { return new HuntersPetDeadTrigger(ai); }

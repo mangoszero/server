@@ -106,10 +106,21 @@ namespace ai
             CastHealingStreamTotemAction(PlayerbotAI* ai) : CastTotemAction(ai, "healing stream totem") {}
     };
 
-    class CastCleansingTotemAction : public CastTotemAction
+    // 1.12 has no single "Cleansing Totem". It ships two separate spells, Poison Cleansing
+    // Totem (8166) and Disease Cleansing Totem (8170), so the combined name that used to be
+    // here could never resolve and shamans never dropped a cleansing totem at all.
+    class CastPoisonCleansingTotemAction : public CastTotemAction
     {
         public:
-            CastCleansingTotemAction(PlayerbotAI* ai) : CastTotemAction(ai, "cleansing totem") {}
+            CastPoisonCleansingTotemAction(PlayerbotAI* ai)
+                : CastTotemAction(ai, "poison cleansing totem") {}
+    };
+
+    class CastDiseaseCleansingTotemAction : public CastTotemAction
+    {
+        public:
+            CastDiseaseCleansingTotemAction(PlayerbotAI* ai)
+                : CastTotemAction(ai, "disease cleansing totem") {}
     };
 
     class CastFlametongueTotemAction : public CastTotemAction

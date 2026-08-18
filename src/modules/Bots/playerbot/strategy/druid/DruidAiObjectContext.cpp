@@ -132,7 +132,7 @@ namespace ai
             public:
                 AiObjectContextInternal()
                 {
-                    creators["feral charge - bear"] = &AiObjectContextInternal::feral_charge_bear;
+                    creators["feral charge"] = &AiObjectContextInternal::feral_charge_bear;
                     creators["feral charge - cat"] = &AiObjectContextInternal::feral_charge_cat;
                     creators["swipe (bear)"] = &AiObjectContextInternal::swipe_bear;
                     creators["faerie fire (feral)"] = &AiObjectContextInternal::faerie_fire_feral;

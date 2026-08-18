@@ -14,7 +14,6 @@ class GenericHunterNonCombatStrategyActionNodeFactory : public NamedObjectFactor
             creators["rapid fire"] = &rapid_fire;
             creators["boost"] = &rapid_fire;
             creators["aspect of the pack"] = &aspect_of_the_pack;
-            creators["aspect of the viper"] = &aspect_of_the_viper;
         }
     private:
         static ActionNode* rapid_fire(PlayerbotAI* ai)
@@ -29,14 +28,6 @@ class GenericHunterNonCombatStrategyActionNodeFactory : public NamedObjectFactor
             return new ActionNode ("aspect of the pack",
                 /*P*/ NULL,
                 /*A*/ NextAction::array(0, new NextAction("aspect of the cheetah"), NULL),
-                /*C*/ NULL);
-        }
-        // aspect of the viper doesn't exist in Vanilla 1.12 - fall back to drinking
-        static ActionNode* aspect_of_the_viper(PlayerbotAI* ai)
-        {
-            return new ActionNode ("aspect of the viper",
-                /*P*/ NULL,
-                /*A*/ NextAction::array(0, new NextAction("drink"), NULL),
                 /*C*/ NULL);
         }
 };

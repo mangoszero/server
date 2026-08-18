@@ -12,7 +12,7 @@ class BearTankDruidStrategyActionNodeFactory : public NamedObjectFactory<ActionN
         BearTankDruidStrategyActionNodeFactory()
         {
             creators["melee"] = &melee;
-            creators["feral charge - bear"] = &feral_charge_bear;
+            creators["feral charge"] = &feral_charge_bear;
             creators["swipe (bear)"] = &swipe_bear;
             creators["faerie fire (feral)"] = &faerie_fire_feral;
             creators["bear form"] = &bear_form;
@@ -30,13 +30,13 @@ class BearTankDruidStrategyActionNodeFactory : public NamedObjectFactory<ActionN
         static ActionNode* melee(PlayerbotAI* ai)
         {
             return new ActionNode ("melee",
-                /*P*/ NextAction::array(0, new NextAction("feral charge - bear"), NULL),
+                /*P*/ NextAction::array(0, new NextAction("feral charge"), NULL),
                 /*A*/ NULL,
                 /*C*/ NULL);
         }
         static ActionNode* feral_charge_bear(PlayerbotAI* ai)
         {
-            return new ActionNode ("feral charge - bear",
+            return new ActionNode ("feral charge",
                 /*P*/ NULL,
                 /*A*/ NextAction::array(0, new NextAction("reach melee"), NULL),
                 /*C*/ NULL);
@@ -51,7 +51,7 @@ class BearTankDruidStrategyActionNodeFactory : public NamedObjectFactory<ActionN
         static ActionNode* faerie_fire_feral(PlayerbotAI* ai)
         {
             return new ActionNode ("faerie fire (feral)",
-                /*P*/ NextAction::array(0, new NextAction("feral charge - bear"), NULL),
+                /*P*/ NextAction::array(0, new NextAction("feral charge"), NULL),
                 /*A*/ NULL,
                 /*C*/ NULL);
         }

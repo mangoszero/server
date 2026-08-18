@@ -25,17 +25,6 @@ namespace ai
             }
     };
 
-    class HunterAspectOfTheViperTrigger : public BuffTrigger
-    {
-        public:
-            HunterAspectOfTheViperTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the viper") {}
-
-            virtual bool IsActive()
-            {
-                return SpellTrigger::IsActive() && !ai->HasAura(spell, GetTarget());
-            }
-    };
-
     class HunterAspectOfThePackTrigger : public BuffTrigger
     {
         public:
