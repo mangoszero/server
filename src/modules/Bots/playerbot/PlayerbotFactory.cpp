@@ -119,7 +119,6 @@ void PlayerbotFactory::Randomize(bool incremental)
     bot->resetTalents(true);
     ClearSpells();
     ClearInventory();
-    bot->SaveToDB();
 
     sLog.outDetail("Initializing quests...");
     InitQuests();
@@ -128,7 +127,6 @@ void PlayerbotFactory::Randomize(bool incremental)
     ClearInventory();
     bot->SetUInt32Value(PLAYER_XP, 0);
     CancelAuras();
-    bot->SaveToDB();
 
     sLog.outDetail("Initializing spells (step 1)...");
     InitAvailableSpells();
@@ -152,7 +150,6 @@ void PlayerbotFactory::Randomize(bool incremental)
 
     sLog.outDetail("Initializing skills (step 2)...");
     UpdateTradeSkills();
-    bot->SaveToDB();
 
     sLog.outDetail("Initializing equipment...");
     InitEquipment(incremental);
