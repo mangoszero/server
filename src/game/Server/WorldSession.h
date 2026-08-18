@@ -38,6 +38,7 @@
 #include <vector>
 #include <list>
 #include "SessionProtocolPolicy.h"
+#include "WardenConfiguration.h"
 #include "Auth/BigNumber.h"
 #include "SharedDefines.h"
 #include "ObjectGuid.h"
@@ -45,6 +46,7 @@
 #include "Item.h"
 #include <chrono>
 #include <memory>
+#include <unordered_set>
 
 struct ItemPrototype;
 struct AuctionEntry;
@@ -58,7 +60,6 @@ class Item;
 class Object;
 class Player;
 class Unit;
-class Warden;
 class WorldPacket;
 class SessionMailbox;
 class QueryResult;
@@ -71,6 +72,16 @@ class WorldSession;
 namespace proto
 {
 class IClientLink;
+}
+
+namespace warden
+{
+struct AdmissionData;
+struct WardenEvidenceBatch;
+struct WardenLifecycleEvent;
+struct WardenPolicyDecision;
+class WardenEnforcementPolicy;
+class WardenServer;
 }
 
 struct OpcodeHandler;
@@ -242,6 +253,10 @@ class WorldSession
         WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
                      std::shared_ptr<SessionMailbox> mailbox, AccountTypes sec,
                      time_t mute_time, LocaleConstant locale);
+        WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
+                     std::shared_ptr<SessionMailbox> mailbox, AccountTypes sec,
+                     time_t mute_time, LocaleConstant locale,
+                     warden::AdmissionData&& admission);
 
         /**
          * @brief Destructor
@@ -280,6 +295,9 @@ class WorldSession
         void SendPacket(WorldPacket const* packet);
         void SetPendingAddonInfo(std::unique_ptr<WorldPacket> packet);
         void SendPendingAddonInfo();
+        void OnAuthenticatedAdmission();
+        void StartWardenBootstrap();
+        void UpdateWarden(uint32 diffMs);
         void SendNotification(const char* format, ...) ATTR_PRINTF(2, 3);
         void SendNotification(int32 string_id, ...);
         void SendPetNameInvalid(uint32 error, const std::string& name);
@@ -326,9 +344,6 @@ class WorldSession
         {
             _player = plr;
         }
-
-        // Warden
-        void InitWarden(uint16 build, BigNumber* k, std::string const& os);
 
         /// Session in auth.queue currently
         void SetInQueue(bool state)
@@ -483,6 +498,12 @@ class WorldSession
         time_t m_muteTime;
 
         // Locales
+        // Locale reported during realm authentication, before any fallback to
+        // the DBC locales installed on this server.
+        LocaleConstant GetClientLocale() const
+        {
+            return m_clientLocale;
+        }
         LocaleConstant GetSessionDbcLocale() const
         {
             return m_sessionDbcLocale;
@@ -897,9 +918,6 @@ class WorldSession
         void HandleBotPackets();
 #endif
 
-        // for Warden
-        uint16 GetClientBuild() const { return _build; }
-
     private:
         // private trade methods
         void moveItems(Item* myItems[], Item* hisItems[]);
@@ -909,6 +927,15 @@ class WorldSession
 
         void ExecuteOpcode(OpcodeHandler const& opHandle, WorldPacket* packet);
 
+        void HandleWardenLifecycle(
+            warden::WardenLifecycleEvent const& event);
+        void HandleWardenEvidenceBatch(
+            warden::WardenEvidenceBatch const& batch);
+        void PersistWardenAudit(
+            warden::WardenPolicyDecision const& decision);
+        void PersistWardenIncidentAndKick(
+            warden::WardenPolicyDecision const& decision);
+
         // logging helper
         void LogUnexpectedOpcode(WorldPacket* packet, const char* reason);
         void LogUnprocessedTail(WorldPacket* packet);
@@ -917,14 +944,22 @@ class WorldSession
         std::shared_ptr<proto::IClientLink> m_link;
         std::shared_ptr<SessionMailbox> m_mailbox;
         std::unique_ptr<WorldPacket> m_pendingAddonInfo;
+        std::unique_ptr<warden::AdmissionData> m_pendingWardenAdmission;
+        std::unique_ptr<warden::WardenServer> m_warden;
+        std::unique_ptr<warden::WardenEnforcementPolicy> m_wardenPolicy;
+        warden::WardenConfiguration m_wardenConfiguration;
+        uint32 m_wardenBuild = 0;
+        std::string m_wardenClientPlatform;
+        std::string m_wardenClientLocale;
+        uint64 m_wardenAggressiveUntil = 0;
+        bool m_wardenAggressive = false;
+        bool m_wardenEnforcementClosed = false;
+        std::unordered_set<uint64> m_wardenLoggedAnomalies;
+        bool m_wardenAdmissionHandled;
         std::string m_Address;
 
         AccountTypes _security;
         uint32 _accountId;
-
-        // Warden
-        Warden* _warden;                                    // Remains NULL if Warden system is not enabled by config
-        uint16 _build;                                      // connected client build
 
         time_t _logoutTime;
         bool m_inQueue;                                     // session wait in auth.queue
@@ -932,6 +967,7 @@ class WorldSession
         bool m_playerLogout;                                // code processed in LogoutPlayer
         bool m_playerRecentlyLogout;
         bool m_playerSave;                                  // code processed in LogoutPlayer with save request
+        LocaleConstant m_clientLocale;
         LocaleConstant m_sessionDbcLocale;
         int m_sessionDbLocaleIndex;
         uint32 m_latency;

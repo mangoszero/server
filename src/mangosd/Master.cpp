@@ -41,6 +41,7 @@
 #include "SystemConfig.h"
 #include "Timer.h"
 #include "World.h"
+#include "Server/WardenCheckCatalogLoader.h"
 
 #ifdef ENABLE_SOAP
 #include "SOAP/SoapService.h"
@@ -386,6 +387,12 @@ int Master::Run()
     }
 
     ClearOnlineAccounts();
+
+    if (!warden::WardenCheckCatalogLoader().LoadAndPublish())
+    {
+        StopDatabases();
+        return 1;
+    }
 
     sWorld.SetInitialWorldSettings();
 

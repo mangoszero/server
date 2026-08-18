@@ -1,0 +1,88 @@
+/**
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * MaNGOS is a full featured server for World of Warcraft, supporting
+ * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
+ *
+ * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#ifndef MANGOS_WARDEN_MANAGER_H
+#define MANGOS_WARDEN_MANAGER_H
+
+#include "WardenCheckCatalog.h"
+#include "WardenServer.h"
+
+#include <memory>
+
+namespace warden
+{
+/** True only when the server has an exact, enforcement-safe client profile. */
+bool IsWardenEnforcementProfile(uint32 build,
+    std::string const& platform, std::string const& locale);
+
+/** Admission outcome after applying enforcement and exact-profile policy. */
+enum class WardenProfileDisposition : uint8
+{
+    Observe,
+    Enforce,
+    Reject
+};
+
+WardenProfileDisposition ClassifyWardenProfile(
+    WardenEnforcementMode enforcementMode, bool requireExactProfile,
+    bool exactProfile);
+
+/** Immutable per-session inputs selected by the server admission policy. */
+struct WardenCreationOptions
+{
+    WardenLimits limits{};
+    WardenConfiguration configuration{};
+    bool initialAggressive = false;
+};
+
+/**
+ * Startup-owned immutable check snapshot and per-session factory boundary.
+ * Creating a server is inert; Start owns the first wire write after
+ * WorldSession admission completes.
+ */
+class WardenManager
+{
+public:
+    WardenManager() = default;
+    static WardenManager& Instance();
+    bool PublishCheckCatalog(
+        std::shared_ptr<WardenCheckCatalog const> catalog);
+    bool HasPublishedCheckCatalog() const;
+    WardenCheckProfile const* FindCheckProfile(uint32 build,
+        std::string const& platform, std::string const& locale) const;
+
+    // Returns null for unsupported or custody-invalid profiles. The observer
+    // receives typed terminal facts only and may be omitted by tests/tools.
+    std::unique_ptr<WardenServer> Create(uint32 build,
+        std::string const& platform, std::string const& locale,
+        SessionKey const& sessionKey, SendEncrypted send,
+        WardenCreationOptions options = {},
+        LifecycleObserver lifecycleObserver = {},
+        EvidenceBatchObserver evidenceObserver = {}) const;
+
+private:
+    WardenModuleCatalog m_catalog;
+    std::shared_ptr<WardenCheckCatalog const> m_checkCatalog;
+};
+}
+
+#endif

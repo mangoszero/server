@@ -41,7 +41,20 @@ set(SRC_GRP_TESTS
     ByteBufferTest.cpp
     SessionMailboxTest.cpp
     SessionProtocolPolicyTest.cpp
+    WorldGatewayAccountTest.cpp
+    WardenModuleCatalogTest.cpp
+    WardenCheckFixtures.h
+    WardenCheckCatalogTest.cpp
+    WardenConfigurationTest.cpp
+    WardenCryptoContextTest.cpp
+    WardenPacketCodecTest.cpp
+    WardenCheckPlannerTest.cpp
+    WardenEnforcementPolicyTest.cpp
+    WardenAuditStoreTest.cpp
+    WardenIncidentStoreTest.cpp
+    WardenServerTest.cpp
     DatabaseConcurrencyTest.cpp
+    DatabaseVersionTest.cpp
     OpenSSLProviderTest.cpp
     ClientParserTest.cpp
     TerrainModelTest.cpp
@@ -55,6 +68,19 @@ set(SRC_GRP_TESTS
     ${CMAKE_SOURCE_DIR}/src/game/WorldHandlers/DynamicCollision.cpp
     ${CMAKE_SOURCE_DIR}/src/game/WorldHandlers/GameObjectModel.cpp
     ${CMAKE_SOURCE_DIR}/src/game/Server/SessionMailbox.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Server/WorldGatewayAccount.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenProtocol.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenConfiguration.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenCryptoContext.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenPacketCodec.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenCheckPlanner.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenEvidence.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenEnforcementPolicy.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenModuleWin5875Data.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenModuleCatalog.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenCheckCatalog.cpp
     ByteBufferStressTest.cpp
     CryptoStressTest.cpp
     CodecStressTest.cpp
@@ -74,7 +100,8 @@ add_executable(mangos_tests ${SRC_GRP_TESTS})
 target_include_directories(mangos_tests
     PRIVATE
         ${CMAKE_SOURCE_DIR}/src/game/WorldHandlers
-        ${CMAKE_SOURCE_DIR}/src/game/Server)
+        ${CMAKE_SOURCE_DIR}/src/game/Server
+        ${CMAKE_SOURCE_DIR}/src/game/Warden)
 
 target_link_libraries(mangos_tests
     PRIVATE
@@ -97,6 +124,11 @@ add_test(NAME build_policy
     COMMAND ${CMAKE_COMMAND}
         -DSOURCE_ROOT=${CMAKE_SOURCE_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckBuildPolicy.cmake)
+
+add_test(NAME warden_boundary
+    COMMAND ${CMAKE_COMMAND}
+        -DSOURCE_ROOT=${CMAKE_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckWardenBoundary.cmake)
 
 add_test(NAME spatial_boundary
     COMMAND ${CMAKE_COMMAND}

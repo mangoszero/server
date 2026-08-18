@@ -53,6 +53,8 @@ struct LocaleNameStr
 extern LocaleNameStr const fullLocaleNameList[];
 
 LocaleConstant GetLocaleByName(const std::string& name);
+/** Returns an exact supported name, or nullptr without applying a fallback. */
+char const* GetExactLocaleName(const std::string& name);
 
 typedef std::vector<std::string> StringVector;
 

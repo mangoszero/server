@@ -72,10 +72,6 @@ source_group("Tool" FILES ${SRC_GRP_TOOL})
 file(GLOB SRC_GRP_WARDEN Warden/*.cpp Warden/*.h)
 source_group("Warden" FILES ${SRC_GRP_WARDEN})
 
-#Warden Modules group
-file(GLOB SRC_GRP_WARDEN_MODULES Warden/Modules/*.cpp Warden/Modules/*.h)
-source_group("Warden\\Modules" FILES ${SRC_GRP_WARDEN_MODULES})
-
 #World and Handlers group
 file(GLOB SRC_GRP_WORLD_HANDLERS WorldHandlers/*.cpp WorldHandlers/*.h)
 source_group("World\\Handlers" FILES ${SRC_GRP_WORLD_HANDLERS})
@@ -206,7 +202,6 @@ add_library(game STATIC
     ${SRC_GRP_TIME}
     ${SRC_GRP_TOOL}
     ${SRC_GRP_WARDEN}
-    ${SRC_GRP_WARDEN_MODULES}
     ${SRC_GRP_WORLD_HANDLERS}
     $<$<BOOL:${SCRIPT_LIB_ELUNA}>:${SRC_GRP_ELUNA}>
     $<$<BOOL:${PLAYERBOTS}>:${SRC_GRP_BOTS}>
@@ -234,7 +229,6 @@ target_include_directories(game
         Time
         Tools
         Warden
-        Warden/Modules
         WorldHandlers
         $<$<BOOL:${SCRIPT_LIB_ELUNA}>:
             ${CMAKE_SOURCE_DIR}/src/modules/Eluna

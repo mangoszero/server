@@ -115,9 +115,6 @@
 #include "RandomPlayerbotMgr.h"
 #endif
 
-// WARDEN
-#include "WardenCheckMgr.h"
-
 // AH subprocess supervisor (Task 5+)
 #include "WorkerSupervisor.h"
 #include "IpcMessage.h"
@@ -363,6 +360,7 @@ World::AddSession_(WorldSession* s)
     packet << uint32(0);                                    // BillingTimeRested
     s->SendPacket(&packet);
     s->SendPendingAddonInfo();
+    s->OnAuthenticatedAdmission();
 
     UpdateMaxSessionCounters();
 
@@ -910,15 +908,6 @@ void World::SetInitialWorldSettings()
     sLog.outString("Starting Outdoor PvP System");
     sOutdoorPvPMgr.InitOutdoorPvP();
 
-    // Initialize Warden
-    sLog.outString("Loading Warden Checks...");
-    sWardenCheckMgr->LoadWardenChecks();
-    sLog.outString();
-
-    sLog.outString("Loading Warden Action Overrides...");
-    sWardenCheckMgr->LoadWardenOverrides();
-    sLog.outString();
-
     sLog.outString("Deleting expired bans...");
     LoginDatabase.Execute("DELETE FROM `ip_banned` WHERE `unbandate`<=UNIX_TIMESTAMP() AND `unbandate`<>`bandate`");
     sLog.outString();
@@ -1006,7 +995,7 @@ void World::SetInitialWorldSettings()
 
 namespace
 {
-    /// "Eluna, ScriptDev3, Warden" -- or "none" for an empty list.
+    /// "Eluna, ScriptDev3" -- or "none" for an empty list.
     std::string JoinList(const std::vector<std::string>& items)
     {
         std::string joined;
@@ -1075,15 +1064,6 @@ void World::showFooter(uint32 startupMs)
         disabled.push_back("SOAP");
     }
 #endif
-
-    if (getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED) || getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED))
-    {
-        enabled.push_back("Warden");
-    }
-    else
-    {
-        disabled.push_back("Warden");
-    }
 
     char database[128];
     snprintf(database, sizeof(database), "Rel%s.%s.%s", GitRevision::GetWorldDBVersion(),
@@ -2417,7 +2397,7 @@ void World::ShutdownCancel()
  *
  * @param diff The elapsed world update time in milliseconds.
  */
-void World::UpdateSessions(uint32 /*diff*/)
+void World::UpdateSessions(uint32 diff)
 {
     ///- Add new sessions
     WorldSession* sess;
@@ -2434,6 +2414,10 @@ void World::UpdateSessions(uint32 /*diff*/)
         ///- and remove not active sessions from the list
         WorldSession* pSession = itr->second;
         WorldSessionFilter updater(pSession);
+
+        // Charge the elapsed interval to the state that owned it before a
+        // packet handler can advance Warden and create a fresh deadline.
+        pSession->UpdateWarden(diff);
 
         if (!pSession->Update(updater))
         {

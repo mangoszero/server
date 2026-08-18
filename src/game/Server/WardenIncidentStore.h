@@ -1,0 +1,223 @@
+/**
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * MaNGOS is a full featured server for World of Warcraft, supporting
+ * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
+ *
+ * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#ifndef MANGOS_WARDEN_INCIDENT_STORE_H
+#define MANGOS_WARDEN_INCIDENT_STORE_H
+
+#include "WardenConfiguration.h"
+#include "WardenEvidence.h"
+
+#include <algorithm>
+#include <functional>
+#include <limits>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace warden
+{
+enum class WardenIncidentOutcome : uint8
+{
+    Mismatch = 1,
+    HistoricalUnavailable = 2
+};
+
+struct WardenIncidentContext
+{
+    uint32 accountId = 0;
+    uint32 realmId = 0;
+    uint32 clientBuild = 0;
+    std::string clientPlatform;
+    std::string clientLocale;
+    uint32 checkId = 0;
+    WardenCheckType checkType = WardenCheckType::Timing;
+    WardenEvidenceClass evidenceClass = WardenEvidenceClass::ProtocolHealth;
+    WardenIncidentOutcome outcome = WardenIncidentOutcome::Mismatch;
+};
+
+struct WardenIncidentWindowState
+{
+    uint32 recentCount = 0;
+    uint64 aggressiveUntil = 0;
+    uint64 databaseNow = 0;
+};
+
+enum class WardenIncidentWriteStatus : uint8
+{
+    Failed,
+    Committed,
+    CommittedStateUnavailable
+};
+
+struct WardenIncidentWriteResult
+{
+    WardenIncidentWriteStatus status = WardenIncidentWriteStatus::Failed;
+    uint32 recentCount = 0;
+    bool permanentBanActive = false;
+};
+
+/** Session action derived without exposing database implementation details. */
+struct WardenIncidentApplication
+{
+    bool mustKick = true;
+    bool durable = false;
+    bool summaryKnown = false;
+    uint32 recentCount = 0;
+    bool permanentBanActive = false;
+};
+
+namespace detail
+{
+inline WardenIncidentWindowState ClassifyRecentIncidentWindow(
+    std::vector<uint64> recent, uint32 incidentWindowSeconds,
+    uint32 aggressiveThreshold)
+{
+    WardenIncidentWindowState state;
+    if (incidentWindowSeconds == 0 || aggressiveThreshold == 0)
+        return state;
+
+    std::sort(recent.begin(), recent.end(), std::greater<uint64>());
+    state.recentCount = static_cast<uint32>(std::min<size_t>(recent.size(),
+        std::numeric_limits<uint32>::max()));
+    if (recent.size() < aggressiveThreshold)
+        return state;
+
+    uint64 const thresholdNewest = recent[aggressiveThreshold - 1u];
+    uint64 const maximum = std::numeric_limits<uint64>::max();
+    state.aggressiveUntil =
+        thresholdNewest > maximum - incidentWindowSeconds ?
+            maximum : thresholdNewest + incidentWindowSeconds;
+    return state;
+}
+}
+
+inline std::optional<WardenIncidentOutcome> ToIncidentOutcome(
+    WardenCheckOutcome outcome)
+{
+    if (outcome == WardenCheckOutcome::Mismatch)
+        return WardenIncidentOutcome::Mismatch;
+    return std::nullopt;
+}
+
+inline bool IsValidWardenIncidentContext(
+    WardenIncidentContext const& context)
+{
+    auto validToken = [](std::string const& value, size_t minimum,
+        size_t maximum)
+    {
+        if (value.size() < minimum || value.size() > maximum)
+            return false;
+        for (unsigned char byte : value)
+        {
+            if (byte == 0 || byte == 0x09 || byte == 0x0A || byte == 0x0B ||
+                byte == 0x0C || byte == 0x0D || byte == 0x20)
+                return false;
+        }
+        return true;
+    };
+    bool const legalActionablePair =
+        (context.checkType == WardenCheckType::Mpq &&
+            context.evidenceClass ==
+                WardenEvidenceClass::IntegrityInvariant) ||
+        (context.checkType == WardenCheckType::Mem &&
+            IsActionableEvidenceClass(context.evidenceClass));
+
+    return context.accountId != 0 && context.checkId != 0 &&
+        context.clientBuild != 0 && context.clientBuild <= 0xFFFFu &&
+        validToken(context.clientPlatform, 1, 4) &&
+        validToken(context.clientLocale, 4, 4) && legalActionablePair &&
+        context.outcome == WardenIncidentOutcome::Mismatch;
+}
+
+/** Applies the same exclusive lower boundary used by the Realm query. */
+inline WardenIncidentWindowState ClassifyIncidentWindow(
+    std::vector<uint64> const& timestamps, uint64 now,
+    uint32 incidentWindowSeconds, uint32 aggressiveThreshold)
+{
+    if (incidentWindowSeconds == 0 || aggressiveThreshold == 0)
+        return {};
+
+    std::vector<uint64> recent;
+    recent.reserve(timestamps.size());
+    for (uint64 timestamp : timestamps)
+    {
+        if (now < incidentWindowSeconds ||
+            timestamp > now - incidentWindowSeconds)
+        {
+            recent.push_back(timestamp);
+        }
+    }
+
+    return detail::ClassifyRecentIncidentWindow(std::move(recent),
+        incidentWindowSeconds, aggressiveThreshold);
+}
+
+/** Preserves a database-derived duration on the mangosd host clock. */
+inline uint64 RebaseIncidentDeadline(uint64 databaseDeadline,
+    uint64 databaseNow, uint64 serverNow)
+{
+    if (databaseNow == 0 || databaseDeadline <= databaseNow)
+        return 0;
+
+    uint64 const remaining = databaseDeadline - databaseNow;
+    uint64 const maximum = std::numeric_limits<uint64>::max();
+    return serverNow > maximum - remaining ? maximum : serverNow + remaining;
+}
+
+/** Failed or incompletely reloaded writes never manufacture durable facts. */
+inline WardenIncidentApplication ClassifyIncidentWriteResult(
+    WardenIncidentWriteResult const& result)
+{
+    WardenIncidentApplication application;
+    if (result.status == WardenIncidentWriteStatus::Failed)
+        return application;
+
+    application.durable = true;
+    if (result.status ==
+        WardenIncidentWriteStatus::CommittedStateUnavailable)
+    {
+        return application;
+    }
+
+    application.summaryKnown = true;
+    application.recentCount = result.recentCount;
+    application.permanentBanActive = result.permanentBanActive;
+    return application;
+}
+
+/** The only adapter allowed to persist Warden enforcement data in Realm. */
+class WardenIncidentStore
+{
+public:
+    static WardenIncidentStore& Instance();
+
+    std::optional<WardenIncidentWindowState> Load(uint32 accountId,
+        uint32 incidentWindowSeconds,
+        uint32 aggressiveThreshold) const;
+
+    WardenIncidentWriteResult Record(WardenIncidentContext const& context,
+        WardenConfiguration const& configuration) const;
+};
+}
+
+#endif

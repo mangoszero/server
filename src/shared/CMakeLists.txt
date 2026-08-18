@@ -34,7 +34,6 @@ set(SRC_GRP_AUTH
   Auth/OpenSSLProvider.h
   Auth/Sha1.cpp
   Auth/Sha1.h
-  Auth/WardenKeyGeneration.h
 )
 source_group("Auth" FILES ${SRC_GRP_AUTH})
 

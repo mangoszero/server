@@ -38,12 +38,14 @@
 #include "SharedDefines.h"
 #include "World.h"
 #include "WorldSession.h"
+#include "WorldGatewayAccount.h"
+#include "WardenProtocol.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif
 
-#include <cstring>
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
@@ -56,8 +58,9 @@ struct AccountRow final : proto::AuthContext
     AccountTypes security = SEC_PLAYER;
     time_t muteTime = 0;
     LocaleConstant locale = LOCALE_enUS;
-    std::string os;
     BigNumber sessionKey;
+    std::string platform;
+    std::string clientLocale;
 };
 
 void EnsureDbThreadRegistered()
@@ -119,11 +122,12 @@ proto::AuthLookup WorldGateway::LookupAccount(proto::AuthRequest const& request)
         "`a`.`s`, "
         "`a`.`mutetime`, "
         "`a`.`locale`, "
-        "`a`.`os`, "
         "(SELECT 1 FROM `account_banned` WHERE `id` = `a`.`id` AND `active` = 1 "
         "AND (`unbandate` > UNIX_TIMESTAMP() OR `unbandate` = `bandate`) LIMIT 1), "
         "(SELECT 1 FROM `ip_banned` WHERE (`unbandate` = `bandate` "
-        "OR `unbandate` > UNIX_TIMESTAMP()) AND `ip` = '%s' LIMIT 1) "
+        "OR `unbandate` > UNIX_TIMESTAMP()) AND `ip` = '%s' LIMIT 1), "
+        "`a`.`os`, "
+        "`a`.`client_locale` "
         "FROM `account` AS `a` WHERE `a`.`username` = '%s'",
         safeAddress.c_str(), safeAccount.c_str()));
 
@@ -133,13 +137,13 @@ proto::AuthLookup WorldGateway::LookupAccount(proto::AuthRequest const& request)
     }
 
     Field const* fields = result->Fetch();
-    if (fields[10].GetUInt32() || fields[11].GetUInt32())
+    AccountRestriction const restriction =
+        EvaluateAccountRestriction(fields, request.peerAddress);
+    if (restriction == AccountRestriction::Banned)
     {
         return Rejected(proto::AuthStatus::Banned);
     }
-
-    if (fields[4].GetBool()
-        && std::strcmp(fields[3].GetString(), request.peerAddress.c_str()) != 0)
+    if (restriction == AccountRestriction::LockedAddressMismatch)
     {
         return Rejected(proto::AuthStatus::Failed);
     }
@@ -157,14 +161,6 @@ proto::AuthLookup WorldGateway::LookupAccount(proto::AuthRequest const& request)
         return Rejected(proto::AuthStatus::Unavailable);
     }
 
-    std::string const os = fields[9].GetString();
-    bool const wardenActive = sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED)
-        || sWorld.getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED);
-    if (wardenActive && os != "Win" && os != "OSX")
-    {
-        return Rejected(proto::AuthStatus::Reject);
-    }
-
     char const* verifier = fields[5].GetString();
     char const* salt = fields[6].GetString();
     DEBUG_LOG("WorldGateway::LookupAccount: (s,v) present: s=%s v=%s",
@@ -177,8 +173,9 @@ proto::AuthLookup WorldGateway::LookupAccount(proto::AuthRequest const& request)
     row->muteTime = time_t(fields[7].GetUInt64());
     uint8 const locale = fields[8].GetUInt8();
     row->locale = locale >= MAX_LOCALE ? LOCALE_enUS : LocaleConstant(locale);
-    row->os = os;
     row->sessionKey.SetHexStr(fields[2].GetString());
+    row->platform = ReadWardenPlatformHint(fields);
+    row->clientLocale = ReadWardenClientLocale(fields);
 
     proto::AuthLookup lookup;
     lookup.status = proto::AuthStatus::Ok;
@@ -205,21 +202,24 @@ proto::SessionId WorldGateway::Attach(proto::AuthRequest const& request,
     statement.PExecute(request.peerAddress.c_str(), request.account.c_str());
 
     auto mailbox = std::make_shared<SessionMailbox>();
+    warden::AdmissionData admission;
+    admission.build = request.build;
+    admission.platform = account->platform;
+    admission.clientLocale = account->clientLocale;
+    uint8 const* const sessionKeyBytes = account->sessionKey.AsByteArray(40);
+    std::copy(sessionKeyBytes,
+        sessionKeyBytes + admission.sessionKey.size(),
+        admission.sessionKey.begin());
+    admission.available = true;
     auto session = std::make_unique<WorldSession>(account->id, link, mailbox,
-        account->security, account->muteTime, account->locale);
+        account->security, account->muteTime, account->locale,
+        std::move(admission));
     session->LoadTutorialsData();
 
     WorldPacket addonSource(CMSG_AUTH_SESSION, request.addonData.size());
     if (!request.addonData.empty())
     {
         addonSource.append(request.addonData.data(), request.addonData.size());
-    }
-
-    bool const wardenActive = sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED)
-        || sWorld.getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED);
-    if (wardenActive)
-    {
-        session->InitWarden(uint16(request.build), &account->sessionKey, account->os);
     }
 
     WorldPacket addonResponse;
