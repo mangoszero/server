@@ -2580,7 +2580,18 @@ void PlayerbotFactory::InitInventorySkill()
  */
 Item* PlayerbotFactory::StoreItem(uint32 itemId, uint32 count)
 {
+    // An id with no prototype is a null dereference one line down, and the ids reaching here
+    // are no longer all hand-checked: InitInventoryTotems reads them out of Spell.dbc, so a
+    // client data file now decides what gets asked for. The four 1.12 totem items do exist in
+    // item_template, but a DBC naming an item this world database does not carry must fail the
+    // provision, not the server.
     ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
+    if (!proto)
+    {
+        sLog.outError("PlayerbotFactory::StoreItem: no item_template entry for item %u, not stored", itemId);
+        return NULL;
+    }
+
     Item* newItem = bot->StoreNewItemInInventorySlot(itemId, min(count, proto->GetMaxStackSize()));
     if (newItem)
     {
