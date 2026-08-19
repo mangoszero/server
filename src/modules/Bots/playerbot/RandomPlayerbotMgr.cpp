@@ -1148,9 +1148,49 @@ void RandomPlayerbotMgr::IncreaseLevel(Player* bot)
     RandomTeleportForLevel(bot);
 }
 
+/// The level range a starting-zone resident may be randomized into: the home-zone band
+/// intersected with the configured roster range and the server's level cap.
+///
+/// Returns false when they do not overlap, which is not a corner case to tolerate but one
+/// that loops. RandomizeStarterResident used to draw from a hard-coded 1..band ignoring
+/// RandomBotMinLevel, so raising that above RandomBotHomeZoneMaxLevel produced a resident
+/// whose level ProcessBot immediately rejects as out of range; the rejection schedules an
+/// immediate re-randomize, which draws from the same empty intersection, and the full
+/// CleanRandomize and save cycle repeats forever. With no overlap there is no such thing as
+/// a valid resident, so residency is reported off and the bot takes the ordinary path.
+static bool StarterResidentLevelBand(uint32& lo, uint32& hi)
+{
+    uint32 band = sPlayerbotAIConfig.randomBotHomeZoneMaxLevel;
+    if (!band)
+    {
+        band = 10;
+    }
+
+    uint32 maxLevel = sPlayerbotAIConfig.randomBotMaxLevel;
+    if (maxLevel > sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
+    {
+        maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
+    }
+
+    lo = std::max(uint32(1), sPlayerbotAIConfig.randomBotMinLevel);
+    hi = std::min(band, maxLevel);
+
+    return lo <= hi;
+}
+
 bool RandomPlayerbotMgr::IsStarterZoneResident(Player* bot)
 {
     if (!sPlayerbotAIConfig.randomBotStarterZonePct)
+    {
+        return false;
+    }
+
+    // Asked here rather than only at randomize time, because the confinement and eviction
+    // rules consult residency too. If the configuration cannot produce a valid resident,
+    // every one of them has to agree that there are none.
+    uint32 lo = 0;
+    uint32 hi = 0;
+    if (!StarterResidentLevelBand(lo, hi))
     {
         return false;
     }
@@ -1164,13 +1204,17 @@ bool RandomPlayerbotMgr::IsStarterZoneResident(Player* bot)
 
 bool RandomPlayerbotMgr::RandomizeStarterResident(Player* bot)
 {
-    uint32 band = sPlayerbotAIConfig.randomBotHomeZoneMaxLevel;
-    if (!band)
+    // Draw from the same intersection residency was decided on, not from 1..band. Callers
+    // reach this only through IsStarterZoneResident, which already refused when the band is
+    // empty, so the result is guaranteed to be a level ProcessBot accepts.
+    uint32 lo = 0;
+    uint32 hi = 0;
+    if (!StarterResidentLevelBand(lo, hi))
     {
-        band = 10;
+        return false;
     }
 
-    uint32 level = urand(1, band);
+    uint32 level = urand(lo, hi);
     sLog.outDetail("Bot %s is a starting-zone resident; randomizing at level %u",
         bot->GetName(), level);
 
