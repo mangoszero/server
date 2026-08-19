@@ -79,6 +79,7 @@ namespace ai
                     creators["divine spirit"] = &TriggerFactoryInternal::divine_spirit;
                     creators["divine spirit on party"] = &TriggerFactoryInternal::divine_spirit_on_party;
                     creators["inner fire"] = &TriggerFactoryInternal::inner_fire;
+                    creators["inner focus"] = &TriggerFactoryInternal::inner_focus;
                     creators["vampiric touch"] = &TriggerFactoryInternal::vampiric_touch;
                     creators["shadowform"] = &TriggerFactoryInternal::shadowform;
                     creators["vampiric embrace"] = &TriggerFactoryInternal::vampiric_embrace;
@@ -104,6 +105,7 @@ namespace ai
                 static Trigger* divine_spirit(PlayerbotAI* ai) { return new DivineSpiritTrigger(ai); }
                 static Trigger* divine_spirit_on_party(PlayerbotAI* ai) { return new DivineSpiritOnPartyTrigger(ai); }
                 static Trigger* inner_fire(PlayerbotAI* ai) { return new InnerFireTrigger(ai); }
+                static Trigger* inner_focus(PlayerbotAI* ai) { return new InnerFocusTrigger(ai); }
         };
     };
 };
@@ -154,6 +156,7 @@ namespace ai
                     creators["abolish disease on party"] = &AiObjectContextInternal::abolish_disease_on_party;
                     creators["fade"] = &AiObjectContextInternal::fade;
                     creators["inner fire"] = &AiObjectContextInternal::inner_fire;
+                    creators["inner focus"] = &AiObjectContextInternal::inner_focus;
                     creators["resurrection"] = &AiObjectContextInternal::resurrection;
                     creators["psychic scream"] = &AiObjectContextInternal::psychic_scream;
                     creators["vampiric embrace"] = &AiObjectContextInternal::vampiric_embrace;
@@ -206,6 +209,7 @@ namespace ai
                 static Action* abolish_disease_on_party(PlayerbotAI* ai) { return new CastAbolishDiseaseOnPartyAction(ai); }
                 static Action* fade(PlayerbotAI* ai) { return new CastFadeAction(ai); }
                 static Action* inner_fire(PlayerbotAI* ai) { return new CastInnerFireAction(ai); }
+                static Action* inner_focus(PlayerbotAI* ai) { return new CastInnerFocusAction(ai); }
         };
     };
 };

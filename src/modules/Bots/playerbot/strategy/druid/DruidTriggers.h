@@ -9,6 +9,12 @@ namespace ai {
             MarkOfTheWildOnPartyTrigger(PlayerbotAI* ai) : BuffOnPartyTrigger(ai, "mark of the wild") {}
     };
 
+    class OmenOfClarityTrigger : public BuffTrigger
+    {
+        public:
+            OmenOfClarityTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "omen of clarity") {}
+    };
+
     class MarkOfTheWildTrigger : public BuffTrigger
     {
         public:

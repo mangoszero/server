@@ -36,6 +36,13 @@ void PriestNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
             "inner fire",
         NextAction::array(0, new NextAction("inner fire", 10.0f), NULL)));
 
+    // Discipline's free-spell cooldown. Its aura persists until a spell consumes it, so
+    // casting it whenever it is available banks the saving rather than wasting it, and it
+    // costs no mana to cast. Below Inner Fire, which every priest has.
+    triggers.push_back(new TriggerNode(
+            "inner focus",
+        NextAction::array(0, new NextAction("inner focus", 9.0f), NULL)));
+
     triggers.push_back(new TriggerNode(
             "critical health",
         NextAction::array(0, new NextAction("power word: shield", 70.0f), new NextAction("greater heal", 70.0f), NULL)));

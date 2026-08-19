@@ -9,6 +9,12 @@ namespace ai
             CastDemonSkinAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "demon skin") {}
     };
 
+    class CastSoulLinkAction : public CastBuffSpellAction
+    {
+        public:
+            CastSoulLinkAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "soul link") {}
+    };
+
     class CastDemonArmorAction : public CastBuffSpellAction
     {
         public:

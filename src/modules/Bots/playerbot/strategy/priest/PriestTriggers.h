@@ -11,6 +11,7 @@ namespace ai
     BUFF_ON_PARTY_TRIGGER(DivineSpiritOnPartyTrigger, "divine spirit", "divine spirit on party")
     BUFF_TRIGGER(DivineSpiritTrigger, "divine spirit", "divine spirit")
     BUFF_TRIGGER(InnerFireTrigger, "inner fire", "inner fire")
+    BUFF_TRIGGER(InnerFocusTrigger, "inner focus", "inner focus")
     BUFF_TRIGGER(VampiricEmbraceTrigger, "vampiric embrace", "vampiric embrace")
 
     class PowerWordPainOnAttackerTrigger : public DebuffOnAttackerTrigger

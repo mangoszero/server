@@ -52,6 +52,12 @@ void GenericDruidNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &trigge
             "mark of the wild",
         NextAction::array(0, new NextAction("mark of the wild", 12.0f), NULL)));
 
+    // Feral's free-spell proc buff. Permanent once cast, so maintaining it out of combat
+    // is the whole of the work; an untalented druid fails CanCastSpell and moves on.
+    triggers.push_back(new TriggerNode(
+            "omen of clarity",
+        NextAction::array(0, new NextAction("omen of clarity", 11.0f), NULL)));
+
     triggers.push_back(new TriggerNode(
             "mark of the wild on party",
         NextAction::array(0, new NextAction("mark of the wild on party", 11.0f), NULL)));

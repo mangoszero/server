@@ -80,6 +80,7 @@ namespace ai
                     creators["tiger's fury"] = &TriggerFactoryInternal::tigers_fury;
                     creators["rake"] = &TriggerFactoryInternal::rake;
                     creators["mark of the wild"] = &TriggerFactoryInternal::mark_of_the_wild;
+                    creators["omen of clarity"] = &TriggerFactoryInternal::omen_of_clarity;
                     creators["mark of the wild on party"] = &TriggerFactoryInternal::mark_of_the_wild_on_party;
                     creators["cure poison"] = &TriggerFactoryInternal::cure_poison;
                     creators["party member cure poison"] = &TriggerFactoryInternal::party_member_cure_poison;
@@ -107,6 +108,7 @@ namespace ai
                 static Trigger* tigers_fury(PlayerbotAI* ai) { return new TigersFuryTrigger(ai); }
                 static Trigger* rake(PlayerbotAI* ai) { return new RakeTrigger(ai); }
                 static Trigger* mark_of_the_wild(PlayerbotAI* ai) { return new MarkOfTheWildTrigger(ai); }
+                static Trigger* omen_of_clarity(PlayerbotAI* ai) { return new OmenOfClarityTrigger(ai); }
                 static Trigger* mark_of_the_wild_on_party(PlayerbotAI* ai) { return new MarkOfTheWildOnPartyTrigger(ai); }
                 static Trigger* cure_poison(PlayerbotAI* ai) { return new CurePoisonTrigger(ai); }
                 static Trigger* party_member_cure_poison(PlayerbotAI* ai) { return new PartyMemberCurePoisonTrigger(ai); }
@@ -172,6 +174,7 @@ namespace ai
                     creators["berserk"] = &AiObjectContextInternal::berserk;
                     creators["tiger's fury"] = &AiObjectContextInternal::tigers_fury;
                     creators["mark of the wild"] = &AiObjectContextInternal::mark_of_the_wild;
+                    creators["omen of clarity"] = &AiObjectContextInternal::omen_of_clarity;
                     creators["mark of the wild on party"] = &AiObjectContextInternal::mark_of_the_wild_on_party;
                     creators["regrowth"] = &AiObjectContextInternal::regrowth;
                     creators["rejuvenation"] = &AiObjectContextInternal::rejuvenation;
@@ -234,6 +237,7 @@ namespace ai
                 static Action* berserk(PlayerbotAI* ai) { return new CastBerserkAction(ai); }
                 static Action* tigers_fury(PlayerbotAI* ai) { return new CastTigersFuryAction(ai); }
                 static Action* mark_of_the_wild(PlayerbotAI* ai) { return new CastMarkOfTheWildAction(ai); }
+                static Action* omen_of_clarity(PlayerbotAI* ai) { return new CastOmenOfClarityAction(ai); }
                 static Action* mark_of_the_wild_on_party(PlayerbotAI* ai) { return new CastMarkOfTheWildOnPartyAction(ai); }
                 static Action* regrowth(PlayerbotAI* ai) { return new CastRegrowthAction(ai); }
                 static Action* rejuvenation(PlayerbotAI* ai) { return new CastRejuvenationAction(ai); }

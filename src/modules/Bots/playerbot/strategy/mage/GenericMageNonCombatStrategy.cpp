@@ -86,6 +86,13 @@ void GenericMageNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &trigger
     triggers.push_back(new TriggerNode(
             "party member needs water",
         NextAction::array(0, new NextAction("give conjured water", 13.0f), NULL)));
+
+    // Frost's absorb shield, maintained here rather than in the combat strategy because it
+    // lasts a minute and is worth having up before the pull. Below the armor buff, which is
+    // the one every mage has; an untalented mage simply fails CanCastSpell and moves on.
+    triggers.push_back(new TriggerNode(
+            "ice barrier",
+        NextAction::array(0, new NextAction("ice barrier", 18.0f), NULL)));
 }
 
 void MageBuffManaStrategy::InitTriggers(std::list<TriggerNode*> &triggers)

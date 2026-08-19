@@ -65,6 +65,7 @@ namespace ai
                 {
                     creators["shadow trance"] = &TriggerFactoryInternal::shadow_trance;
                     creators["demon armor"] = &TriggerFactoryInternal::demon_armor;
+                    creators["soul link"] = &TriggerFactoryInternal::soul_link;
                     creators["no healthstone"] = &TriggerFactoryInternal::HasHealthstone;
                     creators["no firestone"] = &TriggerFactoryInternal::HasFirestone;
                     creators["no spellstone"] = &TriggerFactoryInternal::HasSpellstone;
@@ -84,6 +85,7 @@ namespace ai
             private:
                 static Trigger* shadow_trance(PlayerbotAI* ai) { return new ShadowTranceTrigger(ai); }
                 static Trigger* demon_armor(PlayerbotAI* ai) { return new DemonArmorTrigger(ai); }
+                static Trigger* soul_link(PlayerbotAI* ai) { return new SoulLinkTrigger(ai); }
                 static Trigger* HasHealthstone(PlayerbotAI* ai) { return new HasHealthstoneTrigger(ai); }
                 static Trigger* HasFirestone(PlayerbotAI* ai) { return new HasFirestoneTrigger(ai); }
                 static Trigger* HasSpellstone(PlayerbotAI* ai) { return new HasSpellstoneTrigger(ai); }
@@ -114,6 +116,7 @@ namespace ai
                 {
                     creators["summon imp"] = &AiObjectContextInternal::summon_imp;
                     creators["demon armor"] = &AiObjectContextInternal::demon_armor;
+                    creators["soul link"] = &AiObjectContextInternal::soul_link;
                     creators["demon skin"] = &AiObjectContextInternal::demon_skin;
                     creators["create healthstone"] = &AiObjectContextInternal::create_healthstone;
                     creators["create firestone"] = &AiObjectContextInternal::create_firestone;
@@ -149,6 +152,7 @@ namespace ai
                 static Action* immolate(PlayerbotAI* ai) { return new CastImmolateAction(ai); }
                 static Action* summon_imp(PlayerbotAI* ai) { return new CastSummonImpAction(ai); }
                 static Action* demon_armor(PlayerbotAI* ai) { return new CastDemonArmorAction(ai); }
+                static Action* soul_link(PlayerbotAI* ai) { return new CastSoulLinkAction(ai); }
                 static Action* demon_skin(PlayerbotAI* ai) { return new CastDemonSkinAction(ai); }
                 static Action* create_healthstone(PlayerbotAI* ai) { return new CastCreateHealthstoneAction(ai); }
                 static Action* create_firestone(PlayerbotAI* ai) { return new CastCreateFirestoneAction(ai); }

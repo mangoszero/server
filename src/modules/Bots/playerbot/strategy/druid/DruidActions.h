@@ -65,6 +65,12 @@ namespace ai
             }
     };
 
+    class CastOmenOfClarityAction : public CastBuffSpellAction
+    {
+        public:
+            CastOmenOfClarityAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "omen of clarity") {}
+    };
+
     class CastMarkOfTheWildAction : public CastBuffSpellAction {
         public:
             CastMarkOfTheWildAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "mark of the wild") {}

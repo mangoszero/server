@@ -153,6 +153,12 @@ namespace ai
             CastIceBlockAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "ice block") {}
     };
 
+    class CastIceBarrierAction : public CastBuffSpellAction
+    {
+        public:
+            CastIceBarrierAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "ice barrier") {}
+    };
+
     class CastMageArmorAction : public CastBuffSpellAction
     {
         public:

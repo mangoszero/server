@@ -85,6 +85,7 @@ namespace ai
                     creators["combustion"] = &TriggerFactoryInternal::combustion;
                     creators["icy veins"] = &TriggerFactoryInternal::icy_veins;
                     creators["arcane intellect"] = &TriggerFactoryInternal::arcane_intellect;
+                    creators["ice barrier"] = &TriggerFactoryInternal::ice_barrier;
                     creators["arcane intellect on party"] = &TriggerFactoryInternal::arcane_intellect_on_party;
                     creators["mage armor"] = &TriggerFactoryInternal::mage_armor;
                     creators["remove lesser curse"] = &TriggerFactoryInternal::remove_curse;
@@ -110,6 +111,7 @@ namespace ai
                 static Trigger* combustion(PlayerbotAI* ai) { return new CombustionTrigger(ai); }
                 static Trigger* icy_veins(PlayerbotAI* ai) { return new IcyVeinsTrigger(ai); }
                 static Trigger* arcane_intellect(PlayerbotAI* ai) { return new ArcaneIntellectTrigger(ai); }
+                static Trigger* ice_barrier(PlayerbotAI* ai) { return new IceBarrierTrigger(ai); }
                 static Trigger* arcane_intellect_on_party(PlayerbotAI* ai) { return new ArcaneIntellectOnPartyTrigger(ai); }
                 static Trigger* mage_armor(PlayerbotAI* ai) { return new MageArmorTrigger(ai); }
                 static Trigger* remove_curse(PlayerbotAI* ai) { return new RemoveCurseTrigger(ai); }
@@ -162,6 +164,7 @@ namespace ai
                     creators["remove lesser curse on party"] = &AiObjectContextInternal::remove_curse_on_party;
                     creators["combustion"] = &AiObjectContextInternal::combustion;
                     creators["ice block"] = &AiObjectContextInternal::ice_block;
+                    creators["ice barrier"] = &AiObjectContextInternal::ice_barrier;
                     creators["polymorph"] = &AiObjectContextInternal::polymorph;
                     creators["blast wave"] = &AiObjectContextInternal::blast_wave;
                     creators["evocation"] = &AiObjectContextInternal::evocation;
@@ -203,6 +206,7 @@ namespace ai
                 static Action* remove_curse_on_party(PlayerbotAI* ai) { return new CastRemoveCurseOnPartyAction(ai); }
                 static Action* combustion(PlayerbotAI* ai) { return new CastCombustionAction(ai); }
                 static Action* ice_block(PlayerbotAI* ai) { return new CastIceBlockAction(ai); }
+                static Action* ice_barrier(PlayerbotAI* ai) { return new CastIceBarrierAction(ai); }
                 static Action* polymorph(PlayerbotAI* ai) { return new CastPolymorphAction(ai); }
                 static Action* blast_wave(PlayerbotAI* ai) { return new CastBlastWaveAction(ai); }
                 static Action* evocation(PlayerbotAI* ai) { return new CastEvocationAction(ai); }
