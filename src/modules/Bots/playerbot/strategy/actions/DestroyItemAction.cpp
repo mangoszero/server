@@ -27,9 +27,15 @@ void DestroyItemAction::DestroyItem(FindItemVisitor* visitor)
     for (list<Item*>::iterator i = items.begin(); i != items.end(); ++i)
     {
         Item* item = *i;
-        bot->DestroyItem(item->GetBagSlot(),item->GetSlot(), true);
-        bot->SaveInventoryAndGoldToDB();
+
+        // The message is built BEFORE the item is destroyed. Player::DestroyItem deletes the
+        // Item, so reading its prototype afterwards was a use-after-free -- one that survived
+        // in practice only because the freed block was usually still mapped and not yet
+        // handed to another allocation.
         ostringstream out; out << chat->formatItem(item->GetProto()) << " destroyed";
+
+        bot->DestroyItem(item->GetBagSlot(), item->GetSlot(), true);
+        bot->SaveInventoryAndGoldToDB();
         ai->TellMaster(out);
     }
 }
