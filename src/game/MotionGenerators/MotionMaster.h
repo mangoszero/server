@@ -271,6 +271,7 @@ class MotionMaster : private std::stack<MovementGenerator*>
          * @return The type of the current movement generator.
          */
         MovementGeneratorType GetCurrentMovementGeneratorType() const;
+        bool IsCurrentLegRouted() const;
 
         /**
          * @brief Propagates the speed change to the movement generators.

@@ -708,6 +708,20 @@ MovementGeneratorType MotionMaster::GetCurrentMovementGeneratorType() const
     return top()->GetMovementGeneratorType();
 }
 
+/// Whether the leg in flight is one the router actually routed.
+///
+/// A routed leg reports POINT_MOTION_TYPE like any other point move, so the type alone
+/// cannot answer this. See MovementGenerator::IsRoutedLeg.
+bool MotionMaster::IsCurrentLegRouted() const
+{
+    if (empty())
+    {
+        return false;
+    }
+
+    return top()->IsRoutedLeg();
+}
+
 /**
  * @brief Gets the waypoint path information.
  * @param oss Output stream to store the waypoint path information.

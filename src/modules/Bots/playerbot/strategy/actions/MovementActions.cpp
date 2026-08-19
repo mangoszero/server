@@ -107,11 +107,22 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool unsafe
         //   * It treated every running spline as interchangeable, so a routed-only corpse
         //     move could be suppressed because an ordinary point spline happened to be in
         //     flight -- silently defeating MOVE_REQUIRE_ROUTE, which exists precisely to stop
-        //     a bot cutting through geometry. A requireRoute call is never suppressed now.
+        //     a bot cutting through geometry.
+        //
+        // That second hazard was first answered with `!requireRoute`, which was too blunt and
+        // broke the very thing it guarded. A routed call is issued on EVERY AI update while a
+        // corpse run lasts, and Player::Update advances motion before the bot AI runs, so each
+        // freshly laid routed spline was cleared and re-laid before it could travel: the bot
+        // stood still until its allowance expired and then repopped at a graveyard. The leg
+        // has to be comparable, not exempt -- so ask whether the leg in flight is ITSELF a
+        // routed one (MotionMaster::IsCurrentLegRouted; a routed leg and an ordinary point leg
+        // both report POINT_MOTION_TYPE, so the type cannot answer this) and require that to
+        // match what is being asked for. An ordinary spline still never satisfies a routed
+        // request, which is the property the original guard existed to keep.
         float activeX, activeY, activeZ;
         const bool sameGoal =
-            !requireRoute &&
             bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == POINT_MOTION_TYPE &&
+            bot->GetMotionMaster()->IsCurrentLegRouted() == requireRoute &&
             bot->GetMotionMaster()->GetDestination(activeX, activeY, activeZ) &&
             sqrt((activeX - x) * (activeX - x) +
                  (activeY - y) * (activeY - y) +

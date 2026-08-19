@@ -117,6 +117,10 @@ class RoutedPointMovementGenerator final : public PointMovementGenerator
         /// would advance its AI or script on an arrival that did not happen.
         void Finalize(Unit& owner) override;
 
+        /// Public, matching the base declaration: callers hold a MovementGenerator* and ask
+        /// through it, which is the whole point of the hook.
+        bool IsRoutedLeg() const override { return true; }
+
     protected:
         uint32 LegFlags() const override { return Motion::MOVE_REQUIRE_ROUTE; }
 
