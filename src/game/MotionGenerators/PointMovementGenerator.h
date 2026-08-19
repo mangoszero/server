@@ -120,28 +120,26 @@ class RoutedPointMovementGenerator final : public PointMovementGenerator
     protected:
         uint32 LegFlags() const override { return Motion::MOVE_REQUIRE_ROUTE; }
 
+        /// Latches arrival POSITIVELY, the same way HomeMovementGenerator does, rather than
+        /// latching refusal. Refusal is only delivered on the tick after the driver rejects
+        /// the leg, so an external Clear() or MovementExpired() in between calls Finalize()
+        /// directly and a "was it refused" flag would still read false -- reporting an
+        /// arrival that never happened, which is the bug this class exists to avoid.
+        ///
+        /// status.arrived alone is not enough to prove it, though: the driver derives it from
+        /// "was travelling, spline is now finalized", and StopMoving() finalizes the spline
+        /// wherever the mover is standing -- so a root or a stun mid-route produces it too.
+        /// Hence the proximity test in the definition. The tolerance is deliberately loose,
+        /// because a spline ends near the goal rather than exactly on it and a missed inform
+        /// would stall a creature's AI; it only has to be tight enough to reject a mover
+        /// frozen partway.
+        ///
+        /// Defined out of line because the body reads Unit's members and this header sees
+        /// only a forward declaration of Unit -- inline here, it compiles under MSVC solely
+        /// because every Windows translation unit happened to include Unit.h first, and
+        /// fails under clang and gcc where one does not.
         Motion::MoveIntent Intent(Unit& owner, Motion::MoveStatus const& status,
-                                  uint32 diff) override
-        {
-            // Latch arrival POSITIVELY, the same way HomeMovementGenerator does, rather than
-            // latching refusal. Refusal is only delivered on the tick after the driver rejects
-            // the leg, so an external Clear() or MovementExpired() in between calls Finalize()
-            // directly and a "was it refused" flag would still read false -- reporting an
-            // arrival that never happened, which is the bug this class exists to avoid.
-            //
-            // status.arrived alone is not enough to prove it, though: the driver derives it from
-            // "was travelling, spline is now finalized", and StopMoving() finalizes the spline
-            // wherever the mover is standing -- so a root or a stun mid-route produces it too.
-            // Hence the proximity test. The tolerance is deliberately loose, because a spline
-            // ends near the goal rather than exactly on it and a missed inform would stall a
-            // creature's AI; it only has to be tight enough to reject a mover frozen partway.
-            if (status.arrived && owner.GetDistance(m_dest.x, m_dest.y, m_dest.z) < 10.0f)
-            {
-                m_arrived = true;
-            }
-
-            return PointMovementGenerator::Intent(owner, status, diff);
-        }
+                                  uint32 diff) override;
 
     private:
         bool m_arrived; ///< A leg actually completed; cleared on Initialize/Reset.
