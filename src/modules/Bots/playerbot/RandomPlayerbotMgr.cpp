@@ -437,6 +437,43 @@ void RandomPlayerbotMgr::ScheduleTeleport(uint32 bot)
     SetEventValue(bot, "teleport", 1, 60 + urand(sPlayerbotAIConfig.randomBotUpdateInterval, sPlayerbotAIConfig.randomBotUpdateInterval * 3));
 }
 
+/// The configured minimum level, clamped so it can never exceed the maximum actually
+/// available on this server.
+///
+/// Config load already guarantees RandomBotMinLevel <= RandomBotMaxLevel, but the server's own
+/// MaxPlayerLevel is applied AFTER that and can be lower than either -- a roster configured
+/// 40..60 on a level-30 server inverts here and nowhere else. urand() passes the pair straight
+/// to std::uniform_int_distribution<uint32>, whose precondition is min <= max, so an inverted
+/// pair is undefined behaviour rather than an empty range.
+static uint32 RandomBotMinLevelFor(uint32 maxLevel)
+{
+    uint32 minLevel = sPlayerbotAIConfig.randomBotMinLevel;
+    if (minLevel > maxLevel)
+    {
+        return maxLevel;
+    }
+
+    return minLevel;
+}
+
+/// The minimum a bot's level is JUDGED against, clamped the same way the draw is.
+///
+/// Clamping only the draw fixed the undefined behaviour and left the loop: with a configured
+/// minimum above the server's MaxPlayerLevel the draw correctly yields the cap, and then
+/// ProcessBot compares that bot against the raw configured minimum, calls it out of range and
+/// schedules another immediate randomization -- the full CleanRandomize and save cycle,
+/// forever. Both sides have to use the same clamped value.
+static uint32 EffectiveRandomBotMinLevel()
+{
+    uint32 maxLevel = sPlayerbotAIConfig.randomBotMaxLevel;
+    if (maxLevel > sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
+    {
+        maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
+    }
+
+    return RandomBotMinLevelFor(maxLevel);
+}
+
 bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
 {
     uint32 isValid = GetEventValue(bot, "add");
@@ -623,10 +660,14 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
     {
         maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
     }
-    if (botLevel < sPlayerbotAIConfig.randomBotMinLevel || botLevel > maxLevel)
+    // Judge against the same clamped minimum the draw uses, not the raw configured one:
+    // otherwise a minimum above the server's MaxPlayerLevel condemns every bot the draw
+    // legitimately produced at the cap, and the re-randomization below never terminates.
+    uint32 minLevel = EffectiveRandomBotMinLevel();
+    if (botLevel < minLevel || botLevel > maxLevel)
     {
         sLog.outDetail("Bot %d level %d is outside valid range (%d-%d), scheduling immediate re-randomization",
-            bot, botLevel, sPlayerbotAIConfig.randomBotMinLevel, maxLevel);
+            bot, botLevel, minLevel, maxLevel);
         ScheduleRandomize(bot, 0);
         return true;
     }
@@ -1146,25 +1187,6 @@ void RandomPlayerbotMgr::IncreaseLevel(Player* bot)
         factory.Randomize();
     }
     RandomTeleportForLevel(bot);
-}
-
-/// The configured minimum level, clamped so it can never exceed the maximum actually
-/// available on this server.
-///
-/// Config load already guarantees RandomBotMinLevel <= RandomBotMaxLevel, but the server's own
-/// MaxPlayerLevel is applied AFTER that and can be lower than either -- a roster configured
-/// 40..60 on a level-30 server inverts here and nowhere else. urand() passes the pair straight
-/// to std::uniform_int_distribution<uint32>, whose precondition is min <= max, so an inverted
-/// pair is undefined behaviour rather than an empty range.
-static uint32 RandomBotMinLevelFor(uint32 maxLevel)
-{
-    uint32 minLevel = sPlayerbotAIConfig.randomBotMinLevel;
-    if (minLevel > maxLevel)
-    {
-        return maxLevel;
-    }
-
-    return minLevel;
 }
 
 /// The level range a starting-zone resident may be randomized into: the home-zone band
