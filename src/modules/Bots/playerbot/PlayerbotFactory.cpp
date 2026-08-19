@@ -2605,6 +2605,16 @@ Item* PlayerbotFactory::StoreItem(uint32 itemId, uint32 count)
     {
         newItem->AddToUpdateQueueOf(bot);
     }
+    else
+    {
+        // Say so rather than returning NULL in silence. A full bag is the ordinary reason,
+        // and the consequence is not cosmetic: the caller may have been provisioning the one
+        // item that makes a wired-up ability castable, and a shaman that quietly failed to
+        // receive its Fire Totem simply never casts a fire totem again with nothing in the
+        // log to say why.
+        sLog.outError("PlayerbotFactory::StoreItem: could not store item %u on bot %s",
+            itemId, bot->GetName());
+    }
 
     return newItem;
 }
