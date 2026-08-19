@@ -1088,7 +1088,7 @@ bool RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
         // GetZoneLevel query each time. The landing point is the authoritative check.
         if ((level > bot->getLevel() + sPlayerbotAIConfig.randomBotTeleLevel) ||
           (level + sPlayerbotAIConfig.randomBotTeleLevel < bot->getLevel()) ||
-          (level < sPlayerbotAIConfig.randomBotMinLevel) ||
+          (level < EffectiveRandomBotMinLevel()) ||
           (!IsZoneSafeForBot(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z, level)))
         {
             continue;
