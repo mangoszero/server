@@ -112,6 +112,7 @@
 #ifdef ENABLE_PLAYERBOTS
 
 #include "PlayerbotAIConfig.h"
+#include "PlayerbotMgr.h"
 #include "RandomPlayerbotMgr.h"
 #endif
 
@@ -1924,6 +1925,37 @@ void World::KickAll()
     // ShutdownServ also logs them out on the .server shutdown path; LogoutAllBots is
     // idempotent, so covering the whole of ShutdownWorld here is the belt to that brace.
     sRandomPlayerbotMgr.LogoutAllBots();
+
+    // The random singleton is not the only bot holder. Every real player who ran ".bot add"
+    // owns a PlayerbotMgr, and ~PlayerbotHolder deliberately refuses to log out once the
+    // world has stopped -- that refusal is what stops the singleton saving into unloaded
+    // maps at static destruction. By the time ShutdownWorld runs, IsStopped() is already
+    // true, so a player's manager took the same refusal when its session was drained and
+    // its bots were never logged out and never saved.
+    //
+    // Doing it here rather than relaxing the destructor guard, because here is the one
+    // moment that is provably safe: ShutdownWorld drains sessions and only then unloads
+    // maps, so the maps these bots save against are still alive. LogoutAllBots is
+    // idempotent, so a manager destroyed normally while the world runs is unaffected.
+    for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    {
+        WorldSession* session = itr->second;
+        if (!session)
+        {
+            continue;
+        }
+
+        Player* player = session->GetPlayer();
+        if (!player)
+        {
+            continue;
+        }
+
+        if (PlayerbotMgr* botMgr = player->GetPlayerbotMgr())
+        {
+            botMgr->LogoutAllBots();
+        }
+    }
 #endif
 
     m_QueuedSessions.clear();                               // prevent send queue update packet and login queued sessions
