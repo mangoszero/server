@@ -76,6 +76,19 @@ namespace ai
                 return NULL;
             }
 
+            // Consulted by the Engine ONLY after isPossible() has returned false. An
+            // action that knows the movement that would make it possible returns that
+            // mover here (see CastSpellAction); the Engine then pushes the mover
+            // INSTEAD of the ActionNode alternatives and lets normal trigger
+            // regeneration retry the action on a later tick. Returning NULL -- the
+            // default -- keeps the alternatives, which is what preserves the intent
+            // cascades this module resolves names through. Must stay cheap: it runs
+            // inside the engine's per-tick queue loop.
+            virtual NextAction** getImpossiblePrerequisites()
+            {
+                return NULL;
+            }
+
             virtual NextAction** getAlternatives()
             {
                 return NULL;

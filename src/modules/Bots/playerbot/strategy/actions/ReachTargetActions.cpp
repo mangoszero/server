@@ -1,8 +1,21 @@
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "ReachTargetActions.h"
+#include "../values/SpellRangeValue.h"
 
 using namespace ai;
+
+void ReachSpellAction::ResolveDistance()
+{
+    if (qualifier.empty())
+    {
+        return;
+    }
+    // The qualifier is the spell id embedded in this instance's name, so the
+    // destination is fixed per instance; recomputing it here is two store lookups
+    // and only while the mover is actually queued.
+    distance = SpellRangeValue::EffectiveRange(atoi(qualifier.c_str()));
+}
 
 void ReachShootRangeAction::Reset()
 {

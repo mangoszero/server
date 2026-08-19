@@ -231,7 +231,8 @@ bool Engine::DoNextAction(Unit* unit, int depth)
                     }
                 }
 
-                if (action->isPossible() && relevance)
+                bool possible = action->isPossible();
+                if (possible && relevance)
                 {
                     if ((!skipPrerequisites || lastRelevance-relevance > 0.04) &&
                         MultiplyAndPush(actionNode->getPrerequisites(), relevance + 0.02, false, event))
@@ -267,7 +268,25 @@ bool Engine::DoNextAction(Unit* unit, int depth)
                 else
                 {
                     LogAction("A:%s - IMPOSSIBLE", action->getName().c_str());
-                    MultiplyAndPush(actionNode->getAlternatives(), relevance + 0.03, false, event);
+                    // An impossible action may know the mover that would make it
+                    // possible -- a ranged bot standing between a short spell's DBC
+                    // range and spellDistance, where no trigger ever closes the gap.
+                    // Push that mover INSTEAD of the static alternatives, and do NOT
+                    // requeue the action itself in this pass: the trigger or default
+                    // action that queued it regenerates it on a later tick, which
+                    // avoids a tight move/requeue loop and PushAgain's
+                    // skipPrerequisites semantics. The hook is only consulted when
+                    // isPossible() actually failed, so it costs nothing on the
+                    // multiplier-zeroed path.
+                    NextAction** movers = possible ? NULL : action->getImpossiblePrerequisites();
+                    if (movers)
+                    {
+                        MultiplyAndPush(movers, relevance + 0.03, false, event);
+                    }
+                    else
+                    {
+                        MultiplyAndPush(actionNode->getAlternatives(), relevance + 0.03, false, event);
+                    }
                 }
             }
             else

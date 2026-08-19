@@ -46,10 +46,18 @@ namespace ai
     {
         public:
             CastSpellAction(PlayerbotAI* ai, string spell) : Action(ai, spell),
-                range(sPlayerbotAIConfig.spellDistance)
+                range(sPlayerbotAIConfig.spellDistance),
+                rangeFollowsSpell(true),
+                lastRangeSpellId(0)
             {
                 this->spell = spell;
-                // Clamp range to actual spell's min/max range from DBC
+                // Clamp range to the actual spell's DBC range. NamedObjectContext
+                // caches this object for the bot's lifetime (re-randomisation
+                // rebuilds engines and strategies but not actions), so the value
+                // computed here goes stale when the bot later learns the spell or a
+                // rank change resolves to a different id; UpdateRange() re-clamps
+                // whenever the resolved id changes.
+                lastRangeSpellId = AI_VALUE2(uint32, "spell id", spell);
                 range = AI_VALUE2(float, "spell range", spell);
             }
 
@@ -61,6 +69,7 @@ namespace ai
             virtual bool Execute(Event event);
             virtual bool isPossible();
             virtual bool isUseful();
+            virtual NextAction** getImpossiblePrerequisites();
             virtual ActionThreatType getThreatType()
             {
                 return ACTION_THREAT_SINGLE;
@@ -68,28 +77,40 @@ namespace ai
 
             virtual NextAction** getPrerequisites()
             {
+                // There used to be an out-of-range branch here that pushed
+                // "reach spell" and set the "reach spell distance" value. It was
+                // DEAD CODE: the Engine consults prerequisites only after
+                // isPossible() has passed, and isPossible() fails first on
+                // distance > range, so the branch could never run -- and
+                // "reach spell distance" was written but read by nothing. Do not
+                // reintroduce either; out-of-range recovery lives in
+                // getImpossiblePrerequisites().
                 if (range > ATTACK_DISTANCE)
                 {
-                    float currentDistance = AI_VALUE2(float, "distance", GetTargetName());
-                    if (currentDistance <= range)
-                    {
-                        return Action::getPrerequisites();
-                    }
-                    else
-                    {
-                        context->GetValue<float>("reach spell distance")->Set(range);
-                        return NextAction::merge( NextAction::array(0, new NextAction("reach spell"), NULL), Action::getPrerequisites());
-                    }
+                    return Action::getPrerequisites();
                 }
-                else
-                {
-                    return NextAction::merge( NextAction::array(0, new NextAction("reach melee"), NULL), Action::getPrerequisites());
-                }
+                // NOT dead, unlike the branch above: a melee-policy action passes
+                // isPossible() once inside ATTACK_DISTANCE, and this keeps the bot
+                // closing to contact.
+                return NextAction::merge( NextAction::array(0, new NextAction("reach melee"), NULL), Action::getPrerequisites());
             }
+
+        protected:
+            /// Pin a deliberate policy range (ATTACK_DISTANCE, spellDistance) and
+            /// opt out of UpdateRange()'s DBC re-clamping.
+            void UseFixedRange(float value)
+            {
+                range = value;
+                rangeFollowsSpell = false;
+            }
+
+            void UpdateRange(uint32 spellId);
 
         protected:
             string spell;
             float range;
+            bool rangeFollowsSpell;
+            uint32 lastRangeSpellId;
     };
 
     //---------------------------------------------------------------------------------------------------------------------
@@ -107,7 +128,7 @@ namespace ai
         public:
             CastMeleeSpellAction(PlayerbotAI* ai, string spell) : CastSpellAction(ai, spell)
             {
-                range = ATTACK_DISTANCE;
+                UseFixedRange(ATTACK_DISTANCE);
             }
     };
 
@@ -143,7 +164,7 @@ namespace ai
         public:
             CastBuffSpellAction(PlayerbotAI* ai, string spell) : CastAuraSpellAction(ai, spell)
             {
-                range = sPlayerbotAIConfig.spellDistance;
+                UseFixedRange(sPlayerbotAIConfig.spellDistance);
             }
 
             virtual string GetTargetName()
@@ -157,7 +178,7 @@ namespace ai
         public:
             CastEnchantItemAction(PlayerbotAI* ai, string spell) : CastSpellAction(ai, spell)
             {
-                range = sPlayerbotAIConfig.spellDistance;
+                UseFixedRange(sPlayerbotAIConfig.spellDistance);
             }
 
             virtual bool isUseful();
@@ -175,7 +196,7 @@ namespace ai
             CastHealingSpellAction(PlayerbotAI* ai, string spell, uint8 estAmount = 15.0f) : CastAuraSpellAction(ai, spell)
             {
                 this->estAmount = estAmount;
-                range = sPlayerbotAIConfig.spellDistance;
+                UseFixedRange(sPlayerbotAIConfig.spellDistance);
             }
             virtual string GetTargetName()
             {
@@ -209,7 +230,7 @@ namespace ai
         public:
             CastCureSpellAction(PlayerbotAI* ai, string spell) : CastSpellAction(ai, spell)
             {
-                range = sPlayerbotAIConfig.spellDistance;
+                UseFixedRange(sPlayerbotAIConfig.spellDistance);
             }
 
             virtual string GetTargetName()

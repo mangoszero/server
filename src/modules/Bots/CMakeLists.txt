@@ -137,6 +137,7 @@ set(BOT_SRCS
     playerbot/strategy/actions/NonCombatActions.h
     playerbot/strategy/actions/NearestPlayersValue.cpp
     playerbot/strategy/actions/NearestPlayersValue.h
+    playerbot/strategy/actions/OutOfRangeMoverPolicy.h
     playerbot/strategy/actions/PassLeadershipToMasterAction.h
     playerbot/strategy/actions/PetitionSignAction.cpp
     playerbot/strategy/actions/PetitionSignAction.h

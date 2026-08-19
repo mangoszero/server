@@ -147,10 +147,32 @@ namespace ai
             }
     };
 
-    class ReachSpellAction : public ReachTargetAction
+    // Unqualified "reach spell" keeps the historical destination: the global
+    // spellDistance. Qualified "reach spell::<spell id>" -- pushed by
+    // CastSpellAction::getImpossiblePrerequisites -- closes to that spell's own
+    // DBC range instead, so a short-ranged spell (Earth Shock at 20 yards, Scatter
+    // Shot at 15) gets a mover that actually enters its cast range rather than
+    // stopping at 30. NamedObjectFactory attaches the qualifier only after
+    // construction, hence the resolve on use instead of in the constructor.
+    class ReachSpellAction : public ReachTargetAction, public Qualified
     {
         public:
             ReachSpellAction(PlayerbotAI* ai) : ReachTargetAction(ai, "reach spell", sPlayerbotAIConfig.spellDistance) {}
+
+            virtual bool Execute(Event event)
+            {
+                ResolveDistance();
+                return ReachTargetAction::Execute(event);
+            }
+
+            virtual bool isUseful()
+            {
+                ResolveDistance();
+                return ReachTargetAction::isUseful();
+            }
+
+        private:
+            void ResolveDistance();
     };
 
     class ReachShootRangeAction : public ReachTargetAction
