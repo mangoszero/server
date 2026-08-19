@@ -119,14 +119,28 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool unsafe
         // both report POINT_MOTION_TYPE, so the type cannot answer this) and require that to
         // match what is being asked for. An ordinary spline still never satisfies a routed
         // request, which is the property the original guard existed to keep.
+        // The comparison is 2D with a loose height gate, and that is deliberate. The two z
+        // values come from different places and do not agree. The one asked for here is the
+        // ground under (x,y): UpdateGroundPositionZ drops it to floor + 0.05 at the top of this
+        // function. The one the spline reports is the router's -- a navmesh height, then
+        // ClampToAllowedZ held between the floor and the highest surface the unit may occupy,
+        // which for a swimmer is the water's SURFACE rather than the bed. Navmesh and vmap
+        // disagree by more than half a yard wherever the ground is broken, and by metres over
+        // water, so a 3D test at contactDistance answers "different goal" for a goal that is
+        // plainly the same one -- and the suppression stops engaging exactly where the terrain
+        // makes re-pathing most expensive. A goal's identity is its xy; its height is derived
+        // from that. The height gate is here only to reject a genuinely different level -- the
+        // floor above, the bridge below -- and so is set well outside any router disagreement.
+        const float sameGoalHeightTolerance = 5.0f;
+
         float activeX, activeY, activeZ;
         const bool sameGoal =
             bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == POINT_MOTION_TYPE &&
             bot->GetMotionMaster()->IsCurrentLegRouted() == requireRoute &&
             bot->GetMotionMaster()->GetDestination(activeX, activeY, activeZ) &&
             sqrt((activeX - x) * (activeX - x) +
-                 (activeY - y) * (activeY - y) +
-                 (activeZ - z) * (activeZ - z)) < sPlayerbotAIConfig.contactDistance;
+                 (activeY - y) * (activeY - y)) < sPlayerbotAIConfig.contactDistance &&
+            fabs(activeZ - z) < sameGoalHeightTolerance;
 
         if (!sameGoal)
         {

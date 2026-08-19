@@ -129,6 +129,30 @@ bool ReviveFromCorpseAction::Execute(Event event)
         // resident tile, so it gets a real route more often and the run reaches further before
         // the allowance runs out. When it does not, requireRoute refuses and the graveyard
         // fallback takes over.
+        // A leg already in flight is not re-aimed, because the aim itself would move.
+        //
+        // The leg endpoint computed below is anchored on the bot's LIVE position -- a point
+        // reactDistance along the line to the corpse -- so it slides forward by exactly as far
+        // as the bot has travelled since the last check. Nothing on a corpse run holds the
+        // check rate down: with no current target WaitForReach clamps only at maxWaitForMove,
+        // three seconds, which at ghost speed is some thirty yards of slide. That is sixty
+        // times MoveTo's half-yard same-goal threshold, so the goal never compared equal
+        // however carefully the comparison was written, and every single check cleared the
+        // routed spline and re-ran the pathfinder over a fresh 150-yard leg.
+        //
+        // Asking whether the routed leg is still travelling settles it without a tolerance to
+        // tune: if it is, it goes somewhere this run wants to be, so let it finish. Splines
+        // always finalise, so this cannot wedge -- and the run's own allowance, checked above,
+        // still bounds the whole thing. Only this action lays routed legs, so a leg in flight
+        // is necessarily one of ours.
+        float legX, legY, legZ;
+        if (bot->GetMotionMaster()->IsCurrentLegRouted() &&
+            bot->GetMotionMaster()->GetDestination(legX, legY, legZ))
+        {
+            WaitForReach(bot->GetDistance(legX, legY, legZ));
+            return true;
+        }
+
         float x = corpse->GetPositionX();
         float y = corpse->GetPositionY();
         float z = corpse->GetPositionZ();
