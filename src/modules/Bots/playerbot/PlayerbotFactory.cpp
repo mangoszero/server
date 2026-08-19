@@ -49,6 +49,12 @@ void PlayerbotFactory::Refresh()
     InitAmmo();
     InitFood();
     InitPotions();
+    // Here as well as in InitInventory, because this is the path a guild bot takes on every
+    // level-up and the only one the `update` command reaches. A shaman that trains its first
+    // water totem spell on one of those levels would otherwise wait for a full randomization
+    // -- up to fourteen days -- before it could cast what it had just learned. The provision
+    // is guarded on the item already being held, so running it on both paths costs nothing.
+    InitInventoryTotems();
 
     uint32 money = urand(level * 1000, level * 5 * 1000);
     if (bot->GetMoney() < money)
@@ -2349,6 +2355,7 @@ void PlayerbotFactory::InitInventory()
     // Reagents first, so a full bag of random trade goods cannot crowd out the one item that
     // makes a wired-up ability actually castable.
     InitInventoryReagents();
+    InitInventoryTotems();
     InitInventoryTrade();
     InitInventoryEquip();
     InitInventorySkill();
@@ -2455,6 +2462,74 @@ void PlayerbotFactory::InitInventoryReagents()
             {
                 break;
             }
+        }
+    }
+}
+
+/**
+ * @brief Supplies the totem items a shaman's own spells require.
+ *
+ * Measured across two live runs on this server: not one player shaman cast a single totem.
+ * Around thirty totem spell ids were checked across every rank -- Searing, Magma, Healing
+ * Stream, Mana Spring, Mana Tide, Strength of Earth, Stoneskin, Tremor, Earthbind, Windfury,
+ * Flametongue, Grounding, the cleansing pair -- and the count was zero for all of them. The
+ * only totem-named entries in the log were talent passives applied at login.
+ *
+ * The strategies were never the reason. CasterShamanStrategy wires Searing Totem at 19.0,
+ * MeleeShamanStrategy wires Searing at 22.0 and Magma at 26.0, and HealShamanStrategy wires
+ * Healing Stream and Mana Tide, all with live triggers and registered actions. Every one of
+ * those casts was refused by the core.
+ *
+ * In 1.12 a totem is not summoned from nothing: Spell.dbc sets SpellEntry::Totem[0] on every
+ * shaman totem spell to one of four items -- Earth Totem 5175, Fire Totem 5176, Water Totem
+ * 5177, Air Totem 5178 -- and Spell::CheckCast walks that field and returns SPELL_FAILED_ITEM_GONE
+ * unless the item is in the caster's bags. A player earns those four from the Call of Earth,
+ * Fire, Water and Air quest chains. A bot does no quests, so it carried none of them, and the
+ * whole school was unreachable for every shaman on the server at every level.
+ *
+ * Which item is required is read from the spells the bot ACTUALLY knows rather than mapped
+ * from its level, for the same reason the reagent pass above does it that way: rank and level
+ * are not interchangeable, and the DBC is the only thing that knows which totem a given rank
+ * needs. A level 30 shaman that never trained a water totem gets no Water Totem, which is
+ * also what a player at that point would have.
+ *
+ * Scoped to the shaman spell family deliberately. Totem[] is the generic "required tool"
+ * field -- blacksmith hammers, enchanting rods, mining picks and skinning knives all travel
+ * in it -- and InitInventorySkill below already provisions those from the bot's skills.
+ */
+void PlayerbotFactory::InitInventoryTotems()
+{
+    std::set<uint32> required;
+
+    for (PlayerSpellMap::iterator itr = bot->GetSpellMap().begin(); itr != bot->GetSpellMap().end(); ++itr)
+    {
+        if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled)
+        {
+            continue;
+        }
+
+        const SpellEntry* spellInfo = sSpellStore.LookupEntry(itr->first);
+        if (!spellInfo || spellInfo->SpellClassSet != SPELLFAMILY_SHAMAN)
+        {
+            continue;
+        }
+
+        for (int i = 0; i < MAX_SPELL_TOTEMS; ++i)
+        {
+            if (spellInfo->Totem[i])
+            {
+                required.insert(spellInfo->Totem[i]);
+            }
+        }
+    }
+
+    for (std::set<uint32>::const_iterator i = required.begin(); i != required.end(); ++i)
+    {
+        // One is enough and one is all a player ever holds: a totem item is a focus the cast
+        // requires present, not a reagent it consumes.
+        if (!bot->HasItemCount(*i, 1))
+        {
+            StoreItem(*i, 1);
         }
     }
 }
