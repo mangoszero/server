@@ -414,7 +414,11 @@ void WheatyExceptionReport::GenerateExceptionReport(
             ,pCtx->Rax, pCtx->Rbx, pCtx->Rcx, pCtx->Rdx,
              pCtx->Rsi, pCtx->Rdi, pCtx->R8, pCtx->R9, pCtx->R10, pCtx->R11, pCtx->R12, pCtx->R13, pCtx->R14, pCtx->R15);
     _tprintf(_T("CS:RIP:%04X:%016I64X\r\n"), pCtx->SegCs, pCtx->Rip);
-    _tprintf(_T("SS:RSP:%04X:%016X  RBP:%08X\r\n"),
+    // %I64X, not %X. These are 64-bit registers and the 32-bit conversions truncated both,
+    // with the zero padding making the result look like a whole address rather than half of
+    // one. The report that prompted this printed RSP as 00000000365FF6E8 while every stack
+    // frame beside it sat at 000000F6365FF... -- the top half was simply gone.
+    _tprintf(_T("SS:RSP:%04X:%016I64X  RBP:%016I64X\r\n"),
              pCtx->SegSs, pCtx->Rsp, pCtx->Rbp);
     _tprintf(_T("DS:%04X  ES:%04X  FS:%04X  GS:%04X\r\n"),
              pCtx->SegDs, pCtx->SegEs, pCtx->SegFs, pCtx->SegGs);
