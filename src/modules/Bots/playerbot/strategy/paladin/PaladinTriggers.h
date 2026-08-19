@@ -26,11 +26,25 @@ namespace ai
     DEBUFF_TRIGGER(JudgementOfLightTrigger, "judgement of light", "judgement of light")
     DEBUFF_TRIGGER(JudgementOfWisdomTrigger, "judgement of wisdom", "judgement of wisdom")
 
+    /// Every blessing a target may already be carrying, greater ranks included.
+    ///
+    /// The list has to cover what CastBlessings itself casts, or the bot cannot see the aura
+    /// it just applied and casts it again. "greater blessing of wisdom" was missing while
+    /// being the primary choice for priest, mage, warlock, shaman, druid AND paladin -- every
+    /// caster in the game -- so blessing any of them looped until the paladin was out of
+    /// mana. Caught in a packet capture: 18 casts of Greater Blessing of Wisdom in thirteen
+    /// seconds, ending in Drink.
+    ///
+    /// The remaining greater ranks are listed for a second reason: they are all real 1.12
+    /// spells, and a target already blessed by a player or another paladin should be left
+    /// alone rather than overwritten with something worse.
     inline bool HasAnyBlessing(PlayerbotAI* ai, Unit* target)
     {
         for (const char* b : {"blessing of kings", "blessing of might", "blessing of sanctuary",
                     "blessing of wisdom", "blessing of salvation", "blessing of light",
-                    "greater blessing of kings", "greater blessing of might"})
+                    "greater blessing of kings", "greater blessing of might",
+                    "greater blessing of wisdom", "greater blessing of salvation",
+                    "greater blessing of sanctuary", "greater blessing of light"})
         {
             if (ai->HasAura(b, target))
             {
