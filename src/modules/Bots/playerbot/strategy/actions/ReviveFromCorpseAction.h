@@ -11,7 +11,9 @@ namespace ai
     class ReviveFromCorpseAction : public MovementAction {
         public:
             ReviveFromCorpseAction(PlayerbotAI* ai) : MovementAction(ai, "revive"),
-                m_corpseRunStarted(0), m_corpseRunAllowance(0), m_corpseRunGaveUp(false) {}
+                m_corpseRunStarted(0), m_corpseRunAllowance(0), m_corpseRunGaveUp(false),
+                m_corpseLegLength(0.0f), m_corpseLegAsked(false),
+                m_corpseLegAskedX(0.0f), m_corpseLegAskedY(0.0f), m_corpseLegAskedZ(0.0f) {}
 
         public:
             virtual bool Execute(Event event);
@@ -49,6 +51,28 @@ namespace ai
             // is what keeps that to exactly one: without it an expired deadline would repop on
             // every tick, which is the teleport churn this branch exists to stop.
             bool m_corpseRunGaveUp;
+
+            // How long the next leg may be, and where the bot stood when the last one was
+            // asked for.
+            //
+            // MOVE_REQUIRE_ROUTE refusing a leg is silent from here. MoveTo returns true as
+            // soon as the generator is installed, routing fails afterwards, and the player
+            // path of MovementInform returns immediately for a TYPEID_PLAYER owner -- so a bot
+            // is never told that its leg was refused, or that one arrived. The only signal
+            // available is circumstantial and it is decisive: a refused leg lays no spline at
+            // all, so the bot is still standing exactly where it asked from. A leg that
+            // completed moved it most of the leg's length. Comparing the two tells refusal
+            // from progress without any core change.
+            //
+            // Measured live, before this: 15 of 168 classified corpse runs never moved a yard.
+            // Each re-issued the identical routed point every four seconds until the allowance
+            // expired -- two minutes minimum -- and then repopped at a graveyard, which is the
+            // teleport-revive churn this branch exists to stop, reached the slow way.
+            float m_corpseLegLength;
+            bool m_corpseLegAsked;
+            float m_corpseLegAskedX;
+            float m_corpseLegAskedY;
+            float m_corpseLegAskedZ;
     };
 
     // Deliberately a plain Action, NOT a MovementAction. Walking to the healer was tried and

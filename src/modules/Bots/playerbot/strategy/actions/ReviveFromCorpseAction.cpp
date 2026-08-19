@@ -65,6 +65,12 @@ bool ReviveFromCorpseAction::Execute(Event event)
             m_corpseRunStarted = time(0);
             m_corpseRunGaveUp = false;
 
+            // Leg state belongs to one corpse too. A run that had to shorten its way down to
+            // 37 yards must not hand that down to the next death, which may be somewhere the
+            // router is perfectly happy with.
+            m_corpseLegAsked = false;
+            m_corpseLegLength = sPlayerbotAIConfig.reactDistance;
+
             // Budget this run from its own length at the bot's live speed. GetSpeed picks up
             // both the server's configured run rate and the ghost bonus the core applies on
             // death, so a wisp gets the wisp's allowance.
@@ -153,17 +159,61 @@ bool ReviveFromCorpseAction::Execute(Event event)
             return true;
         }
 
+        // No leg in flight. Either the last one finished, or the router refused it -- and
+        // which of those it was decides everything about what to do next.
+        //
+        // A refusal lays no spline, so the bot has not moved a yard since it asked. A leg
+        // that completed moved it most of the leg's length, which is never small. Five yards
+        // separates them with room to spare in both directions.
+        //
+        // Answering a refusal by asking again for the SAME point is what produced the stall:
+        // nothing about the world changed in four seconds, so the router says no again, and
+        // the bot stands there re-asking until the allowance expires. Halve the leg instead.
+        // The comment above already concedes why that helps -- a shorter leg is likelier to
+        // land in a resident mmap tile -- and it converges in a handful of ticks rather than
+        // grinding out two minutes: 150, 75, 37, and if even that is refused the router is
+        // not going to route anything from here, so take the graveyard now instead of in
+        // another hundred seconds. Any real progress resets the leg to full length.
+        const bool refused =
+            m_corpseLegAsked &&
+            bot->GetDistance(m_corpseLegAskedX, m_corpseLegAskedY, m_corpseLegAskedZ) < 5.0f;
+
+        if (refused)
+        {
+            m_corpseLegLength /= 2.0f;
+
+            if (m_corpseLegLength < sPlayerbotAIConfig.spellDistance)
+            {
+                if (!m_corpseRunGaveUp)
+                {
+                    m_corpseRunGaveUp = true;
+                    bot->RepopAtGraveyard();
+                }
+
+                return false;
+            }
+        }
+        else
+        {
+            m_corpseLegLength = sPlayerbotAIConfig.reactDistance;
+        }
+
         float x = corpse->GetPositionX();
         float y = corpse->GetPositionY();
         float z = corpse->GetPositionZ();
 
-        if (corpseDistance > sPlayerbotAIConfig.reactDistance)
+        if (corpseDistance > m_corpseLegLength)
         {
-            float ratio = sPlayerbotAIConfig.reactDistance / corpseDistance;
+            float ratio = m_corpseLegLength / corpseDistance;
             x = bot->GetPositionX() + (x - bot->GetPositionX()) * ratio;
             y = bot->GetPositionY() + (y - bot->GetPositionY()) * ratio;
             z = bot->GetPositionZ() + (z - bot->GetPositionZ()) * ratio;
         }
+
+        m_corpseLegAsked = true;
+        m_corpseLegAskedX = bot->GetPositionX();
+        m_corpseLegAskedY = bot->GetPositionY();
+        m_corpseLegAskedZ = bot->GetPositionZ();
 
         return MoveTo(corpse->GetMapId(), x, y, z, false, true, true);
     }
