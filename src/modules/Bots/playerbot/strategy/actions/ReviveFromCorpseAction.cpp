@@ -180,7 +180,13 @@ bool ReviveFromCorpseAction::Execute(Event event)
 
         if (refused)
         {
-            m_corpseLegLength /= 2.0f;
+            // Halve the length that was actually ASKED for, which is the leg capped by the
+            // distance to the corpse. Halving the cap alone changes nothing while the cap is
+            // still the larger of the two -- for a corpse 60 yards away the first halve takes
+            // 150 to 75, the ask stays the corpse itself, and a tick is spent re-asking the
+            // point that was just refused.
+            const float asked = std::min(m_corpseLegLength, corpseDistance);
+            m_corpseLegLength = asked / 2.0f;
 
             if (m_corpseLegLength < sPlayerbotAIConfig.spellDistance)
             {
@@ -189,6 +195,27 @@ bool ReviveFromCorpseAction::Execute(Event event)
                     m_corpseRunGaveUp = true;
                     bot->RepopAtGraveyard();
                 }
+
+                // Expire the allowance with it, so this give-up is TERMINAL. Without that the
+                // repop merely relocates the run: the next tick reads the graveyard jump as
+                // progress, resets to a full leg and sets off again -- fine when the refusal
+                // was positional, fatal when it is not. The water shortcut in PathFinder
+                // refuses any endpoint dipping below the surface whatever the leg length, so a
+                // drowned corpse produces run to shore, cascade, repop, run back to the same
+                // shore, cascade again -- and that second give-up finds the flag already
+                // spent, so it returns false where the bot is standing, out in the world. That
+                // is the wedged ghost this action's header forbids in as many words, and it is
+                // WORSE than doing nothing: before this commit the only repop was the
+                // allowance one, which by construction fires with the allowance already
+                // expired, so every later tick returned false at the GRAVEYARD, where a spirit
+                // healer stands and the fallback below can actually reach one.
+                //
+                // Zeroing the start makes the allowance branch above take every subsequent
+                // tick, which is that same terminal-at-the-graveyard path. The cost is the
+                // retry a positional refusal might have won from the graveyard; the
+                // alternative, letting each give-up repop, is graveyard-to-shore ping-pong,
+                // which is the churn this branch exists to remove.
+                m_corpseRunStarted = 0;
 
                 return false;
             }
@@ -210,12 +237,19 @@ bool ReviveFromCorpseAction::Execute(Event event)
             z = bot->GetPositionZ() + (z - bot->GetPositionZ()) * ratio;
         }
 
-        m_corpseLegAsked = true;
+        // Only a leg that was actually issued counts as one to judge next tick. MoveTo can
+        // decline before it reaches the mover at all -- IsMovingAllowed refuses a bot that is
+        // rooted, stunned, in flight or already there -- and a bot that never asked has not
+        // been refused. Recording the ask regardless would read those as router refusals and
+        // cascade straight to a repop.
+        const bool asked = MoveTo(corpse->GetMapId(), x, y, z, false, true, true);
+
+        m_corpseLegAsked = asked;
         m_corpseLegAskedX = bot->GetPositionX();
         m_corpseLegAskedY = bot->GetPositionY();
         m_corpseLegAskedZ = bot->GetPositionZ();
 
-        return MoveTo(corpse->GetMapId(), x, y, z, false, true, true);
+        return asked;
     }
 
     // Arrived. Drop the guid so a later death starts a fresh deadline.
