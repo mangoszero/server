@@ -510,7 +510,13 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
                     continue;
                 }
 
-                if (healerPrefersCaster)
+                // Substitute only for "+dps". ChangeStrategy acts on '+', '-', '~' and '?'
+                // and silently ignores anything else, so a bare "dps" has always been an
+                // inert entry; rewriting it to "+caster" would make it live and hand a
+                // strategy to a bot whose configuration never actually asked for one.
+                // Skipping it above for keepSpec is kept as it was, because skipping a
+                // no-op costs nothing and preserves the original reading.
+                if (healerPrefersCaster && entry == "+dps")
                 {
                     entry = "+caster";
                 }
