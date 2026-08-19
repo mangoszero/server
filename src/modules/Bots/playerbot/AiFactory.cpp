@@ -470,30 +470,53 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
         bool keepSpec = engine->ContainsStrategy(STRATEGY_TYPE_TANK) ||
                         engine->ContainsStrategy(STRATEGY_TYPE_RANGED);
 
-        if (!keepSpec)
-        {
-            engine->ChangeStrategy(sPlayerbotAIConfig.randomBotCombatStrategies);
-        }
-        else
-        {
-            vector<string> parts = split(sPlayerbotAIConfig.randomBotCombatStrategies, ',');
-            for (vector<string>::iterator i = parts.begin(); i != parts.end(); ++i)
-            {
-                string entry = *i;
-                entry.erase(0, entry.find_first_not_of(" \t"));
-                size_t last = entry.find_last_not_of(" \t");
-                if (last != string::npos)
-                {
-                    entry.erase(last + 1);
-                }
+        // A solo healer does keep the damage build, for the reason above. But "dps" is
+        // resolved per class, and for the only two classes that ALSO register a caster build
+        // it names a MELEE one -- druid's resolves to cat, shaman's to MeleeShamanStrategy.
+        // So a Restoration shaman was handed a strategy whose entire rotation is Stormstrike
+        // (a thirty-one point Enhancement talent it does not have), Earth Shock, and white
+        // swings, and which wires "enemy out of melee" -> reach melee at ACTION_NORMAL + 8.
+        // Watched live: the bot ran into melee and stayed there, shocking on cooldown, and
+        // cast Lightning Bolt not once in a session -- Lightning Bolt is not in that strategy
+        // at all. A Restoration druid is sent to Cat form it has no talents for the same way.
+        //
+        // For those two the caster build is the right solo answer: the spec's own damage, at
+        // the range it is geared and talented for. Every other class either has no caster
+        // build to prefer or was already excluded by the RANGED test above.
+        bool healerPrefersCaster = engine->ContainsStrategy(STRATEGY_TYPE_HEAL) &&
+                                   (player->getClass() == CLASS_SHAMAN ||
+                                    player->getClass() == CLASS_DRUID);
 
-                if (entry.empty() || entry == "+dps" || entry == "dps")
+        vector<string> parts = split(sPlayerbotAIConfig.randomBotCombatStrategies, ',');
+        for (vector<string>::iterator i = parts.begin(); i != parts.end(); ++i)
+        {
+            string entry = *i;
+            entry.erase(0, entry.find_first_not_of(" \t"));
+            size_t last = entry.find_last_not_of(" \t");
+            if (last != string::npos)
+            {
+                entry.erase(last + 1);
+            }
+
+            if (entry.empty())
+            {
+                continue;
+            }
+
+            if (entry == "+dps" || entry == "dps")
+            {
+                if (keepSpec)
                 {
                     continue;
                 }
 
-                engine->ChangeStrategy(entry);
+                if (healerPrefersCaster)
+                {
+                    entry = "+caster";
+                }
             }
+
+            engine->ChangeStrategy(entry);
         }
     }
 }
