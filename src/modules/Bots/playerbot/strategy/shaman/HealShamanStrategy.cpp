@@ -59,6 +59,18 @@ void HealShamanStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
             "enemy out of spell",
         NextAction::array(0, new NextAction("reach spell", ACTION_NORMAL + 9), NULL)));
 
+    // The no-aggro variant, deliberately, following the priest healer rather than the mage
+    // and hunter DPS: a healer that runs while it holds aggro drags the mob across the
+    // party and can pull adds, so with aggro the right play is to stand and heal until the
+    // tank takes it back -- the ACTION_EMERGENCY flee routes already cover the desperate
+    // cases. With no attackers on us this is a free step out of cleave range. ACTION_MOVE
+    // rather than a rotation-band value so it outranks "set facing" (ACTION_NORMAL + 7 in
+    // CombatStrategy), which would otherwise spend the tick turning the shaman towards the
+    // thing it is stepping away from.
+    triggers.push_back(new TriggerNode(
+            "enemy too close for spell no aggro",
+        NextAction::array(0, new NextAction("flee", ACTION_MOVE), NULL)));
+
     triggers.push_back(new TriggerNode(
             "shaman weapon",
         NextAction::array(0, new NextAction("earthliving weapon", 22.0f), NULL)));
