@@ -38,13 +38,26 @@ namespace ai
     /// The remaining greater ranks are listed for a second reason: they are all real 1.12
     /// spells, and a target already blessed by a player or another paladin should be left
     /// alone rather than overwritten with something worse.
+    ///
+    /// Freedom, Protection and Sacrifice are here for a THIRD reason, and it is the sharpest
+    /// of the three. GetSpellSpecific classifies a paladin spell as SPELL_BLESSING through
+    /// IsFitToFamilyMask(0x0000000010000100), and that test is `Flags & familyFlags` -- any
+    /// bit, not all -- so Freedom (0x10000010), Protection (0x10000080) and Sacrifice
+    /// (0x10000000) all qualify alongside Might (0x10000002). SPELL_BLESSING is in
+    /// IsSingleFromSpellSpecificPerTargetPerCaster, so one blessing per caster per target:
+    /// they STRIP each other. BlessingOfFreedomTrigger fires at ACTION_EMERGENCY whenever the
+    /// paladin is snared, so Freedom would remove the maintained Might, this guard would not
+    /// see Freedom, Might would be recast and remove the Freedom the bot paid for one GCD
+    /// ago, and a persistent snare would alternate the pair every global cooldown.
     inline bool HasAnyBlessing(PlayerbotAI* ai, Unit* target)
     {
         for (const char* b : {"blessing of kings", "blessing of might", "blessing of sanctuary",
                     "blessing of wisdom", "blessing of salvation", "blessing of light",
                     "greater blessing of kings", "greater blessing of might",
                     "greater blessing of wisdom", "greater blessing of salvation",
-                    "greater blessing of sanctuary", "greater blessing of light"})
+                    "greater blessing of sanctuary", "greater blessing of light",
+                    "blessing of freedom", "blessing of protection",
+                    "blessing of sacrifice"})
         {
             if (ai->HasAura(b, target))
             {
