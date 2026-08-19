@@ -55,11 +55,28 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
 
     if (!processTicks)
     {
+        // Both statements in this block are DirectExecute, and they have to be. Reported by
+        // Codex on PR #476.
+        //
+        // Master::Run calls CharacterDatabase.AllowAsyncTransactions() unconditionally, so
+        // Execute here only QUEUES the delete on the delay thread. The same startup pass then
+        // reaches GetEventValue below, which misses its cache, runs a synchronous PQuery on
+        // another connection, and reads the row the delete has not removed yet -- then caches
+        // it for the row's own remaining validity, which for a randomize event is up to
+        // fourteen days. The delete lands moments later and changes nothing: the stale value
+        // is already in memory with a fortnight to run, and the recovery these statements
+        // implement is defeated for exactly the bots it was written to rescue.
+        //
+        // This is the second time this file has been caught by that ordering -- see the
+        // config_max note further down, where an asynchronous SetEventValue was read back
+        // before it landed and re-cached the old target for a day. A one-shot statement at
+        // startup has no throughput case for being asynchronous anyway.
+        //
         // The eviction backoff is a runtime throttle, not durable state, and persisting
         // it means a bot that had nowhere to go before a restart is still serving its
         // cooldown afterwards -- including across the very restart that installed the
         // fix for whatever stranded it. A fresh start is a fresh chance.
-        CharacterDatabase.Execute("DELETE FROM `ai_playerbot_random_bots` WHERE `event` = 'evictcheck'");
+        CharacterDatabase.DirectExecute("DELETE FROM `ai_playerbot_random_bots` WHERE `event` = 'evictcheck'");
 
         // A bot that never got through a randomize sits at level 1 with its event banked,
         // and the banked event then suppresses every retry for as long as
@@ -81,7 +98,7 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         // on this roster every randomized level 1 bot has trainer spells (Predrib seven,
         // Roac five) and all 629 that never reached the factory have exactly none. Test the
         // uninitialized state rather than inferring it from a level a healthy bot may hold.
-        CharacterDatabase.Execute(
+        CharacterDatabase.DirectExecute(
             "DELETE `e` FROM `ai_playerbot_random_bots` `e` "
             "JOIN `characters` `c` ON `c`.`guid` = `e`.`bot` "
             "WHERE `e`.`event` = 'randomize' AND `e`.`owner` = 0 AND `c`.`level` = 1 "
