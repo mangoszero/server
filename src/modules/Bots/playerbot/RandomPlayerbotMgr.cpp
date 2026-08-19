@@ -61,21 +61,31 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         // fix for whatever stranded it. A fresh start is a fresh chance.
         CharacterDatabase.Execute("DELETE FROM `ai_playerbot_random_bots` WHERE `event` = 'evictcheck'");
 
-        // A bot still sitting at level 1 with its randomize event banked never got through
-        // RandomizeFirst: that is the one path which grants a level, and a bot that has it
-        // has left level 1 behind. The banked event then suppresses every retry for as
-        // long as MaxRandomRandomizeTime, which defaults to fourteen days, so an install
-        // that hit this stays broken long after the code that caused it is gone -- naked
-        // level 1 bots with no talents and no trainer spells, and no way back on their own.
+        // A bot that never got through a randomize sits at level 1 with its event banked,
+        // and the banked event then suppresses every retry for as long as
+        // MaxRandomRandomizeTime, which defaults to fourteen days -- so an install that hit
+        // this stays broken long after the code that caused it is gone: naked level 1 bots
+        // with no talents and no trainer spells, and no way back on their own. Dropping
+        // just those events lets the next pass randomize them properly.
         //
-        // Dropping just those events lets the next pass randomize them properly. It is
-        // safe to run every start: a healthy roster has almost nothing at level 1 holding
-        // a banked event, and the worst case for one that does is being randomized sooner
-        // than scheduled, which is the intended treatment anyway.
+        // Level 1 alone does NOT identify them, which is what this used to test. Reported by
+        // Codex on PR #476 and confirmed against the live roster. StarterResidentLevelBand
+        // draws from max(1, RandomBotMinLevel) upwards, RandomBotMinLevel defaults to 1, and
+        // RandomizeStarterResident rolls urand(lo, hi) -- so roughly one starter-zone
+        // resident in ten legitimately lands at level 1, fully talented, spelled and geared.
+        // Predrib, guid 317: level 1, 3841 copper, four bags, seven spells, holding a
+        // randomize event with six days left to run. This statement deleted that event on
+        // every single restart, so the next pass re-rolled a perfectly healthy bot.
+        //
+        // The spellbook is what actually separates the two, and it separates them cleanly:
+        // on this roster every randomized level 1 bot has trainer spells (Predrib seven,
+        // Roac five) and all 629 that never reached the factory have exactly none. Test the
+        // uninitialized state rather than inferring it from a level a healthy bot may hold.
         CharacterDatabase.Execute(
             "DELETE `e` FROM `ai_playerbot_random_bots` `e` "
             "JOIN `characters` `c` ON `c`.`guid` = `e`.`bot` "
-            "WHERE `e`.`event` = 'randomize' AND `e`.`owner` = 0 AND `c`.`level` = 1");
+            "WHERE `e`.`event` = 'randomize' AND `e`.`owner` = 0 AND `c`.`level` = 1 "
+            "AND NOT EXISTS (SELECT 1 FROM `character_spell` `s` WHERE `s`.`guid` = `c`.`guid`)");
     }
 
     sLog.outBasic("Processing random bots...");
