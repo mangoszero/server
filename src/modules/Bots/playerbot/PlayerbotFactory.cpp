@@ -1090,8 +1090,16 @@ void PlayerbotFactory::InitEquipment(bool incremental)
 
             if (oldItem)
             {
-                bot->RemoveItem(INVENTORY_SLOT_BAG_0, slot, true);
-                oldItem->DestroyForPlayer(bot);
+                // DestroyItem, not RemoveItem plus DestroyForPlayer. The old pair detached the
+                // item from its slot and told the client to forget it, and then simply dropped
+                // the pointer: the Item was never deleted, never marked ITEM_REMOVED, and never
+                // taken out of the player's m_itemUpdateQueue. A leaked object is the mild half.
+                // The queue entry is the sharp one -- _SaveInventory walks that vector on every
+                // periodic save and resolves each entry's bag and slot, and this item no longer
+                // has either, so it logs the inventory-corruption diagnostic and abandons the
+                // save. DestroyItem does the whole job: contained items first, enchantment and
+                // duration bookkeeping, quest checks, queue removal, then the delete.
+                bot->DestroyItem(INVENTORY_SLOT_BAG_0, slot, true);
             }
 
             Item* newItem = bot->EquipNewItem(dest, newItemId, true);
