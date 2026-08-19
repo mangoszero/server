@@ -1148,6 +1148,25 @@ void RandomPlayerbotMgr::IncreaseLevel(Player* bot)
     RandomTeleportForLevel(bot);
 }
 
+/// The configured minimum level, clamped so it can never exceed the maximum actually
+/// available on this server.
+///
+/// Config load already guarantees RandomBotMinLevel <= RandomBotMaxLevel, but the server's own
+/// MaxPlayerLevel is applied AFTER that and can be lower than either -- a roster configured
+/// 40..60 on a level-30 server inverts here and nowhere else. urand() passes the pair straight
+/// to std::uniform_int_distribution<uint32>, whose precondition is min <= max, so an inverted
+/// pair is undefined behaviour rather than an empty range.
+static uint32 RandomBotMinLevelFor(uint32 maxLevel)
+{
+    uint32 minLevel = sPlayerbotAIConfig.randomBotMinLevel;
+    if (minLevel > maxLevel)
+    {
+        return maxLevel;
+    }
+
+    return minLevel;
+}
+
 /// The level range a starting-zone resident may be randomized into: the home-zone band
 /// intersected with the configured roster range and the server's level cap.
 ///
@@ -1338,7 +1357,7 @@ bool RandomPlayerbotMgr::RandomizeFirst(Player* bot)
     // moves it later like any other badly-placed bot.
     if (!randomized)
     {
-        uint32 level = urand(sPlayerbotAIConfig.randomBotMinLevel, maxLevel);
+        uint32 level = urand(RandomBotMinLevelFor(maxLevel), maxLevel);
         if (!level)
         {
             level = 1;
@@ -1355,7 +1374,7 @@ bool RandomPlayerbotMgr::RandomizeFirst(Player* bot)
 
     if (bot->getLevel() > maxLevel)
     {
-        uint32 newLevel =  urand(sPlayerbotAIConfig.randomBotMinLevel, maxLevel);
+        uint32 newLevel = urand(RandomBotMinLevelFor(maxLevel), maxLevel);
         PlayerbotFactory factory(bot, newLevel);
         factory.CleanRandomize();
         RandomTeleportForLevel(bot);

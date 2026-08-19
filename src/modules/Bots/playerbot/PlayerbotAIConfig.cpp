@@ -244,6 +244,17 @@ bool PlayerbotAIConfig::Initialize()
     fleeingEnabled = config.GetBoolDefault("AiPlayerbot.FleeingEnabled", true);
     randomBotMinLevel = config.GetIntDefault("AiPlayerbot.RandomBotMinLevel", 1);
     randomBotMaxLevel = config.GetIntDefault("AiPlayerbot.RandomBotMaxLevel", 255);
+    // A minimum above the maximum is not merely odd, it is undefined behaviour downstream:
+    // urand() hands the pair straight to std::uniform_int_distribution<uint32>, whose
+    // precondition is min <= max, so an inverted range asserts or returns garbage rather
+    // than yielding nothing. Clamp here, where it can be reported once at startup, instead
+    // of at the call sites where it would misbehave once per bot.
+    if (randomBotMinLevel > randomBotMaxLevel)
+    {
+        sLog.outError("AiPlayerbot.RandomBotMinLevel (%u) is above RandomBotMaxLevel (%u); "
+            "clamping the minimum to the maximum", randomBotMinLevel, randomBotMaxLevel);
+        randomBotMinLevel = randomBotMaxLevel;
+    }
     randomBotLoginAtStartup = config.GetBoolDefault("AiPlayerbot.RandomBotLoginAtStartup", true);
     randomBotKeepGroups = config.GetBoolDefault("AiPlayerbot.RandomBotKeepGroups", false);
     randomBotActiveZoneOnly = config.GetBoolDefault("AiPlayerbot.RandomBotActiveZoneOnly", false);
