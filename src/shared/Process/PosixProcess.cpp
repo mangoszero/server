@@ -29,7 +29,6 @@
 
 #include <atomic>
 #include <cerrno>
-#include <climits>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
@@ -147,26 +146,35 @@ bool WritePidFile(const std::string& path)
 bool IsSameExecutable(pid_t pid)
 {
 #ifdef __linux__
-    char mine[PATH_MAX + 1] = {};
-    char theirs[PATH_MAX + 1] = {};
+    // ===== IDENTITY, NOT SPELLING =====
+    //
+    // stat() through /proc/<pid>/exe lands on the binary itself, so the two are
+    // compared by device and inode rather than by the path they happen to be
+    // reachable at. That is the question actually being asked, and the string
+    // form got it wrong in both directions: an in-place upgrade leaves the path
+    // identical while the file underneath is a different one, and a hard link or
+    // a bind mount gives one file two names.
+    //
+    // No buffer either, so there is no PATH_MAX and no truncation to reason about.
+    // ==================================
+    char link[64] = {};
+    std::snprintf(link, sizeof(link), "/proc/%ld/exe", static_cast<long>(pid));
 
-    const ssize_t m = readlink("/proc/self/exe", mine, sizeof(mine) - 1);
-    if (m <= 0)
+    struct stat mine = {};
+    struct stat theirs = {};
+
+    if (stat("/proc/self/exe", &mine) != 0)
     {
         return true;
     }
 
-    char link[64] = {};
-    std::snprintf(link, sizeof(link), "/proc/%ld/exe", static_cast<long>(pid));
-
-    const ssize_t t = readlink(link, theirs, sizeof(theirs) - 1);
-    if (t <= 0)
+    if (stat(link, &theirs) != 0)
     {
         // No such process, or not ours to look at. kill() answers that better.
         return true;
     }
 
-    return std::strcmp(mine, theirs) == 0;
+    return mine.st_dev == theirs.st_dev && mine.st_ino == theirs.st_ino;
 #else
     // FreeBSD and macOS need sysctl/libproc for this. Not worth the platform code
     // until a stale pid file actually bites somewhere other than Linux.
