@@ -359,6 +359,9 @@ bool PlayerbotHolder::AddPlayerBot(uint64 playerGuid, uint32 masterAccountId)
 void WorldSession::HandleCharEnum(QueryResult* result)
 {
     WorldPacket data(SMSG_CHAR_ENUM, 100);                  // we guess size
+    // Preserve only rows that are successfully serialized. Login must compare
+    // against what reached this character screen, not current database state.
+    CharacterEnumMapSnapshot::MapByGuid advertisedMaps;
 
     uint8 num = 0;
 
@@ -369,10 +372,13 @@ void WorldSession::HandleCharEnum(QueryResult* result)
         do
         {
             uint32 guidlow = (*result)[0].GetUInt32();
+            uint32 advertisedMap = (*result)[9].GetUInt32();
             DETAIL_LOG("Build enum data for char guid %u from account %u.", guidlow, GetAccountId());
             if (Player::BuildEnumData(result, &data))
             {
                 ++num;
+                advertisedMaps.emplace(
+                    ObjectGuid(HIGHGUID_PLAYER, guidlow).GetRawValue(), advertisedMap);
             }
         }
         while (result->NextRow());
@@ -383,6 +389,8 @@ void WorldSession::HandleCharEnum(QueryResult* result)
     data.put<uint8>(0, num);
 
     SendPacket(&data);
+    // Each enum response replaces the previous screen snapshot in full.
+    m_characterEnumMaps.Replace(std::move(advertisedMaps));
 
     // Retail 1.12.1.5875 emits its first Warden packet after the completed
     // character list. Start is idempotent for repeated enumeration requests.
@@ -775,30 +783,42 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     /* Validation check completely, assign player to WorldSession::_player for later use */
     SetPlayer(pCurrChar);
 
-    WorldPacket data(SMSG_LOGIN_VERIFY_WORLD, 20);
-    data << pCurrChar->GetMapId();
+    // Retail omits LOGIN_VERIFY_WORLD when the committed world anchor still
+    // matches CHAR_ENUM; a server-side move between screen and login needs it.
+    WorldPacket data;
+    uint32 anchorMapId = 0;
+    float anchorX = 0.0f;
+    float anchorY = 0.0f;
+    float anchorZ = 0.0f;
+    pCurrChar->GetWorldAnchor(anchorMapId, anchorX, anchorY, anchorZ);
 
-    // ABOARD, THE OFFSET -- exactly what SMSG_NEW_WORLD carries on the teleport path, and
-    // for the same reason. The create block that follows says the player is at (0, 0, 0) on
-    // a transport, with the deck spot in the offset; sending the ship's WORLD pose here
-    // instead means the two packets describe the position with two different meanings, and
-    // the second one has an orientation the vessel never updates (Transport::Create leaves
-    // it at 1.0). The teleport path is the one that demonstrably works; this makes login
-    // say the same thing.
-    if (pCurrChar->GetTransport())
+    if (!HasMatchingCharacterEnumMap(playerGuid, anchorMapId))
     {
-        Position const* aboard = pCurrChar->m_movementInfo.GetTransportPos();
-        data << aboard->x << aboard->y << aboard->z << aboard->o;
-    }
-    else
-    {
-        data << pCurrChar->Where().X();
-        data << pCurrChar->Where().Y();
-        data << pCurrChar->Where().Z();
-        data << pCurrChar->Where().Facing();
-    }
+        data.Initialize(SMSG_LOGIN_VERIFY_WORLD, 20);
+        data << pCurrChar->GetMapId();
 
-    SendPacket(&data);
+        // ABOARD, THE OFFSET -- exactly what SMSG_NEW_WORLD carries on the teleport path, and
+        // for the same reason. The create block that follows says the player is at (0, 0, 0) on
+        // a transport, with the deck spot in the offset; sending the ship's WORLD pose here
+        // instead means the two packets describe the position with two different meanings, and
+        // the second one has an orientation the vessel never updates (Transport::Create leaves
+        // it at 1.0). The teleport path is the one that demonstrably works; this makes login
+        // say the same thing.
+        if (pCurrChar->GetTransport())
+        {
+            Position const* aboard = pCurrChar->m_movementInfo.GetTransportPos();
+            data << aboard->x << aboard->y << aboard->z << aboard->o;
+        }
+        else
+        {
+            data << pCurrChar->Where().X();
+            data << pCurrChar->Where().Y();
+            data << pCurrChar->Where().Z();
+            data << pCurrChar->Where().Facing();
+        }
+
+        SendPacket(&data);
+    }
 
     data.Initialize(SMSG_ACCOUNT_DATA_TIMES, 128);
     for (int i = 0; i < 32; ++i)
