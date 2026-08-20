@@ -1,15 +1,9 @@
 #ifndef _PlayerbotSecurity_H
 #define _PlayerbotSecurity_H
 
-using namespace std;
+#include "PlayerbotSecurityPolicy.h"
 
-enum PlayerbotSecurityLevel
-{
-    PLAYERBOT_SECURITY_DENY_ALL = 0,
-    PLAYERBOT_SECURITY_TALK = 1,
-    PLAYERBOT_SECURITY_INVITE = 2,
-    PLAYERBOT_SECURITY_ALLOW_ALL = 3
-};
+using namespace std;
 
 enum DenyReason
 {

@@ -5,6 +5,7 @@
 #include "PlayerbotAIConfig.h"
 #include "playerbot.h"
 #include "RandomPlayerbotFactory.h"
+#include "RandomBotClassPolicy.h"
 #include "AccountMgr.h"
 #include "SystemConfig.h"
 
@@ -582,35 +583,36 @@ void PlayerbotAIConfig::CreateRandomBots()
 
         randomBotAccounts.push_back(accountId);
 
-        // Count the classes this loop will actually create rather than assuming ten. It
-        // creates one per playable class, and vanilla has nine -- 6 and 10 do not exist
-        // here -- so an account that was already full at nine looked incomplete against a
-        // threshold of ten and got a second full set. Every restart without a wipe
-        // therefore doubled the roster, 450 characters to 900 at eighteen per account,
-        // until the count finally cleared ten. CreateRandomBot bypasses the normal
-        // per-account character limit, so nothing else stopped it.
-        uint32 expectedChars = 0;
-        for (uint8 cls = CLASS_WARRIOR; cls < MAX_CLASSES; ++cls)
+        vector<uint8> existingClasses;
+        QueryResult* characters = CharacterDatabase.PQuery(
+            "SELECT `class` FROM `characters` WHERE `account` = '%u' UNION ALL SELECT 0",
+            accountId);
+        if (!characters)
         {
-            if (cls != 10 && cls != 6)
-            {
-                ++expectedChars;
-            }
-        }
-
-        int count = sAccountMgr.GetCharactersCount(accountId);
-        if (count >= (int)expectedChars)
-        {
-            totalRandomBotChars += count;
+            sLog.outError("Unable to inspect random bot classes for account %u", accountId);
+            totalRandomBotChars += sAccountMgr.GetCharactersCount(accountId);
             continue;
         }
 
-        RandomPlayerbotFactory factory(accountId);
-        for (uint8 cls = CLASS_WARRIOR; cls < MAX_CLASSES; ++cls)
+        do
         {
-            if (cls != 10 && cls != 6)
+            existingClasses.push_back(characters->Fetch()[0].GetUInt8());
+        } while (characters->NextRow());
+
+        delete characters;
+
+        vector<uint8> missingClasses = ai::GetMissingRandomBotClasses(existingClasses);
+        if (!missingClasses.empty())
+        {
+            RandomPlayerbotFactory factory(accountId);
+            for (vector<uint8>::const_iterator itr = missingClasses.begin();
+                 itr != missingClasses.end(); ++itr)
             {
-                factory.CreateRandomBot(cls);
+                if (!factory.CreateRandomBot(*itr))
+                {
+                    sLog.outError("Unable to create missing random bot class %u for account %u",
+                                  *itr, accountId);
+                }
             }
         }
 

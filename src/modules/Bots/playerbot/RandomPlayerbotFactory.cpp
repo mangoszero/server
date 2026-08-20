@@ -9,6 +9,7 @@
 #include "Database/DatabaseEnv.h"
 #include "PlayerbotAI.h"
 #include "Player.h"
+#include "RandomBotClassPolicy.h"
 #include "RandomPlayerbotFactory.h"
 #include "SystemConfig.h"
 
@@ -123,9 +124,15 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls)
 {
     sLog.outDetail("Creating new random bot for class %d", cls);
 
-    uint8 gender = rand() % 2 ? GENDER_MALE : GENDER_FEMALE;
+    vector<uint8> const* races = ai::FindRandomBotRaceCandidates(availableRaces, cls);
+    if (!races)
+    {
+        sLog.outError("Cannot create random bot for class %u: no playable races are configured", uint32(cls));
+        return false;
+    }
 
-    uint8 race = availableRaces[cls][urand(0, availableRaces[cls].size() - 1)];
+    uint8 gender = rand() % 2 ? GENDER_MALE : GENDER_FEMALE;
+    uint8 race = (*races)[urand(0, races->size() - 1)];
     string name = CreateRandomBotName();
     if (name.empty())
     {

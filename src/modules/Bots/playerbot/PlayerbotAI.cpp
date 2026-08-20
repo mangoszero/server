@@ -650,11 +650,6 @@ void PlayerbotAI::Reset()
  */
 void PlayerbotAI::HandleCommand(uint32 type, const string& text, Player& fromPlayer)
 {
-    if (!GetSecurity()->CheckLevelFor(PLAYERBOT_SECURITY_INVITE, type != CHAT_MSG_WHISPER, &fromPlayer))
-    {
-        return;
-    }
-
     if (type == CHAT_MSG_ADDON)
     {
         return;
@@ -682,18 +677,24 @@ void PlayerbotAI::HandleCommand(uint32 type, const string& text, Player& fromPla
     // and because a channel line is fanned out to every random bot in the world, one "~who"
     // in trade chat returned a whisper from each of them at once -- disclosure and a
     // whisper flood from a single message. It now needs TALK, the level the module already
-    // uses to mean "may hold a conversation with this bot"; everything else still needs
-    // full control.
-    PlayerbotSecurityLevel required = (filtered.find("who") == 0)
-        ? PLAYERBOT_SECURITY_TALK
-        : PLAYERBOT_SECURITY_ALLOW_ALL;
+    // uses to mean "may hold a conversation with this bot". Follow, stay and attack use the
+    // same-subgroup tactical tier; everything else still needs full control.
+    bool const dispatchesRaidWarning =
+        type == CHAT_MSG_RAID_WARNING &&
+        filtered.find(bot->GetName()) != string::npos &&
+        filtered.find("award") == string::npos;
+
+    // Keep this check after all prefix/filter normalization. The same routing decision is
+    // used below so authorization always describes the command that will actually run.
+    PlayerbotSecurityLevel required =
+        GetPlayerbotDispatchedCommandSecurityLevel(filtered, dispatchesRaidWarning);
 
     if (!GetSecurity()->CheckLevelFor(required, type != CHAT_MSG_WHISPER, &fromPlayer))
     {
         return;
     }
 
-    if (type == CHAT_MSG_RAID_WARNING && filtered.find(bot->GetName()) != string::npos && filtered.find("award") == string::npos)
+    if (dispatchesRaidWarning)
     {
         ChatCommandHolder cmd("warning", &fromPlayer, type);
         chatCommands.push(cmd);
