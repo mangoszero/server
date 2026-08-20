@@ -718,12 +718,36 @@ bool Map::Add(Player* player)
     PromoteEnvelopeNeighboursToFull(cell.GridX(), cell.GridY());
     player->AddToWorld();
 
-    SendInitSelf(player);
-    SendInitTransports(player);
+    // Coalesce only a genuine login using the player's own camera. Redirected
+    // cameras and non-login map entry retain the established packet path.
+    std::optional<InitialWorldUpdateBatch> initialUpdates;
+    if (player->GetSession()->PlayerLoading() && player->GetCamera().GetBody() == player)
+    {
+        initialUpdates.emplace();
+    }
+    auto* batch = initialUpdates ? &*initialUpdates : nullptr;
+
+    SendInitSelf(player, batch);
+    SendInitTransports(player, batch);
 
     NGridType* grid = getNGrid(cell.GridX(), cell.GridY());
-    player->GetViewPoint().Event_AddedToWorld(&(*grid)(cell.CellX(), cell.CellY()));
-    UpdateObjectVisibility(player, cell, p);
+    player->GetViewPoint().Event_AddedToWorld(
+        &(*grid)(cell.CellX(), cell.CellY()), player, batch);
+
+    // The owner camera is the sole flush point. Continuing after a missed
+    // flush would admit a client with an incomplete initial world.
+    if (batch && !batch->WasSent())
+    {
+        if (!batch->FlushAttempted())
+        {
+            sLog.outError("Initial object update batch for player %u was not flushed by the owner camera", player->GetGUIDLow());
+        }
+        player->GetSession()->KickPlayer();
+    }
+    else
+    {
+        UpdateObjectVisibility(player, cell, p);
+    }
 
 #ifdef ENABLE_ELUNA
     if (Eluna* e = GetEluna())
@@ -1877,11 +1901,12 @@ void Map::UpdateObjectVisibility(WorldObject* obj, Cell cell, CellPair cellpair)
  *
  * @param player The player receiving the initialization packets.
  */
-void Map::SendInitSelf(Player* player)
+void Map::SendInitSelf(Player* player, InitialWorldUpdateBatch* batch)
 {
     DETAIL_LOG("Creating player data for himself %u", player->GetGUIDLow());
 
-    UpdateData data;
+    UpdateData localData;
+    UpdateData& data = batch ? batch->Data() : localData;
 
     bool hasTransport = false;
 
@@ -1889,6 +1914,10 @@ void Map::SendInitSelf(Player* player)
     if (Transport* transport = player->GetTransport())
     {
         hasTransport = true;
+        if (batch)
+        {
+            batch->MarkTransport();
+        }
         transport->BuildCreateUpdateBlockForPlayer(&data, player);
 
         // The vessel is the only thing that can announce her crew -- including to the man
@@ -1902,6 +1931,13 @@ void Map::SendInitSelf(Player* player)
     // build data for self presence in world at own client (one time for map)
     player->BuildCreateUpdateBlockForPlayer(&data, player);
 
+    if (batch)
+    {
+        // The owner camera sweep appends nearby objects and performs the one
+        // flush after every self, inventory, and vessel block is present.
+        return;
+    }
+
     WorldPacket packet;
     data.BuildPacket(&packet, hasTransport);
     player->GetSession()->SendPacket(&packet);
@@ -1912,7 +1948,7 @@ void Map::SendInitSelf(Player* player)
  *
  * @param player The player receiving transport initialization data.
  */
-void Map::SendInitTransports(Player* player)
+void Map::SendInitTransports(Player* player, InitialWorldUpdateBatch* batch)
 {
     // A player joining a map takes possession of every vessel on it -- one of the four
     // events that carry transport visibility. No distance, no grid: you share her map, you
@@ -1922,7 +1958,15 @@ void Map::SendInitTransports(Player* player)
     // logging in aboard was handed no hull at all, which is a man standing in mid-air.
     if (TransportMap* hull = AsTransport())
     {
-        TransportMap::AnnounceVessel(hull->Vessel(), player);
+        if (batch)
+        {
+            TransportMap::AppendVesselCreateBlocks(hull->Vessel(), player, batch->Data());
+            batch->MarkTransport();
+        }
+        else
+        {
+            TransportMap::AnnounceVessel(hull->Vessel(), player);
+        }
         return;
     }
 
@@ -1944,7 +1988,15 @@ void Map::SendInitTransports(Player* player)
             continue;
         }
 
-        TransportMap::AnnounceVessel(vessel, player);
+        if (batch)
+        {
+            TransportMap::AppendVesselCreateBlocks(vessel, player, batch->Data());
+            batch->MarkTransport();
+        }
+        else
+        {
+            TransportMap::AnnounceVessel(vessel, player);
+        }
     }
 }
 

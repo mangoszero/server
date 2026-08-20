@@ -138,6 +138,11 @@ add_test(NAME warden_boundary
         -DSOURCE_ROOT=${CMAKE_SOURCE_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckWardenBoundary.cmake)
 
+add_test(NAME login_object_batching
+    COMMAND ${CMAKE_COMMAND}
+        -DSOURCE_ROOT=${CMAKE_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckLoginObjectBatching.cmake)
+
 add_test(NAME spatial_boundary
     COMMAND ${CMAKE_COMMAND}
         -DSOURCE_ROOT=${CMAKE_SOURCE_DIR}

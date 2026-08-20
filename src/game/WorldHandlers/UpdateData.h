@@ -87,4 +87,44 @@ class UpdateData
 
         void Compress(void* dst, uint32* dst_size, void* src, int src_size);
 };
+
+/**
+ * Accumulates every create block for initial login into one update packet.
+ * Transport presence is retained for the Classic packet header, and the
+ * single-use flush state prevents a partial second initial world.
+ */
+class InitialWorldUpdateBatch
+{
+    public:
+        InitialWorldUpdateBatch() : m_hasTransport(false), m_flushAttempted(false), m_sent(false) {}
+
+        UpdateData& Data() { return m_data; }
+        void MarkTransport() { m_hasTransport = true; }
+
+        bool BuildPacket(WorldPacket* packet)
+        {
+            if (m_flushAttempted)
+            {
+                return false;
+            }
+
+            m_flushAttempted = true;
+            return m_data.BuildPacket(packet, m_hasTransport);
+        }
+
+        void MarkSent()
+        {
+            m_data.Clear();
+            m_sent = true;
+        }
+
+        bool FlushAttempted() const { return m_flushAttempted; }
+        bool WasSent() const { return m_sent; }
+
+    private:
+        UpdateData m_data;
+        bool m_hasTransport;
+        bool m_flushAttempted;
+        bool m_sent;
+};
 #endif

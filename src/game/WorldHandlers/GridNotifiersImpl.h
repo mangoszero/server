@@ -40,7 +40,7 @@ template<class T>
 {
     for (typename GridRefManager<T>::iterator iter = m.begin(); iter != m.end(); ++iter)
     {
-        i_camera.UpdateVisibilityOf(iter->getSource(), i_data, i_visibleNow);
+        i_camera.UpdateVisibilityOf(iter->getSource(), Data(), i_visibleNow);
         i_clientGUIDs.erase(iter->getSource()->GetObjectGuid());
     }
 }

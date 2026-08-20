@@ -43,11 +43,20 @@ namespace MaNGOS
     struct VisibleNotifier
     {
         Camera& i_camera;
+        // Non-null only for the login owner's camera; its visibility sweep
+        // appends to the packet already holding self and transport blocks.
+        InitialWorldUpdateBatch* i_initialBatch;
         UpdateData i_data;
         GuidSet i_clientGUIDs;
         std::set<WorldObject*> i_visibleNow;
 
-        explicit VisibleNotifier(Camera& c) : i_camera(c), i_clientGUIDs(c.GetOwner()->m_clientGUIDs) {}
+        explicit VisibleNotifier(Camera& c, InitialWorldUpdateBatch* batch = NULL)
+            : i_camera(c), i_initialBatch(batch), i_clientGUIDs(c.GetOwner()->m_clientGUIDs) {}
+        UpdateData& Data() { return i_initialBatch ? i_initialBatch->Data() : i_data; }
+        bool BuildPacket(WorldPacket* packet)
+        {
+            return i_initialBatch ? i_initialBatch->BuildPacket(packet) : i_data.BuildPacket(packet);
+        }
         template<class T> void Visit(GridRefManager<T>& m);
         void Visit(CameraMapType& /*m*/) {}
         void Notify(void);
