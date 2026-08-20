@@ -17,6 +17,7 @@
 #include "../modules/Bots/playerbot/PlayerbotSecurityPolicy.h"
 
 using ai::GetPlayerbotCommandSecurityLevel;
+using ai::GetPlayerbotDispatchedCommandSecurityLevel;
 using ai::GetPlayerOwnedBotSecurityLevel;
 
 TEST(PlayerbotSecurityPolicyWhoNeedsOnlyTalkPermission)
@@ -80,6 +81,16 @@ TEST(PlayerbotSecurityPolicyComposesActorAndCommandPermissions)
         CHECK_EQ(actual >= GetPlayerbotCommandSecurityLevel("follow"), actor.canFollow);
         CHECK_EQ(actual >= GetPlayerbotCommandSecurityLevel("sell"), actor.canSell);
     }
+}
+
+TEST(PlayerbotSecurityPolicyAuthorizesTheRaidWarningCommandThatWillRun)
+{
+    CHECK_EQ(GetPlayerbotDispatchedCommandSecurityLevel("follow Bot", false),
+             PLAYERBOT_SECURITY_ALLOW_GROUP);
+    CHECK_EQ(GetPlayerbotDispatchedCommandSecurityLevel("follow Bot", true),
+             PLAYERBOT_SECURITY_ALLOW_ALL);
+    CHECK_EQ(GetPlayerbotDispatchedCommandSecurityLevel("who Bot", true),
+             PLAYERBOT_SECURITY_ALLOW_ALL);
 }
 
 TEST(PlayerbotSecurityPolicyOwnerKeepsFullPermission)

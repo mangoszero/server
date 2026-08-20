@@ -34,6 +34,18 @@ namespace ai
         return PLAYERBOT_SECURITY_ALLOW_ALL;
     }
 
+    inline PlayerbotSecurityLevel GetPlayerbotDispatchedCommandSecurityLevel(
+        std::string const& command, bool dispatchesRaidWarning)
+    {
+        // Named raid warnings are converted to the fixed "warning" trigger, which resets
+        // the bot and enables its runaway strategy. Authorize that command, not its text.
+        if (dispatchesRaidWarning)
+        {
+            return GetPlayerbotCommandSecurityLevel("warning");
+        }
+        return GetPlayerbotCommandSecurityLevel(command);
+    }
+
     inline PlayerbotSecurityLevel GetPlayerOwnedBotSecurityLevel(bool isMaster, bool sameSubgroup)
     {
         if (isMaster)
