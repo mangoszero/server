@@ -101,9 +101,9 @@ string(FIND "${UPDATE_SESSIONS_BODY}" "pSession->UpdateWarden(diff)"
 string(FIND "${UPDATE_SESSIONS_BODY}" "pSession->Update(updater)"
     PACKET_UPDATE_AT)
 if(WARDEN_CLOCK_AT EQUAL -1 OR PACKET_UPDATE_AT EQUAL -1 OR
-    WARDEN_CLOCK_AT GREATER_EQUAL PACKET_UPDATE_AT)
+    PACKET_UPDATE_AT GREATER_EQUAL WARDEN_CLOCK_AT)
     message(FATAL_ERROR
-        "Warden boundary: elapsed time must be charged before packet handlers can reset a deadline")
+        "Warden boundary: queued packets must advance Warden before elapsed time is charged")
 endif()
 require_count("${WORLD_CPP}" "OnAuthenticatedAdmission[ \\t]*\\(" 1
     "immediate AUTH_OK path must admit exactly once")
