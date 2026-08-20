@@ -362,13 +362,17 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         // GetFreeBots both read 'add' rows straight from the database, so without this a
         // bot banked earlier is invisible to the roster and simultaneously visible in the
         // free pool. An entry is dropped when one of those two queries returns the guid,
-        // which is the write proving it landed, and after PendingAddMaxPasses regardless so
-        // that an INSERT which never lands cannot pin a guid indefinitely.
-        std::map<uint32, int> m_pendingAddGuids;
-        // Passes an unobserved entry survives. Deliberately not one: a pass that runs over
-        // its budget reschedules at RandomBotCatchupInterval, one second by default, which
-        // is precisely the startup flood that fills the delay thread's queue deepest.
-        static const int PendingAddMaxPasses = 5;
+        // which is the write proving it landed, and after PendingAddMaxMs regardless so that
+        // an INSERT which never lands cannot pin a guid indefinitely. Keyed by the time it
+        // was banked, not the pass, because passes are not a fixed length: a pass that runs
+        // over its budget reschedules at RandomBotCatchupInterval rather than
+        // RandomBotUpdateInterval, so counting passes gives the least headroom during the
+        // startup flood, which is when the delay thread's queue is deepest and the headroom
+        // is most needed.
+        std::map<uint32, uint32> m_pendingAddGuids;
+        // Generous, because the only cost of holding an entry too long is that a guid whose
+        // INSERT genuinely failed keeps its roster injection for a minute.
+        static const uint32 PendingAddMaxMs = 60000;
         // Both caches are read from map worker threads -- PlayerbotAI::UpdateAI, the trade
         // and grind values, AiFactory -- and written from the world thread. Concurrent
         // access to std::map/unordered_map is undefined behaviour rather than a stale

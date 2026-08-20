@@ -1585,13 +1585,14 @@ list<uint32> RandomPlayerbotMgr::GetBots()
     // that learns a write has landed, so it retires the entries it can see.
     {
         std::lock_guard<std::mutex> guard(m_cacheMutex);
-        for (std::map<uint32, int>::iterator i = m_pendingAddGuids.begin(); i != m_pendingAddGuids.end(); )
+        const uint32 now = getMSTime();
+        for (std::map<uint32, uint32>::iterator i = m_pendingAddGuids.begin(); i != m_pendingAddGuids.end(); )
         {
             if (find(bots.begin(), bots.end(), i->first) != bots.end())
             {
                 m_pendingAddGuids.erase(i++);
             }
-            else if (processTicks - i->second > PendingAddMaxPasses)
+            else if (getMSTimeDiff(i->second, now) > PendingAddMaxMs)
             {
                 m_pendingAddGuids.erase(i++);
             }
@@ -1656,13 +1657,14 @@ vector<uint32> RandomPlayerbotMgr::GetFreeBots(bool alliance)
     // against the roster target. Retires observed entries, as GetBots does.
     {
         std::lock_guard<std::mutex> guard(m_cacheMutex);
-        for (std::map<uint32, int>::iterator i = m_pendingAddGuids.begin(); i != m_pendingAddGuids.end(); )
+        const uint32 now = getMSTime();
+        for (std::map<uint32, uint32>::iterator i = m_pendingAddGuids.begin(); i != m_pendingAddGuids.end(); )
         {
             if (bots.find(i->first) != bots.end())
             {
                 m_pendingAddGuids.erase(i++);
             }
-            else if (processTicks - i->second > PendingAddMaxPasses)
+            else if (getMSTimeDiff(i->second, now) > PendingAddMaxMs)
             {
                 m_pendingAddGuids.erase(i++);
             }
@@ -1997,11 +1999,11 @@ uint32 RandomPlayerbotMgr::SetEventValue(uint32 bot, string event, uint32 value,
 
             // The statements above are asynchronous, and GetBots and GetFreeBots both read
             // 'add' rows back from the database inside the same pass. Record what was
-            // banked, and in which pass, so those two can see it before the delay thread
-            // drains and can retire the entry once they observe the write for themselves.
+            // banked, and when, so those two can see it before the delay thread drains and
+            // can retire the entry once they observe the write for themselves.
             if (value)
             {
-                m_pendingAddGuids[bot] = processTicks;
+                m_pendingAddGuids[bot] = getMSTime();
             }
             else
             {
