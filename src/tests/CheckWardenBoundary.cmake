@@ -107,13 +107,14 @@ if(WARDEN_CLOCK_AT EQUAL -1 OR PACKET_UPDATE_AT EQUAL -1 OR
 endif()
 require_count("${WORLD_CPP}" "OnAuthenticatedAdmission[ \\t]*\\(" 1
     "immediate AUTH_OK path must admit exactly once")
+require_count("${WORLD_CPP}" "SendPendingAddonInfo[ \\t]*\\(" 0
+    "authentication paths must defer addon response until character enumeration")
 string(FIND "${WORLD_CPP}" "packet << uint8(AUTH_OK)" AUTH_OK_AT)
-string(FIND "${WORLD_CPP}" "s->SendPendingAddonInfo()" ADDON_AT REVERSE)
 string(FIND "${WORLD_CPP}" "s->OnAuthenticatedAdmission()" ADMISSION_AT)
-if(AUTH_OK_AT EQUAL -1 OR ADDON_AT EQUAL -1 OR ADMISSION_AT EQUAL -1 OR
-    ADDON_AT LESS_EQUAL AUTH_OK_AT OR ADMISSION_AT LESS_EQUAL ADDON_AT)
+if(AUTH_OK_AT EQUAL -1 OR ADMISSION_AT EQUAL -1 OR
+    ADMISSION_AT LESS_EQUAL AUTH_OK_AT)
     message(FATAL_ERROR
-        "Warden boundary: immediate admission must follow AUTH_OK and addon response")
+        "Warden boundary: immediate admission must follow AUTH_OK")
 endif()
 
 require_count("${SESSION_CPP}" "m_warden->Start[ \\t]*\\(" 1
@@ -348,6 +349,31 @@ if(CHAR_LIST_SEND_AT EQUAL -1 OR CHAR_ENUM_START_AT EQUAL -1 OR
 endif()
 
 string(FIND "${CHARACTER_HANDLER}"
+    "void WorldSession::HandleCharEnumOpcode" CHAR_ENUM_OPCODE_BEGIN)
+string(FIND "${CHARACTER_HANDLER}"
+    "void WorldSession::HandleCharCreateOpcode" CHAR_ENUM_OPCODE_END)
+if(CHAR_ENUM_OPCODE_BEGIN EQUAL -1 OR CHAR_ENUM_OPCODE_END EQUAL -1 OR
+    CHAR_ENUM_OPCODE_END LESS_EQUAL CHAR_ENUM_OPCODE_BEGIN)
+    message(FATAL_ERROR
+        "Warden boundary: cannot locate character-enum opcode body")
+endif()
+math(EXPR CHAR_ENUM_OPCODE_LENGTH
+    "${CHAR_ENUM_OPCODE_END} - ${CHAR_ENUM_OPCODE_BEGIN}")
+string(SUBSTRING "${CHARACTER_HANDLER}" ${CHAR_ENUM_OPCODE_BEGIN}
+    ${CHAR_ENUM_OPCODE_LENGTH} CHAR_ENUM_OPCODE_BODY)
+require_count("${CHAR_ENUM_OPCODE_BODY}" "SendPendingAddonInfo[ \\t]*\\(" 1
+    "character-enum request must send deferred addon response exactly once")
+string(FIND "${CHAR_ENUM_OPCODE_BODY}" "SendPendingAddonInfo()"
+    CHAR_ENUM_ADDON_AT)
+string(FIND "${CHAR_ENUM_OPCODE_BODY}" "CharacterDatabase.AsyncPQuery"
+    CHAR_ENUM_QUERY_AT)
+if(CHAR_ENUM_ADDON_AT EQUAL -1 OR CHAR_ENUM_QUERY_AT EQUAL -1 OR
+    CHAR_ENUM_QUERY_AT LESS_EQUAL CHAR_ENUM_ADDON_AT)
+    message(FATAL_ERROR
+        "Warden boundary: addon response must precede asynchronous character enumeration")
+endif()
+
+string(FIND "${CHARACTER_HANDLER}"
     "void WorldSession::HandlePlayerLoginOpcode" PLAYER_LOGIN_BEGIN)
 string(FIND "${CHARACTER_HANDLER}"
     "void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)"
@@ -361,17 +387,23 @@ string(SUBSTRING "${CHARACTER_HANDLER}" ${PLAYER_LOGIN_BEGIN}
     ${PLAYER_LOGIN_LENGTH} PLAYER_LOGIN_BODY)
 require_count("${PLAYER_LOGIN_BODY}" "StartWardenBootstrap[ \\t]*\\(" 1
     "player-login path must retain one non-gating bootstrap safety net")
+require_count("${PLAYER_LOGIN_BODY}" "SendPendingAddonInfo[ \\t]*\\(" 1
+    "player-login path must retain one addon-response safety net")
 string(FIND "${PLAYER_LOGIN_BODY}" "PlayerLoading()" PLAYER_LOGIN_GUARD_AT)
+string(FIND "${PLAYER_LOGIN_BODY}" "SendPendingAddonInfo()"
+    PLAYER_LOGIN_ADDON_AT)
 string(FIND "${PLAYER_LOGIN_BODY}" "StartWardenBootstrap()"
     PLAYER_LOGIN_START_AT)
 string(FIND "${PLAYER_LOGIN_BODY}" "m_playerLoading = true"
     PLAYER_LOADING_SET_AT)
-if(PLAYER_LOGIN_GUARD_AT EQUAL -1 OR PLAYER_LOGIN_START_AT EQUAL -1 OR
-    PLAYER_LOADING_SET_AT EQUAL -1 OR
+if(PLAYER_LOGIN_GUARD_AT EQUAL -1 OR PLAYER_LOGIN_ADDON_AT EQUAL -1 OR
+    PLAYER_LOGIN_START_AT EQUAL -1 OR PLAYER_LOADING_SET_AT EQUAL -1 OR
+    PLAYER_LOGIN_ADDON_AT LESS_EQUAL PLAYER_LOGIN_GUARD_AT OR
+    PLAYER_LOGIN_ADDON_AT GREATER_EQUAL PLAYER_LOGIN_START_AT OR
     PLAYER_LOGIN_START_AT LESS_EQUAL PLAYER_LOGIN_GUARD_AT OR
     PLAYER_LOGIN_START_AT GREATER_EQUAL PLAYER_LOADING_SET_AT)
     message(FATAL_ERROR
-        "Warden boundary: login safety net must follow the duplicate guard and never gate loading")
+        "Warden boundary: login safety nets must follow the duplicate guard and never gate loading")
 endif()
 
 string(FIND "${SESSION_MGR}" "void World::AddQueuedSession" ADD_QUEUE_BEGIN)

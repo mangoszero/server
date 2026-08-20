@@ -396,6 +396,10 @@ void WorldSession::HandleCharEnum(QueryResult* result)
  */
 void WorldSession::HandleCharEnumOpcode(WorldPacket & /*recv_data*/)
 {
+    // Retail answers the client's enum request with the queued addon metadata
+    // before the asynchronous character-list response, not alongside AUTH_OK.
+    SendPendingAddonInfo();
+
     /// get all the data necessary for loading all characters (along with their pets) on the account
     uint32 accountId = GetAccountId();
     CharacterDatabase.AsyncPQuery([accountId](QueryResult* result)
@@ -713,8 +717,9 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recv_data)
         return;
     }
 
-    // Do not gate login on Warden. This idempotent safety net covers clients
-    // that skip character enumeration while leaving normal retail order intact.
+    // Do not gate login on addon info or Warden. These idempotent safety nets
+    // cover clients that skip character enumeration.
+    SendPendingAddonInfo();
     StartWardenBootstrap();
 
     m_playerLoading = true;
