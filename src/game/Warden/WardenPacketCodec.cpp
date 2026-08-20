@@ -333,7 +333,7 @@ warden::CheckPlanValidation AnalyzeCheckPlan(warden::CheckPlan const& plan,
 
     if (candidate.budget.maximumResultBytes >
         MaxTransportResultBodyBytes)
-        return warden::CheckPlanValidation::ResultBodyTooLarge;
+        return warden::CheckPlanValidation::TransportResultBodyTooLarge;
 
     output = std::move(candidate);
     return warden::CheckPlanValidation::Valid;
@@ -454,6 +454,8 @@ char const* ToString(CheckPlanValidation validation)
         case CheckPlanValidation::StringTableTooLarge: return "StringTableTooLarge";
         case CheckPlanValidation::RequestBodyTooLarge: return "RequestBodyTooLarge";
         case CheckPlanValidation::ResultBodyTooLarge: return "ResultBodyTooLarge";
+        case CheckPlanValidation::TransportResultBodyTooLarge:
+            return "TransportResultBodyTooLarge";
     }
     return "Unknown";
 }

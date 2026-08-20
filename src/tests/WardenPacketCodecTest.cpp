@@ -1158,8 +1158,12 @@ TEST(WardenPacket_enforces_client_transport_result_body_budget)
 
     std::get<warden::MemCheckProfile>(
         plan.checks.back().payload).expectedBytes.push_back(uint8(0xCC));
-    CHECK(warden::InspectCheckPlan(plan, budget) ==
-        warden::CheckPlanValidation::ResultBodyTooLarge);
+    warden::CheckPlanValidation const validation =
+        warden::InspectCheckPlan(plan, budget);
+    CHECK(validation ==
+        warden::CheckPlanValidation::TransportResultBodyTooLarge);
+    CHECK(std::strcmp(warden::ToString(validation),
+        "TransportResultBodyTooLarge") == 0);
 }
 
 TEST(WardenPacket_failed_inspection_and_encoding_leave_outputs_unchanged)
