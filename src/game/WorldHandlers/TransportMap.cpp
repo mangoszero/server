@@ -25,6 +25,7 @@
 
 #include "Utilities/MathDefines.h"
 #include "TransportMap.h"
+#include "InitialWorldEntry.h"
 
 #include <algorithm>
 #include <cmath>
@@ -401,7 +402,7 @@ std::optional<Position> TransportMap::FreeSpotNear(WorldObject const& master, fl
 
 /* ******************************** Who is aboard ************************************** */
 
-bool TransportMap::Add(Player* passenger)
+bool TransportMap::Add(Player* passenger, InitialWorldEntryHook* initialEntry)
 {
     // WHERE HE REALLY STANDS. The wire calls it an offset; the moment it is ours it is a
     // position on this map, composed with nothing.
@@ -416,6 +417,13 @@ bool TransportMap::Add(Player* passenger)
     EnsureGridLoadedAtEnter(cell, passenger);
     PromoteEnvelopeNeighboursToFull(cell.GridX(), cell.GridY());
     passenger->AddToWorld();
+
+    // As on an ordinary map, derive the client-visible world anchor only after
+    // membership commits and before vessel/passenger blocks are accumulated.
+    if (initialEntry)
+    {
+        initialEntry->AfterAddToWorld(*passenger);
+    }
 
     // Match ordinary map login: only the passenger's own initial camera may
     // coalesce this data. Seam crossings keep their established send path.
@@ -516,7 +524,7 @@ void TransportMap::Embark(Player* passenger)
                      DescribeSpatially(passenger).c_str());
 
     passenger->GetMap()->Remove(passenger, false);
-    Add(passenger);
+    Add(passenger, nullptr);
 
     // His minions come with him, NOW. UpdateMinions reconciles this once per tick and is
     // the safety net for the half-dozen other ways one arrives -- but a pet that waits a

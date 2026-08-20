@@ -254,8 +254,11 @@ void Player::UpdateArea(uint32 newArea)
  *
  * @param newZone The new zone identifier.
  * @param newArea The new area identifier.
+ * @param sendInitialWorldStates False when the entry hook already emitted the
+ *        packet before the initial object batch; all other zone side effects
+ *        still run.
  */
-void Player::UpdateZone(uint32 newZone, uint32 newArea)
+void Player::UpdateZone(uint32 newZone, uint32 newArea, bool sendInitialWorldStates)
 {
     /* If we're trying to update into a zone that doesn't exist, just return */
     AreaTableEntry const* zone = GetAreaEntryByAreaID(newZone);
@@ -275,7 +278,10 @@ void Player::UpdateZone(uint32 newZone, uint32 newArea)
         sRandomPlayerbotMgr.OnPlayerZoneChange(this, newZone);
 #endif
 
-        SendInitWorldStates(newZone);                       // only if really enters to new zone, not just area change, works strange...
+        if (sendInitialWorldStates)
+        {
+            SendInitWorldStates(newZone);                   // only if really enters to new zone, not just area change, works strange...
+        }
 
         if (sWorld.getConfig(CONFIG_BOOL_WEATHER))
         {

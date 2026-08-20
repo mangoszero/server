@@ -40,13 +40,14 @@ set(GAME_ROOT "${SOURCE_ROOT}/src/game")
 file(READ "${GAME_ROOT}/WorldHandlers/UpdateData.h" UPDATE_DATA_H)
 file(READ "${GAME_ROOT}/WorldHandlers/Map.cpp" MAP_CPP)
 file(READ "${GAME_ROOT}/WorldHandlers/TransportMap.cpp" TRANSPORT_MAP_CPP)
+file(READ "${GAME_ROOT}/WorldHandlers/MovementHandler.cpp" MOVEMENT_HANDLER_CPP)
 file(READ "${GAME_ROOT}/Object/Camera.h" CAMERA_H)
 file(READ "${GAME_ROOT}/WorldHandlers/GridNotifiers.cpp" GRID_NOTIFIERS_CPP)
 
 require_count(UPDATE_DATA_H "class[ \\t]+InitialWorldUpdateBatch" 1
     "one login-scoped batch owner must carry update data and transport state")
 
-string(FIND "${MAP_CPP}" "bool Map::Add(Player* player)" MAP_ADD_BEGIN)
+string(FIND "${MAP_CPP}" "bool Map::Add(Player* player" MAP_ADD_BEGIN)
 if(MAP_ADD_BEGIN EQUAL -1)
     message(FATAL_ERROR "Login object batching: cannot locate Map::Add(Player*)")
 endif()
@@ -63,6 +64,13 @@ require_count(MAP_ADD_BODY
     "a redirected login camera must retain the legacy multi-packet path")
 require_count(MAP_ADD_BODY "InitialWorldUpdateBatch" 1
     "ordinary-map login must own exactly one initial batch")
+require_count(MAP_ADD_BODY "AfterAddToWorld" 1
+    "ordinary-map entry must invoke the initial-world hook exactly once")
+require_before(MAP_ADD_BODY "player->AddToWorld()" "initialEntry->AfterAddToWorld"
+    "ordinary-map hook must run after committed world membership")
+require_before(MAP_ADD_BODY "initialEntry->AfterAddToWorld"
+    "std::optional<InitialWorldUpdateBatch>"
+    "ordinary-map hook must run before initial batch construction")
 require_before(MAP_ADD_BODY "SendInitSelf(player" "SendInitTransports(player"
     "self and inventory must precede map-wide vessels")
 require_before(MAP_ADD_BODY "SendInitTransports(player" "Event_AddedToWorld("
@@ -72,7 +80,7 @@ require_before(MAP_ADD_BODY "Event_AddedToWorld(" "UpdateObjectVisibility(player
 require_count(MAP_ADD_BODY "return[ \\t]+true" 1
     "batch failure must not skip balanced map and instance enter hooks")
 
-string(FIND "${TRANSPORT_MAP_CPP}" "bool TransportMap::Add(Player* passenger)"
+string(FIND "${TRANSPORT_MAP_CPP}" "bool TransportMap::Add(Player* passenger"
     TRANSPORT_ADD_BEGIN)
 string(FIND "${TRANSPORT_MAP_CPP}" "void TransportMap::Embark(Player* passenger)"
     TRANSPORT_ADD_END)
@@ -91,6 +99,14 @@ require_count(TRANSPORT_ADD_BODY
     "a redirected transport login camera must retain the legacy multi-packet path")
 require_count(TRANSPORT_ADD_BODY "InitialWorldUpdateBatch" 1
     "transport-map login must own exactly one initial batch")
+require_count(TRANSPORT_ADD_BODY "AfterAddToWorld" 1
+    "transport-map entry must invoke the initial-world hook exactly once")
+require_before(TRANSPORT_ADD_BODY "passenger->AddToWorld()"
+    "initialEntry->AfterAddToWorld"
+    "transport-map hook must run after committed world membership")
+require_before(TRANSPORT_ADD_BODY "initialEntry->AfterAddToWorld"
+    "std::optional<InitialWorldUpdateBatch>"
+    "transport-map hook must run before initial batch construction")
 require_before(TRANSPORT_ADD_BODY "BuildCreateUpdateBlockForPlayer"
     "Event_AddedToWorld("
     "vessel and passenger blocks must precede the owner visibility sweep")
@@ -109,6 +125,8 @@ require_count(TRANSPORT_MAP_CPP
 require_count(MAP_CPP
     "TransportMap::AppendVesselCreateBlocks[ \\t]*\\(" 2
     "both normal-map transport sources must append into the shared login batch")
+require_count(MOVEMENT_HANDLER_CPP "InitialWorldEntry" 0
+    "far worldport handling must remain on the legacy no-hook path")
 
 require_count(CAMERA_H
     "GetOwner[ \\t]*\\([ \\t]*\\)[ \\t]*==[ \\t]*batchOwner" 1

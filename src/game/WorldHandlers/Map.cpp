@@ -49,6 +49,7 @@
 #include <set>
 #include "Utilities/MathDefines.h"
 #include "Map.h"
+#include "InitialWorldEntry.h"
 #include "GameObjectModel.h"
 #include "MapManager.h"
 #include "Player.h"
@@ -704,9 +705,10 @@ void Map::ForceLoadGrid(float x, float y)
  * @brief Adds a player to the map and initializes its visible world state.
  *
  * @param player The player entering the map.
+ * @param initialEntry Optional initial-login hook; ordinary map entry passes null.
  * @return Always true after the player has been added.
  */
-bool Map::Add(Player* player)
+bool Map::Add(Player* player, InitialWorldEntryHook* initialEntry)
 {
     player->GetMapRef().link(this, player);
     player->SetMap(this);
@@ -717,6 +719,13 @@ bool Map::Add(Player* player)
     EnsureGridLoadedAtEnter(cell, player);
     PromoteEnvelopeNeighboursToFull(cell.GridX(), cell.GridY());
     player->AddToWorld();
+
+    // The hook needs committed membership to derive the correct world anchor,
+    // but must finish its preamble before any object block enters the batch.
+    if (initialEntry)
+    {
+        initialEntry->AfterAddToWorld(*player);
+    }
 
     // Coalesce only a genuine login using the player's own camera. Redirected
     // cameras and non-login map entry retain the established packet path.
@@ -2489,7 +2498,7 @@ void DungeonMap::InitVisibilityDistance()
 /**
  * Do map specific checks and add the player to the map if successful.
  */
-bool DungeonMap::Add(Player* player)
+bool DungeonMap::Add(Player* player, InitialWorldEntryHook* initialEntry)
 {
     // TODO: Not sure about checking player level: already done in HandleAreaTriggerOpcode
     // GMs still can teleport player in instance.
@@ -2612,7 +2621,7 @@ bool DungeonMap::Add(Player* player)
     m_unloadWhenEmpty = false;
 
     // this will acquire the same mutex so it can not be in the previous block
-    Map::Add(player);
+    Map::Add(player, initialEntry);
 
     return true;
 }
@@ -2875,7 +2884,7 @@ bool BattleGroundMap::CanEnter(Player* player)
  * @param player The player entering the battleground.
  * @return true if the player was added; otherwise false.
  */
-bool BattleGroundMap::Add(Player* player)
+bool BattleGroundMap::Add(Player* player, InitialWorldEntryHook* initialEntry)
 {
     if (!CanEnter(player))
     {
@@ -2885,7 +2894,7 @@ bool BattleGroundMap::Add(Player* player)
     // reset instance validity, battleground maps do not homebind
     player->m_InstanceValid = true;
 
-    return Map::Add(player);
+    return Map::Add(player, initialEntry);
 }
 
 /**

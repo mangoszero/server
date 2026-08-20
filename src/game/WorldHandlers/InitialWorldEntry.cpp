@@ -1,0 +1,90 @@
+/**
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * MaNGOS is a full featured server for World of Warcraft, supporting
+ * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
+ *
+ * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * World of Warcraft, and all World of Warcraft or Warcraft art, images,
+ * and lore are copyrighted by Blizzard Entertainment, Inc.
+ */
+
+#include "InitialWorldEntry.h"
+
+#include "DBCStores.h"
+#include "LoginEffectPackets.h"
+#include "Player.h"
+#include "WorldPacket.h"
+#include "WorldSession.h"
+
+void InitialWorldEntryHook::AfterAddToWorld(Player& player)
+{
+    // Map admission supplies the authoritative world/transport anchor. Running
+    // sooner would derive zone state from the map the player is leaving.
+    if (!player.IsInWorld() || m_context)
+    {
+        return;
+    }
+
+    InitialWorldEntryContext context;
+    float anchorX = 0.0f;
+    float anchorY = 0.0f;
+    float anchorZ = 0.0f;
+    player.GetWorldAnchor(context.anchorMapId, anchorX, anchorY, anchorZ);
+    player.GetZoneAndAreaAboardOrHere(context.zoneId, context.areaId);
+
+    // These packets must precede the single initial object update; later login
+    // work consumes m_context instead of sending world states a second time.
+    for (InitialWorldEntryPacket action :
+         InitialWorldEntryPacketOrder(m_cinematicSequenceId != 0))
+    {
+        switch (action)
+        {
+            case InitialWorldEntryPacket::InitWorldStates:
+                if (sMapStore.LookupEntry(context.anchorMapId) &&
+                    GetAreaEntryByAreaID(context.zoneId))
+                {
+                    player.SendInitWorldStates(
+                        context.anchorMapId, context.zoneId);
+                    context.initialWorldStatesSent = true;
+                }
+                break;
+            case InitialWorldEntryPacket::TriggerCinematic:
+                player.SendCinematicStart(m_cinematicSequenceId);
+                player.setCinematic(1);
+                context.cinematicStarted = true;
+                break;
+            case InitialWorldEntryPacket::ExplorationExperience:
+                if (context.areaId && GetAreaEntryByAreaID(context.areaId))
+                {
+                    player.SendExplorationExperience(context.areaId, 0);
+                }
+                break;
+            case InitialWorldEntryPacket::LoginEffectResult:
+            {
+                WorldPacket packet = LoginEffectPackets::BuildCastResult();
+                player.GetSession()->SendPacket(&packet);
+                break;
+            }
+            case InitialWorldEntryPacket::LoginTimeSpeed:
+                player.SendLoginTimeSpeed();
+                break;
+        }
+    }
+
+    m_context = context;
+}

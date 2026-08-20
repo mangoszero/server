@@ -101,7 +101,7 @@ class TransportMap : public Map
          * ordinary visibility pass at the end, because on this map they are ordinary objects
          * in ordinary cells.
          */
-        bool Add(Player* passenger) override;
+        bool Add(Player* passenger, InitialWorldEntryHook* initialEntry = nullptr) override;
 
         TransportMap* AsTransport() override { return this; }
         TransportMap const* AsTransport() const override { return this; }

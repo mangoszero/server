@@ -56,6 +56,8 @@
 #include "World.h"
 #include "ObjectMgr.h"
 #include "Player.h"
+#include "DBCStores.h"
+#include "InitialWorldEntry.h"
 #include "CinematicFlyover.h"
 #include "Guild.h"
 #include "GuildMgr.h"
@@ -923,22 +925,29 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         pCurrChar->SendCorpseReclaimDelay(true);
     }
 
-    /** Sends information required before the player can be added to the map
-     * TODO: See if we can send information about game objects here (prevent alt+f4 through object) */
-    pCurrChar->SendInitialPacketsBeforeAddToMap();
-
-    /* If it's the player's first login, send a cinematic */
-    bool isFirstLogin = !pCurrChar->getCinematic();
-    if (isFirstLogin)
+    uint32 cinematicSequenceId = 0;
+    // Validate the sequence now, but do not mark or emit the cinematic until
+    // map admission succeeds and the entry hook owns the wire position.
+    if (!pCurrChar->getCinematic())
     {
-        pCurrChar->setCinematic(1);
-
-        /* Set the start location to the player's racial starting point */
-        if (ChrRacesEntry const* rEntry = sChrRacesStore.LookupEntry(pCurrChar->getRace()))
+        if (ChrRacesEntry const* race =
+                sChrRacesStore.LookupEntry(pCurrChar->getRace()))
         {
-            pCurrChar->SendCinematicStart(rEntry->CinematicSequence);
+            if (race->CinematicSequence &&
+                sCinematicSequencesStore.LookupEntry(race->CinematicSequence))
+            {
+                cinematicSequenceId = race->CinematicSequence;
+            }
         }
     }
+    // The hook owns packets placed after committed map membership but before
+    // the first consolidated object update.
+    InitialWorldEntryHook initialEntry(cinematicSequenceId);
+
+    /** Sends information required before the player can be added to the map
+     * TODO: See if we can send information about game objects here (prevent alt+f4 through object) */
+    // Time/speed is deferred into the hook's pre-object-batch position.
+    pCurrChar->SendInitialPacketsBeforeAddToMap(true);
 
     uint32 miscRequirement = 0;
     AreaLockStatus lockStatus = AREA_LOCKSTATUS_OK;
@@ -957,7 +966,8 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     }
 
     /* This code is run if we can not add the player to the map for some reason */
-    if (lockStatus != AREA_LOCKSTATUS_OK || !pCurrChar->BoardingMap()->Add(pCurrChar))
+    if (lockStatus != AREA_LOCKSTATUS_OK ||
+        !pCurrChar->BoardingMap()->Add(pCurrChar, &initialEntry))
     {
         /* Attempt to find an areatrigger to teleport the player for us */
         AreaTrigger const* at = sObjectMgr.GetGoBackTrigger(pCurrChar->GetMapId());
@@ -973,23 +983,27 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         }
     }
 
+    InitialWorldEntryContext const* entryContext = initialEntry.GetContext();
+    // Admission can fail without starting a far teleport. Preserve the legacy
+    // time packet when no hook had a chance to emit it.
+    if (!entryContext && !pCurrChar->IsBeingTeleportedFar())
+    {
+        pCurrChar->SendLoginTimeSpeed();
+    }
+
     sPlayerRegistry.Add(pCurrChar);
     DEBUG_LOG("Player %s added to map %i", pCurrChar->GetName(), pCurrChar->GetMapId());
 
     /* Send packets that must be sent only after player is added to the map */
-    pCurrChar->SendInitialPacketsAfterAddToMap();
+    pCurrChar->SendInitialPacketsAfterAddToMap(entryContext);
 
-    /* If it's the player's first login, create cinematic flyover if enabled */
-    /* Note: isFirstLogin was captured before mutating getCinematic() (line 807) */
-    /* We create the flyover after the player is fully in-world (per final review) */
-    if (isFirstLogin && sConfig.GetBoolDefault("Cinematic.Flyover.Enable", false))
+    /* Create a flyover only for the cinematic actually emitted by the entry hook. */
+    if (entryContext && entryContext->cinematicStarted &&
+        sConfig.GetBoolDefault("Cinematic.Flyover.Enable", false))
     {
-        if (sChrRacesStore.LookupEntry(pCurrChar->getRace()))
-        {
-            pCurrChar->SetCinematicFlyover(
-                std::make_unique<CinematicFlyover>(pCurrChar,
-                                                   pCurrChar->getRace()));
-        }
+        pCurrChar->SetCinematicFlyover(
+            std::make_unique<CinematicFlyover>(pCurrChar,
+                                               pCurrChar->getRace()));
     }
 
     /* Mark player as online in the database */

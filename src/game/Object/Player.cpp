@@ -3870,9 +3870,18 @@ void Player::SendUpdateWorldState(uint32 Field, uint32 Value)
  */
 void Player::SendInitWorldStates(uint32 zoneid)
 {
+    SendInitWorldStates(GetMapId(), zoneid);
+}
+
+/**
+ * Sends initial world states for an explicit client-visible map anchor.
+ * Transport passengers live on a deck map internally while the client still
+ * renders the world map sailed by the vessel.
+ */
+void Player::SendInitWorldStates(uint32 mapid, uint32 zoneid)
+{
     // data depends on zoneid/mapid...
     BattleGround* bg = GetBattleGround();
-    uint32 mapid = GetMapId();
 
     DEBUG_LOG("Sending SMSG_INIT_WORLD_STATES to Map:%u, Zone: %u", mapid, zoneid);
 
@@ -5317,8 +5326,13 @@ void Player::SetComboPoints()
 
 
 
-/* Called by WorldSession::HandlePlayerLogin */
-void Player::SendInitialPacketsBeforeAddToMap()
+/**
+ * Sends the map-independent login preamble.
+ *
+ * @param deferLoginTimeSpeed Keep time/speed for the post-admission retail
+ *        ordering instead of sending it from this legacy position.
+ */
+void Player::SendInitialPacketsBeforeAddToMap(bool deferLoginTimeSpeed)
 {
     /** This packet seems useless...
      * TODO: Work out if we need SMSG_SET_REST_START */
@@ -5344,12 +5358,10 @@ void Player::SendInitialPacketsBeforeAddToMap()
     /* Update player's honour information (does not send anything) */
     UpdateHonor();
 
-    const float game_time = 0.01666667f; // Game speed
-
-    data.Initialize(SMSG_LOGIN_SETTIMESPEED, 4 + 4);
-    data << uint32(secsToTimeBitFields(sWorld.GetGameTime()));
-    data << game_time; // Float is 4 bytes here
-    GetSession()->SendPacket(&data);
+    if (!deferLoginTimeSpeed)
+    {
+        SendLoginTimeSpeed();
+    }
 
     // Set fly flag if player is on a taxi to avoid falling to the ground
     if (IsTaxiFlying())
@@ -5361,9 +5373,15 @@ void Player::SendInitialPacketsBeforeAddToMap()
     SetMover(this);
 }
 
-/**
- * @brief Sends map-dependent initialization packets after the player is added to the world.
- */
+/** Isolates SMSG_LOGIN_SETTIMESPEED so entry ordering can defer it unchanged. */
+void Player::SendLoginTimeSpeed()
+{
+    WorldPacket data(SMSG_LOGIN_SETTIMESPEED, 8);
+    data << uint32(secsToTimeBitFields(sWorld.GetGameTime()));
+    data << float(0.01666667f);
+    GetSession()->SendPacket(&data);
+}
+
 /**
  * @brief Where this player is, for the questions the WORLD answers: a graveyard, an area
  *        trigger, anything looked up against terrain the client shipped.
@@ -5511,15 +5529,29 @@ void Player::UpdateLiftMinions()
         CONTROLLED_PET | CONTROLLED_MINIPET | CONTROLLED_GUARDIANS);
 }
 
-void Player::SendInitialPacketsAfterAddToMap()
+/**
+ * Sends map-dependent initialization after committed world entry.
+ *
+ * A non-null context means the entry hook already sent world states and
+ * time/speed before the object batch. Null preserves the legacy teleport path.
+ */
+void Player::SendInitialPacketsAfterAddToMap(InitialWorldEntryContext const* initialEntry)
 {
-    /* Update players zone */
-    uint32 newzone, newarea;
-    GetTerrain()->GetZoneAndAreaId(newzone, newarea, Where().X(), Where().Y(), Where().Z());
-    UpdateZone(newzone, newarea);                           // This calls SendInitWorldStates
+    if (initialEntry)
+    {
+        UpdateZone(initialEntry->zoneId, initialEntry->areaId,
+            !initialEntry->initialWorldStatesSent);
+    }
+    else
+    {
+        /* Update players zone */
+        uint32 newzone, newarea;
+        GetTerrain()->GetZoneAndAreaId(newzone, newarea, Where().X(), Where().Y(), Where().Z());
+        UpdateZone(newzone, newarea);                       // This calls SendInitWorldStates
 
-    /* Login effect spell */
-    CastSpell(this, 836, true);                             // LOGINEFFECT
+        /* Login effect spell */
+        CastSpell(this, 836, true);                         // LOGINEFFECT
+    }
 
     /** Sets aura effects that need to be sent after the player is added to the map
      * We use SendMessageToSet so that it's sent to everyone, including the player
@@ -6936,5 +6968,4 @@ void Player::KnockBackFrom(Unit* target, float horizontalSpeed, float verticalSp
     float angle = this == target ? Where().Facing() + M_PI_F : target->Where().BearingTo(this->Where());
     GetSession()->SendKnockBack(angle, horizontalSpeed, verticalSpeed);
 }
-
 
