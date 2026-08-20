@@ -684,9 +684,9 @@ void PlayerbotAI::HandleCommand(uint32 type, const string& text, Player& fromPla
     // whisper flood from a single message. It now needs TALK, the level the module already
     // uses to mean "may hold a conversation with this bot"; everything else still needs
     // full control.
-    PlayerbotSecurityLevel required = (filtered.find("who") == 0)
-        ? PLAYERBOT_SECURITY_TALK
-        : PLAYERBOT_SECURITY_ALLOW_ALL;
+    // Keep this check after all prefix/filter normalization. The exact filtered string is
+    // queued below; dispatch later resolves one trigger and only separates its parameters.
+    PlayerbotSecurityLevel required = GetPlayerbotCommandSecurityLevel(filtered);
 
     if (!GetSecurity()->CheckLevelFor(required, type != CHAT_MSG_WHISPER, &fromPlayer))
     {
