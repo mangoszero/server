@@ -48,12 +48,7 @@
 #include <thread>
 #endif
 
-#ifdef _WIN32
-#include "ServiceWin32.h"
-extern int m_ServiceStatus;
-#else
-#include "PosixDaemon.h"
-#endif
+#include "Process/Process.h"
 
 #include <chrono>
 #include <string>
@@ -242,12 +237,13 @@ void Master::StartServices()
         1000 * uint32(sConfig.GetIntDefault("MaxCoreStuckTime", 0)))));
 
     // Console last, so its prompt lands after every other start-up line.
-#ifdef _WIN32
+    //
+    // Never in the background, on either platform. A Windows service has no
+    // stdin; a POSIX daemon's stdin is /dev/null, where the first read returns
+    // end-of-file -- and CliService reads end-of-file as "the operator closed
+    // the console" and shuts the world down, seconds after a successful start.
     const bool consoleWanted = sConfig.GetBoolDefault("Console.Enable", true)
-                            && m_ServiceStatus == -1;   // no console in service mode
-#else
-    const bool consoleWanted = sConfig.GetBoolDefault("Console.Enable", true);
-#endif
+                            && !Process::IsRunningInBackground();
     if (consoleWanted)
     {
         m_services.push_back(std::unique_ptr<IService>(
@@ -346,16 +342,20 @@ void Master::WorldLoop()
                 std::chrono::milliseconds(WORLD_SLEEP_CONST - spent));
         }
 
-#ifdef _WIN32
-        if (m_ServiceStatus == 0)               // service stopped
+        // What the service manager asked for, if there is one. Both are false
+        // where there is not, so this needs no #ifdef: on POSIX a stop arrives
+        // as a signal and the handlers in mangosd.cpp already have it.
+        if (Process::StopRequested())
         {
             World::StopNow(SHUTDOWN_EXIT_CODE);
         }
-        while (m_ServiceStatus == 2)            // service paused
+
+        // Stalled, not spinning. A stop arriving while paused clears the pause
+        // flag as well, so this cannot swallow the shutdown.
+        while (Process::IsPaused())
         {
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
-#endif
     }
 
     sLog.outString("World updater stopped.");
@@ -396,9 +396,11 @@ int Master::Run()
 
     sWorld.SetInitialWorldSettings();
 
-#ifndef _WIN32
-    detachDaemon();
-#endif
+    // The world is loaded and about to start serving. On POSIX this releases the
+    // parent that `-s run` left waiting, so the shell prompt comes back only
+    // once the server is genuinely up; a failure before this point is reported
+    // as a failed command instead. No-op in the foreground and on Windows.
+    Process::ReportReady();
 
     // Publish this realm's flags and the client builds it accepts.
     const uint8 recommendedOrNew =

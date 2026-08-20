@@ -48,13 +48,14 @@
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
 #if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
-#  include <openssl/provider.h>
-#  include "Auth/OpenSSLProvider.h"
+#include <openssl/provider.h>
+#include "Auth/OpenSSLProvider.h"
 #endif
 
 #include "Platform/Define.h"
 #include <cstdio>
 #include <cstring>
+#include <functional>
 #include <string>
 #include "Database/DatabaseEnv.h"
 #include "Config/Config.h"
@@ -70,27 +71,17 @@
 #include "DBCStores.h"
 #include "MassMailMgr.h"
 #include "ScriptMgr.h"
-
+#include "Process/Process.h"
 
 #ifdef _WIN32
-#include "ServiceWin32.h"
 #include "WheatyExceptionReport.h"
-
-char serviceName[]        = "MaNGOS";               // service short name
-char serviceLongName[]    = "MaNGOS World Service"; // service long name
-char serviceDescription[] = "MaNGOS World Service - no description available";
-
-int m_ServiceStatus = -1;
-
-#else
-#include "PosixDaemon.h"
 #endif
 
-DatabaseType WorldDatabase;                                 ///< Accessor to the world database
-DatabaseType CharacterDatabase;                             ///< Accessor to the character database
-DatabaseType LoginDatabase;                                 ///< Accessor to the realm/login database
+DatabaseType WorldDatabase;     ///< Accessor to the world database
+DatabaseType CharacterDatabase; ///< Accessor to the character database
+DatabaseType LoginDatabase;     ///< Accessor to the realm/login database
 
-uint32 realmID = 0;                                         ///< Id of the realm
+uint32 realmID = 0; ///< Id of the realm
 
 /**
  * @brief Clear online status for realm accounts on startup
@@ -120,15 +111,15 @@ static void on_signal(int s)
 {
     switch (s)
     {
-        case SIGINT:
-            World::StopNow(RESTART_EXIT_CODE);
-            break;
-        case SIGTERM:
+    case SIGINT:
+        World::StopNow(RESTART_EXIT_CODE);
+        break;
+    case SIGTERM:
 #ifdef _WIN32
-        case SIGBREAK:
+    case SIGBREAK:
 #endif
-            World::StopNow(SHUTDOWN_EXIT_CODE);
-            break;
+        World::StopNow(SHUTDOWN_EXIT_CODE);
+        break;
     }
 
     signal(s, on_signal);
@@ -137,7 +128,7 @@ static void on_signal(int s)
 /// Define hook for all termination signals
 static void hook_signals()
 {
-    signal(SIGINT,  on_signal);
+    signal(SIGINT, on_signal);
     signal(SIGTERM, on_signal);
 #ifdef _WIN32
     signal(SIGBREAK, on_signal);
@@ -155,23 +146,26 @@ static void unhook_signals()
 }
 
 /// Print out the usage string for this program on the console.
-static void usage(const char* prog)
+static void usage(const char *prog)
 {
     sLog.outString("Usage: \n %s [<options>]\n"
-        "    -v, --version              print version and exist\n\r"
-        "    -c <config_file>           use config_file as configuration file\n\r"
-        "    -a, --ahbot <config_file>  use config_file as ahbot configuration file\n\r"
-#ifdef WIN32
-        "    Running as service functions:\n\r"
-        "    -s run                     run as service\n\r"
-        "    -s install                 install service\n\r"
-        "    -s uninstall               uninstall service\n\r"
-#else
-        "    Running as daemon functions:\n\r"
-        "    -s run                     run as daemon\n\r"
-        "    -s stop                    stop daemon\n\r"
-#endif
-    , prog);
+                   "    -v, --version              print version and exit\n\r"
+                   "    -c <config_file>           use config_file as configuration file\n\r"
+                   "    -a, --ahbot <config_file>  use config_file as ahbot configuration file\n\r"
+                   "    Running in the background:\n\r"
+                   "    -s run                     run in the background\n\r"
+                   "    -s stop                    stop the background instance\n\r",
+                   prog);
+
+    // Only where there is a service manager to register with. On POSIX the
+    // functions exist and refuse, because writing systemd units is not the
+    // server's job -- so they are not offered here either.
+    if (Process::HasServiceManager())
+    {
+        sLog.outString(
+            "    -s install                 register as a system service\n\r"
+            "    -s uninstall               deregister the system service\n\r");
+    }
 }
 
 /// Progress-bar console sink: forward a fully-built bar redraw to the off-thread
@@ -179,7 +173,7 @@ static void usage(const char* prog)
 /// serialized stdout with the log lines and cannot tear against them. Installed
 /// once the writer thread is running; before that BarGoLink uses its default
 /// synchronous sink.
-static void MangosBarConsoleSink(char const* bytes, size_t len)
+static void MangosBarConsoleSink(char const *bytes, size_t len)
 {
     sLog.ConsoleEmitRaw(std::string(bytes, len));
 }
@@ -191,111 +185,23 @@ static void MangosBarProgressSink(int percent)
     MaNGOS::Console::ConsoleUI::Instance().SetProgress(percent);
 }
 
-/// Launch the mangos server
-int main(int argc, char** argv)
+/**
+ * @brief The server itself: everything from the banner to the last flush.
+ *
+ * ===== THIS IS THE PARAMETER =====
+ *
+ * Handed to Process::RunInBackground() for `-s run`, and called directly in the
+ * foreground. One loop, and the platform decides how it is entered.
+ * =================================
+ *
+ * The configuration is already loaded when this runs -- the pid file it names is
+ * what the POSIX fork and `-s stop` need before the server exists.
+ *
+ * @param cfg_file the configuration file that was loaded, for the log line.
+ * @return the process exit code.
+ */
+static int Serve(char const *cfg_file)
 {
-#ifdef _WIN32
-      // Install the exception handler for unhandled exceptions in the main thread
-        static WheatyExceptionReport exceptionReport;
-        SetUnhandledExceptionFilter(WheatyExceptionReport::WheatyUnhandledExceptionFilter);
-#endif
-
-    ///- Command line parsing
-    char const* cfg_file = MANGOSD_CONFIG_LOCATION;
-
-    char serviceDaemonMode = '\0';
-
-    // Walked by hand rather than with ACE_Get_Opt (gone with the rest of ACE) or
-    // getopt (absent on MSVC). Four options do not justify a dependency.
-    for (int i = 1; i < argc; ++i)
-    {
-        const std::string arg = argv[i];
-        const bool hasValue = (i + 1) < argc;
-
-        if (arg == "-v" || arg == "--version")
-        {
-            printf("%s\n", GitRevision::GetProjectRevision());
-            return 0;
-        }
-        else if ((arg == "-c") && hasValue)
-        {
-            cfg_file = argv[++i];
-        }
-        else if ((arg == "-a" || arg == "--ahbot") && hasValue)
-        {
-            sAuctionBotConfig.SetConfigFileName(argv[++i]);
-        }
-        else if (arg == "-s" && hasValue)
-        {
-            const std::string mode = argv[++i];
-            if (mode == "run")            { serviceDaemonMode = 'r'; }
-#ifdef _WIN32
-            else if (mode == "install")   { serviceDaemonMode = 'i'; }
-            else if (mode == "uninstall") { serviceDaemonMode = 'u'; }
-#else
-            else if (mode == "stop")      { serviceDaemonMode = 's'; }
-#endif
-            else
-            {
-                sLog.outError("Runtime-Error: -s unsupported argument %s", mode.c_str());
-                usage(argv[0]);
-                Log::WaitBeforeContinueIfNeed();
-                return 1;
-            }
-        }
-        else
-        {
-            sLog.outError("Runtime-Error: unsupported option %s", arg.c_str());
-            usage(argv[0]);
-            Log::WaitBeforeContinueIfNeed();
-            return 1;
-        }
-    }
-
-#ifdef _WIN32                                                // windows service command need execute before config read
-    switch (serviceDaemonMode)
-    {
-        case 'i':
-            if (WinServiceInstall())
-            {
-                sLog.outString("Installing service");
-            }
-            return 1;
-        case 'u':
-            if (WinServiceUninstall())
-            {
-                sLog.outString("Uninstalling service");
-            }
-            return 1;
-        case 'r':
-            WinServiceRun();
-            break;
-    }
-#endif
-    if (!sConfig.SetSource(cfg_file))
-    {
-        // Try current folder as fallback if SYSCONFDIR path fails
-        if (!sConfig.SetSource(MANGOSD_CONFIG_NAME))
-        {
-            sLog.outError("Could not find configuration file %s.", cfg_file);
-            Log::WaitBeforeContinueIfNeed();
-            return 1;
-        }
-        cfg_file = MANGOSD_CONFIG_NAME;
-    }
-
-#ifndef _WIN32
-    switch (serviceDaemonMode)
-    {
-        case 'r':
-            startDaemon();
-            break;
-        case 's':
-            stopDaemon();
-            break;
-    }
-#endif
-
     sLog.outString("%s [world-daemon]", GitRevision::GetProjectRevision());
     sLog.outString("%s", GitRevision::GetFullRevision());
     sLog.outString("%s", GitRevision::GetDepElunaFullRevisionStr());
@@ -318,7 +224,6 @@ int main(int argc, char** argv)
         DETAIL_LOG("WARNING: Minimal required version [OpenSSL 1.1.x] and Maximum supported version [OpenSSL 1.2]");
     }
 #endif
-
 
     ///- Set progress bars show mode
     BarGoLink::SetOutputState(sConfig.GetBoolDefault("ShowProgressBars", true));
@@ -353,9 +258,13 @@ int main(int argc, char** argv)
     // synchronous path and would write straight over the full-screen frame.
     // "plain" never draws the loading UI. "auto" and "fancy" both ask for it,
     // and Start() declines on its own when stdout is not a real terminal.
+    //
+    // Not in the background: a service has no terminal at all, and the daemon's
+    // stdout is /dev/null. Start() would decline anyway, but asking it to draw a
+    // full-screen frame into a null device is not a question worth putting.
     const std::string consoleStyle =
         sConfig.GetStringDefault("Console.Style", "auto");
-    if (consoleStyle != "plain" &&
+    if (consoleStyle != "plain" && !Process::IsRunningInBackground() &&
         MaNGOS::Console::ConsoleUI::Instance().Start("MaNGOS Zero", "Vanilla 1.12.x"))
     {
         MaNGOS::Console::ConsoleUI::Instance().SetHeaderRight(
@@ -418,5 +327,126 @@ int main(int argc, char** argv)
     sLog.Flush();
 
     return runCode;
+}
+
+/// Launch the mangos server
+int main(int argc, char **argv)
+{
+#ifdef _WIN32
+    // Install the exception handler for unhandled exceptions in the main thread
+    static WheatyExceptionReport exceptionReport;
+    SetUnhandledExceptionFilter(WheatyExceptionReport::WheatyUnhandledExceptionFilter);
+#endif
+
+    ///- Command line parsing
+    char const *cfg_file = MANGOSD_CONFIG_LOCATION;
+
+    Process::ServiceAction action = Process::ServiceAction::None;
+
+    for (int i = 1; i < argc; ++i)
+    {
+        const std::string arg = argv[i];
+        const bool hasValue = (i + 1) < argc;
+
+        if (arg == "-v" || arg == "--version")
+        {
+            printf("%s\n", GitRevision::GetProjectRevision());
+            return 0;
+        }
+        else if ((arg == "-c") && hasValue)
+        {
+            cfg_file = argv[++i];
+        }
+        else if ((arg == "-a" || arg == "--ahbot") && hasValue)
+        {
+            sAuctionBotConfig.SetConfigFileName(argv[++i]);
+        }
+        else if (arg == "-s" && hasValue)
+        {
+            const std::string mode = argv[++i];
+            action = Process::ParseServiceAction(mode);
+
+            // Install and uninstall are accepted only where there is a service
+            // manager behind them. Elsewhere they would reach a function whose
+            // whole job is to refuse, which is a worse error message than this
+            // one.
+            const bool needsManager =
+                action == Process::ServiceAction::Install ||
+                action == Process::ServiceAction::Uninstall;
+
+            if (action == Process::ServiceAction::None ||
+                (needsManager && !Process::HasServiceManager()))
+            {
+                sLog.outError("Runtime-Error: -s unsupported argument %s", mode.c_str());
+                usage(argv[0]);
+                Log::WaitBeforeContinueIfNeed();
+                return 1;
+            }
+        }
+        else
+        {
+            sLog.outError("Runtime-Error: unsupported option %s", arg.c_str());
+            usage(argv[0]);
+            Log::WaitBeforeContinueIfNeed();
+            return 1;
+        }
+    }
+
+    Process::Options processOptions;
+    processOptions.serviceName = "MaNGOS";
+    processOptions.serviceDisplayName = "MaNGOS World Service";
+    processOptions.serviceDescription =
+        "MaNGOS World Service - serves a World of Warcraft 1.12.x realm.";
+
+    // Registering with the service manager touches neither the configuration nor
+    // the databases, so it runs before the config file is looked for -- which is
+    // also what lets the service be installed on a host that is not configured
+    // yet. Zero on success, so `mangosd -s install && net start MaNGOS` works.
+    switch (action)
+    {
+    case Process::ServiceAction::Install:
+        return Process::Install(processOptions) ? 0 : 1;
+
+    case Process::ServiceAction::Uninstall:
+        return Process::Uninstall(processOptions) ? 0 : 1;
+
+    default:
+        break;
+    }
+
+    if (!sConfig.SetSource(cfg_file))
+    {
+        // Try current folder as fallback if SYSCONFDIR path fails
+        if (!sConfig.SetSource(MANGOSD_CONFIG_NAME))
+        {
+            sLog.outError("Could not find configuration file %s.", cfg_file);
+            Log::WaitBeforeContinueIfNeed();
+            return 1;
+        }
+        cfg_file = MANGOSD_CONFIG_NAME;
+    }
+
+    // Read here rather than inside Serve(): on POSIX the forked child writes this
+    // file before its parent is allowed to exit, so that `-s run` followed
+    // immediately by `-s stop` finds a pid to signal. Serve() writes it again
+    // with the same value, which also covers the foreground case.
+    processOptions.pidFile = sConfig.GetStringDefault("PidFile", "");
+
+    if (action == Process::ServiceAction::Stop)
+    {
+        return Process::Stop(processOptions) ? 0 : 1;
+    }
+
+    // The one code path. Foreground calls it here; the background hands it to the
+    // platform, which calls it from the service thread or the forked child.
+    const std::function<int()> serve = [cfg_file]()
+    { return Serve(cfg_file); };
+
+    if (action == Process::ServiceAction::Run)
+    {
+        return Process::RunInBackground(processOptions, serve);
+    }
+
+    return serve();
 }
 /// @}
