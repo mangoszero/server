@@ -357,6 +357,13 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         std::map<uint32, uint32> m_starterZoneCounts; ///< starting zone -> active residents, rebuilt once per pass
         int m_starterZoneCountsPass;                  ///< the pass m_starterZoneCounts was built for
         std::unordered_map<uint32, bool> m_randomBotCache;
+        // Guids whose "add" event this pass has written but whose asynchronous INSERT may
+        // not have reached the database yet. GetBots and GetFreeBots both read 'add' rows
+        // straight from the database, and both run in the same pass as the writes, so
+        // without this a bot banked earlier in the pass is invisible to the roster and
+        // simultaneously visible in the free pool. Cleared at the top of every pass: the
+        // delay thread drains in milliseconds against an interval measured in seconds.
+        std::set<uint32> m_pendingAddGuids;
         // Both caches are read from map worker threads -- PlayerbotAI::UpdateAI, the trade
         // and grind values, AiFactory -- and written from the world thread. Concurrent
         // access to std::map/unordered_map is undefined behaviour rather than a stale
