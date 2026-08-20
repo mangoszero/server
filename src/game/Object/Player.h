@@ -3556,6 +3556,11 @@ class Player : public Unit
         // Set the cinematic flyover manager
         void SetCinematicFlyover(std::unique_ptr<CinematicFlyover> flyover) { m_cinematicFlyover = std::move(flyover); }
 
+        // Initial-login presentation state; unrelated spell roots are not owned here.
+        void ScheduleLoginEffect();
+        void BeginLoginCinematicRoot();
+        void ReleaseLoginCinematicRoot();
+
         // Forced speed changes
         uint8 m_forced_speed_changes[MAX_MOVE_TYPE];
 
@@ -4064,6 +4069,8 @@ class Player : public Unit
 
         // Cinematic flyover manager (optional, for first-login intro visibility)
         std::unique_ptr<CinematicFlyover> m_cinematicFlyover;
+
+        LoginCinematicRootOwnership m_loginCinematicRootOwnership;
 
         // Countdown (ms) for the periodic observer-side visibility sweep
         uint32 m_visibilityObserverSweepTimer;

@@ -31,6 +31,7 @@
 #include "Utilities/MathDefines.h"
 #include "Utilities/PackedValues.h"
 #include "Player.h"
+#include "LoginEffectPackets.h"
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
@@ -87,6 +88,65 @@
 #endif
 
 #include <cmath>
+
+namespace
+{
+    // Spell 836 is deliberately split around the initial object batch. The
+    // event emits START after presentation and GO on the next eligible tick.
+    class LoginEffectEvent final : public BasicEvent
+    {
+        public:
+            explicit LoginEffectEvent(Player& player) : m_player(player)
+            {
+            }
+
+            bool Execute(uint64 eTime, uint32) override
+            {
+                std::optional<LoginEffectPhase> phase =
+                    m_state.TakeNext(m_player.IsInWorld());
+                if (!phase)
+                {
+                    return true;
+                }
+
+                WorldPacket packet = *phase == LoginEffectPhase::Start ?
+                    LoginEffectPackets::BuildStart(
+                        m_player.GetObjectGuid().GetRawValue()) :
+                    LoginEffectPackets::BuildGo(
+                        m_player.GetObjectGuid().GetRawValue());
+                m_player.SendMessageToSet(&packet, true);
+
+                if (*phase == LoginEffectPhase::Start)
+                {
+                    m_player.m_Events.AddEvent(this, eTime + 1, false);
+                    return false;
+                }
+                return true;
+            }
+
+        private:
+            Player& m_player;
+            LoginEffectSequenceState m_state;
+    };
+
+    class LoginCinematicRootTimeoutEvent final : public BasicEvent
+    {
+        public:
+            explicit LoginCinematicRootTimeoutEvent(Player& player)
+                : m_player(player)
+            {
+            }
+
+            bool Execute(uint64, uint32) override
+            {
+                m_player.ReleaseLoginCinematicRoot();
+                return true;
+            }
+
+        private:
+            Player& m_player;
+    };
+}
 
 #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
 
@@ -698,6 +758,10 @@ Player::~Player()
  */
 void Player::CleanupsBeforeDelete()
 {
+    // Event teardown destroys the timers; clear their independent root token
+    // before any later cleanup can attempt to release it.
+    m_loginCinematicRootOwnership.Clear();
+
     // Stop cinematic flyover if active (must happen before camera dtor)
     if (m_cinematicFlyover && m_cinematicFlyover->IsActive())
     {
@@ -5382,6 +5446,40 @@ void Player::SendLoginTimeSpeed()
     GetSession()->SendPacket(&data);
 }
 
+/** Queues the visible START/GO half after the initial object batch is sent. */
+void Player::ScheduleLoginEffect()
+{
+    m_Events.AddEvent(new LoginEffectEvent(*this), m_Events.CalculateTime(1));
+}
+
+void Player::BeginLoginCinematicRoot()
+{
+    if (!m_loginCinematicRootOwnership.Claim())
+    {
+        return;
+    }
+
+    // Normal cinematic completion releases first; this timer is the bounded
+    // failsafe for clients that never send completion.
+    m_Events.AddEvent(new LoginCinematicRootTimeoutEvent(*this),
+        m_Events.CalculateTime(LOGIN_CINEMATIC_ROOT_TIMEOUT_MS));
+    SetRoot(true);
+}
+
+void Player::ReleaseLoginCinematicRoot()
+{
+    if (!m_loginCinematicRootOwnership.ReleaseOnce())
+    {
+        return;
+    }
+
+    if (IsInWorld() && !HasAuraType(SPELL_AURA_MOD_STUN) &&
+        !HasAuraType(SPELL_AURA_MOD_ROOT))
+    {
+        SetRoot(false);
+    }
+}
+
 /**
  * @brief Where this player is, for the questions the WORLD answers: a graveyard, an area
  *        trigger, anything looked up against terrain the client shipped.
@@ -5541,6 +5639,13 @@ void Player::SendInitialPacketsAfterAddToMap(InitialWorldEntryContext const* ini
     {
         UpdateZone(initialEntry->zoneId, initialEntry->areaId,
             !initialEntry->initialWorldStatesSent);
+        if (initialEntry->cinematicStarted)
+        {
+            BeginLoginCinematicRoot();
+        }
+        // CAST_FAILED was part of the pre-batch hook; START/GO are intentionally
+        // deferred until the client has received its initial object world.
+        ScheduleLoginEffect();
     }
     else
     {
@@ -6968,4 +7073,3 @@ void Player::KnockBackFrom(Unit* target, float horizontalSpeed, float verticalSp
     float angle = this == target ? Where().Facing() + M_PI_F : target->Where().BearingTo(this->Where());
     GetSession()->SendKnockBack(angle, horizontalSpeed, verticalSpeed);
 }
-
