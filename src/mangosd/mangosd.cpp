@@ -414,6 +414,17 @@ int main(int argc, char **argv)
         break;
     }
 
+    // Before the configuration is looked for, not after. A Windows service is
+    // started from system32, so the fallback below -- the config file beside the
+    // binary -- would be searched for in the wrong directory and the service
+    // would fail to start before RunInBackground ever got the chance to correct
+    // it. A no-op everywhere else.
+    if (action == Process::ServiceAction::Run && !Process::UseExecutableDirectory())
+    {
+        Log::WaitBeforeContinueIfNeed();
+        return 1;
+    }
+
     if (!sConfig.SetSource(cfg_file))
     {
         // Try current folder as fallback if SYSCONFDIR path fails

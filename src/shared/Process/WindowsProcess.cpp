@@ -201,6 +201,26 @@ bool HasServiceManager()
     return true;
 }
 
+bool UseExecutableDirectory()
+{
+    const std::string directory = ExecutableDirectory();
+
+    if (directory.empty())
+    {
+        sLog.outError("SERVICE: cannot determine this executable's directory.");
+        return false;
+    }
+
+    if (!SetCurrentDirectoryA(directory.c_str()))
+    {
+        sLog.outError("SERVICE: cannot change to '%s': error %u",
+                      directory.c_str(), unsigned(GetLastError()));
+        return false;
+    }
+
+    return true;
+}
+
 bool Install(const Options& options)
 {
     SC_HANDLE manager = OpenSCManagerA(nullptr, nullptr, SC_MANAGER_CREATE_SERVICE);

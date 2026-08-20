@@ -599,8 +599,20 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, Aura* triggeredB
     }
 
     // create and add update event for this spell
-    m_caster->m_Events.AddEvent(std::unique_ptr<BasicEvent>(new SpellEvent(this)),
-                                m_caster->m_Events.CalculateTime(1));
+    if (!m_caster->m_Events.AddEvent(std::unique_ptr<BasicEvent>(new SpellEvent(this)),
+                                     m_caster->m_Events.CalculateTime(1)))
+    {
+        // Refused, which means the caster's processor is tearing down -- an aura
+        // removal or a cancellation can start a triggered cast from inside
+        // KillAllEvents. AddEvent then aborted and destroyed the event, and
+        // ~SpellEvent cancelled and deleted THIS Spell on the way out.
+        //
+        // So nothing below may run and no member may be touched, not even to
+        // report the failure: `this` is already freed. Every caller drops the
+        // pointer after prepare() and lets the event own the spell, which is why
+        // returning here is the whole of the cleanup.
+        return SPELL_FAILED_DONT_REPORT;
+    }
 
     // Prevent casting at cast another spell (ServerSide check)
     if (!m_IsTriggeredSpell && m_caster->IsNonMeleeSpellCasted(false, true, true))

@@ -34,6 +34,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <limits>
 #include <string>
 
 #include <sys/stat.h>
@@ -190,6 +191,14 @@ bool HasServiceManager()
     return false;
 }
 
+bool UseExecutableDirectory()
+{
+    // Nothing to move to. A POSIX start keeps the directory it was invoked from
+    // until RunInBackground forks, and that is what makes a relative -c path and
+    // a relative pid file mean what the operator typed.
+    return true;
+}
+
 bool Install(const Options&)
 {
     sLog.outError("This platform has no service manager to install into."
@@ -232,10 +241,9 @@ int RunInBackground(const Options& options, const std::function<int()>& serve)
     const pid_t child = fork();
     g_childPid = child;
 
-    sigprocmask(SIG_SETMASK, &previous, nullptr);
-
     if (child < 0)
     {
+        sigprocmask(SIG_SETMASK, &previous, nullptr);
         sLog.outError("Cannot fork into the background: %s", std::strerror(errno));
         return EXIT_FAILURE;
     }
@@ -245,6 +253,8 @@ int RunInBackground(const Options& options, const std::function<int()>& serve)
         // The parent. It waits here until the child reports ready, dies, or --
         // where one was asked for -- the alarm fires; every one of those leaves
         // through the handler.
+        sigprocmask(SIG_SETMASK, &previous, nullptr);
+
         if (options.readyTimeoutSeconds != 0)
         {
             alarm(options.readyTimeoutSeconds);
@@ -259,13 +269,24 @@ int RunInBackground(const Options& options, const std::function<int()>& serve)
         }
     }
 
-    // The child. Its inherited handlers are for the parent's wait, not for it.
-    // SIGCHLD back to default matters: the server forks nothing, but leaving a
-    // parent's handler installed is how an inherited disposition surprises the
-    // next person who adds a helper process.
+    // The child. Its inherited handlers belong to the parent's wait, and in the
+    // child HandleStartupSignal returns without doing anything -- so leaving
+    // SIGINT and SIGTERM pointed at it would swallow them for the whole of
+    // start-up, until Serve() installs the server's own. A start command
+    // cancelled in that window, or a `-s stop` racing it, would be ignored and
+    // the daemon would survive.
+    //
+    // Reset while the two are still blocked, and unblocked only afterwards, so
+    // there is no instant where the disposition is the parent's and the signal
+    // can arrive. SIGCHLD goes back too: the server forks nothing today, but an
+    // inherited disposition is how that surprises whoever adds a helper process.
     std::signal(SIGUSR1, SIG_DFL);
     std::signal(SIGALRM, SIG_DFL);
     std::signal(SIGCHLD, SIG_DFL);
+    std::signal(SIGINT, SIG_DFL);
+    std::signal(SIGTERM, SIG_DFL);
+
+    sigprocmask(SIG_SETMASK, &previous, nullptr);
 
     umask(0);
 
@@ -324,10 +345,14 @@ bool Stop(const Options& options)
     }
 
     long pid = 0;
-    if (!(file >> pid) || pid <= 0)
+    if (!(file >> pid) || pid <= 0 ||
+        pid > static_cast<long>(std::numeric_limits<pid_t>::max()))
     {
-        // A pid of zero or below would go to the process GROUP or to every
-        // process this user owns. Refused rather than sent.
+        // Zero or below would go to the process GROUP or to every process this
+        // user owns. The upper bound matters just as much and is easier to miss:
+        // pid_t is 32-bit where long is 64-bit, so 4294967295 passes a "> 0"
+        // test and then narrows to -1 -- and kill(-1) is the same broadcast by
+        // another route. Both ends are checked before either cast.
         sLog.outError("The pid file %s does not name a process", options.pidFile.c_str());
         return false;
     }

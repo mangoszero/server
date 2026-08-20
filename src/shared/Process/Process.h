@@ -102,6 +102,21 @@ struct Options
 /// POSIX, and that is not a gap: init is not ours to write into.
 bool HasServiceManager();
 
+/**
+ * @brief Move to the directory the executable lives in.
+ *
+ * Call before reading anything by a relative path in a background start. The
+ * Windows service manager launches the process from system32, so the
+ * configuration file beside the binary -- and every relative path inside it --
+ * resolves somewhere else until this has run. RunInBackground() does it again
+ * once the service thread is up, but that is too late for a caller that has to
+ * read its configuration first in order to know its pid file.
+ *
+ * A no-op returning true on POSIX, where the process keeps the directory it was
+ * started from until it forks.
+ */
+bool UseExecutableDirectory();
+
 /// Register with the service manager. False, with a reason logged, where there
 /// is none.
 bool Install(const Options& options);
