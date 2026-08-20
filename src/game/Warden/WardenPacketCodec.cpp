@@ -21,6 +21,7 @@
  */
 
 #include "WardenPacketCodec.h"
+#include "PacketCodec.h"
 
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
@@ -187,7 +188,16 @@ warden::CheckPlanValidation AnalyzeCheckPlan(warden::CheckPlan const& plan,
     candidate.budget.requestBodyBytes = 3;
     size_t timingCount = 0;
     std::unordered_set<uint32> checkIds;
-    size_t constexpr MaxBodyBytes = std::numeric_limits<uint16>::max();
+    size_t constexpr MaxInnerBodyBytes =
+        std::numeric_limits<uint16>::max();
+    // The client packet size counts its four-byte opcode. A CHECK_RESULT body
+    // then carries command(1), result length(2), and checksum(4) before the
+    // length-delimited result bytes validated here.
+    size_t constexpr WardenResultEnvelopeBytes =
+        sizeof(uint8) + sizeof(uint16) + sizeof(uint32);
+    size_t constexpr MaxTransportResultBodyBytes =
+        proto::MAX_CLIENT_PACKET_SIZE - sizeof(uint32) -
+        WardenResultEnvelopeBytes;
 
     auto addCheckId = [&](uint32 checkId)
     {
@@ -208,8 +218,8 @@ warden::CheckPlanValidation AnalyzeCheckPlan(warden::CheckPlan const& plan,
         if (candidate.budget.stringTableBytes > 512 ||
             bytes > 512 - candidate.budget.stringTableBytes)
             return warden::CheckPlanValidation::StringTableTooLarge;
-        if (candidate.budget.requestBodyBytes > MaxBodyBytes ||
-            bytes > MaxBodyBytes - candidate.budget.requestBodyBytes)
+        if (candidate.budget.requestBodyBytes > MaxInnerBodyBytes ||
+            bytes > MaxInnerBodyBytes - candidate.budget.requestBodyBytes)
             return warden::CheckPlanValidation::RequestBodyTooLarge;
         candidate.budget.stringTableBytes += bytes;
         candidate.budget.requestBodyBytes += bytes;
@@ -220,8 +230,8 @@ warden::CheckPlanValidation AnalyzeCheckPlan(warden::CheckPlan const& plan,
 
     auto addRequestBytes = [&](size_t bytes)
     {
-        if (candidate.budget.requestBodyBytes > MaxBodyBytes ||
-            bytes > MaxBodyBytes - candidate.budget.requestBodyBytes)
+        if (candidate.budget.requestBodyBytes > MaxInnerBodyBytes ||
+            bytes > MaxInnerBodyBytes - candidate.budget.requestBodyBytes)
             return false;
         candidate.budget.requestBodyBytes += bytes;
         return true;
@@ -229,8 +239,8 @@ warden::CheckPlanValidation AnalyzeCheckPlan(warden::CheckPlan const& plan,
 
     auto addResultBytes = [&](size_t bytes)
     {
-        if (candidate.budget.maximumResultBytes > MaxBodyBytes ||
-            bytes > MaxBodyBytes - candidate.budget.maximumResultBytes)
+        if (candidate.budget.maximumResultBytes > MaxInnerBodyBytes ||
+            bytes > MaxInnerBodyBytes - candidate.budget.maximumResultBytes)
             return false;
         candidate.budget.maximumResultBytes += bytes;
         return true;
@@ -320,6 +330,10 @@ warden::CheckPlanValidation AnalyzeCheckPlan(warden::CheckPlan const& plan,
         if (!addResultBytes(1 + mem->expectedBytes.size()))
             return warden::CheckPlanValidation::ResultBodyTooLarge;
     }
+
+    if (candidate.budget.maximumResultBytes >
+        MaxTransportResultBodyBytes)
+        return warden::CheckPlanValidation::ResultBodyTooLarge;
 
     output = std::move(candidate);
     return warden::CheckPlanValidation::Valid;
