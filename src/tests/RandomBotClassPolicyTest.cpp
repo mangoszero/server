@@ -96,7 +96,10 @@ TEST(RandomBotClassPolicyRejectsMissingAndEmptyRaceCandidates)
     std::vector<uint8> const* races =
         FindRandomBotRaceCandidates(candidates, CLASS_WARRIOR);
     CHECK(races != NULL);
-    CHECK_EQ(races->size(), 2);
-    CHECK_EQ((*races)[0], RACE_HUMAN);
-    CHECK_EQ((*races)[1], RACE_ORC);
+    if (races)
+    {
+        CHECK_EQ(races->size(), 2);
+        CHECK_EQ((*races)[0], RACE_HUMAN);
+        CHECK_EQ((*races)[1], RACE_ORC);
+    }
 }
