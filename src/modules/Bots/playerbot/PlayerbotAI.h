@@ -6,6 +6,7 @@
 #include "strategy/Engine.h"
 #include "strategy/ExternalEventHelper.h"
 #include "ChatFilter.h"
+#include "PlayerbotEventQueue.h"
 #include "PlayerbotSecurity.h"
 
 class Player;
@@ -92,7 +93,7 @@ class PacketHandlingHelper
 
     private:
         map<uint16, string> handlers;
-        stack<WorldPacket> queue;
+        ai::PlayerbotEventQueue<WorldPacket> queue;
 };
 
 /**
@@ -280,7 +281,7 @@ class PlayerbotAI : public PlayerbotAIBase
         BotState currentState;
         uint32 m_targetContextRevision; ///< Invalidates target observations across AI context changes.
         ChatHelper chatHelper;
-        stack<ChatCommandHolder> chatCommands;
+        ai::PlayerbotEventQueue<ChatCommandHolder> chatCommands;
         PacketHandlingHelper botOutgoingPacketHandlers;
         PacketHandlingHelper masterIncomingPacketHandlers;
         PacketHandlingHelper masterOutgoingPacketHandlers;

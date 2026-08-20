@@ -68,6 +68,7 @@ set(SRC_GRP_TESTS
     PlayerbotMountPolicyTest.cpp
     PlayerbotSecurityPolicyTest.cpp
     PlayerbotLogPolicyTest.cpp
+    PlayerbotEventQueueTest.cpp
     # Compiled in, not linked from `game`: game.lib pulls the whole server, down to the
     # database globals that only mangosd defines. These three know nothing of it.
     ${CMAKE_SOURCE_DIR}/src/game/WorldHandlers/DynamicCollision.cpp
