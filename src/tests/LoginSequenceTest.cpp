@@ -26,6 +26,7 @@
 #include "TestHarness.h"
 
 #include "CharacterEnumMapSnapshot.h"
+#include "InitialWorldEntry.h"
 #include "LoginEffectPackets.h"
 #include "Opcodes.h"
 #include "WorldPacket.h"
@@ -72,4 +73,62 @@ TEST(CharacterEnumMapSnapshot_replaces_the_previous_response)
 
     CHECK(!snapshot.Matches(0x11, 0));
     CHECK(snapshot.Matches(0x22, 1));
+}
+
+TEST(InitialWorldEntry_orders_established_packets)
+{
+    std::vector<InitialWorldEntryPacket> order =
+        InitialWorldEntryPacketOrder(false);
+    REQUIRE(order.size() == 3);
+    CHECK_EQ(int(order[0]), int(InitialWorldEntryPacket::InitWorldStates));
+    CHECK_EQ(int(order[1]), int(InitialWorldEntryPacket::LoginEffectResult));
+    CHECK_EQ(int(order[2]), int(InitialWorldEntryPacket::LoginTimeSpeed));
+}
+
+TEST(InitialWorldEntry_inserts_cinematic_packets_before_result)
+{
+    std::vector<InitialWorldEntryPacket> order =
+        InitialWorldEntryPacketOrder(true);
+    REQUIRE(order.size() == 5);
+    CHECK_EQ(int(order[0]), int(InitialWorldEntryPacket::InitWorldStates));
+    CHECK_EQ(int(order[1]), int(InitialWorldEntryPacket::TriggerCinematic));
+    CHECK_EQ(int(order[2]), int(InitialWorldEntryPacket::ExplorationExperience));
+    CHECK_EQ(int(order[3]), int(InitialWorldEntryPacket::LoginEffectResult));
+    CHECK_EQ(int(order[4]), int(InitialWorldEntryPacket::LoginTimeSpeed));
+}
+
+TEST(LoginEffectSequence_has_two_ordered_phases_and_cancels_out_of_world)
+{
+    LoginEffectSequenceState sequence;
+    std::optional<LoginEffectPhase> first = sequence.TakeNext(true);
+    std::optional<LoginEffectPhase> second = sequence.TakeNext(true);
+    std::optional<LoginEffectPhase> done = sequence.TakeNext(true);
+    REQUIRE(first.has_value());
+    REQUIRE(second.has_value());
+    CHECK_EQ(int(*first), int(LoginEffectPhase::Start));
+    CHECK_EQ(int(*second), int(LoginEffectPhase::Go));
+    CHECK(!done.has_value());
+
+    LoginEffectSequenceState cancelled;
+    CHECK(!cancelled.TakeNext(false).has_value());
+    CHECK(cancelled.IsComplete());
+
+    LoginEffectSequenceState interrupted;
+    REQUIRE(interrupted.TakeNext(true).has_value());
+    CHECK(!interrupted.TakeNext(false).has_value());
+    CHECK(interrupted.IsComplete());
+}
+
+TEST(LoginCinematicRootOwnership_releases_exactly_once)
+{
+    LoginCinematicRootOwnership ownership;
+    CHECK(ownership.Claim());
+    CHECK(!ownership.Claim());
+    CHECK(ownership.ReleaseOnce());
+    CHECK(!ownership.ReleaseOnce());
+    CHECK(!ownership.IsOwned());
+
+    CHECK(ownership.Claim());
+    ownership.Clear();
+    CHECK(!ownership.ReleaseOnce());
 }
