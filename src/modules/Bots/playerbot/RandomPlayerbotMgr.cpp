@@ -44,13 +44,6 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         return;
     }
 
-    // Only has to outlive the delay thread's drain, which is milliseconds against an
-    // interval measured in seconds. Cleared before anything in the pass writes an event.
-    {
-        std::lock_guard<std::mutex> guard(m_cacheMutex);
-        m_pendingAddGuids.clear();
-    }
-
     if (sPlayerbotAIConfig.randomBotKeepGroups)
     {
         if (!processTicks)
@@ -1585,17 +1578,27 @@ list<uint32> RandomPlayerbotMgr::GetBots()
         delete results;
     }
 
-    // A bot banked earlier in this pass -- EnsureGroupedBotsOnline runs before the roster
-    // is listed -- has its INSERT still queued on the delay thread, so the query above
-    // cannot see it. Left out, a grouped bot is not logged in until the next interval,
-    // which is the one thing EnsureGroupedBotsOnline exists to prevent.
+    // A bot banked earlier -- EnsureGroupedBotsOnline runs before the roster is listed --
+    // may still have its INSERT queued on the delay thread, so the query above cannot see
+    // it. Left out, a grouped bot is not logged in until the next interval, which is the
+    // one thing EnsureGroupedBotsOnline exists to prevent. This query is also the place
+    // that learns a write has landed, so it retires the entries it can see.
     {
         std::lock_guard<std::mutex> guard(m_cacheMutex);
-        for (std::set<uint32>::const_iterator i = m_pendingAddGuids.begin(); i != m_pendingAddGuids.end(); ++i)
+        for (std::map<uint32, int>::iterator i = m_pendingAddGuids.begin(); i != m_pendingAddGuids.end(); )
         {
-            if (find(bots.begin(), bots.end(), *i) == bots.end())
+            if (find(bots.begin(), bots.end(), i->first) != bots.end())
             {
-                bots.push_back(*i);
+                m_pendingAddGuids.erase(i++);
+            }
+            else if (processTicks - i->second > PendingAddMaxPasses)
+            {
+                m_pendingAddGuids.erase(i++);
+            }
+            else
+            {
+                bots.push_back(i->first);
+                ++i;
             }
         }
     }
@@ -1645,15 +1648,30 @@ vector<uint32> RandomPlayerbotMgr::GetFreeBots(bool alliance)
         delete results;
     }
 
-    // Same reason as the merge in GetBots, in the opposite direction: a bot this pass has
-    // already banked is not free, however the database still reads. Two ways in. A grouped
-    // bot queued by EnsureGroupedBotsOnline would otherwise be drawn as a free bot and
-    // handed a spurious randomize; and when a pass exhausts a faction's cached list and
-    // rebuilds it here, every bot the pass has just admitted would come straight back and
-    // be counted twice against the roster target.
+    // Same reason as the merge in GetBots, in the opposite direction: a bot already banked
+    // is not free, however the database still reads. Two ways in. A grouped bot queued by
+    // EnsureGroupedBotsOnline would otherwise be drawn as a free bot and handed a spurious
+    // randomize; and when a pass exhausts a faction's cached list and rebuilds it here,
+    // every bot the pass has just admitted would come straight back and be counted twice
+    // against the roster target. Retires observed entries, as GetBots does.
     {
         std::lock_guard<std::mutex> guard(m_cacheMutex);
-        bots.insert(m_pendingAddGuids.begin(), m_pendingAddGuids.end());
+        for (std::map<uint32, int>::iterator i = m_pendingAddGuids.begin(); i != m_pendingAddGuids.end(); )
+        {
+            if (bots.find(i->first) != bots.end())
+            {
+                m_pendingAddGuids.erase(i++);
+            }
+            else if (processTicks - i->second > PendingAddMaxPasses)
+            {
+                m_pendingAddGuids.erase(i++);
+            }
+            else
+            {
+                bots.insert(i->first);
+                ++i;
+            }
+        }
     }
 
     vector<uint32> guids;
@@ -1978,11 +1996,12 @@ uint32 RandomPlayerbotMgr::SetEventValue(uint32 bot, string event, uint32 value,
             m_randomBotCache[bot] = (value != 0);
 
             // The statements above are asynchronous, and GetBots and GetFreeBots both read
-            // 'add' rows back from the database inside the same pass. Record what this pass
-            // banked so those two can see it before the delay thread drains.
+            // 'add' rows back from the database inside the same pass. Record what was
+            // banked, and in which pass, so those two can see it before the delay thread
+            // drains and can retire the entry once they observe the write for themselves.
             if (value)
             {
-                m_pendingAddGuids.insert(bot);
+                m_pendingAddGuids[bot] = processTicks;
             }
             else
             {
