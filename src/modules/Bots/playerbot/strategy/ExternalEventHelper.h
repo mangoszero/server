@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Trigger.h"
+#include "../PlayerbotPacketPolicy.h"
 
 namespace ai
 {
@@ -46,16 +47,16 @@ namespace ai
                 return true;
             }
 
-            void HandlePacket(map<uint16, string> &handlers, const WorldPacket &packet, Player* owner = NULL)
+            void HandlePacket(map<uint16, string> const& handlers, const WorldPacket &packet, Player* owner = NULL)
             {
                 uint16 opcode = packet.GetOpcode();
-                string name = handlers[opcode];
-                if (name.empty())
+                string const* name = FindPlayerbotEventHandler(handlers, opcode);
+                if (!name || name->empty())
                 {
                     return;
                 }
 
-                Trigger* trigger = aiObjectContext->GetTrigger(name);
+                Trigger* trigger = aiObjectContext->GetTrigger(*name);
                 if (!trigger)
                 {
                     return;
