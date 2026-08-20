@@ -1126,10 +1126,11 @@ TEST(WardenPacket_enforces_client_transport_result_body_budget)
 
     // The client packet size field counts its four-byte opcode. The encrypted
     // Warden body then adds command(1), result length(2), and checksum(4).
-    size_t constexpr WardenResultEnvelopeBytes = 7;
-    size_t constexpr MaximumResultBodyBytes =
-        proto::MAX_CLIENT_PACKET_SIZE - sizeof(uint32) -
-        WardenResultEnvelopeBytes;
+    size_t constexpr CheckResultEnvelopeBytes = 7;
+    size_t constexpr MaximumResultBodyBytes = 10229;
+    static_assert(proto::MAX_CLIENT_PACKET_SIZE - sizeof(uint32) -
+            CheckResultEnvelopeBytes == MaximumResultBodyBytes,
+        "Classic Warden CHECK_RESULT body limit must remain exact");
     size_t constexpr OneByteMemResultBytes = 2;
     size_t constexpr TwoByteMemResultBytes = 3;
     size_t constexpr OneByteMemCount =

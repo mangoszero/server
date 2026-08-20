@@ -100,6 +100,19 @@ uint32 ReadUint32LE(uint8 const* bytes)
         (uint32(bytes[2]) << 16) | (uint32(bytes[3]) << 24);
 }
 
+// The client packet size counts its four-byte opcode. A CHECK_RESULT body
+// then carries command(1), result length(2), and checksum(4) before the
+// length-delimited result bytes.
+size_t constexpr ClientOpcodeBytes = sizeof(uint32);
+size_t constexpr CheckResultEnvelopeBytes =
+    sizeof(uint8) + sizeof(uint16) + sizeof(uint32);
+static_assert(proto::MAX_CLIENT_PACKET_SIZE >
+        ClientOpcodeBytes + CheckResultEnvelopeBytes,
+    "Client packet limit must fit a Warden CHECK_RESULT envelope");
+size_t constexpr MaxTransportResultBodyBytes =
+    proto::MAX_CLIENT_PACKET_SIZE - ClientOpcodeBytes -
+    CheckResultEnvelopeBytes;
+
 bool BuildChecksum(warden::ByteView body, uint32& checksum)
 {
     warden::Digest20 digest{};
@@ -190,14 +203,6 @@ warden::CheckPlanValidation AnalyzeCheckPlan(warden::CheckPlan const& plan,
     std::unordered_set<uint32> checkIds;
     size_t constexpr MaxInnerBodyBytes =
         std::numeric_limits<uint16>::max();
-    // The client packet size counts its four-byte opcode. A CHECK_RESULT body
-    // then carries command(1), result length(2), and checksum(4) before the
-    // length-delimited result bytes validated here.
-    size_t constexpr WardenResultEnvelopeBytes =
-        sizeof(uint8) + sizeof(uint16) + sizeof(uint32);
-    size_t constexpr MaxTransportResultBodyBytes =
-        proto::MAX_CLIENT_PACKET_SIZE - sizeof(uint32) -
-        WardenResultEnvelopeBytes;
 
     auto addCheckId = [&](uint32 checkId)
     {
@@ -553,14 +558,15 @@ DecodeStatus DecodeCheckResult(ByteView body, CheckPlan const& plan,
         return DecodeStatus::WrongSize;
     if (body.data[0] != uint8(ClientCommand::CheckResult))
         return DecodeStatus::UnsupportedCommand;
-    if (body.size < 7)
+    if (body.size < CheckResultEnvelopeBytes)
         return DecodeStatus::WrongSize;
 
     uint16 const resultLength = ReadUint16LE(body.data + 1);
-    if (body.size != size_t(7) + resultLength)
+    if (body.size != CheckResultEnvelopeBytes + resultLength)
         return DecodeStatus::WrongSize;
 
-    ByteView const resultBody{body.data + 7, resultLength};
+    ByteView const resultBody{
+        body.data + CheckResultEnvelopeBytes, resultLength};
     uint32 calculatedChecksum = 0;
     if (!BuildChecksum(resultBody, calculatedChecksum))
         return DecodeStatus::CryptoFailure;
