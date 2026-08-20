@@ -599,8 +599,8 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, Aura* triggeredB
     }
 
     // create and add update event for this spell
-    SpellEvent* Event = new SpellEvent(this);
-    m_caster->m_Events.AddEvent(Event, m_caster->m_Events.CalculateTime(1));
+    m_caster->m_Events.AddEvent(std::unique_ptr<BasicEvent>(new SpellEvent(this)),
+                                m_caster->m_Events.CalculateTime(1));
 
     // Prevent casting at cast another spell (ServerSide check)
     if (!m_IsTriggeredSpell && m_caster->IsNonMeleeSpellCasted(false, true, true))
@@ -1039,9 +1039,12 @@ bool SpellEvent::Execute(uint64 e_time, uint32 p_time)
                     uint64 n_offset = m_Spell->handle_delayed(t_offset);
                     if (n_offset)
                     {
-                        // re-add us to the queue
-                        m_Spell->GetCaster()->m_Events.AddEvent(this, m_Spell->GetDelayStart() + n_offset, false);
-                        return false;                       // event not complete
+                        // re-add us to the queue; false means "not complete, the
+                        // queue owns me again". A refused re-add means the
+                        // caster's processor is tearing down and nobody adopted
+                        // us, so we ask to be destroyed instead of leaking.
+                        return !m_Spell->GetCaster()->m_Events.Reschedule(
+                                   this, m_Spell->GetDelayStart() + n_offset);
                     }
                     // event complete
                     // finish update event will be re-added automatically at the end of routine)
@@ -1052,8 +1055,8 @@ bool SpellEvent::Execute(uint64 e_time, uint32 p_time)
                 // delaying had just started, record the moment
                 m_Spell->SetDelayStart(e_time);
                 // re-plan the event for the delay moment
-                m_Spell->GetCaster()->m_Events.AddEvent(this, e_time + m_Spell->GetDelayMoment(), false);
-                return false;                               // event not complete
+                return !m_Spell->GetCaster()->m_Events.Reschedule(
+                           this, e_time + m_Spell->GetDelayMoment());
             }
             break;
         }
@@ -1066,8 +1069,7 @@ bool SpellEvent::Execute(uint64 e_time, uint32 p_time)
     }
 
     // spell processing not complete, plan event on the next update interval
-    m_Spell->GetCaster()->m_Events.AddEvent(this, e_time + 1, false);
-    return false;                                           // event not complete
+    return !m_Spell->GetCaster()->m_Events.Reschedule(this, e_time + 1);
 }
 
 /**
