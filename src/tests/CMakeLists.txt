@@ -64,6 +64,7 @@ set(SRC_GRP_TESTS
     DynamicCollisionTest.cpp
     PlacementTest.cpp
     PlayerbotOutOfRangeMoverTest.cpp
+    PlayerbotMountPolicyTest.cpp
     PlayerbotSecurityPolicyTest.cpp
     # Compiled in, not linked from `game`: game.lib pulls the whole server, down to the
     # database globals that only mangosd defines. These three know nothing of it.
