@@ -820,12 +820,17 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         SendPacket(&data);
     }
 
+    // The captured pre-world preamble sends account data followed by friend
+    // and ignore lists, before MOTD and map admission.
     data.Initialize(SMSG_ACCOUNT_DATA_TIMES, 128);
     for (int i = 0; i < 32; ++i)
     {
         data << uint32(0);
     }
     SendPacket(&data);
+
+    pCurrChar->GetSocial()->SendFriendList();
+    pCurrChar->GetSocial()->SendIgnoreList();
 
     /* 1.12.1 does not have SMSG_MOTD, so we send a server message */
     /* Used for counting number of newlines in MOTD */
@@ -970,10 +975,6 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     sPlayerRegistry.Add(pCurrChar);
     DEBUG_LOG("Player %s added to map %i", pCurrChar->GetName(), pCurrChar->GetMapId());
-
-    /* send the player's social lists */
-    pCurrChar->GetSocial()->SendFriendList();
-    pCurrChar->GetSocial()->SendIgnoreList();
 
     /* Send packets that must be sent only after player is added to the map */
     pCurrChar->SendInitialPacketsAfterAddToMap();
