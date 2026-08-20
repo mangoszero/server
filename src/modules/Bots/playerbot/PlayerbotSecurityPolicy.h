@@ -49,11 +49,10 @@ namespace ai
         {
             return PLAYERBOT_SECURITY_TALK;
         }
-        if (name == "follow" || name == "stay" || name == "attack")
+        if (name == "stay")
         {
-            // These are registered as single-word chat triggers whose remainder is a
-            // parameter. A multi-word trigger with one of these prefixes would inherit this
-            // tier and therefore requires an explicit security review before registration.
+            // Stay is independent of the command sender. Follow and attack remain owner-only
+            // because their actions resolve the master's position and selected target.
             return PLAYERBOT_SECURITY_ALLOW_GROUP;
         }
         return PLAYERBOT_SECURITY_ALLOW_ALL;

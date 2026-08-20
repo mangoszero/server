@@ -26,12 +26,12 @@ TEST(PlayerbotSecurityPolicyWhoNeedsOnlyTalkPermission)
     CHECK_EQ(GetPlayerbotCommandSecurityLevel("who gear"), PLAYERBOT_SECURITY_TALK);
 }
 
-TEST(PlayerbotSecurityPolicyGroupTacticsNeedGroupPermission)
+TEST(PlayerbotSecurityPolicyKeepsMasterRelativeTacticsOwnerOnly)
 {
-    CHECK_EQ(GetPlayerbotCommandSecurityLevel("follow"), PLAYERBOT_SECURITY_ALLOW_GROUP);
-    CHECK_EQ(GetPlayerbotCommandSecurityLevel("follow master"), PLAYERBOT_SECURITY_ALLOW_GROUP);
     CHECK_EQ(GetPlayerbotCommandSecurityLevel("stay"), PLAYERBOT_SECURITY_ALLOW_GROUP);
-    CHECK_EQ(GetPlayerbotCommandSecurityLevel("attack my target"), PLAYERBOT_SECURITY_ALLOW_GROUP);
+    CHECK_EQ(GetPlayerbotCommandSecurityLevel("follow"), PLAYERBOT_SECURITY_ALLOW_ALL);
+    CHECK_EQ(GetPlayerbotCommandSecurityLevel("follow master"), PLAYERBOT_SECURITY_ALLOW_ALL);
+    CHECK_EQ(GetPlayerbotCommandSecurityLevel("attack my target"), PLAYERBOT_SECURITY_ALLOW_ALL);
 }
 
 TEST(PlayerbotSecurityPolicyOwnerPermissionProtectsDestructiveAndPersistentCommands)
@@ -63,22 +63,26 @@ TEST(PlayerbotSecurityPolicyComposesActorAndCommandPermissions)
         bool isMaster;
         bool sameSubgroup;
         bool canWho;
+        bool canStay;
         bool canFollow;
+        bool canAttack;
         bool canSell;
     };
 
     Actor const actors[] =
     {
-        {true, false, true, true, true},
-        {false, true, true, true, false},
-        {false, false, true, false, false}
+        {true, false, true, true, true, true, true},
+        {false, true, true, true, false, false, false},
+        {false, false, true, false, false, false, false}
     };
 
     for (Actor const& actor : actors)
     {
         PlayerbotSecurityLevel actual = GetPlayerOwnedBotSecurityLevel(actor.isMaster, actor.sameSubgroup);
         CHECK_EQ(actual >= GetPlayerbotCommandSecurityLevel("who"), actor.canWho);
+        CHECK_EQ(actual >= GetPlayerbotCommandSecurityLevel("stay"), actor.canStay);
         CHECK_EQ(actual >= GetPlayerbotCommandSecurityLevel("follow"), actor.canFollow);
+        CHECK_EQ(actual >= GetPlayerbotCommandSecurityLevel("attack my target"), actor.canAttack);
         CHECK_EQ(actual >= GetPlayerbotCommandSecurityLevel("sell"), actor.canSell);
     }
 }
@@ -86,7 +90,7 @@ TEST(PlayerbotSecurityPolicyComposesActorAndCommandPermissions)
 TEST(PlayerbotSecurityPolicyAuthorizesTheRaidWarningCommandThatWillRun)
 {
     CHECK_EQ(GetPlayerbotDispatchedCommandSecurityLevel("follow Bot", false),
-             PLAYERBOT_SECURITY_ALLOW_GROUP);
+             PLAYERBOT_SECURITY_ALLOW_ALL);
     CHECK_EQ(GetPlayerbotDispatchedCommandSecurityLevel("follow Bot", true),
              PLAYERBOT_SECURITY_ALLOW_ALL);
     CHECK_EQ(GetPlayerbotDispatchedCommandSecurityLevel("who Bot", true),
