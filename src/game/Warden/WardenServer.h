@@ -113,6 +113,9 @@ private:
     std::optional<CheckPlan> m_pendingPlan;
     uint8 m_transferCount = 0;
     bool m_started = false;
+    // An external packet/start transition happened after the previous world
+    // update. The next update must not charge that new state for earlier time.
+    bool m_transitionedSinceUpdate = false;
 };
 }
 

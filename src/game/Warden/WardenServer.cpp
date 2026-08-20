@@ -118,6 +118,7 @@ bool WardenServer::Start()
 
     m_state = WardenState::AwaitingModuleStatus;
     ResetDeadline();
+    m_transitionedSinceUpdate = true;
     return true;
 }
 
@@ -255,6 +256,7 @@ void WardenServer::HandleEncrypted(ByteView encryptedBody)
 
             m_state = WardenState::ModuleReady;
             m_remainingMs = 0;
+            m_transitionedSinceUpdate = true;
             NotifyTerminal();
             return;
         }
@@ -271,9 +273,13 @@ void WardenServer::Update(bool eligible, uint32 diffMs)
     if (!m_started || m_state == WardenState::Failed)
         return;
 
+    uint32 const elapsedMs = m_transitionedSinceUpdate ? 0 : diffMs;
+    m_transitionedSinceUpdate = false;
+
     if (m_state == WardenState::ModuleReady)
     {
-        std::optional<CheckPlan> const plan = m_planner.Update(eligible, diffMs);
+        std::optional<CheckPlan> const plan =
+            m_planner.Update(eligible, elapsedMs);
         if (plan)
             SendCheckRequest(*plan);
         return;
@@ -281,13 +287,13 @@ void WardenServer::Update(bool eligible, uint32 diffMs)
 
     // Many small updates cannot extend the deadline: elapsed world time is
     // accumulated until the state either advances or expires.
-    if (diffMs >= m_remainingMs)
+    if (elapsedMs >= m_remainingMs)
     {
         m_remainingMs = 0;
         Fail(WardenFailure::DeadlineExpired);
         return;
     }
-    m_remainingMs -= diffMs;
+    m_remainingMs -= elapsedMs;
 }
 
 WardenState WardenServer::GetState() const
@@ -384,6 +390,7 @@ bool WardenServer::SendModuleTransfer()
 
     m_state = WardenState::AwaitingTransferResult;
     ResetDeadline();
+    m_transitionedSinceUpdate = true;
     return true;
 }
 
@@ -395,6 +402,7 @@ bool WardenServer::SendHashRequest()
         return false;
     m_state = WardenState::AwaitingHash;
     ResetDeadline();
+    m_transitionedSinceUpdate = true;
     return true;
 }
 
@@ -579,6 +587,7 @@ void WardenServer::HandleCheckResult(Bytes& plain)
     m_state = WardenState::ModuleReady;
     m_remainingMs = 0;
     m_planner.Complete(completedPlan);
+    m_transitionedSinceUpdate = true;
 
     // The decrypted response is explicitly zeroed before observer re-entry;
     // the outer RAII guard then sees an empty, already-cleansed buffer.

@@ -71,7 +71,8 @@ enum class CheckPlanValidation : uint8
     TooManyStrings,
     StringTableTooLarge,
     RequestBodyTooLarge,
-    ResultBodyTooLarge
+    ResultBodyTooLarge,
+    TransportResultBodyTooLarge
 };
 
 struct TimingResult

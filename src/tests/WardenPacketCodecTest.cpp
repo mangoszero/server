@@ -26,6 +26,7 @@
 #include "WardenCheckFixtures.h"
 #include "WardenModuleCatalog.h"
 #include "WardenPacketCodec.h"
+#include "PacketCodec.h"
 
 #include <algorithm>
 #include <cstring>
@@ -1109,6 +1110,61 @@ TEST(WardenPacket_inspects_exact_string_and_body_budget_boundaries)
     }
     CHECK(warden::InspectCheckPlan(plan, budget) ==
         warden::CheckPlanValidation::ResultBodyTooLarge);
+}
+
+TEST(WardenPacket_enforces_client_transport_result_body_budget)
+{
+    warden::WardenCheckCatalog const catalog =
+        warden::test::BuildInitialWardenCatalog();
+    warden::WardenCheckProfile const* profile =
+        catalog.Find(5875, "Win", "enUS");
+    REQUIRE(profile != nullptr);
+    REQUIRE(profile->checks.size() > 3u);
+
+    warden::WardenCheckDefinition mem = profile->checks[3];
+    REQUIRE(std::holds_alternative<warden::MemCheckProfile>(mem.payload));
+
+    // The client packet size field counts its four-byte opcode. The encrypted
+    // Warden body then adds command(1), result length(2), and checksum(4).
+    size_t constexpr CheckResultEnvelopeBytes = 7;
+    size_t constexpr MaximumResultBodyBytes = 10229;
+    static_assert(proto::MAX_CLIENT_PACKET_SIZE - sizeof(uint32) -
+            CheckResultEnvelopeBytes == MaximumResultBodyBytes,
+        "Classic Warden CHECK_RESULT body limit must remain exact");
+    size_t constexpr OneByteMemResultBytes = 2;
+    size_t constexpr TwoByteMemResultBytes = 3;
+    size_t constexpr OneByteMemCount =
+        (MaximumResultBodyBytes - TwoByteMemResultBytes) /
+        OneByteMemResultBytes;
+
+    warden::CheckPlan plan;
+    plan.requestId = 1;
+    plan.checks.reserve(OneByteMemCount + 1);
+    warden::MemCheckProfile& payload =
+        std::get<warden::MemCheckProfile>(mem.payload);
+    payload.expectedBytes.assign(1, uint8(0x90));
+    for (size_t index = 0; index < OneByteMemCount; ++index)
+    {
+        payload.checkId = uint32(400000 + index);
+        plan.checks.push_back(mem);
+    }
+    payload.checkId = uint32(400000 + OneByteMemCount);
+    payload.expectedBytes.push_back(uint8(0xCC));
+    plan.checks.push_back(mem);
+
+    warden::WardenCheckPlanBudget budget;
+    REQUIRE(warden::InspectCheckPlan(plan, budget) ==
+        warden::CheckPlanValidation::Valid);
+    CHECK_EQ(budget.maximumResultBytes, MaximumResultBodyBytes);
+
+    std::get<warden::MemCheckProfile>(
+        plan.checks.back().payload).expectedBytes.push_back(uint8(0xCC));
+    warden::CheckPlanValidation const validation =
+        warden::InspectCheckPlan(plan, budget);
+    CHECK(validation ==
+        warden::CheckPlanValidation::TransportResultBodyTooLarge);
+    CHECK(std::strcmp(warden::ToString(validation),
+        "TransportResultBodyTooLarge") == 0);
 }
 
 TEST(WardenPacket_failed_inspection_and_encoding_leave_outputs_unchanged)

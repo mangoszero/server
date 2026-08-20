@@ -404,8 +404,12 @@ bool ReachModuleReady(Harness& harness)
         harness.sent.size() != 3)
         return false;
 
-    return harness.peer.DecryptServer(harness.sent[2]) ==
+    bool const initialized = harness.peer.DecryptServer(harness.sent[2]) ==
         ExactModuleInitialization();
+    // Model the world update that follows packet handling. No check is
+    // eligible yet, but the external ModuleReady transition is now consumed.
+    harness.server->Update(false, 0);
+    return initialized;
 }
 
 bool StartTimingCheck(Harness& harness)
@@ -673,6 +677,9 @@ TEST(WardenServer_deadlines_are_cumulative_in_each_waiting_state)
 {
     auto expire = [](Harness& harness)
     {
+        // Every waiting state was created by Start or a client packet in the
+        // preceding world update, so consume its fresh-transition exemption.
+        harness.server->Update(false, 0);
         harness.server->Update(false, 12000);
         harness.server->Update(false, 17999);
         CHECK(harness.server->GetState() != warden::WardenState::Failed);
@@ -696,6 +703,30 @@ TEST(WardenServer_deadlines_are_cumulative_in_each_waiting_state)
     Harness hash;
     REQUIRE(ReachAwaitingHash(hash));
     expire(hash);
+}
+
+TEST(WardenServer_new_deadline_does_not_inherit_pre_transition_elapsed_time)
+{
+    Harness harness;
+    REQUIRE(StartAndReadModuleUse(harness));
+
+    // Model the end of the world tick that emitted MODULE_USE, then process a
+    // valid queued response before the next elapsed interval is charged.
+    harness.server->Update(false, 0);
+    harness.SendClient(ModuleOk());
+    REQUIRE(harness.server->GetState() == warden::WardenState::AwaitingHash);
+
+    // This interval began before MODULE_OK created the hash deadline. It must
+    // not expire that new state, but the next complete unanswered deadline
+    // must still be cumulative and terminal.
+    harness.server->Update(false, 30000);
+    REQUIRE(harness.server->GetState() == warden::WardenState::AwaitingHash);
+    harness.server->Update(false, 29999);
+    CHECK(harness.server->GetState() != warden::WardenState::Failed);
+    harness.server->Update(false, 1);
+    CHECK(harness.server->GetState() == warden::WardenState::Failed);
+    CHECK(harness.server->GetFailure() ==
+        warden::WardenFailure::DeadlineExpired);
 }
 
 TEST(WardenManager_creation_is_inert_for_exact_builds_and_rejects_unknown_ones)
@@ -966,6 +997,9 @@ TEST(WardenServer_sends_one_timing_check_after_eligibility_and_reports_stable)
     CHECK(evidence.outcome == warden::WardenCheckOutcome::Stable);
     CHECK_EQ(evidence.clientTick, uint32(0x12345678));
 
+    // Model the world update that follows packet handling. The elapsed
+    // interval predates the response and must not advance the fresh cadence.
+    harness.server->Update(true, 0);
     harness.server->Update(true, 60000);
     CHECK_EQ(harness.sent.size(), 5u);
     CHECK(harness.server->GetState() ==
