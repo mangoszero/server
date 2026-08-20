@@ -12,7 +12,7 @@ namespace ai
         public:
             ReviveFromCorpseAction(PlayerbotAI* ai) : MovementAction(ai, "revive"),
                 m_corpseRunStarted(0), m_corpseRunAllowance(0), m_corpseRunGaveUp(false),
-                m_corpseLegLength(0.0f), m_corpseLegAsked(false),
+                m_corpseLegLength(0.0f), m_corpseLegAsked(false), m_corpseLegRefusals(0),
                 m_corpseLegAskedX(0.0f), m_corpseLegAskedY(0.0f), m_corpseLegAskedZ(0.0f) {}
 
         public:
@@ -70,6 +70,9 @@ namespace ai
             // teleport-revive churn this branch exists to stop, reached the slow way.
             float m_corpseLegLength;
             bool m_corpseLegAsked;
+            // Consecutive refusals for this corpse. The give-up is terminal, and a near corpse
+            // reaches the ladder's floor in a single step, so one is not enough evidence.
+            uint32 m_corpseLegRefusals;
             float m_corpseLegAskedX;
             float m_corpseLegAskedY;
             float m_corpseLegAskedZ;

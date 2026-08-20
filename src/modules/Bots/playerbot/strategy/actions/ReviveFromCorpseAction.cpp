@@ -70,6 +70,7 @@ bool ReviveFromCorpseAction::Execute(Event event)
             // router is perfectly happy with.
             m_corpseLegAsked = false;
             m_corpseLegLength = sPlayerbotAIConfig.reactDistance;
+            m_corpseLegRefusals = 0;
 
             // Budget this run from its own length at the bot's live speed. GetSpeed picks up
             // both the server's configured run rate and the ghost bonus the core applies on
@@ -188,7 +189,18 @@ bool ReviveFromCorpseAction::Execute(Event event)
             const float asked = std::min(m_corpseLegLength, corpseDistance);
             m_corpseLegLength = asked / 2.0f;
 
-            if (m_corpseLegLength < sPlayerbotAIConfig.spellDistance)
+            ++m_corpseLegRefusals;
+
+            // Because the ladder is relative to the corpse, a NEAR corpse reaches the floor
+            // in one step -- anything closer than twice SpellDistance halves straight past
+            // it -- and the give-up below is terminal. One transient refusal would then cost
+            // the bot its corpse, and with it resurrection sickness and durability, where
+            // before this ladder existed it would have kept trying for the whole allowance.
+            // So spend a second tick before concluding the router means it. A refusal that is
+            // real repeats: the router is deterministic over the four seconds between ticks,
+            // and the only reason to doubt it is a grid that finished loading in between --
+            // which is exactly the case worth the extra tick.
+            if (m_corpseLegLength < sPlayerbotAIConfig.spellDistance && m_corpseLegRefusals >= 2)
             {
                 if (!m_corpseRunGaveUp)
                 {
@@ -223,6 +235,7 @@ bool ReviveFromCorpseAction::Execute(Event event)
         else
         {
             m_corpseLegLength = sPlayerbotAIConfig.reactDistance;
+            m_corpseLegRefusals = 0;
         }
 
         float x = corpse->GetPositionX();
