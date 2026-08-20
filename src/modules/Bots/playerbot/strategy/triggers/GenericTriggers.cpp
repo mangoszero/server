@@ -128,6 +128,30 @@ bool DebuffTrigger::IsActive()
 
 bool SpellTrigger::IsActive()
 {
+    // DO NOT gate this on whether the spell resolves. It was tried and reverted, and the
+    // reason is architectural rather than incidental.
+    //
+    // A trigger's name is NOT an assertion that the spell exists or is trained. It is the
+    // entry label of an ActionNode cascade that resolves an INTENT down to whatever this bot
+    // can actually cast. MageBuffDpsStrategy shows the shape plainly: it triggers on
+    // "mage armor" and fires the action "molten armor", and neither has to be castable --
+    // the cascade steps down to Frost Armor, which a level 1 mage has. Refusing here severs
+    // the entry point and the whole ladder below it goes with it.
+    //
+    // Three regressions were found from a single such gate, and only after review:
+    //   - ShamanBuffManaStrategy reaches Lightning Shield through the WotLK "water shield",
+    //     the only shield route for Elemental, Restoration and untalented shamans.
+    //   - DpsPaladinStrategy reaches the real Judgement through "judgement of wisdom" then
+    //     "judgement of light", which are debuff names and never castable. Gating stopped
+    //     Retribution bots judging at all, while they kept maintaining a seal to judge.
+    //   - MageBuffManaStrategy/MageBuffDpsStrategy key on "mage armor", learned at 34, so
+    //     every mage below that lost its armor buff entirely.
+    //
+    // The last one generalises: any ladder that steps down from a higher-level spell breaks
+    // for every bot below that level, so the exposure is open-ended rather than a fixed list
+    // of post-1.12 names. Unresolvable names here are load-bearing scaffolding, not litter.
+    // The cost of leaving them is one cached value lookup per evaluation, and CastSpellAction
+    // ::isPossible -> CanCastSpell already refuses the cast itself.
     return GetTarget();
 }
 

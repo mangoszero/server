@@ -27,7 +27,7 @@
  * It handles the creation, updating, and processing of these bots, ensuring they
  * behave in a way that simulates real player activity.
  */
-RandomPlayerbotMgr::RandomPlayerbotMgr() : PlayerbotHolder(), processTicks(0), m_processBotCursor(0)
+RandomPlayerbotMgr::RandomPlayerbotMgr() : PlayerbotHolder(), processTicks(0), m_processBotCursor(0), m_starterZoneCountsPass(-1), m_freeBotsPass(-1)
 {
 }
 
@@ -53,24 +53,93 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         LoadGroupedBots();
     }
 
+    if (!processTicks)
+    {
+        // Both statements in this block are DirectExecute, and they have to be. Reported by
+        // Codex on PR #476.
+        //
+        // Master::Run calls CharacterDatabase.AllowAsyncTransactions() unconditionally, so
+        // Execute here only QUEUES the delete on the delay thread. The same startup pass then
+        // reaches GetEventValue below, which misses its cache, runs a synchronous PQuery on
+        // another connection, and reads the row the delete has not removed yet -- then caches
+        // it for the row's own remaining validity, which for a randomize event is up to
+        // fourteen days. The delete lands moments later and changes nothing: the stale value
+        // is already in memory with a fortnight to run, and the recovery these statements
+        // implement is defeated for exactly the bots it was written to rescue.
+        //
+        // This is the second time this file has been caught by that ordering -- see the
+        // config_max note further down, where an asynchronous SetEventValue was read back
+        // before it landed and re-cached the old target for a day. A one-shot statement at
+        // startup has no throughput case for being asynchronous anyway.
+        //
+        // The eviction backoff is a runtime throttle, not durable state, and persisting
+        // it means a bot that had nowhere to go before a restart is still serving its
+        // cooldown afterwards -- including across the very restart that installed the
+        // fix for whatever stranded it. A fresh start is a fresh chance.
+        CharacterDatabase.DirectExecute("DELETE FROM `ai_playerbot_random_bots` WHERE `event` = 'evictcheck'");
+
+        // A bot that never got through a randomize sits at level 1 with its event banked,
+        // and the banked event then suppresses every retry for as long as
+        // MaxRandomRandomizeTime, which defaults to fourteen days -- so an install that hit
+        // this stays broken long after the code that caused it is gone: naked level 1 bots
+        // with no talents and no trainer spells, and no way back on their own. Dropping
+        // just those events lets the next pass randomize them properly.
+        //
+        // Level 1 alone does NOT identify them, which is what this used to test. Reported by
+        // Codex on PR #476 and confirmed against the live roster. StarterResidentLevelBand
+        // draws from max(1, RandomBotMinLevel) upwards, RandomBotMinLevel defaults to 1, and
+        // RandomizeStarterResident rolls urand(lo, hi) -- so roughly one starter-zone
+        // resident in ten legitimately lands at level 1, fully talented, spelled and geared.
+        // Predrib, guid 317: level 1, 3841 copper, four bags, seven spells, holding a
+        // randomize event with six days left to run. This statement deleted that event on
+        // every single restart, so the next pass re-rolled a perfectly healthy bot.
+        //
+        // The spellbook is what actually separates the two, and it separates them cleanly:
+        // on this roster every randomized level 1 bot has trainer spells (Predrib seven,
+        // Roac five) and all 629 that never reached the factory have exactly none. Test the
+        // uninitialized state rather than inferring it from a level a healthy bot may hold.
+        CharacterDatabase.DirectExecute(
+            "DELETE `e` FROM `ai_playerbot_random_bots` `e` "
+            "JOIN `characters` `c` ON `c`.`guid` = `e`.`bot` "
+            "WHERE `e`.`event` = 'randomize' AND `e`.`owner` = 0 AND `c`.`level` = 1 "
+            "AND NOT EXISTS (SELECT 1 FROM `character_spell` `s` WHERE `s`.`guid` = `c`.`guid`)");
+    }
+
     sLog.outBasic("Processing random bots...");
 
     uint32 cachedMin = GetEventValue(0, "config_min");
     uint32 cachedMax = GetEventValue(0, "config_max");
 
+    int maxAllowedBotCount = 0;
+
     if (cachedMin != sPlayerbotAIConfig.minRandomBots ||
         cachedMax != sPlayerbotAIConfig.maxRandomBots)
     {
-        sLog.outString("Bot count range changed from %d-%d to %d-%d, regenerating target...",
-            cachedMin, cachedMax,
-            sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots);
+        // Draw the new target here rather than writing a zero and reading it back. That
+        // round trip did not work: SetEventValue writes through PExecute, which is
+        // asynchronous, so the GetEventValue immediately below reached the database before
+        // the invalidating write landed and returned the OLD target. It was then re-cached
+        // with the old row's validity, and RandomBotCountChangeMinInterval is a day -- so
+        // raising MinRandomBots from 50-200 to 500-1000 left the server pinned at a target
+        // of 166 until that lapsed, with the log cheerfully reporting the new range beside
+        // the old target.
+        maxAllowedBotCount = urand(sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots);
 
-        SetEventValue(0, "bot_count", 0, 0);  // Invalidate
+        sLog.outString("Bot count range changed from %d-%d to %d-%d, new target %d",
+            cachedMin, cachedMax,
+            sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots,
+            maxAllowedBotCount);
+
+        SetEventValue(0, "bot_count", maxAllowedBotCount,
+            urand(sPlayerbotAIConfig.randomBotCountChangeMinInterval, sPlayerbotAIConfig.randomBotCountChangeMaxInterval));
         SetEventValue(0, "config_min", sPlayerbotAIConfig.minRandomBots, 999999);
         SetEventValue(0, "config_max", sPlayerbotAIConfig.maxRandomBots, 999999);
     }
+    else
+    {
+        maxAllowedBotCount = GetEventValue(0, "bot_count");
+    }
 
-    int maxAllowedBotCount = GetEventValue(0, "bot_count");
     if (!maxAllowedBotCount)
     {
         maxAllowedBotCount = urand(sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots);
@@ -79,7 +148,27 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
     }
 
     list<uint32> bots = GetBots();
+
+    // Seed the random-bot cache here, on the world thread, for every bot this pass knows
+    // about. IsRandomBot is reached from map workers -- PlayerbotAI::UpdateAI, the trade
+    // and grind values, AiFactory -- and on a miss it both queries the database and
+    // inserts into this unordered_map. Two threads inserting, or one reading through
+    // another's rehash, is undefined behaviour rather than a stale read. Making the world
+    // thread fill it first means the map-worker path only ever finds, never writes.
+    {
+        std::lock_guard<std::mutex> guard(m_cacheMutex);
+        for (list<uint32>::const_iterator i = bots.begin(); i != bots.end(); ++i)
+        {
+            if (m_randomBotCache.find(*i) == m_randomBotCache.end())
+            {
+                m_randomBotCache[*i] = true;
+            }
+        }
+    }
+
     int botCount = bots.size();
+    sLog.outBasic("Random bot roster %d, target %d (config %d-%d)", botCount, maxAllowedBotCount,
+        sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots);
     int allianceNewBots = 0, hordeNewBots = 0;
     int randomBotsPerInterval = (int)urand(sPlayerbotAIConfig.minRandomBotsPerInterval, sPlayerbotAIConfig.maxRandomBotsPerInterval);
     if (!processTicks)
@@ -144,7 +233,8 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         }
     }
 
-    for (size_t examined = 0; examined < bots.size(); ++examined)
+    size_t examined = 0;
+    for (; examined < bots.size(); ++examined)
     {
         if (budgetMs && getMSTimeDiff(passStart, getMSTime()) >= budgetMs)
         {
@@ -177,8 +267,11 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         SetNextCheckDelay(sPlayerbotAIConfig.randomBotCatchupInterval * 1000);
     }
 
-    sLog.outString("%d bots processed%s. %d alliance and %d horde bots added. %d bots online. Next check in %d seconds",
-        botProcessed, overBudget ? " (budget reached, more pending)" : "", allianceNewBots, hordeNewBots, playerBots.size(),
+    // Report examined as well as processed: every bot the pass walks past pays for its
+    // event lookups whether or not it turns out to have work, so "processed" alone hides
+    // most of what the budget actually went on.
+    sLog.outString("%d bots processed, %u examined%s. %d alliance and %d horde bots added. %d bots online. Next check in %d seconds",
+        botProcessed, (uint32)examined, overBudget ? " (budget reached, more pending)" : "", allianceNewBots, hordeNewBots, playerBots.size(),
         overBudget ? sPlayerbotAIConfig.randomBotCatchupInterval : sPlayerbotAIConfig.randomBotUpdateInterval);
 
     if (processTicks++ == 1)
@@ -187,16 +280,174 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
     }
 }
 
-uint32 RandomPlayerbotMgr::AddRandomBot(bool alliance)
+uint32 RandomPlayerbotMgr::GetStartZoneForRace(uint32 race)
 {
-    vector<uint32> bots = GetFreeBots(alliance);
-    if (bots.size() == 0)
+    std::map<uint32, uint32>::const_iterator cached = m_raceStartZones.find(race);
+    if (cached != m_raceStartZones.end())
+    {
+        return cached->second;
+    }
+
+    uint32 zoneId = 0;
+    for (uint32 cls = 1; cls < MAX_CLASSES; ++cls)
+    {
+        if (PlayerInfo const* info = sObjectMgr.GetPlayerInfo(race, cls))
+        {
+            zoneId = info->areaId;
+            break;
+        }
+    }
+
+    m_raceStartZones[race] = zoneId;
+    return zoneId;
+}
+
+uint32 RandomPlayerbotMgr::PickForStarterZoneQuota(vector<uint32>& bots)
+{
+    uint32 quota = sPlayerbotAIConfig.randomBotStarterZoneQuota;
+    if (!quota || !sPlayerbotAIConfig.randomBotStarterZonePct)
     {
         return 0;
     }
 
-    int index = urand(0, bots.size() - 1);
-    uint32 bot = bots[index];
+    // How many residents each starting zone currently has in the ACTIVE roster. A
+    // percentage decides who MAY live in a starting zone; only this decides who actually
+    // does, because admission draws uniformly from every free character of a faction and
+    // nothing made it prefer the ones that would populate an empty zone. On a roster of
+    // 450 with 101 active, that left Teldrassil and Mulgore with none at all -- not
+    // because placement failed, but because no qualifying night elf or tauren was ever
+    // selected to log in.
+    // Recomputed at most once per pass rather than once per admission: a pass that adds
+    // several bots was otherwise running this same aggregate for each of them. The tally
+    // is then kept current in memory as bots are chosen, so a pass admitting several
+    // still spreads them across zones instead of sending them all to the same one.
+    if (m_starterZoneCountsPass != processTicks || m_starterZoneCounts.empty())
+    {
+        m_starterZoneCounts.clear();
+        m_starterZoneCountsPass = processTicks;
+
+        std::map<uint32, uint32> present;
+        QueryResult* results = CharacterDatabase.PQuery(
+            "SELECT `c`.`race`, COUNT(*) FROM `ai_playerbot_random_bots` `e` "
+            "JOIN `characters` `c` ON `c`.`guid` = `e`.`bot` "
+            "WHERE `e`.`event` = 'add' AND `e`.`owner` = 0 AND (`e`.`bot` %% 100) < '%u' "
+            "GROUP BY `c`.`race`",
+            sPlayerbotAIConfig.randomBotStarterZonePct);
+
+        if (results)
+        {
+            do
+            {
+                Field* fields = results->Fetch();
+                uint32 zone = GetStartZoneForRace(fields[0].GetUInt32());
+                if (zone)
+                {
+                    present[zone] += fields[1].GetUInt32();
+                }
+            } while (results->NextRow());
+            delete results;
+        }
+
+        m_starterZoneCounts = present;
+    }
+
+    std::map<uint32, uint32>& present = m_starterZoneCounts;
+
+    // Take the emptiest zone that this candidate pool can actually fill, so the six
+    // starting zones fill evenly rather than whichever race happens to be drawn first.
+    uint32 bestBot = 0;
+    uint32 bestShortfall = 0;
+
+    for (vector<uint32>::const_iterator i = bots.begin(); i != bots.end(); ++i)
+    {
+        uint32 guid = *i;
+        if ((guid % 100) >= sPlayerbotAIConfig.randomBotStarterZonePct)
+        {
+            continue;   // not a resident, cannot help a quota
+        }
+
+        uint32 zone = m_botStartZones.count(guid) ? m_botStartZones[guid] : 0;
+        if (!zone)
+        {
+            continue;
+        }
+
+        uint32 have = present.count(zone) ? present[zone] : 0;
+        if (have >= quota)
+        {
+            continue;
+        }
+
+        uint32 shortfall = quota - have;
+        if (shortfall > bestShortfall)
+        {
+            bestShortfall = shortfall;
+            bestBot = guid;
+        }
+    }
+
+    if (bestBot)
+    {
+        // Count it immediately. The caller is about to admit this bot, and the next call
+        // in the same pass must see the zone as one fuller or it would keep choosing the
+        // same one until the tally is rebuilt next pass.
+        ++present[m_botStartZones[bestBot]];
+        sLog.outDetail("Starter-zone quota short by %u; admitting resident bot %u", bestShortfall, bestBot);
+    }
+
+    return bestBot;
+}
+
+uint32 RandomPlayerbotMgr::AddRandomBot(bool alliance)
+{
+    // Built once per pass, not once per admission. GetFreeBots is a scan of every bot
+    // character -- around 200ms at nine thousand of them -- and this is called for each
+    // bot admitted, so a pass adding fifty spent ten seconds in synchronous database work.
+    // That is the same shape as the per-account query it just replaced, one level up.
+    // Admitted bots are struck from the vector below so the list stays correct within the
+    // pass without being rebuilt, the way the starter-zone tally already works.
+    int idx = alliance ? 0 : 1;
+    if (m_freeBotsPass != processTicks)
+    {
+        m_freeBotsPass = processTicks;
+        m_freeBotsCache[0].clear();
+        m_freeBotsCache[1].clear();
+    }
+
+    if (m_freeBotsCache[idx].empty())
+    {
+        m_freeBotsCache[idx] = GetFreeBots(alliance);
+    }
+
+    vector<uint32>& bots = m_freeBotsCache[idx];
+    if (bots.size() == 0)
+    {
+        sLog.outBasic("No free %s bots to add (%u bot accounts known)",
+            alliance ? "alliance" : "horde", (uint32)sPlayerbotAIConfig.randomBotAccounts.size());
+        return 0;
+    }
+
+    // Fill a starving starting zone before drawing at random, and only then.
+    uint32 bot = PickForStarterZoneQuota(bots);
+    if (!bot)
+    {
+        int index = urand(0, bots.size() - 1);
+        bot = bots[index];
+    }
+
+    // Strike it from the cached list, because leaving it in lets the same bot be drawn
+    // twice in one pass. A rebuild below excludes it too, but only because SetEventValue
+    // records the bot in m_pendingAddGuids and GetFreeBots merges that in: the INSERT it
+    // issues is asynchronous, so the database this rebuild queries would still be showing
+    // the bot as free.
+    for (vector<uint32>::iterator i = bots.begin(); i != bots.end(); ++i)
+    {
+        if (*i == bot)
+        {
+            bots.erase(i);
+            break;
+        }
+    }
     SetEventValue(bot, "add", 1, urand(sPlayerbotAIConfig.minRandomBotInWorldTime, sPlayerbotAIConfig.maxRandomBotInWorldTime));
     uint32 randomTime = 30 + urand(sPlayerbotAIConfig.randomBotUpdateInterval, sPlayerbotAIConfig.randomBotUpdateInterval * 3);
     ScheduleRandomize(bot, randomTime);
@@ -213,6 +464,43 @@ void RandomPlayerbotMgr::ScheduleRandomize(uint32 bot, uint32 time)
 void RandomPlayerbotMgr::ScheduleTeleport(uint32 bot)
 {
     SetEventValue(bot, "teleport", 1, 60 + urand(sPlayerbotAIConfig.randomBotUpdateInterval, sPlayerbotAIConfig.randomBotUpdateInterval * 3));
+}
+
+/// The configured minimum level, clamped so it can never exceed the maximum actually
+/// available on this server.
+///
+/// Config load already guarantees RandomBotMinLevel <= RandomBotMaxLevel, but the server's own
+/// MaxPlayerLevel is applied AFTER that and can be lower than either -- a roster configured
+/// 40..60 on a level-30 server inverts here and nowhere else. urand() passes the pair straight
+/// to std::uniform_int_distribution<uint32>, whose precondition is min <= max, so an inverted
+/// pair is undefined behaviour rather than an empty range.
+static uint32 RandomBotMinLevelFor(uint32 maxLevel)
+{
+    uint32 minLevel = sPlayerbotAIConfig.randomBotMinLevel;
+    if (minLevel > maxLevel)
+    {
+        return maxLevel;
+    }
+
+    return minLevel;
+}
+
+/// The minimum a bot's level is JUDGED against, clamped the same way the draw is.
+///
+/// Clamping only the draw fixed the undefined behaviour and left the loop: with a configured
+/// minimum above the server's MaxPlayerLevel the draw correctly yields the cap, and then
+/// ProcessBot compares that bot against the raw configured minimum, calls it out of range and
+/// schedules another immediate randomization -- the full CleanRandomize and save cycle,
+/// forever. Both sides have to use the same clamped value.
+static uint32 EffectiveRandomBotMinLevel()
+{
+    uint32 maxLevel = sPlayerbotAIConfig.randomBotMaxLevel;
+    if (maxLevel > sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
+    {
+        maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
+    }
+
+    return RandomBotMinLevelFor(maxLevel);
 }
 
 bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
@@ -239,7 +527,19 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
     if (!GetPlayerBot(bot))
     {
         sLog.outDetail("Bot %d logged in", bot);
-        AddPlayerBot(bot, 0);
+        // Retire the roster entry when the login is refused outright rather than retrying
+        // it forever. The entry outlives the configuration that created it: drop
+        // RandomBotAccountCount after a stress test and every 'add' event above the new
+        // ceiling comes back here on every pass, spending the pass budget that the bots
+        // which can still log in need. One run left 712 of 811 entries in this state,
+        // retried 9,558 times in ninety minutes.
+        if (!AddPlayerBot(bot, 0))
+        {
+            SetEventValue(bot, "add", 0, 0);
+            SetEventValue(bot, "online", 0, 0);
+            return true;
+        }
+
         if (!GetEventValue(bot, "online"))
         {
             SetEventValue(bot, "online", 1, sPlayerbotAIConfig.minRandomBotInWorldTime);
@@ -272,7 +572,13 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
             sLog.outDetail("Setting dead flag for bot %d", bot);
             uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotReviveTime, sPlayerbotAIConfig.maxRandomBotReviveTime);
             SetEventValue(bot, "dead", 1, randomTime);
-            SetEventValue(bot, "revive", 1, randomTime - 60);
+            // "Revive a minute before the dead flag lapses" -- but both are uint32, so any
+            // revive time under 60 wrapped this to about 136 years. The revive event then
+            // never expired, the branch below never ran, and the bot stayed a ghost until
+            // the dead flag lapsed and reset the pair, forever. Nobody hit it because the
+            // shipped minimum is exactly 60; anyone lowering it to get bots back on their
+            // feet sooner would have got the precise opposite.
+            SetEventValue(bot, "revive", 1, randomTime > 60 ? randomTime - 60 : 0);
             return false;
         }
 
@@ -288,11 +594,36 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
         return false;
     }
 
+    // Nothing below this line may move a bot that is fighting. Every branch that follows
+    // can teleport, re-level or re-gear, and all of them run on the world thread while a
+    // map worker has the bot mid-swing -- so a passer-by watched bots blink out of a fight
+    // and reappear across the zone. Only IsBeingTeleported was ever checked, which catches
+    // a teleport already in flight and says nothing about combat.
+    //
+    // The dead branch above is deliberately before this: a dead bot is not in combat in any
+    // sense worth protecting, and reviving in place is the one relocation that has to
+    // happen regardless. Reading IsInCombat from this thread is a stale read at worst, and
+    // the cost of being one pass late is a bot that moves a minute later than it might have.
+    if (player->IsInCombat())
+    {
+        return false;
+    }
+
     uint32 randomize = GetEventValue(bot, "randomize");
     if (!randomize)
     {
         sLog.outDetail("Randomizing bot %d", bot);
-        Randomize(player);
+        // Bank the event only when the bot was actually randomized. Spending it either way
+        // is what let one failed pass cost a bot its level, gear, talents and trainer
+        // spells for up to a fortnight, because nothing looks at it again until the event
+        // lapses. Same rule the teleport branches already follow: only spend the event if
+        // the thing it records really happened.
+        if (!Randomize(player))
+        {
+            sLog.outDetail("Randomizing bot %d did not take; will retry", bot);
+            return true;
+        }
+
         uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotRandomizeTime, sPlayerbotAIConfig.maxRandomBotRandomizeTime);
         ScheduleRandomize(bot, randomTime);
         return true;
@@ -307,12 +638,47 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
         return true;
     }
 
-    if (!IsZoneSafeForBot(player, player->GetMapId(), player->GetPositionX(),
+    // A resident that has outgrown the band is put back to the start here, before
+    // anything else can move it. IncreaseLevel already does this, but IncreaseLevel only
+    // runs when the randomize event lapses, which is somewhere between two hours and a
+    // fortnight away -- so it never governs real levelling. Bots earn ordinary kill,
+    // quest and exploration experience, and Player::GiveXP calls GiveLevel straight out
+    // on the map worker without consulting this manager at all. A resident rolled to 10
+    // therefore reaches 11 by simply playing, and at 11 both home-confinement tests stop
+    // applying, so the very next eviction or teleport event sends it off to a
+    // level-appropriate zone somewhere else entirely. That is the drain: not the manager
+    // levelling residents out, but residents levelling themselves out from underneath it.
+    //
+    // Repaired on the world thread, where the roster is owned, rather than by hooking the
+    // level-up on the map worker.
+    if (IsStarterZoneResident(player) &&
+        sPlayerbotAIConfig.randomBotHomeZoneMaxLevel &&
+        player->getLevel() > sPlayerbotAIConfig.randomBotHomeZoneMaxLevel)
+    {
+        sLog.outDetail("Resident bot %d outgrew the starting band at level %u; returning it",
+            bot, player->getLevel());
+        RandomizeStarterResident(player);
+        return true;
+    }
+
+    // No timer gates this check, so a bot with nowhere valid to go re-ran the whole
+    // search on every pass: a hundred game_tele draws and a GetZoneLevel query apiece,
+    // once a minute, for as long as it stood there. Only a failure needs the backoff --
+    // an eviction that worked leaves the bot somewhere this same check accepts, so
+    // holding a cooldown over it would only delay the next legitimate move.
+    if (!GetEventValue(bot, "evictcheck") &&
+        !IsZoneSafeForBot(player, player->GetMapId(), player->GetPositionX(),
         player->GetPositionY(), player->GetPositionZ()))
     {
         sLog.outDetail("Bot %d is in unsafe zone, forcing teleport", bot);
-        RandomTeleportForLevel(player);
-        SetEventValue(bot, "teleport", 1, sPlayerbotAIConfig.maxRandomBotInWorldTime);
+        if (RandomTeleportForLevel(player))
+        {
+            SetEventValue(bot, "teleport", 1, sPlayerbotAIConfig.maxRandomBotInWorldTime);
+        }
+        else
+        {
+            SetEventValue(bot, "evictcheck", 1, 10 * sPlayerbotAIConfig.randomBotUpdateInterval);
+        }
         return true;
     }
 
@@ -323,10 +689,14 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
     {
         maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
     }
-    if (botLevel < sPlayerbotAIConfig.randomBotMinLevel || botLevel > maxLevel)
+    // Judge against the same clamped minimum the draw uses, not the raw configured one:
+    // otherwise a minimum above the server's MaxPlayerLevel condemns every bot the draw
+    // legitimately produced at the cap, and the re-randomization below never terminates.
+    uint32 minLevel = EffectiveRandomBotMinLevel();
+    if (botLevel < minLevel || botLevel > maxLevel)
     {
         sLog.outDetail("Bot %d level %d is outside valid range (%d-%d), scheduling immediate re-randomization",
-            bot, botLevel, sPlayerbotAIConfig.randomBotMinLevel, maxLevel);
+            bot, botLevel, minLevel, maxLevel);
         ScheduleRandomize(bot, 0);
         return true;
     }
@@ -335,33 +705,66 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
     if (!teleport)
     {
         sLog.outDetail("Random teleporting bot %d", bot);
-        RandomTeleportForLevel(ai->GetBot());
-        SetEventValue(bot, "teleport", 1, sPlayerbotAIConfig.maxRandomBotInWorldTime);
+        // ee37c57e made the eviction branch above wait for a successful teleport before
+        // recording one, and left this branch still banking it either way -- so a bot
+        // that could not be placed had its next move suppressed for maxRandomBotInWorldTime
+        // anyway. Same rule here: only spend the event if the bot actually moved.
+        if (RandomTeleportForLevel(ai->GetBot()))
+        {
+            SetEventValue(bot, "teleport", 1, sPlayerbotAIConfig.maxRandomBotInWorldTime);
+        }
         return true;
     }
 
     return false;
 }
 
-void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs)
+bool RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs)
 {
     if (bot->IsBeingTeleported())
     {
-        return;
+        return false;
     }
 
     if (locs.empty())
     {
         sLog.outError("Cannot teleport bot %s - no locations available", bot->GetName());
-        return;
+        return false;
     }
 
     for (int attemtps = 0; attemtps < 10; ++attemtps)
     {
         int index = urand(0, locs.size() - 1);
         WorldLocation loc = locs[index];
-        float x = loc.coord_x + urand(0, sPlayerbotAIConfig.grindDistance) - sPlayerbotAIConfig.grindDistance / 2;
-        float y = loc.coord_y + urand(0, sPlayerbotAIConfig.grindDistance) - sPlayerbotAIConfig.grindDistance / 2;
+
+        // Land on the anchor, and do NOT invent a nearby point.
+        //
+        // This used to jitter x and y by up to half a grindDistance -- fifty yards with the
+        // shipped setting -- while leaving z as the anchor's own height. That combination is
+        // the whole bug: an authored, known-good spawn height applied to an XY up to fifty
+        // yards away, which is a position no one ever validated and which frequently belongs
+        // to a different layer of the world entirely. Everything downstream was then trying
+        // to rescue a coordinate that was fabricated from two unrelated places, and the
+        // guards that were added to do so each failed on a different shape of geometry:
+        //
+        //   Shadowglen: anchor Young Nightsaber (10270.5, 744.21, 1341.8), jitter (-43,+40).
+        //     The landing had Static below at 1339.259 and ADT Terrain above at 1365.012, so
+        //     an overhead test looking for Static found nothing and passed it.
+        //   Stormwind: anchor Stormwind Orphan (-8615.78, 739.56, 101.894), jitter (+23,-39).
+        //     The landing had Terrain below at 59.457 and the street as Static above at
+        //     122.337 -- 2.83 yards higher than a sixty-yard upward scan could reach.
+        //
+        // Both dropped a bot ~40 yards under the world, onto a sealed navmesh island it
+        // could wander but never leave. Note the two are exact opposites in surface kind,
+        // which is why no rule keyed on SurfaceKind can settle this, and why a kind-agnostic
+        // ceiling rule is no better: 9.56% of ground anchors legitimately carry something
+        // solid overhead -- bridges, caves, overhangs, multi-level models.
+        //
+        // The anchor is already a validated position: it is where the world authors put a
+        // creature. Use it, and require the baked floor to agree with it. The cost is the
+        // loss of the scatter, and the pool supplies thousands of anchors instead.
+        float x = loc.coord_x;
+        float y = loc.coord_y;
         float z = loc.coord_z;
 
         Map* map = sMapMgr.FindMap(loc.mapid);
@@ -376,38 +779,306 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
             continue;
         }
 
-        AreaTableEntry const* area = sAreaStore.LookupEntry(terrain->GetAreaId(x, y, z));
-        if (!area)
-        {
-            continue;
-        }
-
-        if (!terrain->IsOutdoors(x, y, z) ||
-            +terrain->IsUnderWater(x, y, z) ||
-            +terrain->IsInWater(x, y, z))
-        {
-            continue;
-        }
-
-        sLog.outDetail("Random teleporting bot %s to %s %f,%f,%f", bot->GetName(), area->AreaName_lang[0], x, y, z);
-        std::optional<float> floor = map->GetTerrain()->StaticFloor(x, y, 0.5f + z);
-        if (!floor)
+        // The floor here must AGREE with the anchor, not merely exist.
+        //
+        // "A floor was found" is what let both bad landings through: there is always a floor
+        // somewhere under an XY, and taking whichever one the column search happened to
+        // return is how a bot ends up on the wrong layer. Requiring the baked floor to sit
+        // within two yards of the height the world authors recorded for this spawn is a
+        // statement about the same place rather than a guess about geometry, so it does not
+        // care which of terrain or model happens to be on top.
+        //
+        // Measured over the shipped Zero data: 20,502 ground anchors on maps 0 and 1, of
+        // which 20,439 agree within two yards -- 99.69%. The 63 rejects are 30 genuine
+        // disagreements and 33 with no floor at all. Both known bad anchors agree to better
+        // than 0.01 yards, so neither is lost.
+        std::optional<float> floor = terrain->StaticFloor(x, y, 0.5f + z);
+        if (!floor || fabs(*floor - loc.coord_z) > 2.0f)
         {
             continue;
         }
 
         z = 0.05f + *floor;
 
+        // The overhead-kind test and the loose fifty-yard backstop that used to sit here are
+        // both GONE, deliberately, and should not come back.
+        //
+        // Each existed to catch a landing the jitter had already invented, and each could
+        // only ever catch one shape of it. The kind test asked whether something Static was
+        // overhead: true under Stormwind's streets, false under Teldrassil's canopy, where
+        // the layer above is Terrain -- and it could not see Stormwind either, because its
+        // sixty-yard ray began 2.83 yards below the street it was looking for. The fifty-yard
+        // backstop then waved through a 42-yard drop as being within tolerance.
+        //
+        // Widening the ray or loosening the kind test only moves the boundary. Neither is
+        // needed once x and y are the anchor's own, because the agreement check above is
+        // asking about a single real place instead of adjudicating geometry.
+
+        AreaTableEntry const* area = sAreaStore.LookupEntry(terrain->GetAreaId(x, y, z));
+        if (!area)
+        {
+            continue;
+        }
+
+        // Asked at the height the bot would actually stand at, not at the anchor's.
+        //
+        // IsOutdoors reads the WMO group flags at the point given, so it rejects a spot
+        // inside a building's interior. It does NOT reject the ground beneath one, and the
+        // comment here used to claim it did: under Stormwind's streets a bot is outdoors,
+        // on solid ground, correctly inside the Stormwind City area, and forty yards below
+        // where anyone should be. Nothing in this predicate would have caught that -- the
+        // agreement check above is what does.
+        if (!terrain->IsOutdoors(x, y, z) ||
+            terrain->IsUnderWater(x, y, z) ||
+            terrain->IsInWater(x, y, z))
+        {
+            continue;
+        }
+
+        // ProcessBot judges the spot the bot is standing on, so this must judge the same
+        // spot. That is now the anchor itself -- the jitter is gone -- but the anchors in
+        // this pool are still gathered over a radius around a game_tele, so a landing can
+        // sit well away from the point the pool was centred on. Vetting only that centre
+        // lets an eviction drop the bot somewhere the next pass evicts it from again, a
+        // minute later.
+        if (!IsZoneSafeForBot(bot, loc.mapid, x, y, z))
+        {
+            continue;
+        }
+
+        // Clear after acceptance, never before -- the same ordering as the meeting-stone
+        // teleports below. It used to sit ahead of the call, where on the failure path it
+        // stripped the generators off a bot that never moved and parked it idle until the
+        // next randomisation pass came round.
+        if (!bot->TeleportTo(loc.mapid, x, y, z, 0))
+        {
+            // Keep trying. TeleportTo has real failure returns -- a map it cannot enter, a
+            // bot already in flight -- and treating one as success banked the teleport event
+            // and left the bot where it stood, unmoved but marked as moved.
+            continue;
+        }
+
         bot->GetMotionMaster()->Clear();
-        bot->TeleportTo(loc.mapid, x, y, z, 0);
-        return;
+
+        // Log the landing that HAPPENED, not the ones that were considered.
+        //
+        // This line used to sit above the checks, so every candidate the loop threw out was
+        // announced as a teleport. One bot logged fourteen destinations in a single second
+        // for at most one real move -- ten attempts plus the sub-area, zone and generic
+        // fallbacks -- overstating teleports roughly threefold and reading, wrongly, as
+        // churn. It cost real time twice while diagnosing a movement bug.
+        sLog.outDetail("Random teleporting bot %s to %s %f,%f,%f", bot->GetName(), area->AreaName_lang[0], x, y, z);
+        return true;
     }
 
     sLog.outError("Cannot teleport bot %s - no locations available", bot->GetName());
+    return false;
 }
 
-void RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
+uint32 RandomPlayerbotMgr::FindStartSubArea(uint32 mapId, uint32 zoneId, float x, float y, float z)
 {
+    if (!zoneId)
+    {
+        return 0;
+    }
+
+    Map* map = const_cast<Map*>(sMapMgr.FindMap(mapId));
+    if (!map || !map->GetTerrain())
+    {
+        return 0;
+    }
+
+    // The newbie sub-area is whichever one holds the ordinary creatures closest to where
+    // the race begins. Elites are excluded for the same reason they are excluded
+    // everywhere else here: a level 1 is not going to be fighting them, so an area known
+    // only by its elites is not the area we are looking for.
+    uint32 best = 0;
+    float bestDist = 0.0f;
+
+    CreatureDataMap const* creatureDataMap = sObjectMgr.GetCreatureDataMap();
+    for (CreatureDataMap::const_iterator itr = creatureDataMap->begin(); itr != creatureDataMap->end(); ++itr)
+    {
+        CreatureData const& data = itr->second;
+        if (data.mapid != mapId)
+        {
+            continue;
+        }
+
+        CreatureInfo const* cInfo = sObjectMgr.GetCreatureTemplate(data.id);
+        if (!cInfo || cInfo->Rank > CREATURE_ELITE_NORMAL)
+        {
+            continue;
+        }
+
+        float dx = data.posX - x;
+        float dy = data.posY - y;
+        float dist = dx * dx + dy * dy;
+        if (best && dist >= bestDist)
+        {
+            continue;
+        }
+
+        uint32 spawnArea = 0;
+        uint32 spawnZone = 0;
+        map->GetTerrain()->GetZoneAndAreaId(spawnZone, spawnArea, data.posX, data.posY, data.posZ);
+
+        // Only a genuine sub-area of the race's own starting zone qualifies. A spawn out
+        // in the open zone answers with the zone itself and tells us nothing new.
+        if (spawnZone != zoneId || spawnArea == zoneId || !spawnArea)
+        {
+            continue;
+        }
+
+        best = spawnArea;
+        bestDist = dist;
+    }
+
+    return best;
+}
+
+RandomPlayerbotMgr::RacialStart RandomPlayerbotMgr::GetRacialStart(Player* bot)
+{
+    uint32 race = bot->getRace();
+
+    std::map<uint32, RacialStart>::const_iterator cached = m_racialStarts.find(race);
+    if (cached != m_racialStarts.end())
+    {
+        return cached->second;
+    }
+
+    // playercreateinfo is per race AND class, but the starting position is a property of
+    // the race: all eight agree across every class they can be. Take the bot's own class
+    // and fall back to scanning for any class the race has, so a race whose create info is
+    // incomplete for one class still resolves.
+    PlayerInfo const* info = sObjectMgr.GetPlayerInfo(race, bot->getClass());
+    for (uint32 cls = 1; !info && cls < MAX_CLASSES; ++cls)
+    {
+        info = sObjectMgr.GetPlayerInfo(race, cls);
+    }
+
+    RacialStart start;
+    start.zoneId = info ? info->areaId : 0;
+    start.areaId = 0;
+
+    // playercreateinfo's zone column is the zone, not the sub-area a new character
+    // actually opens their eyes in: a night elf gets Teldrassil, not Shadowglen, and the
+    // sub-area is recorded nowhere.
+    //
+    // Asking the create position alone is not enough, and that cost a run. The undead
+    // start at 1676,1678 inside the Deathknell crypt, and that point answers Tirisfal
+    // Glades rather than Deathknell, so the sub-area came back equal to the zone and no
+    // Deathknell landing pool was ever built. Take the position's own answer when it
+    // names a genuine sub-area, and otherwise ask which sub-area the nearest newbie
+    // creatures actually stand in -- which is the better question regardless, because a
+    // landing site is a creature spawn.
+    if (info)
+    {
+        Map* map = const_cast<Map*>(sMapMgr.FindMap(info->mapId));
+        if (map && map->GetTerrain())
+        {
+            uint32 atPoint = map->GetTerrain()->GetAreaId(info->positionX, info->positionY, info->positionZ);
+            if (atPoint && atPoint != start.zoneId)
+            {
+                start.areaId = atPoint;
+            }
+            else
+            {
+                start.areaId = FindStartSubArea(info->mapId, start.zoneId,
+                    info->positionX, info->positionY, info->positionZ);
+            }
+        }
+    }
+
+    m_racialStarts[race] = start;
+    return start;
+}
+
+uint32 RandomPlayerbotMgr::GetRacialStartZone(Player* bot)
+{
+    return GetRacialStart(bot).zoneId;
+}
+
+bool RandomPlayerbotMgr::RandomTeleportHome(Player* bot)
+{
+    RacialStart start = GetRacialStart(bot);
+    if (!start.zoneId)
+    {
+        return false;
+    }
+
+    if (m_areaCreatureStatsMap.empty())
+    {
+        CalculateAreaCreatureStats();
+    }
+
+    // A brand new character spends its first few levels inside the one sub-area --
+    // Shadowglen, Northshire, Coldridge Valley -- and only then works outward into the
+    // zone around it, so the pool it draws from narrows the same way. Preference, not
+    // requirement: if the sub-area cannot take the bot, the zone still can, and a bot
+    // placed slightly too far out is enormously better than one that cannot be placed at
+    // all. Camp Narache carries 17 landing sites against Mulgore's 1779, so a sub-area
+    // running out of usable ground is the ordinary case rather than the exotic one.
+    uint32 tightest = 0;
+    if (start.areaId && sPlayerbotAIConfig.randomBotHomeAreaMaxLevel &&
+        bot->getLevel() <= sPlayerbotAIConfig.randomBotHomeAreaMaxLevel)
+    {
+        tightest = start.areaId;
+    }
+
+    if (tightest)
+    {
+        std::map<uint32, std::vector<WorldLocation> >::iterator sub = m_homeZoneAnchors.find(tightest);
+        if (sub != m_homeZoneAnchors.end() && !sub->second.empty() && RandomTeleport(bot, sub->second))
+        {
+            Refresh(bot);
+            return true;
+        }
+    }
+
+    std::map<uint32, std::vector<WorldLocation> >::iterator anchors = m_homeZoneAnchors.find(start.zoneId);
+    if (anchors == m_homeZoneAnchors.end() || anchors->second.empty())
+    {
+        return false;
+    }
+
+    // Drawing from a pool that is already confined to the right zone, rather than sifting
+    // the whole game_tele list for the handful of entries that happen to land in it. The
+    // generic search draws blind from a map's worth of anchors, so once a bot is confined
+    // to one zone the odds of hitting it are poor enough that a run of a hundred attempts
+    // can still come up empty -- which is how the last over-strict filter produced
+    // "Cannot teleport bot" for every bot on the roster.
+    //
+    // Refresh on success for the same reason the generic teleport path does it: a bot
+    // arrives with whatever health, mana, durability and combat references it had where it
+    // left, and without this the home path was the one route that skipped the cleanup.
+    if (RandomTeleport(bot, anchors->second))
+    {
+        Refresh(bot);
+        return true;
+    }
+
+    return false;
+}
+
+bool RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
+{
+    // A bot young enough to still be in its own newbie zone never gets sent anywhere
+    // else. The generic search below would happily draw an anchor on the far continent,
+    // and IsZoneSafeForBot would then reject it for exactly this reason, so going
+    // straight to the home pool saves the wasted attempts as well as getting it right.
+    if (sPlayerbotAIConfig.randomBotHomeZoneMaxLevel &&
+        bot->getLevel() <= sPlayerbotAIConfig.randomBotHomeZoneMaxLevel)
+    {
+        if (RandomTeleportHome(bot))
+        {
+            return true;
+        }
+        // Falling through on failure is deliberate: a missing pool must not strand the
+        // bot where it is. The generic search still applies the same home-zone rule
+        // through IsZoneSafeForBot, so it cannot place the bot outside its zone -- it
+        // just costs more attempts to find a spot.
+    }
+
     for (int attempt = 0; attempt < 100; ++attempt)
     {
         int index = urand(0, sPlayerbotAIConfig.randomBotMaps.size() - 1);
@@ -432,26 +1103,37 @@ void RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
         index = urand(0, locs.size() - 1);
         if (index >= locs.size())
         {
-            return;
+            return false;
         }
 
         GameTele const* tele = locs[index];
         uint32 level = GetZoneLevel(tele->mapId, tele->position_x, tele->position_y, tele->position_z);
+        // The zone has to suit the bot from both directions. Only the upper bound was
+        // checked, so a level 52 bot could be anchored in Elwynn and then be evicted
+        // from it on the next pass for sitting outside the level band. Bound the zone
+        // level itself rather than vetting the anchor against the bot's level: almost
+        // no game_tele sits in an area whose creature stats bracket a given bot, so
+        // doing it there rejects every one of the 100 attempts and costs a
+        // GetZoneLevel query each time. The landing point is the authoritative check.
         if ((level > bot->getLevel() + sPlayerbotAIConfig.randomBotTeleLevel) ||
-          (level < sPlayerbotAIConfig.randomBotMinLevel) ||
+          (level + sPlayerbotAIConfig.randomBotTeleLevel < bot->getLevel()) ||
+          (level < EffectiveRandomBotMinLevel()) ||
           (!IsZoneSafeForBot(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z, level)))
         {
             continue;
         }
 
-        RandomTeleport(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z);
-        return;
+        if (RandomTeleport(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z))
+        {
+            return true;
+        }
     }
 
     sLog.outError("Cannot teleport bot %s - no locations available", bot->GetName());
+    return false;
 }
 
-void RandomPlayerbotMgr::RandomTeleport(Player* bot, uint32 mapId, float teleX, float teleY, float teleZ)
+bool RandomPlayerbotMgr::RandomTeleport(Player* bot, uint32 mapId, float teleX, float teleY, float teleZ)
 {
     vector<WorldLocation> locs;
     QueryResult* results = WorldDatabase.PQuery("SELECT `position_x`, `position_y`, `position_z` FROM `creature` WHERE `map` = '%u' AND ABS(`position_x` - '%f') < '%u' AND ABS(`position_y` - '%f') < '%u'",
@@ -464,26 +1146,35 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, uint32 mapId, float teleX, 
             float x = fields[0].GetFloat();
             float y = fields[1].GetFloat();
             float z = fields[2].GetFloat();
+            // Offer the sampler none but safe candidates, as this did before the
+            // spawn-query rewrite. Rejecting after the draw instead gives the ten
+            // attempts nothing to find when the anchor sits near a band edge.
+            if (!IsZoneSafeForBot(bot, mapId, x, y, z))
+            {
+                continue;
+            }
             WorldLocation loc(mapId, x, y, z, 0);
             locs.push_back(loc);
         } while (results->NextRow());
         delete results;
     }
 
-    RandomTeleport(bot, locs);
+    // Refresh regardless: the dead-bot path calls this to revive in place, and a bot
+    // that could not be relocated still has to come back alive where it stands.
+    bool moved = RandomTeleport(bot, locs);
     Refresh(bot);
+    return moved;
 }
 
-void RandomPlayerbotMgr::Randomize(Player* bot)
+bool RandomPlayerbotMgr::Randomize(Player* bot)
 {
     if (bot->getLevel() == 1)
     {
-        RandomizeFirst(bot);
+        return RandomizeFirst(bot);
     }
-    else
-    {
-        IncreaseLevel(bot);
-    }
+
+    IncreaseLevel(bot);
+    return true;
 }
 
 void RandomPlayerbotMgr::IncreaseLevel(Player* bot)
@@ -494,6 +1185,20 @@ void RandomPlayerbotMgr::IncreaseLevel(Player* bot)
     {
         botCap = maxLevel;
     }
+
+    // A resident that has outgrown the starting band goes back to the beginning rather
+    // than graduating out of the zone. This only governs the manager's own slow
+    // increment; it is not the real guard, because it runs only when the randomize event
+    // lapses. Levelling through ordinary play is caught by the equivalent check in
+    // ProcessBot, which runs every pass.
+    if (IsStarterZoneResident(bot) &&
+        sPlayerbotAIConfig.randomBotHomeZoneMaxLevel &&
+        bot->getLevel() >= sPlayerbotAIConfig.randomBotHomeZoneMaxLevel)
+    {
+        RandomizeStarterResident(bot);
+        return;
+    }
+
     if (bot->getLevel() >= botCap)
     {
         RandomizeFirst(bot);
@@ -513,8 +1218,103 @@ void RandomPlayerbotMgr::IncreaseLevel(Player* bot)
     RandomTeleportForLevel(bot);
 }
 
-void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
+/// The level range a starting-zone resident may be randomized into: the home-zone band
+/// intersected with the configured roster range and the server's level cap.
+///
+/// Returns false when they do not overlap, which is not a corner case to tolerate but one
+/// that loops. RandomizeStarterResident used to draw from a hard-coded 1..band ignoring
+/// RandomBotMinLevel, so raising that above RandomBotHomeZoneMaxLevel produced a resident
+/// whose level ProcessBot immediately rejects as out of range; the rejection schedules an
+/// immediate re-randomize, which draws from the same empty intersection, and the full
+/// CleanRandomize and save cycle repeats forever. With no overlap there is no such thing as
+/// a valid resident, so residency is reported off and the bot takes the ordinary path.
+static bool StarterResidentLevelBand(uint32& lo, uint32& hi)
 {
+    uint32 band = sPlayerbotAIConfig.randomBotHomeZoneMaxLevel;
+    if (!band)
+    {
+        band = 10;
+    }
+
+    uint32 maxLevel = sPlayerbotAIConfig.randomBotMaxLevel;
+    if (maxLevel > sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
+    {
+        maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
+    }
+
+    lo = std::max(uint32(1), sPlayerbotAIConfig.randomBotMinLevel);
+    hi = std::min(band, maxLevel);
+
+    return lo <= hi;
+}
+
+bool RandomPlayerbotMgr::IsStarterZoneResident(Player* bot)
+{
+    if (!sPlayerbotAIConfig.randomBotStarterZonePct)
+    {
+        return false;
+    }
+
+    // Asked here rather than only at randomize time, because the confinement and eviction
+    // rules consult residency too. If the configuration cannot produce a valid resident,
+    // every one of them has to agree that there are none.
+    uint32 lo = 0;
+    uint32 hi = 0;
+    if (!StarterResidentLevelBand(lo, hi))
+    {
+        return false;
+    }
+
+    // Decided from the bot's own guid rather than rolled, so it is the same answer every
+    // time it is asked -- across a randomize, a relog and a restart. A rolled residency
+    // would move a bot in and out of its starting zone every time it levelled, which is
+    // the opposite of the point. It also needs no storage and no extra event.
+    return (bot->GetGUIDLow() % 100) < sPlayerbotAIConfig.randomBotStarterZonePct;
+}
+
+bool RandomPlayerbotMgr::RandomizeStarterResident(Player* bot)
+{
+    // Draw from the same intersection residency was decided on, not from 1..band. Callers
+    // reach this only through IsStarterZoneResident, which already refused when the band is
+    // empty, so the result is guaranteed to be a level ProcessBot accepts.
+    uint32 lo = 0;
+    uint32 hi = 0;
+    if (!StarterResidentLevelBand(lo, hi))
+    {
+        return false;
+    }
+
+    uint32 level = urand(lo, hi);
+    sLog.outDetail("Bot %s is a starting-zone resident; randomizing at level %u",
+        bot->GetName(), level);
+
+    PlayerbotFactory factory(bot, level);
+    factory.CleanRandomize();
+
+    // Home first, because that is the whole intent. The generic search is the fallback
+    // and, being level-banded, it lands them somewhere a bot of this level belongs anyway.
+    if (!RandomTeleportHome(bot))
+    {
+        RandomTeleportForLevel(bot);
+    }
+
+    return true;
+}
+
+bool RandomPlayerbotMgr::RandomizeFirst(Player* bot)
+{
+    // A share of the roster lives in the zone its race starts in and stays there. Without
+    // this the starting zones drain within minutes of a restart: the confinement rules
+    // hold a bot in its home zone only while it IS low level, and RandomizeFirst rolls a
+    // level from a randomly chosen destination, so every bot promptly levels out of the
+    // band and leaves. Watched happen on a fresh roster -- Teldrassil emptied as its bots
+    // were levelled and teleported away one after another.
+    if (IsStarterZoneResident(bot))
+    {
+        return RandomizeStarterResident(bot);
+    }
+
+    bool randomized = false;
     uint32 maxLevel = sPlayerbotAIConfig.randomBotMaxLevel;
     if (maxLevel > sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
     {
@@ -544,7 +1344,9 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
         index = urand(0, locs.size() - 1);
         if (index >= locs.size())
         {
-            return;
+            // Leaves the loop rather than the function, so the bot still reaches the
+            // randomize-in-place fallback below instead of walking away untouched.
+            break;
         }
         GameTele const* tele = locs[index];
         uint32 level = GetZoneLevel(tele->mapId, tele->position_x, tele->position_y, tele->position_z);
@@ -575,46 +1377,104 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
             continue;
         }
 
+        // Everything above is a cheap check, so the search costs little however many
+        // attempts it takes. CleanRandomize is the opposite -- talents, spells, inventory,
+        // equipment and four SaveToDB -- so it runs exactly once, after a destination has
+        // passed every test, and the loop ends whether or not the move then succeeds.
+        //
+        // It sat inside the retry until now, which meant a teleport that returned false
+        // re-randomized the bot and went round again: up to a hundred full re-gears for
+        // one bot inside a single pass, and the 50ms budget is only checked between bots,
+        // so the tail was a multi-second stall of the world thread. RandomTeleport
+        // returning false for something as ordinary as an in-flight IsBeingTeleported made
+        // that reachable, not theoretical.
+        //
+        // If the placement does fail the bot keeps its new level and stays put; the
+        // eviction branch in ProcessBot will judge it and move it on a later pass, which
+        // is the same mechanism that handles every other badly-placed bot.
         PlayerbotFactory factory(bot, level);
         factory.CleanRandomize();
         RandomTeleport(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z);
+        randomized = true;
         break;
+    }
+
+    // The search is allowed to find nothing, and when it does the bot must still be
+    // given a level, talents, spells and gear. Leaving without randomizing is how an
+    // entire roster ended up at level 1 wearing its create-info shirt: the loop failed a
+    // hundred times, fell out here, and the caller banked the "randomize" event anyway,
+    // so nothing tried again for up to a fortnight. A bot that cannot be placed somewhere
+    // chosen is still randomized where it stands, and the eviction branch in ProcessBot
+    // moves it later like any other badly-placed bot.
+    if (!randomized)
+    {
+        uint32 level = urand(RandomBotMinLevelFor(maxLevel), maxLevel);
+        if (!level)
+        {
+            level = 1;
+        }
+
+        sLog.outDetail("No destination passed for bot %s; randomizing in place at level %u",
+            bot->GetName(), level);
+
+        PlayerbotFactory factory(bot, level);
+        factory.CleanRandomize();
+        RandomTeleportForLevel(bot);
+        randomized = true;
     }
 
     if (bot->getLevel() > maxLevel)
     {
-        uint32 newLevel =  urand(sPlayerbotAIConfig.randomBotMinLevel, maxLevel);
+        uint32 newLevel = urand(RandomBotMinLevelFor(maxLevel), maxLevel);
         PlayerbotFactory factory(bot, newLevel);
         factory.CleanRandomize();
         RandomTeleportForLevel(bot);
     }
+
+    return randomized;
 }
 
 uint32 RandomPlayerbotMgr::GetZoneLevel(uint32 mapId, float teleX, float teleY, float teleZ)
 {
     uint32 maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
 
-    uint32 level;
-    QueryResult *results = WorldDatabase.PQuery("SELECT AVG(`t`.`minlevel`) `minlevel`, AVG(`t`.`maxlevel`) `maxlevel` FROM `creature` `c` "
-        "INNER JOIN `creature_template` `t` ON `c`.`id` = `t`.`entry` "
-        "WHERE `map` = '%u' AND `minlevel` > 1 AND ABS(`position_x` - '%f') < '%u' AND ABS(`position_y` - '%f') < '%u'",
-        mapId, teleX, sPlayerbotAIConfig.randomBotTeleportDistance / 2, teleY, sPlayerbotAIConfig.randomBotTeleportDistance / 2);
-
-    if (results)
+    // This was an AVG() over a creature x creature_template join whose ABS() predicates
+    // no index can serve, so it scanned every spawn on the continent -- and
+    // RandomTeleportForLevel calls it once per attempt, up to a hundred times for a
+    // single teleport. CalculateAreaCreatureStats already holds the same levels per area
+    // in memory, built once from the object manager without touching the database. It is
+    // also the map IsZoneSafeForBot judges by, so sourcing both from it makes the anchor
+    // filter and the safety check agree instead of measuring two different things.
+    if (m_areaCreatureStatsMap.empty())
     {
-        Field* fields = results->Fetch();
-        uint32 minLevel = fields[0].GetUInt32();
-        uint32 maxLevel = fields[1].GetUInt32();
-        level = urand(minLevel, maxLevel);
-        if (level > maxLevel)
-        {
-            level = maxLevel;
-        }
-        delete results;
+        CalculateAreaCreatureStats();
     }
-    else
+
+    uint32 level = 0;
+    Map* map = sMapMgr.FindMap(mapId);
+    const TerrainInfo* terrain = map ? map->GetTerrain() : NULL;
+    if (terrain)
     {
+        // Per position, not per grid cell -- see the note in IsZoneSafeForBot.
+        uint32 areaId = terrain->GetAreaId(teleX, teleY, teleZ);
+
+        std::map<uint32, AreaCreatureStats>::const_iterator statsItr = m_areaCreatureStatsMap.find(areaId);
+        if (statsItr != m_areaCreatureStatsMap.end() && statsItr->second.creatureCount > 0)
+        {
+            level = urand(statsItr->second.minLevel, statsItr->second.maxLevel);
+        }
+    }
+
+    if (!level)
+    {
+        // What the query path did when it had nothing to average. An area with no stats
+        // is one IsZoneSafeForBot rejects anyway, so this only costs a wasted attempt.
         level = urand(1, maxLevel);
+    }
+
+    if (level > maxLevel)
+    {
+        level = maxLevel;
     }
 
     return level;
@@ -675,13 +1535,27 @@ bool RandomPlayerbotMgr::IsRandomBot(Player* bot)
 
 bool RandomPlayerbotMgr::IsRandomBot(uint32 bot)
 {
-    std::unordered_map<uint32, bool>::iterator it = m_randomBotCache.find(bot);
-    if (it != m_randomBotCache.end())
     {
-        return it->second;
+        std::lock_guard<std::mutex> guard(m_cacheMutex);
+        std::unordered_map<uint32, bool>::iterator it = m_randomBotCache.find(bot);
+        if (it != m_randomBotCache.end())
+        {
+            return it->second;
+        }
     }
-    bool value = (GetEventValue(bot, "add") != 0);
-    m_randomBotCache[bot] = value;
+
+    // This is the one entry point map workers reach -- PlayerbotAI::UpdateAI, the trade
+    // and grind values, AiFactory -- so it must not leave a new entry behind in
+    // m_eventValueCache. Recording the miss there is a world-thread optimisation for
+    // ProcessBot, which asks after several events per bot per pass; from here it would
+    // add unsynchronised writes to a std::map that the world thread is reading and
+    // writing at the same time, and a concurrent rebalance is a crash rather than a stale
+    // read. Both reviewers flagged this independently.
+    bool value = (GetEventValue(bot, "add", false) != 0);
+    {
+        std::lock_guard<std::mutex> guard(m_cacheMutex);
+        m_randomBotCache[bot] = value;
+    }
     return value;
 }
 
@@ -704,11 +1578,62 @@ list<uint32> RandomPlayerbotMgr::GetBots()
         delete results;
     }
 
+    // A bot banked earlier -- EnsureGroupedBotsOnline runs before the roster is listed --
+    // may still have its INSERT queued on the delay thread, so the query above cannot see
+    // it. Left out, a grouped bot is not logged in until the next interval, which is the
+    // one thing EnsureGroupedBotsOnline exists to prevent. This query is also the place
+    // that learns a write has landed, so it retires the entries it can see.
+    {
+        std::lock_guard<std::mutex> guard(m_cacheMutex);
+        const uint32 now = getMSTime();
+        for (std::map<uint32, uint32>::iterator i = m_pendingAddGuids.begin(); i != m_pendingAddGuids.end(); )
+        {
+            if (find(bots.begin(), bots.end(), i->first) != bots.end())
+            {
+                m_pendingAddGuids.erase(i++);
+            }
+            else if (getMSTimeDiff(i->second, now) > PendingAddMaxMs)
+            {
+                m_pendingAddGuids.erase(i++);
+            }
+            else
+            {
+                bots.push_back(i->first);
+                ++i;
+            }
+        }
+    }
+
     return bots;
 }
 
 vector<uint32> RandomPlayerbotMgr::GetFreeBots(bool alliance)
 {
+    // One query for the whole roster, not one per account. This used to issue a SELECT for
+    // every configured bot account and is called on every admission, so at the shipped 50
+    // accounts it cost 50 synchronous queries a time and nobody noticed. At 1000 accounts
+    // it costs 1000, which consumed the entire per-pass budget before a single bot could be
+    // processed: the roster crept up by about one admission a second while "0 bots
+    // processed, 0 examined (budget reached)" repeated and nothing ever logged in.
+    //
+    // The account list is also joined in SQL rather than walked, so a character belonging
+    // to a real player's account can never be picked up.
+    if (sPlayerbotAIConfig.randomBotAccounts.empty())
+    {
+        return vector<uint32>();
+    }
+
+    ostringstream accountList;
+    for (list<uint32>::const_iterator i = sPlayerbotAIConfig.randomBotAccounts.begin();
+         i != sPlayerbotAIConfig.randomBotAccounts.end(); ++i)
+    {
+        if (i != sPlayerbotAIConfig.randomBotAccounts.begin())
+        {
+            accountList << ",";
+        }
+        accountList << *i;
+    }
+
     set<uint32> bots;
     QueryResult* results = CharacterDatabase.PQuery(
             "SELECT `bot` FROM `ai_playerbot_random_bots` WHERE `event` = 'add'"
@@ -719,40 +1644,63 @@ vector<uint32> RandomPlayerbotMgr::GetFreeBots(bool alliance)
         do
         {
             Field* fields = results->Fetch();
-            uint32 bot = fields[0].GetUInt32();
-            bots.insert(bot);
+            bots.insert(fields[0].GetUInt32());
         } while (results->NextRow());
         delete results;
     }
 
-    vector<uint32> guids;
-    for (list<uint32>::iterator i = sPlayerbotAIConfig.randomBotAccounts.begin(); i != sPlayerbotAIConfig.randomBotAccounts.end(); i++)
+    // Same reason as the merge in GetBots, in the opposite direction: a bot already banked
+    // is not free, however the database still reads. Two ways in. A grouped bot queued by
+    // EnsureGroupedBotsOnline would otherwise be drawn as a free bot and handed a spurious
+    // randomize; and when a pass exhausts a faction's cached list and rebuilds it here,
+    // every bot the pass has just admitted would come straight back and be counted twice
+    // against the roster target. Retires observed entries, as GetBots does.
     {
-        uint32 accountId = *i;
-        if (!sAccountMgr.GetCharactersCount(accountId))
+        std::lock_guard<std::mutex> guard(m_cacheMutex);
+        const uint32 now = getMSTime();
+        for (std::map<uint32, uint32>::iterator i = m_pendingAddGuids.begin(); i != m_pendingAddGuids.end(); )
         {
-            continue;
-        }
-
-        QueryResult *result = CharacterDatabase.PQuery("SELECT `guid`, `race` FROM `characters` WHERE `account` = '%u'", accountId);
-        if (!result)
-        {
-            continue;
-        }
-
-        do
-        {
-            Field* fields = result->Fetch();
-            uint32 guid = fields[0].GetUInt32();
-            uint32 race = fields[1].GetUInt32();
-            if (bots.find(guid) == bots.end() &&
-                ((alliance && IsAlliance(race)) || ((!alliance && !IsAlliance(race)))))
+            if (bots.find(i->first) != bots.end())
             {
-                guids.push_back(guid);
+                m_pendingAddGuids.erase(i++);
             }
-        } while (result->NextRow());
-        delete result;
+            else if (getMSTimeDiff(i->second, now) > PendingAddMaxMs)
+            {
+                m_pendingAddGuids.erase(i++);
+            }
+            else
+            {
+                bots.insert(i->first);
+                ++i;
+            }
+        }
     }
+
+    vector<uint32> guids;
+    QueryResult* result = CharacterDatabase.PQuery(
+        "SELECT `guid`, `race` FROM `characters` WHERE `account` IN (%s)",
+        accountList.str().c_str());
+
+    if (!result)
+    {
+        return guids;
+    }
+
+    do
+    {
+        Field* fields = result->Fetch();
+        uint32 guid = fields[0].GetUInt32();
+        uint32 race = fields[1].GetUInt32();
+        if (bots.find(guid) == bots.end() &&
+            ((alliance && IsAlliance(race)) || ((!alliance && !IsAlliance(race)))))
+        {
+            guids.push_back(guid);
+            // Remembered here because the race is already in hand; the quota pass
+            // would otherwise have to query it back per candidate.
+            m_botStartZones[guid] = GetStartZoneForRace(race);
+        }
+    } while (result->NextRow());
+    delete result;
 
     return guids;
 }
@@ -772,21 +1720,17 @@ bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, fl
         return false;
     }
 
-    CellPair cell_pair = MaNGOS::ComputeCellPair(x, y);
-    uint32 cell_id = (cell_pair.y_coord * TOTAL_NUMBER_OF_CELLS_PER_MAP) + cell_pair.x_coord;
-    std::pair<uint32, uint32> mapCell = std::make_pair(mapId, cell_id);
-
+    // Resolved per position rather than cached per grid cell. A cell is SIZE_OF_GRID_CELL
+    // wide -- about 33 yards -- and area borders do not follow the grid, so a cell can
+    // straddle two areas. Caching by cell let whichever position happened to be asked
+    // first decide the area for every later position in it, which is harmless for a
+    // rough level band and actively wrong for a faction or neutral-hub decision: it can
+    // hand a border cell of the Barrens to Ratchet's neutrality, or hide Ratchet behind
+    // the Barrens' owner. GetAreaId is a terrain lookup, and now that this path no longer
+    // issues SQL it is not worth trading correctness to skip it.
     uint32 areaId = 0;
-    std::map<std::pair<uint32, uint32>, uint32>::iterator cacheItr = m_cellToAreaCache.find(mapCell);
-    if (cacheItr != m_cellToAreaCache.end())
-    {
-        areaId = cacheItr->second;
-    }
-    else
-    {
-        areaId = terrain->GetAreaId(x, y, z);
-        m_cellToAreaCache[mapCell] = areaId;
-    }
+    uint32 zoneId = 0;
+    terrain->GetZoneAndAreaId(zoneId, areaId, x, y, z);
 
     AreaTableEntry const* area = sAreaStore.LookupEntry(areaId);
     if (!area)
@@ -794,15 +1738,83 @@ bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, fl
         return true;
     }
 
-    if (area->FactionGroupMask != AREATEAM_NONE)
+    // A level 6 gnome standing in Teldrassil is a thing the game permits and a thing no
+    // player does: reaching another race's starting zone at that level means crossing a
+    // continent, which in practice meant being dragged there by somebody higher. The
+    // random manager has no such story to tell, so below the threshold a bot is confined
+    // to the zone its own race actually starts in. Compared against the zone rather than
+    // the leaf area, so Coldridge Valley, Shadowglen, Deathknell and the rest all resolve
+    // to the parent the racial start position names.
+    // Judged at useLevel when the caller supplied one, exactly as the creature band below
+    // is. That is not a detail: RandomizeFirst picks a destination, derives the level the
+    // bot is ABOUT to be set to, and only then runs CleanRandomize to grant that level
+    // with its talents, trainer spells and gear. Asking bot->getLevel() there asks about a
+    // freshly created level 1, so every destination outside its racial start zone was
+    // refused, all hundred attempts failed, and CleanRandomize never ran at all -- leaving
+    // the entire roster stuck at level 1 with no gear and nothing but its create-info
+    // spells. 840 of 900 bots sat at level 1 because of it.
+    uint32 homeLevel = useLevel ? useLevel : bot->getLevel();
+    if (sPlayerbotAIConfig.randomBotHomeZoneMaxLevel &&
+        homeLevel <= sPlayerbotAIConfig.randomBotHomeZoneMaxLevel)
     {
-        bool botIsAlliance = IsAlliance(bot->getRace());
-        if (botIsAlliance && area->FactionGroupMask != AREATEAM_ALLY)
+        RacialStart start = GetRacialStart(bot);
+        if (start.zoneId && zoneId != start.zoneId)
         {
             return false;
         }
 
-        if (!botIsAlliance && area->FactionGroupMask != AREATEAM_HORDE)
+        // The sub-area preference deliberately does NOT appear here. It belongs in
+        // RandomTeleportHome, which chooses where to put a bot, and not in the test that
+        // decides whether where a bot already stands is acceptable. Making it a rejection
+        // criterion stranded 30 of 127 bots on the first run that used it: a level 1
+        // undead could not be placed in Deathknell, because the racial start position
+        // resolves to Tirisfal rather than to the sub-area and so no Deathknell pool was
+        // ever built, and could not be placed anywhere else in Tirisfal either, because
+        // the open zone's creature band starts around level 5 and the tolerance is 3. With
+        // nowhere to go it re-ran the whole hundred-attempt search every pass and logged
+        // "Cannot teleport bot" 56 times. Tauren hit the same wall against Camp Narache.
+        // A confinement that can leave a bot with no legal position anywhere must be a
+        // preference expressed when placing, never an invariant enforced by eviction.
+    }
+
+    // GetAreaId answers with the most specific area, and in AreaTable.dbc it is the
+    // parent zone that carries the faction, not the sub-area a bot actually stands in:
+    // Teldrassil is 2, but Shadowglen, Dolanaar and Aldrassil inside it are all 0.
+    // The same holds for Northshire Valley, Coldridge Valley, Valley of Trials, Camp
+    // Narache and Deathknell. Reading only the leaf therefore skipped the faction test
+    // exactly where new players are, so a level 5 Horde bot in Shadowglen came back
+    // perfectly safe. Walk up to the first ancestor that declares an owner.
+    // A hub both sides may use keeps its own answer of "nobody owns this" rather than
+    // inheriting the zone around it, so it falls through to the guard-presence test
+    // below -- where its bruisers, being hostile to neither side, exclude nobody.
+    uint32 factionMask = area->FactionGroupMask;
+    bool neutralHub = m_neutralHubAreas.find(area->ID) != m_neutralHubAreas.end();
+    // The depth cap is a guard against a cyclic ParentAreaID, not a real limit: the
+    // shipped 1.12 AreaTable has no self-references and a longest chain of two. A modded
+    // or corrupt DBC could otherwise spin this loop forever on the world thread.
+    {
+        AreaTableEntry const* scope = area;
+        for (int depth = 0;
+             !neutralHub && factionMask == AREATEAM_NONE && scope && scope->ParentAreaID && depth < 8;
+             ++depth)
+        {
+            scope = sAreaStore.LookupEntry(scope->ParentAreaID);
+            if (scope)
+            {
+                factionMask = scope->FactionGroupMask;
+            }
+        }
+    }
+
+    if (factionMask != AREATEAM_NONE)
+    {
+        bool botIsAlliance = IsAlliance(bot->getRace());
+        if (botIsAlliance && factionMask != AREATEAM_ALLY)
+        {
+            return false;
+        }
+
+        if (!botIsAlliance && factionMask != AREATEAM_HORDE)
         {
             return false;
         }
@@ -911,16 +1923,19 @@ void RandomPlayerbotMgr::EnsureGroupedBotsOnline()
     }
 }
 
-uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event)
+uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event, bool cacheMisses)
 {
     uint32 value = 0;
     auto key = std::make_pair(bot, event);
-    auto it = m_eventValueCache.find(key);
-    if (it != m_eventValueCache.end())
     {
-        if ((time(0) - it->second.lastChangeTime) < it->second.validIn)
+        std::lock_guard<std::mutex> guard(m_cacheMutex);
+        auto it = m_eventValueCache.find(key);
+        if (it != m_eventValueCache.end())
         {
-            return it->second.value;
+            if ((time(0) - it->second.lastChangeTime) < it->second.validIn)
+            {
+                return it->second.value;
+            }
         }
     }
 
@@ -939,8 +1954,24 @@ uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event)
         {
             value = 0;
         }
-        m_eventValueCache[key] = {value, lastChangeTime, validIn};
+        {
+            std::lock_guard<std::mutex> guard(m_cacheMutex);
+            m_eventValueCache[key] = {value, lastChangeTime, validIn};
+        }
         delete results;
+    }
+
+    if (!value && cacheMisses)
+    {
+        // Record the miss. A row that does not exist never reached the line above at
+        // all, and one that has already expired can never satisfy the freshness test
+        // again because its stored timestamp does not move -- so either way every
+        // later call fell through to a fresh synchronous SELECT. Most events are
+        // absent for a healthy bot, and ProcessBot asks after several of them per bot
+        // per pass, so that was the bulk of what the update budget was buying. Any
+        // SetEventValue overwrites this entry, so a real value is never masked.
+        std::lock_guard<std::mutex> guard(m_cacheMutex);
+        m_eventValueCache[key] = {0, (uint32)time(0), sPlayerbotAIConfig.randomBotUpdateInterval};
     }
 
     return value;
@@ -959,10 +1990,30 @@ uint32 RandomPlayerbotMgr::SetEventValue(uint32 bot, string event, uint32 value,
             0, bot, (uint32)time(0), validIn, event.c_str(), value);
     }
 
-    if (event == "add")
-        m_randomBotCache[bot] = (value != 0);
+    {
+        std::lock_guard<std::mutex> guard(m_cacheMutex);
 
-    m_eventValueCache[std::make_pair(bot, event)] = {value, (uint32)time(0), validIn};
+        if (event == "add")
+        {
+            m_randomBotCache[bot] = (value != 0);
+
+            // The statements above are asynchronous, and GetBots and GetFreeBots both read
+            // 'add' rows back from the database inside the same pass. Record what was
+            // banked, and when, so those two can see it before the delay thread drains and
+            // can retire the entry once they observe the write for themselves.
+            if (value)
+            {
+                m_pendingAddGuids[bot] = getMSTime();
+            }
+            else
+            {
+                m_pendingAddGuids.erase(bot);
+            }
+        }
+
+        m_eventValueCache[std::make_pair(bot, event)] = {value, (uint32)time(0), validIn};
+    }
+
     return value;
 }
 
@@ -970,11 +2021,54 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
 {
     sLog.outString(">> [Playerbots] Calculating area creature statistics...");
 
-    std::map<std::pair<uint32, uint32>, uint32> cellToAreaCache; // (mapId, cellId) -> areaId
     std::map<uint32, std::vector<uint8>> areaLevels;
 
     m_allianceGuardAreas.clear();
     m_hordeGuardAreas.clear();
+    m_neutralHubAreas.clear();
+    m_homeZoneAnchors.clear();
+
+    // The eight playable races start in six zones, and inside those, six sub-areas.
+    // Collecting both up front means the spawn loop below can decide in one set lookup
+    // whether a spawn is worth remembering as a landing site, instead of keeping
+    // positions for all 4000-odd areas. Both granularities go into the same set: a spawn
+    // is recorded against whichever of the two its own area matches, and a spawn inside
+    // Shadowglen matches the sub-area while one in Teldrassil proper matches the zone.
+    std::set<uint32> startZones;
+    for (uint32 race = 1; race < MAX_RACES; ++race)
+    {
+        for (uint32 cls = 1; cls < MAX_CLASSES; ++cls)
+        {
+            PlayerInfo const* info = sObjectMgr.GetPlayerInfo(race, cls);
+            if (!info)
+            {
+                continue;
+            }
+
+            if (info->areaId)
+            {
+                startZones.insert(info->areaId);
+            }
+
+            // Must resolve the sub-area exactly as GetRacialStart does, or the pool is
+            // built for one area while bots are sent to another. That mismatch is what
+            // left Deathknell with no landing sites: this side asked the create position
+            // and got Tirisfal, so no undead pool was ever built.
+            Map* startMap = const_cast<Map*>(sMapMgr.FindMap(info->mapId));
+            if (startMap && startMap->GetTerrain())
+            {
+                uint32 atPoint = startMap->GetTerrain()->GetAreaId(info->positionX, info->positionY, info->positionZ);
+                uint32 startArea = (atPoint && atPoint != info->areaId)
+                    ? atPoint
+                    : FindStartSubArea(info->mapId, info->areaId, info->positionX, info->positionY, info->positionZ);
+                if (startArea)
+                {
+                    startZones.insert(startArea);
+                }
+            }
+            break;
+        }
+    }
 
     uint32 getAreaIdCalls = 0;
     uint32 totalCreatures = 0;
@@ -992,33 +2086,65 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
 
         totalCreatures++;
 
-        CellPair cell_pair = MaNGOS::ComputeCellPair(data.posX, data.posY);
-        uint32 cell_id = (cell_pair.y_coord * TOTAL_NUMBER_OF_CELLS_PER_MAP) + cell_pair.x_coord;
-        std::pair<uint32, uint32> mapCell = std::make_pair(data.mapid, cell_id);
+        // Per spawn, not per grid cell. This pass is what decides which area owns a guard,
+        // a neutral hub and a level band, so a cell that straddles a border must not have
+        // its first-asked creature answer for the rest. One extra terrain lookup per spawn,
+        // once at boot, is a fair price for classifying the right area.
+        Map* map = const_cast<Map*>(sMapMgr.FindMap(data.mapid));
+        if (!map || !map->GetTerrain())
+        {
+            continue;
+        }
 
         uint32 areaId = 0;
-
-        std::map<std::pair<uint32, uint32>, uint32>::iterator cacheItr = cellToAreaCache.find(mapCell);
-        if (cacheItr != cellToAreaCache.end())
-        {
-            areaId = cacheItr->second;
-        }
-        else
-        {
-            Map* map = const_cast<Map*>(sMapMgr.FindMap(data.mapid));
-            if (!map || !map->GetTerrain())
-            {
-                continue;
-            }
-
-            areaId = map->GetTerrain()->GetAreaId(data.posX, data.posY, data.posZ);
-            cellToAreaCache[mapCell] = areaId; // Cache for future lookups
-            getAreaIdCalls++;
-        }
+        uint32 zoneId = 0;
+        map->GetTerrain()->GetZoneAndAreaId(zoneId, areaId, data.posX, data.posY, data.posZ);
+        getAreaIdCalls++;
 
         if (areaId == 0)
         {
             continue;
+        }
+
+        // Landing sites for the home-zone rule. A creature spawn is a better anchor than
+        // a game_tele: there are thousands of them spread through the zone rather than a
+        // handful clustered on the roads, and being a spawn point it is by construction
+        // somewhere the terrain will actually hold a player. Elites are excluded for the
+        // same reason they are excluded from the level band below -- landing a level 4
+        // beside one is not a place a bot should be put.
+        if (cInfo->Rank <= CREATURE_ELITE_NORMAL)
+        {
+            WorldLocation site(data.mapid, data.posX, data.posY, data.posZ, 0.0f);
+
+            // Recorded against both granularities where they differ. A spawn in
+            // Shadowglen belongs to the Shadowglen pool a level 1 draws from AND to the
+            // Teldrassil pool a level 8 draws from, because Shadowglen is part of
+            // Teldrassil; a spawn out in Teldrassil proper belongs only to the latter.
+            if (zoneId && startZones.find(zoneId) != startZones.end())
+            {
+                m_homeZoneAnchors[zoneId].push_back(site);
+            }
+
+            if (areaId != zoneId && startZones.find(areaId) != startZones.end())
+            {
+                m_homeZoneAnchors[areaId].push_back(site);
+            }
+        }
+
+        // A contested-guard faction is how the world data marks a hub both sides may
+        // use: the Steamwheedle bruisers in Ratchet, Booty Bay, Gadgetzan and Everlook
+        // carry it and are hostile to neither player faction, while no faction guard
+        // does -- 8 of 314 faction templates have the flag at all. Recording the area
+        // stops it inheriting an owner from the zone around it, which is what would
+        // otherwise hand Ratchet to the Horde along with the rest of the Barrens.
+        // Deliberately not gated on CREATURE_FLAG_EXTRA_GUARD: Ratchet's and
+        // Gadgetzan's bruisers carry that flag but Booty Bay's and Everlook's do not.
+        if (FactionTemplateEntry const* hubFaction = sFactionTemplateStore.LookupEntry(cInfo->FactionAlliance))
+        {
+            if (hubFaction->IsContestedGuardFaction())
+            {
+                m_neutralHubAreas.insert(areaId);
+            }
         }
 
         // Guard area detection: classify guards by faction hostility
@@ -1038,6 +2164,17 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
 
         // Skip questgivers, vendors, and non-attackable creatures
         if (cInfo->NpcFlags != 0 || cInfo->UnitFlags & UNIT_FLAG_NON_ATTACKABLE)
+        {
+            continue;
+        }
+
+        // And skip elites, for the same reason GrindTargetValue refuses to attack them.
+        // This map decides whether an area suits a bot's level; that one decides what the
+        // bot may then fight. While the two disagreed, an area could be judged safe on the
+        // strength of creatures the bot is forbidden to touch -- a solo bot placed among a
+        // camp of level 54 elites, which it cannot pull and which are perfectly willing to
+        // pull it. Judge an area by the content a bot can actually take on.
+        if (cInfo->Rank > CREATURE_ELITE_NORMAL)
         {
             continue;
         }
@@ -1069,6 +2206,18 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
     }
 
     sLog.outString(">> [Playerbots] Calculated spawn stats for %u areas", statsCount);
+
+    // Worth saying out loud at boot: an empty pool silently sends every low-level bot
+    // down the generic search path instead, which still confines it correctly but is
+    // slower and can fail. If a starting zone reports 0 here, the rule is not working.
+    for (std::map<uint32, std::vector<WorldLocation> >::const_iterator itr = m_homeZoneAnchors.begin();
+         itr != m_homeZoneAnchors.end(); ++itr)
+    {
+        AreaTableEntry const* zone = sAreaStore.LookupEntry(itr->first);
+        sLog.outString(">> [Playerbots] Starting %s %s (%u): %u landing sites",
+            (zone && zone->ParentAreaID) ? "sub-area" : "zone",
+            zone ? zone->AreaName_lang[0] : "?", itr->first, (uint32)itr->second.size());
+    }
 }
 
 bool ChatHandler::HandlePlayerbotConsoleCommand(char* args)
@@ -1166,6 +2315,16 @@ bool ChatHandler::HandlePlayerbotConsoleCommand(char* args)
 
 void RandomPlayerbotMgr::HandleCommand(uint32 type, const string& text, Player& fromPlayer)
 {
+    // A public channel line arrives here once and is then handed to every random bot in the
+    // world. That is a fan-out of one message to the whole fleet, so anything that answers
+    // replies once per bot: a single "~who" in trade chat returned two hundred whispers to
+    // whoever typed it. Per-bot security still applies underneath, but a broadcast is the
+    // wrong shape for a public channel however well each bot behaves individually.
+    if (type == CHAT_MSG_CHANNEL)
+    {
+        return;
+    }
+
     // Handle commands for all player bots
     for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
     {
@@ -1188,7 +2347,13 @@ void RandomPlayerbotMgr::OnPlayerLogout(Player* player)
         }
     }
 
-    if (!player->GetPlayerbotAI())
+    // A null PlayerbotAI is not sufficient to call this a real player. An unauthorised bot
+    // reaches logout with no AI attached -- it never got one -- and OnPlayerZoneChange
+    // deliberately declined to count it, testing exactly this remote address. Decrementing
+    // here for a player that was never incremented erases a genuine real player's zone entry,
+    // after which HasRealPlayerInZone reports false and every ungrouped random bot in that
+    // zone stops ticking while the player is still standing in it. Mirror the same test.
+    if (!player->GetPlayerbotAI() && player->GetSession()->GetRemoteAddress() != "bot")
     {
         vector<Player*>::iterator i = find(players.begin(), players.end(), player);
         if (i != players.end())
@@ -1512,14 +2677,20 @@ void RandomPlayerbotMgr::HandleMeetingStoneClick(Player* player, GameObject* obj
     for (Group::member_citerator citr = grp->GetMemberSlots().begin(); citr != grp->GetMemberSlots().end(); ++citr)
     {
         Player* member = sObjectMgr.GetPlayer(citr->guid);
-        if(member)
+        // A member slot survives its player logging out, so GetPlayer returns NULL for
+        // anyone offline. The null test below used to guard only the role tally, and the
+        // very next line dereferenced the same pointer regardless -- so one offline member
+        // in the leader's group crashed the server on a meeting-stone click.
+        if (!member)
         {
-            ClassRoles role = FillRoleMap(member, healers, dpses, tanks);
-            auto it = find(missingRoles.begin(), missingRoles.end(), role);
-            if (it != missingRoles.end())
-            {
-                missingRoles.erase(it);
-            }
+            continue;
+        }
+
+        ClassRoles role = FillRoleMap(member, healers, dpses, tanks);
+        auto it = find(missingRoles.begin(), missingRoles.end(), role);
+        if (it != missingRoles.end())
+        {
+            missingRoles.erase(it);
         }
 
         if (!member->GetPlayerbotAI() || member == player)
@@ -1529,8 +2700,16 @@ void RandomPlayerbotMgr::HandleMeetingStoneClick(Player* player, GameObject* obj
 
         if (!player->IsWithinDistInMap(member, sPlayerbotAIConfig.sightDistance))
         {
-            member->GetMotionMaster()->Clear();
-            member->TeleportTo(mapId, stoneX, stoneY, stoneZ, 0);
+            // Clear AFTER the teleport is accepted, never before. TeleportTo finalizes the
+            // spline but leaves the generator stack standing, and these two run from the real
+            // player's session -- after the random-bot acks for this tick and before map
+            // motion -- so a surviving targeted generator can lay a fresh leg in the gap
+            // before the ack arrives. Clearing on success closes that. Clearing BEFORE, as
+            // this used to, also stripped a bot whose teleport was refused, parking it.
+            if (member->TeleportTo(mapId, stoneX, stoneY, stoneZ, 0))
+            {
+                member->GetMotionMaster()->Clear();
+            }
         }
     }
 
@@ -1609,7 +2788,10 @@ void RandomPlayerbotMgr::HandleMeetingStoneClick(Player* player, GameObject* obj
             ai->SetMaster(player);
         }
 
-        bot->GetMotionMaster()->Clear();
-        bot->TeleportTo(mapId, stoneX, stoneY, stoneZ, 0);
+        // Same ordering as above: clear only once the teleport has been accepted.
+        if (bot->TeleportTo(mapId, stoneX, stoneY, stoneZ, 0))
+        {
+            bot->GetMotionMaster()->Clear();
+        }
     }
 }

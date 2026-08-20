@@ -52,6 +52,12 @@ void GenericDruidNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &trigge
             "mark of the wild",
         NextAction::array(0, new NextAction("mark of the wild", 12.0f), NULL)));
 
+    // Feral's free-spell proc buff. Permanent once cast, so maintaining it out of combat
+    // is the whole of the work; an untalented druid fails CanCastSpell and moves on.
+    triggers.push_back(new TriggerNode(
+            "omen of clarity",
+        NextAction::array(0, new NextAction("omen of clarity", 11.0f), NULL)));
+
     triggers.push_back(new TriggerNode(
             "mark of the wild on party",
         NextAction::array(0, new NextAction("mark of the wild on party", 11.0f), NULL)));
@@ -72,9 +78,12 @@ void GenericDruidNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &trigge
             "remove curse on party",
         NextAction::array(0, new NextAction("remove curse on party", ACTION_DISPEL + 1), NULL)));
 
+    // "revive" is not a registered druid action -- the DBC row of that name (24341) is
+    // something else entirely -- so a dead party member produced a silent NULL and the druid
+    // simply stood there. Rebirth is the druid resurrection in 1.12 and is registered.
     triggers.push_back(new TriggerNode(
             "party member dead",
-        NextAction::array(0, new NextAction("revive", 22.0f), NULL)));
+        NextAction::array(0, new NextAction("rebirth", 22.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
             "low mana",

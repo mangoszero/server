@@ -15,6 +15,20 @@ class HealDruidStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
     private:
 };
 
+NextAction** HealDruidStrategy::getDefaultActions()
+{
+    // There was no override here at all, so this inherited Strategy::getDefaultActions()'s
+    // NULL and a healing druid had no unconditional action whatsoever -- healing, dispel and
+    // utility triggers are every one of them conditional. It stood in combat doing nothing,
+    // across the whole level range, and a grouped Restoration druid is selected automatically.
+    // Wrath is trainable at level 1 by every druid and needs no equipment or form; melee is the
+    // always-available last resort.
+    return NextAction::array(0,
+        new NextAction("wrath", 10.0f),
+        new NextAction("melee in range", 9.0f),
+        NULL);
+}
+
 HealDruidStrategy::HealDruidStrategy(PlayerbotAI* ai) : GenericDruidStrategy(ai)
 {
     actionNodeFactories.Add(new HealDruidStrategyActionNodeFactory());

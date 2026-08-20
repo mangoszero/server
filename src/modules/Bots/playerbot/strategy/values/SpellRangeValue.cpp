@@ -10,9 +10,8 @@ SpellRangeValue::SpellRangeValue(PlayerbotAI* ai) :
 {
 }
 
-float SpellRangeValue::Calculate()
+float SpellRangeValue::EffectiveRange(uint32 spellId)
 {
-    uint32 spellId = AI_VALUE2(uint32, "spell id", qualifier);
     if (spellId)
     {
         const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(spellId);
@@ -22,7 +21,9 @@ float SpellRangeValue::Calculate()
             if (spellRange)
             {
                 float actualMaxRange = GetSpellMaxRange(spellRange);
-                // Only clamp if spell has a defined range
+                // Only clamp if spell has a defined range; the -1 keeps the value
+                // strictly inside the cast range, so a mover walking to it lands
+                // where the cast actually succeeds.
                 if (actualMaxRange > 1 && actualMaxRange < sPlayerbotAIConfig.spellDistance)
                 {
                     return actualMaxRange - 1;
@@ -31,4 +32,9 @@ float SpellRangeValue::Calculate()
         }
     }
     return sPlayerbotAIConfig.spellDistance;
+}
+
+float SpellRangeValue::Calculate()
+{
+    return EffectiveRange(AI_VALUE2(uint32, "spell id", qualifier));
 }

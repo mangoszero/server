@@ -38,8 +38,9 @@ namespace ai
 
                 if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() != FLIGHT_MOTION_TYPE && !bot->IsTaxiFlying())
                 {
-                    bot->GetMotionMaster()->Clear();
-                    bot->GetMotionMaster()->MoveIdle();
+                    // Clear() + MoveIdle() left the spline running: the bot dropped out of
+                    // the group and went on walking to wherever it had last been following to.
+                    ai->StopMovement();
                     bot->clearUnitState(UNIT_STAT_CHASE);
                     bot->clearUnitState(UNIT_STAT_FOLLOW);
                 }

@@ -106,10 +106,21 @@ namespace ai
             CastHealingStreamTotemAction(PlayerbotAI* ai) : CastTotemAction(ai, "healing stream totem") {}
     };
 
-    class CastCleansingTotemAction : public CastTotemAction
+    // 1.12 has no single "Cleansing Totem". It ships two separate spells, Poison Cleansing
+    // Totem (8166) and Disease Cleansing Totem (8170), so the combined name that used to be
+    // here could never resolve and shamans never dropped a cleansing totem at all.
+    class CastPoisonCleansingTotemAction : public CastTotemAction
     {
         public:
-            CastCleansingTotemAction(PlayerbotAI* ai) : CastTotemAction(ai, "cleansing totem") {}
+            CastPoisonCleansingTotemAction(PlayerbotAI* ai)
+                : CastTotemAction(ai, "poison cleansing totem") {}
+    };
+
+    class CastDiseaseCleansingTotemAction : public CastTotemAction
+    {
+        public:
+            CastDiseaseCleansingTotemAction(PlayerbotAI* ai)
+                : CastTotemAction(ai, "disease cleansing totem") {}
     };
 
     class CastFlametongueTotemAction : public CastTotemAction
@@ -196,6 +207,15 @@ namespace ai
     {
         public:
             CastEarthShockAction(PlayerbotAI* ai) : CastDebuffSpellAction(ai, "earth shock") {}
+    };
+
+    // The shaman's interrupt aimed at whoever is healing the other side. Earth Shock carries
+    // the interrupt effect in 1.12 (DBC effect 68); the Wind Shear this replaces is TBC and
+    // had no vanilla spell to resolve, so the enemy-healer route never did anything.
+    class CastEarthShockOnEnemyHealerAction : public CastSpellOnEnemyHealerAction
+    {
+        public:
+            CastEarthShockOnEnemyHealerAction(PlayerbotAI* ai) : CastSpellOnEnemyHealerAction(ai, "earth shock") {}
     };
 
     class CastFrostShockAction : public CastDebuffSpellAction
@@ -294,10 +314,37 @@ namespace ai
             }
     };
 
-    class CastGhostWolfAction : public CastBuffSpellAction
+    // Ghost Wolf (2645) has AuraInterruptFlags = 0x00000000 in vanilla. Damage, attacking,
+    // casting and entering combat therefore leave it active, while its shapeshift form makes
+    // every shaman spell with SPELL_ATTR_NOT_SHAPESHIFT fail. The aura is also persisted in
+    // character_aura, so a bot can log in already wolfed. PlayerbotAI::CanCastSpell() reports
+    // the shapeshift failure as false, so Engine marks the spell action IMPOSSIBLE before it
+    // can schedule an action prerequisite. Keep cancellation on its own high-priority trigger:
+    // a pre-cast cancel cannot run, and retaining the old automatic buff trigger alongside a
+    // cast-time cancel would re-arm Ghost Wolf and create a cancel/recast churn loop.
+    class CancelGhostWolfAction : public Action
     {
         public:
-            CastGhostWolfAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "ghost wolf") {}
+            CancelGhostWolfAction(PlayerbotAI* ai) : Action(ai, "cancel ghost wolf") {}
+
+            virtual bool isUseful()
+            {
+                return ai->HasAura("ghost wolf", bot);
+            }
+
+            virtual bool Execute(Event event)
+            {
+                ai->RemoveShapeshift();
+
+                // Report what the removal actually achieved. PlayerbotAI::RemoveAura() resolves
+                // the name through the bot's OWN SPELLBOOK and silently does nothing when the
+                // lookup fails, while HasAura() falls back to scanning the unit's auras by name.
+                // A bot holding the aura without knowing the spell would therefore satisfy the
+                // trigger forever against a removal that cannot fire, and a hardcoded true at
+                // this relevance ends the tick -- bricking the shaman far worse than the wolf
+                // form it is meant to clear. Returning false lets Engine fall through instead.
+                return !ai->HasAura("ghost wolf", bot);
+            }
     };
 
     class CastTremorTotemAction : public CastTotemAction

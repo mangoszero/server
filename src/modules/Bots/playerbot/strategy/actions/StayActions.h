@@ -10,7 +10,7 @@ namespace ai
             StayActionBase(PlayerbotAI* ai, string name) : MovementAction(ai, name) {}
 
         protected:
-            void Stay();
+            bool Stay();
             bool StayLine(vector<Player*> line, float diff, float cx, float cy, float cz, float orientation, float range);
             bool StaySingleLine(vector<Player*> line, float diff, float cx, float cy, float cz, float orientation, float range);
     };

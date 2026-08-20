@@ -7,7 +7,7 @@ using namespace ai;
 
 bool WatchTargetApproachAction::Execute(Event event)
 {
-    bot->StopMoving();
+    ai->StopMovement();
     return isUseful();
 }
 
@@ -97,7 +97,7 @@ bool WatchGroupPullAction::Execute(Event event)
     {
         return false;
     }
-    bot->StopMoving();
+    ai->StopMovement();
     SetPersistenceStartTime(getMSTime());
     return isUseful();
 }

@@ -82,9 +82,14 @@ void DpsPaladinStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
             "blessing",
         NextAction::array(0, new NextAction("blessing of might", ACTION_HIGH + 8), NULL)));
 
+    // "divine storm" sat beside consecration here, but the spell does not exist in
+    // 1.12 Spell.dbc, nothing registers an action under that name, and no ActionNode
+    // cascade heads it -- so the push was dropped silently every time. Consecration,
+    // at the same relevance, already owns the AoE slot; removing the dead rung
+    // changes nothing the bot ever did.
     triggers.push_back(new TriggerNode(
             "medium aoe",
-        NextAction::array(0, new NextAction("divine storm", ACTION_HIGH + 1), new NextAction("consecration", ACTION_HIGH + 1), NULL)));
+        NextAction::array(0, new NextAction("consecration", ACTION_HIGH + 1), NULL)));
 
     triggers.push_back(new TriggerNode(
             "art of war",

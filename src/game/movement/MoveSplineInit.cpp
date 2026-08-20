@@ -30,6 +30,8 @@
 #include "Transports.h"
 #include "TransportMap.h"
 #include "Map.h"
+#include "Player.h"
+#include "Creature.h"
 
 namespace
 {
@@ -185,6 +187,36 @@ namespace Movement
 
         // current first vertex
         args.path[0] = real_position;
+
+        // COMMIT IT. This function is the only thing that knows where the unit really
+        // stopped: it interpolates the live spline to find out, writes that into the packet
+        // below -- and used to throw it away, because MoveSpline::Initialize clears the
+        // spline the moment the Done flag is set. The server then believed the unit was
+        // wherever Unit::UpdateSplineMovement last placed it, which it does only every
+        // POSITION_UPDATE_DELAY, so it could disagree with the stop it had just announced by
+        // most of a 400 ms step -- nearly three yards at ordinary run speed, more under a
+        // speed effect. Every later question about where that unit is, from an evading
+        // creature asking whether it is home to a path routed from its feet, was answered
+        // from the stale one.
+        //
+        // Once a stop reaches MoveSplineInit::Stop, doing the relocation here makes the
+        // server agree with the packet it sends. Unit::InterruptMoving still relocates
+        // first and then calls through to here; that duplicate is safe because both use the
+        // same spline coordinate.
+        if (unit.IsInWorld())
+        {
+            if (unit.GetTypeId() == TYPEID_PLAYER)
+            {
+                static_cast<Player*>(&unit)->SetPosition(real_position.x, real_position.y,
+                                                         real_position.z, real_position.orientation);
+            }
+            else
+            {
+                unit.GetMap()->CreatureRelocation(static_cast<Creature*>(&unit),
+                                                  real_position.x, real_position.y,
+                                                  real_position.z, real_position.orientation);
+            }
+        }
 
         args.flags = MoveSplineFlag::Done;
         unit.m_movementInfo.RemoveMovementFlag(MovementFlags(MOVEFLAG_FORWARD | MOVEFLAG_SPLINE_ENABLED));

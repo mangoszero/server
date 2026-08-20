@@ -35,9 +35,14 @@ class GenericShamanStrategyActionNodeFactory : public NamedObjectFactory<ActionN
         }
         static ActionNode* cleanse_spirit(PlayerbotAI* ai)
         {
+            // "cleanse spirit" is WotLK and cannot resolve in 1.12. Its old alternative,
+            // "cleansing totem", was equally unresolvable -- the 1.12 spells are Poison
+            // Cleansing Totem and Disease Cleansing Totem, which are dispel-type specific
+            // and so cannot substitute for a generic cleanse. They are wired per dispel type
+            // in ShamanNonCombatStrategy instead. No alternative belongs here.
             return new ActionNode ("cleanse spirit",
                 /*P*/ NULL,
-                /*A*/ NextAction::array(0, new NextAction("cleansing totem"), NULL),
+                /*A*/ NULL,
                 /*C*/ NULL);
         }
         static ActionNode* water_shield(PlayerbotAI* ai)
@@ -129,12 +134,20 @@ void GenericShamanStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     CombatStrategy::InitTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
-            "wind shear",
-        NextAction::array(0, new NextAction("wind shear", 23.0f), NULL)));
+            "ghost wolf active",
+        NextAction::array(0, new NextAction("cancel ghost wolf", ACTION_EMERGENCY + 10), NULL)));
+
+    // Earth Shock, not Wind Shear. No 1.12 spell is named Wind Shear -- it is a TBC ability --
+    // so both of these interrupt routes were inert: the trigger fired and the action could
+    // never resolve a spell id. Earth Shock carries the interrupt effect in vanilla (DBC
+    // effect 68) and is the shaman's interrupt for the whole expansion.
+    triggers.push_back(new TriggerNode(
+            "earth shock",
+        NextAction::array(0, new NextAction("earth shock", 23.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-            "wind shear on enemy healer",
-        NextAction::array(0, new NextAction("wind shear on enemy healer", 23.0f), NULL)));
+            "earth shock on enemy healer",
+        NextAction::array(0, new NextAction("earth shock on enemy healer", 23.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
             "purge",
@@ -178,7 +191,13 @@ void ShamanBuffDpsStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 
 void ShamanBuffManaStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
+    // Vanilla has no Water Shield -- it is WotLK. This used to wire the unresolvable name and
+    // rely on its ActionNode alternative to cast Lightning Shield instead, which made a dead
+    // spell the ONLY shield path for every bmana shaman: AiFactory gives bmana to Elemental,
+    // Restoration and untalented shamans, and only Enhancement takes bdps, which wires
+    // Lightning Shield directly. Name the real spell here rather than reaching it through a
+    // spell that does not exist.
     triggers.push_back(new TriggerNode(
-            "water shield",
-        NextAction::array(0, new NextAction("water shield", 22.0f), NULL)));
+            "lightning shield",
+        NextAction::array(0, new NextAction("lightning shield", 22.0f), NULL)));
 }

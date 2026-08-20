@@ -12,6 +12,7 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "strategy/values/LastMovementValue.h"
+#include "strategy/values/PossibleTargetsValue.h"
 #include "strategy/actions/LogLevelAction.h"
 #include "strategy/values/LastSpellCastValue.h"
 #include "LootObjectStack.h"
@@ -82,7 +83,8 @@ void PacketHandlingHelper::AddPacket(const WorldPacket& packet)
  * Default constructor for PlayerbotAI.
  */
 PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL),
-    currentEngine(NULL), chatHelper(this), chatFilter(this), accountId(0), security(NULL), master(NULL), currentState(BOT_STATE_NON_COMBAT),
+    currentEngine(NULL), currentState(BOT_STATE_NON_COMBAT), m_targetContextRevision(0),
+    chatHelper(this), chatFilter(this), accountId(0), security(NULL), master(NULL),
     m_eatingUntil(0), m_drinkingUntil(0),
     m_isJumping(false), m_jumpStartTime(0),
     m_jumpStartX(0.f), m_jumpStartY(0.f), m_jumpStartZ(0.f),
@@ -101,8 +103,8 @@ PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL)
  * @param bot The player bot.
  */
 PlayerbotAI::PlayerbotAI(Player* bot)
-    : PlayerbotAIBase(), chatHelper(this), chatFilter(this), security(bot), master(NULL),
-    m_eatingUntil(0), m_drinkingUntil(0),
+    : PlayerbotAIBase(), m_targetContextRevision(0), chatHelper(this), chatFilter(this),
+    security(bot), master(NULL), m_eatingUntil(0), m_drinkingUntil(0), m_wasDead(false),
     m_isJumping(false), m_jumpStartTime(0),
     m_jumpStartX(0.f), m_jumpStartY(0.f), m_jumpStartZ(0.f),
     m_jumpSinAngle(0.f), m_jumpCosAngle(1.f), m_jumpXYSpeed(0.f),
@@ -214,7 +216,11 @@ void PlayerbotAI::StartJump(bool forward, float orientation)
         return;
     }
 
+    // Clear() removes generators; it does NOT interrupt the spline already running, so
+    // without the explicit stop the old leg keeps advancing underneath the simulated
+    // parabola and UpdateSplineMovement overwrites the jump's own position writes.
     bot->GetMotionMaster()->Clear();
+    bot->InterruptMoving(true);
     bot->GetMotionMaster()->MoveIdle();
 
     m_jumpStartTime = getMSTime();
@@ -273,7 +279,21 @@ void PlayerbotAI::UpdateJump()
             }
             else
             {
-                bot->GetMotionMaster()->MovePoint(0, m_jumpTargetX, m_jumpTargetY, m_jumpTargetZ);
+                // Ask once, not on every AI update. This used to re-issue the approach every
+                // pass, stacking point generators and interrupting the leg it had just laid --
+                // the same restart churn MovementAction::MoveTo now guards against, and for
+                // the same reason: the client is handed a stream of cancelled splines.
+                float destX, destY, destZ;
+                const bool alreadyHeadingThere =
+                    bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == POINT_MOTION_TYPE &&
+                    bot->GetMotionMaster()->GetDestination(destX, destY, destZ) &&
+                    sqrtf((destX - m_jumpTargetX) * (destX - m_jumpTargetX) +
+                          (destY - m_jumpTargetY) * (destY - m_jumpTargetY)) < 0.5f;
+
+                if (!alreadyHeadingThere)
+                {
+                    bot->GetMotionMaster()->MovePoint(0, m_jumpTargetX, m_jumpTargetY, m_jumpTargetZ);
+                }
             }
         }
         return;
@@ -393,6 +413,27 @@ void PlayerbotAI::UpdateAI(uint32 elapsed)
 
 void PlayerbotAI::UpdateAIInternal(uint32 elapsed)
 {
+    // Repair the strategy set on the dead->alive transition FIRST, before anything else this
+    // tick can run. Releasing applies "+stay", which evicts whichever movement sibling the bot
+    // held, and nothing else puts it back -- so a bot that misses this repair is alive and
+    // permanently parked.
+    //
+    // This was previously a test of `currentEngine == engines[BOT_STATE_DEAD]` performed AFTER
+    // the engine had already executed, and that is bypassable: a queued master command drained
+    // below is handled by the dead engine's chat strategy, an "attack" switches the current
+    // engine to combat, and the later predicate then reads false. The repair never happened and
+    // the bot kept the stale "stay" once combat ended. Latching the bot's OWN death state is
+    // independent of which engine is current and of anything that mutates it later in the tick.
+    if (!bot->IsAlive())
+    {
+        m_wasDead = true;
+    }
+    else if (m_wasDead)
+    {
+        m_wasDead = false;
+        ResetStrategies();
+    }
+
     ExternalEventHelper helper(aiObjectContext);
     while (!chatCommands.empty())
     {
@@ -420,6 +461,10 @@ void PlayerbotAI::UpdateAIInternal(uint32 elapsed)
  */
 void PlayerbotAI::HandleTeleportAck()
 {
+    // Before anything else: a jump must not survive a teleport. See CancelJump.
+    CancelJump();
+    ++m_targetContextRevision;
+
     bot->GetMotionMaster()->Clear(true);
     bot->StopMoving(true);
     if (bot->IsBeingTeleportedNear())
@@ -429,6 +474,39 @@ void PlayerbotAI::HandleTeleportAck()
         p << (uint32)0; // supposed to be flags? not used currently
         p << (uint32)time(0); // time - not currently used
         bot->GetSession()->HandleMoveTeleportAckOpcode(p);
+
+        // Tell the watchers. A near teleport moves the bot server-side and notifies NOBODY:
+        // BuildTeleportAckMsg goes only to the mover's own session; DisableSpline runs before
+        // StopMoving so MoveSplineInit::Stop early-returns and emits no stop packet; and
+        // UpdateVisibilityOf is transition-only, so a hop that stays inside the hundred-yard
+        // bubble is not a transition and sends nothing at all.
+        //
+        // An observer therefore keeps rendering the bot where it was. The 1.12 client does
+        // not read the declared start of the next SMSG_MONSTER_MOVE -- it PREPENDS its own
+        // rendered position to the path and then travels the stitched leg at
+        // min(runSpeed * 4, length/duration). So the next ordinary step becomes a glide at
+        // 28 yd/s across the whole teleport distance: measured here as 56.89 yards covered in
+        // 2032 ms, where running it would take 8.13 seconds. No server packet carries that
+        // motion, which is why every packet-level speed audit of it comes back clean.
+        //
+        // The heartbeat carries Where() -- the destination -- and the client writes it
+        // straight into the slots it later reads as "current position", so the render snaps
+        // and the next leg's stitch distance is zero. This is exactly what the core already
+        // does for the creature branch of Unit::NearTeleportTo, and it is deliberately here
+        // rather than in MovementHandler: a real client echoes its own movement after a
+        // teleport, so only a client-less bot needs this.
+        // Only if the ack was actually taken. HandleMoveTeleportAckOpcode validates against
+        // the SESSION's mover, not the guid in the packet, and returns without doing
+        // anything when that mover is not this bot -- which possession legitimately causes.
+        // The near semaphore then stays set and UpdateSessions calls this again next tick,
+        // so an unguarded heartbeat would announce a destination the bot has not been moved
+        // to, and the resync would rebuild every observer's copy of it, every tick, for as
+        // long as the possession lasts. The semaphore clearing is the ack's own receipt.
+        if (!bot->IsBeingTeleportedNear())
+        {
+            bot->SendHeartBeat();
+            ResyncObserversAfterTeleport();
+        }
     }
     else if (bot->IsBeingTeleportedFar())
     {
@@ -444,6 +522,91 @@ void PlayerbotAI::HandleTeleportAck()
 }
 
 /**
+ * @brief Abandon any jump in progress or pending.
+ *
+ * A teleport during a simulated jump used only to PAUSE it -- UpdateAI returns early while
+ * IsBeingTeleported() is true, and neither jump flag is cleared. After the ack the old
+ * parabola simply resumes from its original start, and when it "lands" it relocates the bot
+ * to jumpStart plus run speed times elapsed -- silently overwriting the destination the
+ * teleport just put it at, with no observer told anything. Cancelling on both ack paths is
+ * what stops a teleport being undone by physics that belonged to somewhere else.
+ */
+void PlayerbotAI::CancelJump()
+{
+    if (!m_isJumping && !m_pendingJump)
+    {
+        return;
+    }
+
+    m_isJumping   = false;
+    m_pendingJump = false;
+
+    bot->m_movementInfo.RemoveMovementFlag(MovementFlags(MOVEFLAG_FALLING | MOVEFLAG_FORWARD));
+    bot->SetFallInformation(0, bot->GetPositionZ());
+}
+
+/**
+ * @brief Bring the bot to a genuine halt. See the header for why Clear() alone does not.
+ */
+void PlayerbotAI::StopMovement()
+{
+    bot->GetMotionMaster()->Clear();
+    bot->InterruptMoving(true);
+    bot->GetMotionMaster()->MoveIdle();
+}
+
+/**
+ * @brief Force every observer on this bot's map to re-sync its position after a teleport.
+ *
+ * The heartbeat above corrects observers who can see the DESTINATION. It cannot help one who
+ * could see the bot where it was and cannot see where it went: SendMessageToSet broadcasts to
+ * the visibility set of the new position, so an observer left behind never hears anything and
+ * keeps rendering the bot at the old spot until something else happens to refresh it.
+ *
+ * Destroying it for anyone who currently holds it, then asking for a normal visibility
+ * decision, covers all three cases in one pass: an observer who can only see the old position
+ * gets a destroy and no re-create; one who can see both gets it back at the destination; one
+ * who can only see the new position creates it there as usual.
+ *
+ * Ported from MaNGOS Three, which already carries this
+ * (PlayerbotAI::ResyncObserversAfterTeleport, commit dd4037f26).
+ */
+void PlayerbotAI::ResyncObserversAfterTeleport()
+{
+    Map* map = bot->FindMap();
+    if (!map)
+    {
+        return;
+    }
+
+    Map::PlayerList const& players = map->GetPlayers();
+    for (Map::PlayerList::const_iterator itr = players.begin(); itr != players.end(); ++itr)
+    {
+        Player* observer = itr->getSource();
+        if (!observer || observer == bot)
+        {
+            continue;
+        }
+
+        if (observer->HaveAtClient(bot))
+        {
+            bot->DestroyForPlayer(observer);
+            observer->m_clientGUIDs.erase(bot->GetObjectGuid());
+        }
+
+        // Through the CAMERA, not the body. HaveAtClient above is a statement about what the
+        // observer's current viewpoint holds, so the re-create has to be judged from that same
+        // viewpoint -- an observer using farsight or bind-sight would otherwise be asked
+        // whether its BODY can see the bot, and be told the wrong answer.
+        observer->GetCamera().UpdateVisibilityOf(bot);
+    }
+
+    // Refresh the bot's own view too, which the Three original does and this port first
+    // omitted: the bot has just arrived somewhere new and its own visibility set is stale.
+    bot->UpdateVisibilityAndView();
+}
+
+/**
  * Resets the bot's state and strategies.
  */
 void PlayerbotAI::Reset()
@@ -452,6 +615,8 @@ void PlayerbotAI::Reset()
     {
         return;
     }
+
+    ++m_targetContextRevision;
 
     currentEngine = engines[BOT_STATE_NON_COMBAT];
     nextAICheckDelay = 0;
@@ -512,7 +677,18 @@ void PlayerbotAI::HandleCommand(uint32 type, const string& text, Player& fromPla
         return;
     }
 
-    if (filtered.find("who") != 0 && !GetSecurity()->CheckLevelFor(PLAYERBOT_SECURITY_ALLOW_ALL, type != CHAT_MSG_WHISPER, &fromPlayer))
+    // "who" used to skip the security check entirely, and it answers with the bot's class,
+    // level, spec and gear. On a random bot that meant anyone at all could interrogate it,
+    // and because a channel line is fanned out to every random bot in the world, one "~who"
+    // in trade chat returned a whisper from each of them at once -- disclosure and a
+    // whisper flood from a single message. It now needs TALK, the level the module already
+    // uses to mean "may hold a conversation with this bot"; everything else still needs
+    // full control.
+    PlayerbotSecurityLevel required = (filtered.find("who") == 0)
+        ? PLAYERBOT_SECURITY_TALK
+        : PLAYERBOT_SECURITY_ALLOW_ALL;
+
+    if (!GetSecurity()->CheckLevelFor(required, type != CHAT_MSG_WHISPER, &fromPlayer))
     {
         return;
     }
@@ -699,6 +875,7 @@ void PlayerbotAI::ChangeEngine(BotState type)
 
     if (currentEngine != engine)
     {
+        ++m_targetContextRevision;
         currentEngine = engine;
         currentState = type;
         ReInitCurrentEngine();
@@ -764,6 +941,10 @@ void PlayerbotAI::DoNextAction()
 
     if (currentEngine == engines[BOT_STATE_DEAD] && bot->IsAlive())
     {
+        // Engine selection only. The strategy repair that coming back to life requires is done
+        // at the top of UpdateAIInternal against a latched death state, because this predicate
+        // reads the current engine pointer AFTER the engine has run and can be bypassed by
+        // anything that switches engines earlier in the tick.
         ChangeEngine(BOT_STATE_NON_COMBAT);
     }
 
@@ -805,6 +986,11 @@ void PlayerbotAI::ChangeStrategy(string names, BotState type)
     if (!e)
     {
         return;
+    }
+
+    if (type == currentState)
+    {
+        ++m_targetContextRevision;
     }
 
     e->ChangeStrategy(names);
@@ -880,6 +1066,8 @@ bool PlayerbotAI::HasStrategy(const string& name, BotState type)
  */
 void PlayerbotAI::ResetStrategies()
 {
+    ++m_targetContextRevision;
+
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
     {
         engines[i]->removeAllStrategies();
@@ -1073,6 +1261,12 @@ bool PlayerbotAI::HasNonCombatantInRange(float range,
             dist = bot->GetDistance(unit);
         }
         if (dist > range || unit->IsStunned())
+        {
+            continue;
+        }
+        // An unseen unit cannot tell the bot to withhold area damage, even when
+        // server-side state reveals that it is idle or crowd-controlled.
+        if (!PossibleTargetsValue::IsVisibleForBot(bot, unit))
         {
             continue;
         }

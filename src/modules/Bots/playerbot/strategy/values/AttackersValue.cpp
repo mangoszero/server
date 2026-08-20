@@ -1,6 +1,7 @@
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "AttackersValue.h"
+#include "PossibleTargetsValue.h"
 
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
@@ -29,7 +30,8 @@ list<ObjectGuid> AttackersValue::Calculate()
         result.push_back((*i)->GetObjectGuid());
     }
 
-    if (bot->duel && bot->duel->opponent)
+    if (bot->duel && bot->duel->opponent &&
+        PossibleTargetsValue::IsVisibleForBot(bot, bot->duel->opponent))
     {
         result.push_back(bot->duel->opponent->GetObjectGuid());
     }
@@ -74,7 +76,10 @@ void AttackersValue::RemoveNonThreating(set<Unit*>& targets)
     for (set<Unit *>::iterator tIter = targets.begin(); tIter != targets.end();)
     {
         Unit* unit = *tIter;
-        if (!bot->IsWithinLOSInMap(unit) || bot->GetMapId() != unit->GetMapId() || !hasRealThreat(unit))
+        if (bot->GetMapId() != unit->GetMapId() ||
+            !hasRealThreat(unit) ||
+            !PossibleTargetsValue::IsVisibleForBot(bot, unit) ||
+            !bot->IsWithinLOSInMap(unit))
         {
             set<Unit *>::iterator tIter2 = tIter;
             ++tIter;

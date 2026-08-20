@@ -3,6 +3,12 @@
 
 namespace ai
 {
+    class SoulLinkTrigger : public BuffTrigger
+    {
+        public:
+            SoulLinkTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "soul link") {}
+    };
+
     class DemonArmorTrigger : public BuffTrigger
     {
         public:

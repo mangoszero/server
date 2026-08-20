@@ -61,10 +61,13 @@ namespace ai
             SearingTotemTrigger(PlayerbotAI* ai) : TotemTrigger(ai, "searing totem", 1) {}
     };
 
-    class WindShearInterruptSpellTrigger : public InterruptSpellTrigger
+    // Earth Shock is the 1.12 interrupt. Wind Shear is a TBC ability with no spell of that
+    // name in the vanilla DBC, so this trigger could never resolve one and the whole
+    // interrupt route was inert for the entire expansion.
+    class EarthShockInterruptSpellTrigger : public InterruptSpellTrigger
     {
         public:
-            WindShearInterruptSpellTrigger(PlayerbotAI* ai) : InterruptSpellTrigger(ai, "wind shear") {}
+            EarthShockInterruptSpellTrigger(PlayerbotAI* ai) : InterruptSpellTrigger(ai, "earth shock") {}
     };
 
     class WaterShieldTrigger : public BuffTrigger
@@ -190,16 +193,21 @@ namespace ai
             MaelstromWeaponTrigger(PlayerbotAI* ai) : HasAuraTrigger(ai, "maelstrom weapon") {}
     };
 
-    class WindShearInterruptEnemyHealerSpellTrigger : public InterruptEnemyHealerTrigger
+    class EarthShockInterruptEnemyHealerSpellTrigger : public InterruptEnemyHealerTrigger
     {
         public:
-            WindShearInterruptEnemyHealerSpellTrigger(PlayerbotAI* ai) : InterruptEnemyHealerTrigger(ai, "wind shear") {}
+            EarthShockInterruptEnemyHealerSpellTrigger(PlayerbotAI* ai) : InterruptEnemyHealerTrigger(ai, "earth shock") {}
     };
 
-    class GhostWolfTrigger : public BuffTrigger
+    class GhostWolfActiveTrigger : public Trigger
     {
         public:
-            GhostWolfTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "ghost wolf") {}
+            GhostWolfActiveTrigger(PlayerbotAI* ai) : Trigger(ai, "ghost wolf active") {}
+
+            virtual bool IsActive()
+            {
+                return ai->HasAura("ghost wolf", bot);
+            }
     };
 
     class TremorTotemTrigger : public TotemTrigger

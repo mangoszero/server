@@ -3,7 +3,7 @@
 ##########################################
 
 [AiPlayerbotConf]
-ConfVersion=2026061600
+ConfVersion=2026080700
 
 # Enable or disable AI Playerbot
 AiPlayerbot.Enabled = 1
@@ -116,7 +116,10 @@ AiPlayerbot.CommandPrefix = ~
 
 # Random bot default strategies (applied after defaults)
 #AiPlayerbot.RandomBotCombatStrategies = +dps,+attack weak
-#AiPlayerbot.RandomBotNonCombatStrategies = +grind,+move random,+loot
+# Keep the leading "-stay". The default non-combat set contains "stay", whose action stops
+# the bot dead, and it is only removed as a side effect of "move random" being added. If
+# that name ever fails to resolve the bot is parked permanently.
+#AiPlayerbot.RandomBotNonCombatStrategies = -stay,+grind,+move random,+loot
 
 # Group strategies (applied by role to all bots when in a group, replacing solo strategies)
 #AiPlayerbot.BotTankStrategies = +tank aoe
@@ -141,7 +144,7 @@ AiPlayerbot.CommandPrefix = ~
 #AiPlayerbot.DeleteRandomBotAccounts = 0
 
 # Maps to teleport random bots
-#AiPlayerbot.RandomBotMaps = 0,1,530,571
+AiPlayerbot.RandomBotMaps = 0,1
 
 # Change random bot has lower gear
 #AiPlayerbot.RandomGearLoweringChance = 0.15
@@ -153,7 +156,7 @@ AiPlayerbot.CommandPrefix = ~
 #AiPlayerbot.RandomBotQuestItems = 6948,5175,5176,5177,5178
 
 # Spells every random bot will learn on randomize (54197 - cold weather flying)
-#AiPlayerbot.RandomBotSpellIds = 54197
+AiPlayerbot.RandomBotSpellIds =
 
 # Enable LFG for random bots
 #AiPlayerbot.RandomBotJoinLfg = 1
@@ -170,6 +173,36 @@ AiPlayerbot.CommandPrefix = ~
 
 # Level diff between random bots and nearby creatures for random teleports
 AiPlayerbot.RandomBotTeleLevel = 3
+
+# Bots at or below this level are confined to the zone their own race starts in:
+# Elwynn Forest, Dun Morogh, Teldrassil, Durotar, Mulgore or Tirisfal Glades. Without it
+# a level 6 gnome can be placed in Teldrassil, which the game permits but no player does
+# at that level without being escorted across a continent.
+# Set to 0 to disable and let low-level bots be scattered anywhere level-appropriate.
+AiPlayerbot.RandomBotHomeZoneMaxLevel = 10
+
+# Tighter still for the first few levels: bots at or below this level stay inside the
+# starting SUB-AREA rather than the whole zone -- Shadowglen rather than all of
+# Teldrassil, Northshire rather than all of Elwynn, Coldridge Valley rather than all of
+# Dun Morogh. This is where a real character's first few levels happen. Must be less than
+# RandomBotHomeZoneMaxLevel to have any effect. Set to 0 to disable.
+AiPlayerbot.RandomBotHomeAreaMaxLevel = 5
+
+# Percent of the roster that LIVES in its racial starting zone rather than passing
+# through it. Without this the starting zones drain within minutes: the rules above hold
+# a bot at home only while it is low level, and every bot is promptly rolled to a level
+# drawn from a random destination and teleported there. Residency is decided from the
+# bot's guid, so it is stable across randomizes, relogs and restarts, and a resident that
+# outgrows RandomBotHomeZoneMaxLevel is returned to the start rather than graduating out.
+# Set to 0 to disable and let every bot roam.
+AiPlayerbot.RandomBotStarterZonePct = 15
+
+# How many residents each starting zone should hold before the roster is filled at random.
+# The percentage above decides who MAY live in a starting zone; this decides who actually
+# does. Without it admission draws uniformly from every free character of a faction, so
+# which zones end up populated is luck -- entire starting zones came up empty. Set to 0 to
+# admit purely at random.
+AiPlayerbot.RandomBotStarterZoneQuota = 5
 
 # Intervals
 #AiPlayerbot.RandomBotUpdateInterval = 60

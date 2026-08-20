@@ -10,6 +10,7 @@
 #include "LFGMgr.h"
 #include <set>
 #include <unordered_map>
+#include <mutex>
 
 class WorldPacket;
 class Player;
@@ -63,14 +64,30 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         /**
          * @brief Randomizes the given player bot.
          * @param bot Pointer to the player bot.
+         * @return True if the bot was actually randomized. The caller must not bank the
+         *         "randomize" event otherwise, or a single failed pass suppresses every
+         *         retry until the event lapses.
          */
-        void Randomize(Player* bot);
+        bool Randomize(Player* bot);
 
         /**
          * @brief Randomizes the given player bot for the first time.
          * @param bot Pointer to the player bot.
+         * @return True if the bot was actually randomized.
          */
-        void RandomizeFirst(Player* bot);
+        bool RandomizeFirst(Player* bot);
+
+        /**
+         * @brief Whether this bot is one of the share that lives in its racial starting
+         *        zone permanently. Derived from the guid so the answer never changes.
+         */
+        bool IsStarterZoneResident(Player* bot);
+
+        /**
+         * @brief Randomizes a starting-zone resident: a level inside the home band, and a
+         *        placement in its own racial starting zone.
+         */
+        bool RandomizeStarterResident(Player* bot);
 
         /**
          * @brief Increases the level of the given player bot.
@@ -195,7 +212,7 @@ class RandomPlayerbotMgr : public PlayerbotHolder
          * @param event The event name.
          * @return The event value.
          */
-        uint32 GetEventValue(uint32 bot, string event);
+        uint32 GetEventValue(uint32 bot, string event, bool cacheMisses = true);
 
         /**
          * @brief Sets the event value for a given player bot and event.
@@ -221,6 +238,17 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         uint32 AddRandomBot(bool alliance);
 
         /**
+         * @brief The zone a race starts in, without needing a loaded Player.
+         */
+        uint32 GetStartZoneForRace(uint32 race);
+
+        /**
+         * @brief Picks a free bot that would fill the emptiest under-quota starting zone.
+         * @return The bot guid, or 0 when every zone is at quota or the feature is off.
+         */
+        uint32 PickForStarterZoneQuota(vector<uint32>& bots);
+
+        /**
          * @brief Processes the given player bot.
          * @param bot The player ID.
          * @return True if the bot is processed successfully, false otherwise.
@@ -233,8 +261,8 @@ class RandomPlayerbotMgr : public PlayerbotHolder
          * @param time The time to schedule the randomization.
          */
         void ScheduleRandomize(uint32 bot, uint32 time);
-        void RandomTeleport(Player* bot, uint32 mapId, float teleX, float teleY, float teleZ);
-        void RandomTeleportForLevel(Player* bot);
+        bool RandomTeleport(Player* bot, uint32 mapId, float teleX, float teleY, float teleZ);
+        bool RandomTeleportForLevel(Player* bot);
         void EnsureGroupedBotsOnline();
         void LoadGroupedBots();
         QueryResult* QueryGroupedBots();
@@ -244,7 +272,7 @@ class RandomPlayerbotMgr : public PlayerbotHolder
          * @param bot Pointer to the player bot.
          * @param locs The list of possible locations.
          */
-        void RandomTeleport(Player* bot, vector<WorldLocation> &locs);
+        bool RandomTeleport(Player* bot, vector<WorldLocation> &locs);
 
         /**
          * @brief Gets the level of a zone based on its coordinates.
@@ -272,6 +300,45 @@ class RandomPlayerbotMgr : public PlayerbotHolder
          */
         void CalculateAreaCreatureStats();
 
+        /**
+         * @brief Where a race begins the game, at both granularities.
+         */
+        struct RacialStart
+        {
+            RacialStart() : zoneId(0), areaId(0) {}
+            uint32 zoneId; ///< Teldrassil, Dun Morogh, ... straight from playercreateinfo
+            uint32 areaId; ///< Shadowglen, Coldridge Valley, ... resolved from the create position; 0 if unresolved
+        };
+
+        /**
+         * @brief The zone and sub-area a bot's own race starts the game in.
+         * @param bot Pointer to the player bot.
+         * @return The pair, zeroed if the race has no create info.
+         */
+        RacialStart GetRacialStart(Player* bot);
+
+        /**
+         * @brief The sub-area of a starting zone holding the ordinary creatures nearest a
+         *        race's create position, for races whose create point answers with the
+         *        zone rather than the sub-area it sits in.
+         * @return The sub-area ID, or 0 if none qualifies.
+         */
+        uint32 FindStartSubArea(uint32 mapId, uint32 zoneId, float x, float y, float z);
+
+        /**
+         * @brief The zone a bot's own race starts the game in, from playercreateinfo.
+         * @param bot Pointer to the player bot.
+         * @return The zone ID, or 0 if the race has no create info.
+         */
+        uint32 GetRacialStartZone(Player* bot);
+
+        /**
+         * @brief Teleports a bot somewhere inside its own racial starting zone.
+         * @param bot Pointer to the player bot.
+         * @return true if the bot was teleported.
+         */
+        bool RandomTeleportHome(Player* bot);
+
     private:
         vector<Player*> players; ///< List of players.
         int processTicks; ///< Number of process ticks.
@@ -280,8 +347,40 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         std::map<uint32, AreaCreatureStats> m_areaCreatureStatsMap;
         std::set<uint32> m_allianceGuardAreas; ///< Areas with guards hostile to Horde (Alliance-guarded)
         std::set<uint32> m_hordeGuardAreas;    ///< Areas with guards hostile to Alliance (Horde-guarded)
-        std::map<std::pair<uint32, uint32>, uint32> m_cellToAreaCache;
+        std::set<uint32> m_neutralHubAreas;    ///< Areas held by a contested-guard faction: open to both sides, so they never inherit a parent zone's owner
+        std::map<uint32, std::vector<WorldLocation> > m_homeZoneAnchors; ///< Spawn positions keyed by racial starting zone AND starting sub-area, the only anchors a bot under RandomBotHomeZoneMaxLevel may be sent to
+        std::map<uint32, RacialStart> m_racialStarts; ///< race -> where that race begins, resolved once from playercreateinfo
+        std::map<uint32, uint32> m_raceStartZones;    ///< race -> starting zone, for candidates with no loaded Player
+        std::map<uint32, uint32> m_botStartZones;     ///< bot guid -> starting zone, filled while listing free bots
+        std::vector<uint32> m_freeBotsCache[2];       ///< free bot guids per faction, rebuilt once per pass
+        int m_freeBotsPass;                           ///< the pass m_freeBotsCache was built for
+        std::map<uint32, uint32> m_starterZoneCounts; ///< starting zone -> active residents, rebuilt once per pass
+        int m_starterZoneCountsPass;                  ///< the pass m_starterZoneCounts was built for
         std::unordered_map<uint32, bool> m_randomBotCache;
+        // Guids whose "add" event has been written but whose asynchronous INSERT may not
+        // have reached the database yet, against the pass that wrote it. GetBots and
+        // GetFreeBots both read 'add' rows straight from the database, so without this a
+        // bot banked earlier is invisible to the roster and simultaneously visible in the
+        // free pool. An entry is dropped when one of those two queries returns the guid,
+        // which is the write proving it landed, and after PendingAddMaxMs regardless so that
+        // an INSERT which never lands cannot pin a guid indefinitely. Keyed by the time it
+        // was banked, not the pass, because passes are not a fixed length: a pass that runs
+        // over its budget reschedules at RandomBotCatchupInterval rather than
+        // RandomBotUpdateInterval, so counting passes gives the least headroom during the
+        // startup flood, which is when the delay thread's queue is deepest and the headroom
+        // is most needed.
+        std::map<uint32, uint32> m_pendingAddGuids;
+        // Generous, because the only cost of holding an entry too long is that a guid whose
+        // INSERT genuinely failed keeps its roster injection for a minute.
+        static const uint32 PendingAddMaxMs = 60000;
+        // Both caches are read from map worker threads -- PlayerbotAI::UpdateAI, the trade
+        // and grind values, AiFactory -- and written from the world thread. Concurrent
+        // access to std::map/unordered_map is undefined behaviour rather than a stale
+        // read: a reader traversing during another thread's rehash or rebalance can walk
+        // a dangling node. Seeding the cache in advance narrows the window and does not
+        // close it, so both are guarded. The critical sections are a find and an assign,
+        // and IsRandomBot at roughly a thousand calls a second is nowhere near contended.
+        mutable std::mutex m_cacheMutex;
         std::unordered_map<uint32, uint32> m_playerZoneCounts; ///< zone_id -> real player count, for O(1) bot tick gating.
         struct EventValueEntry {
             uint32 value;

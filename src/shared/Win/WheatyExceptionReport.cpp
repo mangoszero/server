@@ -406,10 +406,19 @@ void WheatyExceptionReport::GenerateExceptionReport(
     _tprintf(_T("\r\nRegisters:\r\n"));
     _tprintf(_T("RAX:%016I64X\r\nRBX:%016I64X\r\nRCX:%016I64X\r\nRDX:%016I64X\r\nRSI:%016I64X\r\nRDI:%016I64X\r\n")
             _T("R8: %016I64X\r\nR9: %016I64X\r\nR10:%016I64X\r\nR11:%016I64X\r\nR12:%016I64X\r\nR13:%016I64X\r\nR14:%016I64X\r\nR15:%016I64X\r\n")
+            // R8 was missing from this list: fourteen labels, thirteen arguments. Every value
+            // from the "R8:" line down was therefore the NEXT register's, and "R15:" printed
+            // whatever followed the argument list. It silently mislabelled eight registers in
+            // every x64 crash report this server has ever written, which is exactly the part
+            // of the report anyone reads when a pointer is bad.
             ,pCtx->Rax, pCtx->Rbx, pCtx->Rcx, pCtx->Rdx,
-             pCtx->Rsi, pCtx->Rdi , pCtx->R9, pCtx->R10, pCtx->R11, pCtx->R12, pCtx->R13, pCtx->R14, pCtx->R15);
+             pCtx->Rsi, pCtx->Rdi, pCtx->R8, pCtx->R9, pCtx->R10, pCtx->R11, pCtx->R12, pCtx->R13, pCtx->R14, pCtx->R15);
     _tprintf(_T("CS:RIP:%04X:%016I64X\r\n"), pCtx->SegCs, pCtx->Rip);
-    _tprintf(_T("SS:RSP:%04X:%016X  RBP:%08X\r\n"),
+    // %I64X, not %X. These are 64-bit registers and the 32-bit conversions truncated both,
+    // with the zero padding making the result look like a whole address rather than half of
+    // one. The report that prompted this printed RSP as 00000000365FF6E8 while every stack
+    // frame beside it sat at 000000F6365FF... -- the top half was simply gone.
+    _tprintf(_T("SS:RSP:%04X:%016I64X  RBP:%016I64X\r\n"),
              pCtx->SegSs, pCtx->Rsp, pCtx->Rbp);
     _tprintf(_T("DS:%04X  ES:%04X  FS:%04X  GS:%04X\r\n"),
              pCtx->SegDs, pCtx->SegEs, pCtx->SegFs, pCtx->SegGs);
@@ -934,8 +943,14 @@ char* WheatyExceptionReport::FormatOutputValue(char* pszCurrBuffer,
         {
             if (!IsBadStringPtr(*(PSTR*)pAddress, 32))
             {
+                // Print the pointer the line above just validated, not a DWORD read from the
+                // same place. %s consumes a full pointer-width argument, so on x64 passing a
+                // 32-bit value left the top half of the register as whatever happened to be
+                // there and sprintf then walked that address -- a fault inside the exception
+                // handler, while it is writing the report for the first fault. The compiler
+                // has been calling this out as C4477 and C4313 on every build.
                 pszCurrBuffer += sprintf(pszCurrBuffer, " = \"%.31s\"",
-                                         *(PDWORD)pAddress);
+                                         *(PSTR*)pAddress);
             }
             else
                 pszCurrBuffer += sprintf(pszCurrBuffer, " = %X",

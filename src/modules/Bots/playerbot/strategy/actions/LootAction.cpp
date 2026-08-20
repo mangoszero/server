@@ -43,35 +43,80 @@ enum ProfessionSpells
 bool OpenLootAction::Execute(Event event)
 {
     LootObject lootObject = AI_VALUE(LootObject, "loot target");
-    bool result = DoLoot(lootObject);
-    if (result)
+    LootResult result = DoLoot(lootObject);
+
+    switch (result)
     {
-        AI_VALUE(LootObjectStack*, "available loot")->Remove(lootObject.guid);
-        context->GetValue<LootObject>("loot target")->Set(LootObject());
+        case LOOT_OK:
+            AI_VALUE(LootObjectStack*, "available loot")->Remove(lootObject.guid);
+            context->GetValue<LootObject>("loot target")->Set(LootObject());
+            m_retryGuid = ObjectGuid();
+            m_retryStarted = 0;
+            return true;
+
+        case LOOT_RETRY:
+            // Retryable, but on a clock. Start it when the target changes; when it expires,
+            // treat the target exactly as impossible. This is what stops a failure that
+            // never clears -- a shapeshifted druid casting Mining, say -- from holding the
+            // bot on the same object for the rest of its life.
+            if (m_retryGuid != lootObject.guid)
+            {
+                m_retryGuid = lootObject.guid;
+                m_retryStarted = time(0);
+                return false;
+            }
+
+            if (time(0) - m_retryStarted <= (time_t)LOOT_RETRY_SECONDS)
+            {
+                return false;
+            }
+
+            // Fall through: out of patience, handle it as impossible.
+
+        case LOOT_IMPOSSIBLE:
+            // Let this one go, and stop it being offered again for a couple of minutes.
+            //
+            // Clearing the target alone would not help: the gather actions rescan and re-Add
+            // the same object on the very next pass, the bot picks it again, and it is stuck
+            // in the same place -- unable to loot and, because "can loot" stays true, unable
+            // to follow its master either. Blacklisting is what actually breaks the loop.
+            //
+            // Deliberately NOT treated as success: nothing was looted, and reporting
+            // otherwise would tell the engine this tick did useful work.
+            AI_VALUE(LootObjectStack*, "available loot")->Blacklist(lootObject.guid);
+            context->GetValue<LootObject>("loot target")->Set(LootObject());
+            m_retryGuid = ObjectGuid();
+            m_retryStarted = 0;
+            return false;
+
+        default:
+            return false;
     }
-    return result;
 }
 
-bool OpenLootAction::DoLoot(LootObject& lootObject)
+OpenLootAction::LootResult OpenLootAction::DoLoot(LootObject& lootObject)
 {
     if (lootObject.IsEmpty())
     {
-        return false;
+        return LOOT_IMPOSSIBLE;
     }
 
     Creature* creature = ai->GetCreature(lootObject.guid);
     if (creature && bot->GetDistance(creature) > INTERACTION_DISTANCE)
     {
-        return false;
+        return LOOT_RETRY;
     }
 
     if (creature && creature->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE))
     {
-        bot->GetMotionMaster()->Clear();
+        // A real halt, not just Clear(). The bot is at the corpse and about to loot it, so
+        // the leg that brought it here has to end -- Clear() alone would leave the spline
+        // running and slide the bot past the thing it stopped for.
+        ai->StopMovement();
         WorldPacket* const packet = new WorldPacket(CMSG_LOOT, 8);
         *packet << lootObject.guid;
         bot->GetSession()->QueuePacket(packet);
-        return true;
+        return LOOT_OK;
     }
 
     if (creature)
@@ -79,66 +124,83 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
         SkillType skill = creature->GetCreatureInfo()->GetRequiredLootSkill();
         if (!CanOpenLock(skill, lootObject.reqSkillValue))
         {
-            return false;
+            return LOOT_IMPOSSIBLE;
         }
 
-        bot->GetMotionMaster()->Clear();
+        ai->StopMovement();
         switch (skill)
         {
+            // A missing profession is permanent; a cast that merely failed is not.
             case SKILL_ENGINEERING:
-                return bot->HasSkill(SKILL_ENGINEERING) ? ai->CastSpell(ENGINEERING, creature) : false;
+                if (!bot->HasSkill(SKILL_ENGINEERING)) { return LOOT_IMPOSSIBLE; }
+                return ai->CastSpell(ENGINEERING, creature) ? LOOT_OK : LOOT_RETRY;
             case SKILL_HERBALISM:
-                return bot->HasSkill(SKILL_HERBALISM) ? ai->CastSpell(32605, creature) : false;
+                if (!bot->HasSkill(SKILL_HERBALISM)) { return LOOT_IMPOSSIBLE; }
+                return ai->CastSpell(32605, creature) ? LOOT_OK : LOOT_RETRY;
             case SKILL_MINING:
-                return bot->HasSkill(SKILL_MINING) ? ai->CastSpell(32606, creature) : false;
+                if (!bot->HasSkill(SKILL_MINING)) { return LOOT_IMPOSSIBLE; }
+                return ai->CastSpell(32606, creature) ? LOOT_OK : LOOT_RETRY;
             default:
-                return bot->HasSkill(SKILL_SKINNING) ? ai->CastSpell(SKINNING, creature) : false;
+                if (!bot->HasSkill(SKILL_SKINNING)) { return LOOT_IMPOSSIBLE; }
+                return ai->CastSpell(SKINNING, creature) ? LOOT_OK : LOOT_RETRY;
         }
     }
 
     GameObject* go = ai->GetGameObject(lootObject.guid);
     if (go && bot->GetDistance(go) > INTERACTION_DISTANCE)
     {
-        return false;
+        return LOOT_RETRY;
     }
 
-    bot->GetMotionMaster()->Clear();
+    // Neither a creature nor a gameobject is here any more -- looted by someone else, or
+    // despawned. Nothing will ever come of this target.
+    if (!creature && !go)
+    {
+        return LOOT_IMPOSSIBLE;
+    }
+
+    ai->StopMovement();
 
     if (go && go->GetGoState() == GO_STATE_ACTIVE)
     {
+        // Already open. That is a completed open, not a "try again" -- StoreLootAction works
+        // from the response packet's guid, so clearing the AI target cannot disrupt it, while
+        // keeping it selected needlessly suppresses following until release.
         if (bot->GetLootGuid() == lootObject.guid)
         {
-            return false;
+            return LOOT_OK;
         }
 
         WorldPacket* const packet = new WorldPacket(CMSG_LOOT, 8);
         *packet << lootObject.guid;
         bot->GetSession()->QueuePacket(packet);
-        return true;
+        return LOOT_OK;
     }
 
     if (bot->IsNonMeleeSpellCasted(false))
     {
-        return false;
+        return LOOT_RETRY;
     }
 
     if (lootObject.skillId == SKILL_MINING)
     {
-        return bot->HasSkill(SKILL_MINING) ? ai->CastSpell(MINING, bot) : false;
+        if (!bot->HasSkill(SKILL_MINING)) { return LOOT_IMPOSSIBLE; }
+        return ai->CastSpell(MINING, bot) ? LOOT_OK : LOOT_RETRY;
     }
 
     if (lootObject.skillId == SKILL_HERBALISM)
     {
-        return bot->HasSkill(SKILL_HERBALISM) ? ai->CastSpell(HERB_GATHERING, bot) : false;
+        if (!bot->HasSkill(SKILL_HERBALISM)) { return LOOT_IMPOSSIBLE; }
+        return ai->CastSpell(HERB_GATHERING, bot) ? LOOT_OK : LOOT_RETRY;
     }
 
     uint32 spellId = GetOpeningSpell(lootObject);
     if (!spellId)
     {
-        return false;
+        return LOOT_IMPOSSIBLE;
     }
 
-    return ai->CastSpell(spellId, bot);
+    return ai->CastSpell(spellId, bot) ? LOOT_OK : LOOT_RETRY;
 }
 
 uint32 OpenLootAction::GetOpeningSpell(LootObject& lootObject)

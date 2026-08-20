@@ -40,9 +40,13 @@ void GenericPriestStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
             "party member low health",
         NextAction::array(0, new NextAction("power word: shield on party", 50.0f), new NextAction("greater heal on party", 50.0f), NULL)));
 
+    // ACTION_MOVE rather than 15. Escaping something that has closed on a caster has to
+    // outrank "set facing", which moved into CombatStrategy at ACTION_NORMAL + 7 and would
+    // otherwise take the tick to turn the priest towards what it is trying to get away
+    // from.
     triggers.push_back(new TriggerNode(
             "enemy too close for spell no aggro",
-        NextAction::array(0, new NextAction("flee", 15.0f), NULL)));
+        NextAction::array(0, new NextAction("flee", ACTION_MOVE), NULL)));
 
     triggers.push_back(new TriggerNode(
             "dispel magic",

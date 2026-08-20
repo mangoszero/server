@@ -220,6 +220,7 @@ void PetAI::SelectNextTarget(Unit* owner)
         {
             if (candidate->IsAlive() &&
                 candidate->IsTargetableForAttack() &&
+                _isVisible(candidate) &&
                 candidate->isInAccessablePlaceFor(m_creature) &&
                 HasLineOfSight(*m_creature, *candidate))
             {

@@ -19,7 +19,9 @@ class PlayerbotHolder : public PlayerbotAIBase
         PlayerbotHolder();
         virtual ~PlayerbotHolder();
 
-        void AddPlayerBot(uint64 guid, uint32 masterAccountId);
+        // Returns false when the login was refused outright, so a caller driving the bot
+        // from a persisted event can retire that event instead of retrying it every pass.
+        bool AddPlayerBot(uint64 guid, uint32 masterAccountId);
         void LogoutPlayerBot(uint64 guid);
         Player* GetPlayerBot (uint64 guid) const;
         PlayerBotMap::const_iterator GetPlayerBotsBegin() const { return playerBots.begin(); }

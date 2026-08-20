@@ -5,6 +5,7 @@
 #include "CreatureAI.h"
 #include "../../LootObjectStack.h"
 #include "ThreatManager.h"
+#include "../values/PossibleTargetsValue.h"
 
 using namespace ai;
 
@@ -131,11 +132,33 @@ bool AttackAction::Attack(Unit* target)
         }
     }
 
+    Pet* pet = bot->GetPet();
+
+    // Target values and queued actions can outlive a concealment transition. If this bot
+    // or pet already supplies the target's attacker evidence, require the current-target
+    // value to prove that concealment was detected before that attack began.
+    if (target->GetVisibility() != VISIBILITY_ON &&
+        (bot->getVictim() == target || (pet && pet->getVictim() == target)) &&
+        context->GetValue<Unit*>("current target")->Get() != target)
+    {
+        return false;
+    }
+
+    // Recheck immediately before any selection, pet-command, or core attack side effect.
+    if (!PossibleTargetsValue::IsVisibleForBot(bot, target))
+    {
+        return false;
+    }
+
     if (bot->IsMounted())
     {
         WorldPacket emptyPacket;
         bot->GetSession()->HandleCancelMountAuraOpcode(emptyPacket);
     }
+
+    // Invalidate concealment history before Set() records this acquisition. This matters
+    // when a naturally detected stealthed unit is the first target entering combat.
+    ai->ChangeEngine(BOT_STATE_COMBAT);
 
     ObjectGuid guid = target->GetObjectGuid();
     bot->SetSelectionGuid(target->GetObjectGuid());
@@ -146,7 +169,6 @@ bool AttackAction::Attack(Unit* target)
     context->GetValue<Unit*>("current target")->Set(target);
     context->GetValue<LootObjectStack*>("available loot")->Get()->Add(guid);
 
-    Pet* pet = bot->GetPet();
     if (pet)
     {
         CreatureAI* creatureAI = ((Creature*)pet)->AI();
@@ -157,7 +179,6 @@ bool AttackAction::Attack(Unit* target)
     }
 
     bot->Attack(target, true);
-    ai->ChangeEngine(BOT_STATE_COMBAT);
     return true;
 }
 

@@ -25,17 +25,6 @@ namespace ai
             }
     };
 
-    class HunterAspectOfTheViperTrigger : public BuffTrigger
-    {
-        public:
-            HunterAspectOfTheViperTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the viper") {}
-
-            virtual bool IsActive()
-            {
-                return SpellTrigger::IsActive() && !ai->HasAura(spell, GetTarget());
-            }
-    };
-
     class HunterAspectOfThePackTrigger : public BuffTrigger
     {
         public:
@@ -47,8 +36,18 @@ namespace ai
             }
     };
 
-    BEGIN_TRIGGER(HuntersPetDeadTrigger, Trigger)
-    END_TRIGGER()
+    // Not BEGIN_TRIGGER: that passes only `ai`, leaving checkInterval at its default of
+    // 1, and when the pet is not in world this trigger falls back to a character_pet
+    // SELECT. Every tick, per petless hunter, on a map worker thread. Throttled to match
+    // HuntersPetUnhappyTrigger below; the cheap in-world path is gated the same way, but
+    // a bot taking a few seconds longer to notice it needs a pet costs nothing.
+    class HuntersPetDeadTrigger : public Trigger
+    {
+        public:
+            HuntersPetDeadTrigger(PlayerbotAI* ai) : Trigger(ai, "hunters pet dead", 300) {}
+        public:
+            virtual bool IsActive();
+    };
 
     BEGIN_TRIGGER(HuntersPetLowHealthTrigger, Trigger)
     END_TRIGGER()

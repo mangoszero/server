@@ -144,6 +144,11 @@ namespace ai
             CastDivineSpiritAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "divine spirit") {}
     };
 
+    class CastInnerFocusAction : public CastBuffSpellAction {
+        public:
+            CastInnerFocusAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "inner focus") {}
+    };
+
     class CastInnerFireAction : public CastBuffSpellAction {
         public:
             CastInnerFireAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "inner fire") {}

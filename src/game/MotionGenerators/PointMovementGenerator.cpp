@@ -70,6 +70,31 @@ void PointMovementGenerator::Finalize(Unit& owner)
     }
 }
 
+void RoutedPointMovementGenerator::Finalize(Unit& owner)
+{
+    owner.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+
+    // Same rule as the base, plus the one this generator adds: a leg the router refused was
+    // never laid, so reaching the point is not something that happened. See the header.
+    if (m_arrived && owner.movespline->Finalized())
+    {
+        MovementInform(owner);
+    }
+}
+
+Motion::MoveIntent RoutedPointMovementGenerator::Intent(Unit& owner, Motion::MoveStatus const& status,
+                                                        uint32 diff)
+{
+    // Arrival is latched here rather than refusal, and the proximity test rejects a mover that
+    // was frozen partway rather than actually arriving. See the header for both reasons.
+    if (status.arrived && owner.GetDistance(m_dest.x, m_dest.y, m_dest.z) < 10.0f)
+    {
+        m_arrived = true;
+    }
+
+    return PointMovementGenerator::Intent(owner, status, diff);
+}
+
 void PointMovementGenerator::MovementInform(Unit& owner) const
 {
     if (owner.GetTypeId() != TYPEID_UNIT)

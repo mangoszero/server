@@ -21,13 +21,17 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
         return PLAYERBOT_SECURITY_ALLOW_ALL;
     }
 
+    // These returned only when the caller wanted a reason string. Called with reason == NULL
+    // -- which CheckLevelFor does for every silent check -- the condition was evaluated and
+    // then fallen straight past, so "is a bot" and "is the other faction" denied nothing at
+    // all on the silent path.
     if (from->GetPlayerbotAI())
     {
         if (reason)
         {
             *reason = PLAYERBOT_DENY_IS_BOT;
-            return PLAYERBOT_SECURITY_DENY_ALL;
         }
+        return PLAYERBOT_SECURITY_DENY_ALL;
     }
 
     if (bot->GetPlayerbotAI()->IsOpposing(from))
@@ -35,8 +39,8 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
         if (reason)
         {
             *reason = PLAYERBOT_DENY_OPPOSING;
-            return PLAYERBOT_SECURITY_DENY_ALL;
         }
+        return PLAYERBOT_SECURITY_DENY_ALL;
     }
 
     if (sPlayerbotAIConfig.IsInRandomAccountList(account))
@@ -124,11 +128,62 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
         if (reason)
         {
             *reason = PLAYERBOT_DENY_INVITE;
-            return PLAYERBOT_SECURITY_INVITE;
+        }
+        return PLAYERBOT_SECURITY_INVITE;
+    }
+
+    // Everything above this point applies only to bots on a random-bot account. A
+    // player-owned bot skipped the entire block and fell out here, so this return handed
+    // ALLOW_ALL -- full control -- to any same-faction player who could reach the bot at
+    // all: a whisper, a party, a raid. That is sell, destroy, bank, repair, equip, unequip,
+    // trade, teleport and strategy changes on a bot belonging to somebody else.
+    //
+    // A player-owned bot answers to its master, and to the group its master has put it in.
+    // Anyone else may talk to it, which is what TALK is for, and gets the "not yours"
+    // refusal the enum already carries a message for.
+    Player* master = bot->GetPlayerbotAI() ? bot->GetPlayerbotAI()->GetMaster() : NULL;
+    if (master && from == master)
+    {
+        return PLAYERBOT_SECURITY_ALLOW_ALL;
+    }
+
+    // Party and raid chat is how a group actually plays: "follow", "attack my target",
+    // "stay". Restricting that to the master alone closed the hole but also stopped a
+    // party member directing bots that are standing in the group with them, which is the
+    // ordinary use of the feature and not what was being abused. Group membership is the
+    // consent signal -- somebody is only in it because a player accepted them -- and it
+    // is the same test the random-bot branch above already applies, so this is the
+    // module's own rule rather than a new one.
+    //
+    // Be clear about what this does and does not cover. Group here means Group, which in
+    // this core is party AND raid, and GetFirstMember walks every member of either. So
+    // joining a raid that contains somebody's bot does confer full control of it, up to
+    // 39 other people. That is the same exposure the random-bot branch has always had,
+    // and it is bounded by someone having accepted the invite; it is not the hole this
+    // was written to close. What stays shut is the case that mattered and was
+    // unbounded: any same-faction stranger who could merely reach the bot with a
+    // whisper could sell, destroy, equip and teleport it, with no acceptance step at
+    // all. If raid-wide control turns out to be too broad, the fix is to test party
+    // subgroup membership here rather than to go back to master-only.
+    if (!ignoreGroup)
+    {
+        if (Group* botGroup = bot->GetGroup())
+        {
+            for (GroupReference* gref = botGroup->GetFirstMember(); gref; gref = gref->next())
+            {
+                if (gref->getSource() == from)
+                {
+                    return PLAYERBOT_SECURITY_ALLOW_ALL;
+                }
+            }
         }
     }
 
-    return PLAYERBOT_SECURITY_ALLOW_ALL;
+    if (reason)
+    {
+        *reason = PLAYERBOT_DENY_NOT_YOURS;
+    }
+    return PLAYERBOT_SECURITY_TALK;
 }
 
 bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent, Player* from, bool ignoreGroup)

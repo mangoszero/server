@@ -6495,6 +6495,18 @@ void Unit::UpdateSplineMovement(uint32 t_diff)
 
     if (movespline->Finalized())
     {
+        // The flags are set once, in MoveSplineInit::Launch, and cleared in exactly two
+        // places: an explicit Stop, and the arrival below. Anything that finalizes a
+        // spline WITHOUT going through either — a bare movespline->_Interrupt() from
+        // outside, a leg that ended between ticks — leaves MOVEFLAG_SPLINE_ENABLED set on
+        // a unit with no spline, and nothing would ever take it off again. Reconcile it
+        // here, where the question is already being asked, rather than chasing every
+        // caller that might finalize one.
+        if (m_movementInfo.HasMovementFlag(MOVEFLAG_SPLINE_ENABLED))
+        {
+            DisableSpline();
+        }
+
         return;
     }
 

@@ -349,6 +349,15 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 #ifdef ENABLE_PLAYERBOTS
             if (player->GetPlayerbotAI())
             {
+                // Whisper first, then hand the text to the bot. Only the else branch used
+                // to run it, and Player::Whisper is what sends CHAT_MSG_WHISPER_INFORM
+                // back to the sender -- the "To Name:" line. So whispering a bot showed
+                // you nothing at all: not your own message, and no clue whether it had
+                // even been sent. Doing it here also restores the whisper log and the
+                // AFK/DND handling that every other whisper gets. It is safe for a bot
+                // target: SendPacket routes the copy through HandleBotOutgoingPacket and
+                // then returns on the missing socket.
+                GetPlayer()->Whisper(msg, lang, player->GetObjectGuid());
                 player->GetPlayerbotAI()->HandleCommand(type, msg, *GetPlayer());
                 GetPlayer()->m_speakTime = 0;
                 GetPlayer()->m_speakCount = 0;

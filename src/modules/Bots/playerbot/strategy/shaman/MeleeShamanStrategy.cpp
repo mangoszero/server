@@ -12,7 +12,6 @@ class MeleeShamanStrategyActionNodeFactory : public NamedObjectFactory<ActionNod
         MeleeShamanStrategyActionNodeFactory()
         {
             creators["stormstrike"] = &stormstrike;
-            creators["lava lash"] = &lava_lash;
             creators["magma totem"] = &magma_totem;
         }
     private:
@@ -20,16 +19,18 @@ class MeleeShamanStrategyActionNodeFactory : public NamedObjectFactory<ActionNod
         {
             return new ActionNode ("stormstrike",
                 /*P*/ NULL,
-                /*A*/ NextAction::array(0, new NextAction("lava lash"), NULL),
+                // Earth Shock, not Lava Lash. Lava Lash is a Wrath ability with no action
+                // registered for it, so this alternative was a silent NULL -- and since
+                // Stormstrike is a level 40 thirty-one-point talent, that NULL was the
+                // ENTIRE outcome for every enhancement shaman below 40 or without the
+                // talent. Earth Shock is level 4 and registered.
+                /*A*/ NextAction::array(0, new NextAction("earth shock"), NULL),
                 /*C*/ NULL);
         }
-        static ActionNode* lava_lash(PlayerbotAI* ai)
-        {
-            return new ActionNode ("lava lash",
-                /*P*/ NULL,
-                /*A*/ NextAction::array(0, new NextAction("melee"), NULL),
-                /*C*/ NULL);
-        }
+        // The "lava lash" node is gone with its last reference. It wrapped an action name
+        // that is not registered anywhere -- Lava Lash is a Wrath ability -- so anything
+        // routed through it resolved to nothing. Leaving the node in place would keep that
+        // trap available to the next person who saw the name and assumed it worked.
         static ActionNode* magma_totem(PlayerbotAI* ai)
         {
             return new ActionNode ("magma totem",
@@ -47,7 +48,16 @@ MeleeShamanStrategy::MeleeShamanStrategy(PlayerbotAI* ai) : GenericShamanStrateg
 
 NextAction** MeleeShamanStrategy::getDefaultActions()
 {
-    return NextAction::array(0, new NextAction("stormstrike", 10.0f), NULL);
+    // Stormstrike alone was the whole rotation, and it is a level 40 thirty-one-point
+    // talent -- so an enhancement shaman that did not have it had exactly one action, that
+    // action always failed, and its alternative was an unregistered NULL. It stood in melee
+    // doing nothing but white attacks for forty levels. Earth Shock (level 4) is the real
+    // enhancement filler in 1.12, with melee underneath it so there is always something.
+    return NextAction::array(0,
+        new NextAction("stormstrike", 10.0f),
+        new NextAction("earth shock", 9.0f),
+        new NextAction("melee", 8.0f),
+        NULL);
 }
 
 void MeleeShamanStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
@@ -65,10 +75,6 @@ void MeleeShamanStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     triggers.push_back(new TriggerNode(
             "shock",
         NextAction::array(0, new NextAction("earth shock", 20.0f), NULL)));
-
-    triggers.push_back(new TriggerNode(
-            "not facing target",
-        NextAction::array(0, new NextAction("set facing", ACTION_NORMAL + 7), NULL)));
 
     triggers.push_back(new TriggerNode(
             "enemy too close for melee",

@@ -137,6 +137,7 @@ set(BOT_SRCS
     playerbot/strategy/actions/NonCombatActions.h
     playerbot/strategy/actions/NearestPlayersValue.cpp
     playerbot/strategy/actions/NearestPlayersValue.h
+    playerbot/strategy/actions/OutOfRangeMoverPolicy.h
     playerbot/strategy/actions/PassLeadershipToMasterAction.h
     playerbot/strategy/actions/PetitionSignAction.cpp
     playerbot/strategy/actions/PetitionSignAction.h
@@ -380,6 +381,8 @@ set(BOT_SRCS
     playerbot/strategy/paladin/GenericPaladinStrategy.cpp
     playerbot/strategy/paladin/GenericPaladinStrategy.h
     playerbot/strategy/paladin/GenericPaladinStrategyActionNodeFactory.h
+    playerbot/strategy/paladin/HealPaladinStrategy.cpp
+    playerbot/strategy/paladin/HealPaladinStrategy.h
     playerbot/strategy/paladin/PaladinActions.cpp
     playerbot/strategy/paladin/PaladinActions.h
     playerbot/strategy/paladin/PaladinAiObjectContext.cpp

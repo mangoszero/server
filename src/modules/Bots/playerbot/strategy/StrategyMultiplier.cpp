@@ -27,6 +27,14 @@ StrategyMultiplier::StrategyMultiplier(PlayerbotAI* ai, Strategy* strategy) : Mu
     allowedActions.push_back("co");
     allowedActions.push_back("nc");
     allowedActions.push_back("reset ai");
+    // "security check" belongs with the always-allowed set for the same reason those do: it
+    // is an escape hatch, not gameplay. It applies the passive lock when a master's loot
+    // settings are wrong and is the only thing that lifts it again, so a multiplier that
+    // zeroes it strands the bot passive and stationary after the master has already fixed
+    // the settings. PassiveMultiplier allows it; this one must too, or a bot that also holds
+    // "wait for pull" -- which another group bot can add without checking passive state --
+    // has its recovery zeroed here instead.
+    allowedActions.push_back("security check");
 
 }
 

@@ -28,6 +28,8 @@
 
 #include "IntentMovementGenerator.h"
 
+#include <array>
+
 /**
  * @brief Evade: run back to where the creature belongs, then hand back to its default
  *        movement.
@@ -38,14 +40,34 @@
  * that knows where "home" is (a patroller resumes at the point combat pulled it off its
  * path, not at its spawn). By the time the first leg is laid we are on top and that
  * answer is gone.
+ *
+ * A NOTE ON UNIT_STAT_ROAMING_MOVE. Every other generator that lays a leg holds a
+ * ...._MOVE state for as long as it is moving; this one held none, and that single
+ * omission was worth more than it looks. Unit::IsStopped is exactly
+ * !hasUnitState(UNIT_STAT_MOVING), so a creature running home reported itself stopped
+ * for the whole return. Three things followed. StopMoving() — including the root and
+ * stun paths — took its early return and left the home spline running. The update
+ * builder's "not moving but spline enabled" guard fired on healthy returns, 151 times in
+ * one evening, and stripped MOVEFLAG_SPLINE_ENABLED off a live spline as it went, so
+ * observers arriving mid-return were told nothing was happening. And nothing else in the
+ * server could tell an evading creature from a standing one.
+ *
+ * ARRIVAL IS A PLACE, NOT AN EVENT. The driver reports `arrived` for any leg that stopped
+ * running and cannot tell why it stopped, so this generator asks where the creature is
+ * rather than trusting that report. Nothing else is sound: a forced stop finalizes the
+ * spline mid-journey, and SetFacingTo and MonsterMoveWithSpeed launch replacement splines
+ * straight past the driver, so a scripted turn-to during an evade ends a leg that was
+ * never the home leg at all. Every one of those would otherwise fire JustReachedHome
+ * wherever the creature was standing, and hand a patroller back to its route from the
+ * wrong point.
  */
 class HomeMovementGenerator final : public IntentMovementGenerator
 {
     public:
         void Initialize(Unit& owner) override;
         void Finalize(Unit& owner) override;
-        void Interrupt(Unit&) override {}
-        void Reset(Unit&) override {}
+        void Interrupt(Unit& owner) override;
+        void Reset(Unit& owner) override;
 
         MovementGeneratorType GetMovementGeneratorType() const override { return HOME_MOTION_TYPE; }
 
@@ -54,10 +76,29 @@ class HomeMovementGenerator final : public IntentMovementGenerator
                                   uint32 diff) override;
 
     private:
+        /// Whether the creature is actually standing at its home position.
+        bool AtHome(Unit const& owner) const;
+
+        /// Whether the return is still worth pursuing. Accumulates generator update time
+        /// without progress on the home leg, so that evade always terminates.
+        bool Resumable(Unit const& owner, Motion::MoveStatus const& status, uint32 diff);
+
+        /// Refresh the movement-rate snapshot and report whether MotionDriver will re-lay
+        /// its route for a speed change after this Intent.
+        bool RefreshSpeedRates(Unit const& owner);
+
         Motion::Vector3 m_home;  ///< Where home is, captured before we were pushed.
         float m_facing = 0.0f;   ///< The orientation to hold once there.
         bool m_haveHome = false; ///< False when the creature could not be sent home.
         bool m_arrived = false;  ///< Whether Finalize should fire JustReachedHome.
+
+        Motion::Vector3 m_progressPosition; ///< Last position credited on the home leg.
+        int32 m_pathIndex = 0;               ///< Last point reached on that same leg.
+        bool m_homeIntentIssued = false;     ///< This activation has asked for a home leg.
+        bool m_expectHomeLeg = false;        ///< The driver should have laid one last tick.
+        bool m_onHomeLeg = false;            ///< The live spline still follows that leg.
+        std::array<float, 6> m_speedRates{};  ///< Every Vanilla UnitMoveType rate.
+        uint32 m_stalled = 0;                ///< Update time without home-leg progress.
 };
 
 #endif // MANGOS_HOMEMOVEMENTGENERATOR_H

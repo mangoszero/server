@@ -4,6 +4,7 @@
 #include "Engine.h"
 #include "../PlayerbotAIConfig.h"
 #include <cstdarg>
+#include <mutex>
 
 using namespace ai;
 using namespace std;
@@ -139,6 +140,29 @@ void Engine::InitStrategies()
     }
 }
 
+// A name that resolves to no Action is not by itself a defect. Many names in this
+// module are pure intent labels: the head of an ActionNode cascade whose /*A*/
+// alternatives resolve to whatever the bot can actually cast ("molten armor" down
+// to "frost armor", "crusader strike" down to "melee"). Gating or warning on those
+// names removes real behaviour -- see the revert documented in GenericTriggers.cpp.
+// A name with no Action AND no alternatives is different: nothing can ever resolve
+// it, so every push of it is dropped without a trace. That exact combination is the
+// one safe signal of dead wiring, and it is reported once per name per process so
+// it surfaces without flooding the log. Bot engines run inside map updates, which
+// may be spread over several threads (mtmaps), hence the lock.
+static void WarnDeadEndActionName(const string& name)
+{
+    static std::mutex warnedLock;
+    static set<string> warned;
+
+    std::lock_guard<std::mutex> guard(warnedLock);
+    if (warned.insert(name).second)
+    {
+        sLog.outError("Playerbot: action name '%s' resolves to no action and has no "
+                      "alternatives; every push of it is dropped silently", name.c_str());
+    }
+}
+
 // Executes the next action in the queue
 bool Engine::DoNextAction(Unit* unit, int depth)
 {
@@ -182,7 +206,17 @@ bool Engine::DoNextAction(Unit* unit, int depth)
             if (!action)
             {
                 LogAction("A:%s - UNKNOWN", actionNode->getName().c_str());
-                MultiplyAndPush(actionNode->getAlternatives(), relevance + 0.03, false, event);
+                // getAlternatives() builds a fresh array on every call, so take it
+                // once: probe it here, then hand the same array to MultiplyAndPush,
+                // which frees it. An empty array (only the NULL terminator) is what
+                // a bare unregistered name produces -- see WarnDeadEndActionName
+                // above for why that combination, and only that one, is reported.
+                NextAction** alternatives = actionNode->getAlternatives();
+                if (!alternatives || !alternatives[0])
+                {
+                    WarnDeadEndActionName(actionNode->getName());
+                }
+                MultiplyAndPush(alternatives, relevance + 0.03, false, event);
             }
             else if (action->isUseful())
             {
@@ -197,7 +231,8 @@ bool Engine::DoNextAction(Unit* unit, int depth)
                     }
                 }
 
-                if (action->isPossible() && relevance)
+                bool possible = action->isPossible();
+                if (possible && relevance)
                 {
                     if ((!skipPrerequisites || lastRelevance-relevance > 0.04) &&
                         MultiplyAndPush(actionNode->getPrerequisites(), relevance + 0.02, false, event))
@@ -233,7 +268,25 @@ bool Engine::DoNextAction(Unit* unit, int depth)
                 else
                 {
                     LogAction("A:%s - IMPOSSIBLE", action->getName().c_str());
-                    MultiplyAndPush(actionNode->getAlternatives(), relevance + 0.03, false, event);
+                    // An impossible action may know the mover that would make it
+                    // possible -- a ranged bot standing between a short spell's DBC
+                    // range and spellDistance, where no trigger ever closes the gap.
+                    // Push that mover INSTEAD of the static alternatives, and do NOT
+                    // requeue the action itself in this pass: the trigger or default
+                    // action that queued it regenerates it on a later tick, which
+                    // avoids a tight move/requeue loop and PushAgain's
+                    // skipPrerequisites semantics. The hook is only consulted when
+                    // isPossible() actually failed, so it costs nothing on the
+                    // multiplier-zeroed path.
+                    NextAction** movers = possible ? NULL : action->getImpossiblePrerequisites();
+                    if (movers)
+                    {
+                        MultiplyAndPush(movers, relevance + 0.03, false, event);
+                    }
+                    else
+                    {
+                        MultiplyAndPush(actionNode->getAlternatives(), relevance + 0.03, false, event);
+                    }
                 }
             }
             else
@@ -301,7 +354,10 @@ bool Engine::MultiplyAndPush(NextAction** actions, float forceRelevance, bool sk
     bool pushed = false;
     if (actions)
     {
-        for (int j=0; j<10; j++) // TODO: remove 10
+        // Was `j < 10` with a TODO to remove it. The arrays are NULL-terminated, so the
+        // terminator is the bound; the cap meant an eleventh alternative was never pushed
+        // and never freed.
+        for (int j=0; actions[j]; j++)
         {
             NextAction* nextAction = actions[j];
             if (nextAction)
@@ -383,6 +439,20 @@ void Engine::addStrategy(string name)
 
         LogAction("S:+%s", strategy->getName().c_str());
         strategies[strategy->getName()] = strategy;
+    }
+    else if (loggedUnresolved.insert(name).second)
+    {
+        // A name that does not resolve is silent otherwise, and the silence is worse than a
+        // missing strategy: the sibling eviction above lives inside the if, so a failed add
+        // also skips the removal it was supposed to perform, and the bot keeps a strategy it
+        // was meant to lose. Report it -- but once per name per engine. ResetStrategies runs
+        // on login, master change, group join/leave, death/resurrection and explicit reset,
+        // so across a large roster a name that is simply not implemented for this class (the
+        // generic combat set adds "aoe", which only four classes register) otherwise produced
+        // hundreds of identical lines a minute.
+        sLog.outError("Playerbot %s: strategy '%s' did not resolve and was not added; "
+                      "any sibling it would have replaced is still active",
+                      ai && ai->GetBot() ? ai->GetBot()->GetName() : "<unknown>", name.c_str());
     }
     Init();
 }

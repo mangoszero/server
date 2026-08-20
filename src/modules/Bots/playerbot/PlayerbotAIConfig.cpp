@@ -70,6 +70,10 @@ PlayerbotAIConfig::PlayerbotAIConfig()
     randomBotKeepGroups(false),
     randomBotActiveZoneOnly(false),
     randomBotTeleLevel(0),
+    randomBotHomeZoneMaxLevel(0),
+    randomBotHomeAreaMaxLevel(0),
+    randomBotStarterZonePct(0),
+    randomBotStarterZoneQuota(0),
     logInGroupOnly(false),
     logValuesPerTick(false),
     fleeingEnabled(false),
@@ -166,15 +170,59 @@ bool PlayerbotAIConfig::Initialize()
     allowGuildBots = config.GetBoolDefault("AiPlayerbot.AllowGuildBots", true);
 
     // Load lists of values from the configuration file
-    randomBotMapsAsString = config.GetStringDefault("AiPlayerbot.RandomBotMaps", "0,1,530,571");
-    LoadList<vector<uint32> >(randomBotMapsAsString, randomBotMaps);
+    randomBotMapsAsString = config.GetStringDefault("AiPlayerbot.RandomBotMaps", "0,1");
+    // Deliberately not LoadList. That helper drops every entry whose atoi is zero, which
+    // is correct for the spell and item ids it was written for and wrong for a map id:
+    // map 0 is Eastern Kingdoms. With the shipped default the list therefore came out as
+    // {1, 530, 571} -- Kalimdor plus two maps that do not exist on a 1.12 core -- so no
+    // random bot could ever be placed anywhere in Eastern Kingdoms. Confirmed against
+    // three 200-bot runs: every one of the top thirty landing areas was on Kalimdor.
+    randomBotMaps.clear();
+    {
+        vector<string> mapTokens = split(randomBotMapsAsString, ',');
+        for (vector<string>::iterator i = mapTokens.begin(); i != mapTokens.end(); ++i)
+        {
+            string token = *i;
+            size_t begin = token.find_first_not_of(" \t");
+            if (begin == string::npos)
+            {
+                continue;
+            }
+            token = token.substr(begin, token.find_last_not_of(" \t") - begin + 1);
+            if (token.find_first_not_of("0123456789") != string::npos)
+            {
+                continue;
+            }
+            randomBotMaps.push_back((uint32)atoi(token.c_str()));
+        }
+    }
+    if (randomBotMaps.empty())
+    {
+        // Both callers pick with urand(0, randomBotMaps.size() - 1). On an empty vector
+        // that subtraction underflows and the index comes back out of bounds, so a
+        // mistyped config line would be a crash rather than a complaint.
+        sLog.outError("AiPlayerbot.RandomBotMaps parsed to nothing from \"%s\"; falling back to map 0",
+            randomBotMapsAsString.c_str());
+        randomBotMaps.push_back(0);
+    }
     LoadList<list<uint32> >(config.GetStringDefault("AiPlayerbot.RandomBotQuestItems", "6948,5175,5176,5177,5178"), randomBotQuestItems);
-    LoadList<list<uint32> >(config.GetStringDefault("AiPlayerbot.RandomBotSpellIds", "54197"), randomBotSpellIds);
+    LoadList<list<uint32> >(config.GetStringDefault("AiPlayerbot.RandomBotSpellIds", ""), randomBotSpellIds);
 
     randomBotAutologin = config.GetBoolDefault("AiPlayerbot.RandomBotAutologin", true);
     minRandomBots = config.GetIntDefault("AiPlayerbot.MinRandomBots", 50);
     maxRandomBots = config.GetIntDefault("AiPlayerbot.MaxRandomBots", 200);
     randomBotUpdateInterval = config.GetIntDefault("AiPlayerbot.RandomBotUpdateInterval", 60);
+    if (randomBotUpdateInterval < 1)
+    {
+        // Three separate throttles are derived from this: the pass reschedule, the
+        // negative event-cache TTL, and the eviction backoff (10x). At zero each of them
+        // becomes a no-op -- a zero TTL can never satisfy its own freshness test, so every
+        // event lookup falls back to a synchronous query and the eviction search re-runs
+        // every tick. Nothing warns; the fixes just quietly stop working.
+        sLog.outError("AiPlayerbot.RandomBotUpdateInterval must be at least 1 second; %d given, using 1",
+            randomBotUpdateInterval);
+        randomBotUpdateInterval = 1;
+    }
     randomBotCountChangeMinInterval = config.GetIntDefault("AiPlayerbot.RandomBotCountChangeMinInterval", 24 * 3600);
     randomBotCountChangeMaxInterval = config.GetIntDefault("AiPlayerbot.RandomBotCountChangeMaxInterval", 3 * 24 * 3600);
     minRandomBotInWorldTime = config.GetIntDefault("AiPlayerbot.MinRandomBotInWorldTime", 2 * 3600);
@@ -196,15 +244,54 @@ bool PlayerbotAIConfig::Initialize()
     fleeingEnabled = config.GetBoolDefault("AiPlayerbot.FleeingEnabled", true);
     randomBotMinLevel = config.GetIntDefault("AiPlayerbot.RandomBotMinLevel", 1);
     randomBotMaxLevel = config.GetIntDefault("AiPlayerbot.RandomBotMaxLevel", 255);
+    // A minimum above the maximum is not merely odd, it is undefined behaviour downstream:
+    // urand() hands the pair straight to std::uniform_int_distribution<uint32>, whose
+    // precondition is min <= max, so an inverted range asserts or returns garbage rather
+    // than yielding nothing. Clamp here, where it can be reported once at startup, instead
+    // of at the call sites where it would misbehave once per bot.
+    if (randomBotMinLevel > randomBotMaxLevel)
+    {
+        sLog.outError("AiPlayerbot.RandomBotMinLevel (%u) is above RandomBotMaxLevel (%u); "
+            "clamping the minimum to the maximum", randomBotMinLevel, randomBotMaxLevel);
+        randomBotMinLevel = randomBotMaxLevel;
+    }
     randomBotLoginAtStartup = config.GetBoolDefault("AiPlayerbot.RandomBotLoginAtStartup", true);
     randomBotKeepGroups = config.GetBoolDefault("AiPlayerbot.RandomBotKeepGroups", false);
     randomBotActiveZoneOnly = config.GetBoolDefault("AiPlayerbot.RandomBotActiveZoneOnly", false);
     randomBotTeleLevel = config.GetIntDefault("AiPlayerbot.RandomBotTeleLevel", 3);
+    randomBotHomeZoneMaxLevel = config.GetIntDefault("AiPlayerbot.RandomBotHomeZoneMaxLevel", 10);
+    randomBotHomeAreaMaxLevel = config.GetIntDefault("AiPlayerbot.RandomBotHomeAreaMaxLevel", 5);
+    randomBotStarterZonePct = config.GetIntDefault("AiPlayerbot.RandomBotStarterZonePct", 15);
+    randomBotStarterZoneQuota = config.GetIntDefault("AiPlayerbot.RandomBotStarterZoneQuota", 5);
+    // Residency is decided by (guid % 100) < pct, so anything over 100 quietly makes the
+    // entire roster resident and a negative in the file arrives here as an enormous
+    // unsigned. Clamp rather than trust the file.
+    if (randomBotStarterZonePct > 100)
+    {
+        sLog.outError("AiPlayerbot.RandomBotStarterZonePct is %u; clamping to 100", randomBotStarterZonePct);
+        randomBotStarterZonePct = 100;
+    }
+
+    // The two settings only mean something together: residency puts a bot in the starting
+    // band, and the home-zone limit is what keeps it there. With residency on and the
+    // limit at zero a bot is placed at home once and then confined by nothing, which
+    // looks like the feature working and then silently failing.
+    if (randomBotStarterZonePct && !randomBotHomeZoneMaxLevel)
+    {
+        sLog.outError("AiPlayerbot.RandomBotStarterZonePct is set but RandomBotHomeZoneMaxLevel is 0, "
+            "so residents would not be kept at home; disabling starting-zone residency");
+        randomBotStarterZonePct = 0;
+    }
 
     randomChangeMultiplier = config.GetFloatDefault("AiPlayerbot.RandomChangeMultiplier", 1.0);
 
     randomBotCombatStrategies = config.GetStringDefault("AiPlayerbot.RandomBotCombatStrategies", "+dps,+attack weak");
-    randomBotNonCombatStrategies = config.GetStringDefault("AiPlayerbot.RandomBotNonCombatStrategies", "+grind,+move random,+loot");
+    // "-stay" leads deliberately. The default non-combat set includes "stay", and the only
+    // thing that removed it was the sibling eviction triggered by adding "move random" --
+    // which does nothing if that name fails to resolve. A live roster had bots holding
+    // "stay" and no "move random", parked indefinitely, while their engines ticked
+    // normally. Removing it explicitly does not depend on another strategy resolving.
+    randomBotNonCombatStrategies = config.GetStringDefault("AiPlayerbot.RandomBotNonCombatStrategies", "-stay,+grind,+move random,+loot");
     botTankStrategies = config.GetStringDefault("AiPlayerbot.BotTankStrategies", "+tank aoe");
     botDpsStrategies = config.GetStringDefault("AiPlayerbot.BotDpsStrategies", "+dps assist");
     botHealStrategies = config.GetStringDefault("AiPlayerbot.BotHealStrategies", "");
@@ -495,8 +582,24 @@ void PlayerbotAIConfig::CreateRandomBots()
 
         randomBotAccounts.push_back(accountId);
 
+        // Count the classes this loop will actually create rather than assuming ten. It
+        // creates one per playable class, and vanilla has nine -- 6 and 10 do not exist
+        // here -- so an account that was already full at nine looked incomplete against a
+        // threshold of ten and got a second full set. Every restart without a wipe
+        // therefore doubled the roster, 450 characters to 900 at eighteen per account,
+        // until the count finally cleared ten. CreateRandomBot bypasses the normal
+        // per-account character limit, so nothing else stopped it.
+        uint32 expectedChars = 0;
+        for (uint8 cls = CLASS_WARRIOR; cls < MAX_CLASSES; ++cls)
+        {
+            if (cls != 10 && cls != 6)
+            {
+                ++expectedChars;
+            }
+        }
+
         int count = sAccountMgr.GetCharactersCount(accountId);
-        if (count >= 10)
+        if (count >= (int)expectedChars)
         {
             totalRandomBotChars += count;
             continue;

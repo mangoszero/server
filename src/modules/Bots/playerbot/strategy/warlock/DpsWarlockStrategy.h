@@ -18,6 +18,16 @@ namespace ai
         public:
             virtual void InitTriggers(std::list<TriggerNode*> &triggers);
             virtual NextAction** getDefaultActions();
+
+            // Inherited RangedCombatStrategy's COMBAT|RANGED and never declared DPS, unlike
+            // its opposite numbers CasterDruidStrategy and CasterShamanStrategy. Nothing
+            // depended on it yet, but ContainsStrategy(STRATEGY_TYPE_DPS) is exactly the
+            // sort of question the strategy selector asks, and a damage strategy that does
+            // not answer to it is a trap left lying around.
+            virtual int GetType()
+            {
+                return STRATEGY_TYPE_COMBAT | STRATEGY_TYPE_DPS | STRATEGY_TYPE_RANGED;
+            }
     };
 
     class DpsAoeWarlockStrategy : public CombatStrategy

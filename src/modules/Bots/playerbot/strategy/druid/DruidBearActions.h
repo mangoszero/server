@@ -4,7 +4,7 @@ namespace ai {
     class CastFeralChargeBearAction : public CastReachTargetSpellAction
     {
         public:
-            CastFeralChargeBearAction(PlayerbotAI* ai) : CastReachTargetSpellAction(ai, "feral charge - bear", 1.5f) {}
+            CastFeralChargeBearAction(PlayerbotAI* ai) : CastReachTargetSpellAction(ai, "feral charge", 1.5f) {}
     };
 
     class CastGrowlAction : public CastSpellAction

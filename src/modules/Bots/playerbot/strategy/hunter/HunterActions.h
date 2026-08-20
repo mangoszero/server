@@ -127,6 +127,22 @@ namespace ai
             CastRapidFireAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "rapid fire") {}
     };
 
+    // Readiness resets the hunter's ability cooldowns and is the /*A*/ alternative
+    // behind "rapid fire" in the generic hunter strategies, so it is reached exactly
+    // when Rapid Fire could not be cast -- most usefully when Rapid Fire is on
+    // cooldown. Modeled on the mage's Cold Snap: a plain self-cast, since it applies
+    // no aura of its own. The module has no idiom for "only cast when something
+    // worth resetting is on cooldown", and Cold Snap does not gate on that either.
+    class CastReadinessAction : public CastSpellAction
+    {
+        public:
+            CastReadinessAction(PlayerbotAI* ai) : CastSpellAction(ai, "readiness") {}
+            virtual string GetTargetName()
+            {
+                return "self target";
+            }
+    };
+
     class CastFreezingTrap : public CastDebuffSpellAction
     {
         public:
@@ -247,10 +263,21 @@ namespace ai
             virtual bool isUseful()
             {
                 Unit* target = AI_VALUE(Unit*, "current target");
-                if (!target || !target->IsAlive() || (target->getVictim() == bot))
+                if (!target || !target->IsAlive())
                 {
                     return false;
                 }
+
+                // "target->getVictim() == bot" used to disqualify this outright, which
+                // switched off the only action that can restore range at precisely the
+                // moment a hunter needs it. With the mob on the hunter and between seven
+                // and fifteen yards away, every other option in the cascade is out of
+                // reach too: wing clip, mongoose bite, disengage and the melee fallback
+                // all want five yards or less, flee wants seven, and auto shot is refused
+                // by the core with SPELL_FAILED_TOO_CLOSE inside eight. So the hunter
+                // stood in its own dead zone doing nothing at all until the mob closed to
+                // melee. Walking while being hit costs some casting pushback and is
+                // plainly better than that.
                 float distance = CombatDistanceBetween(*bot, *target, false);
                 return distance < GetMinShootDistance() || distance > sPlayerbotAIConfig.spellDistance;
             }

@@ -68,25 +68,23 @@ void WorldPacketHandlerStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
             "item push result",
         NextAction::array(0, new NextAction("query item usage", relevance), NULL)));
 
+    // The action is registered as "ready check finished", the same string as the trigger
+    // above it -- FinishReadyCheckAction is bound to that name in
+    // WorldPacketActionContext. Pushing "finish ready check" matched nothing, and an
+    // unregistered action name is not an error: CreateActionNode builds a node with a null
+    // action and the engine drops it silently, so a ready check was simply never answered.
     triggers.push_back(new TriggerNode(
             "ready check finished",
-        NextAction::array(0, new NextAction("finish ready check", relevance), NULL)));
+        NextAction::array(0, new NextAction("ready check finished", relevance), NULL)));
 
-    triggers.push_back(new TriggerNode(
-            "no possible targets",
-        NextAction::array(0, new NextAction("lfg join", relevance), NULL)));
-
-    triggers.push_back(new TriggerNode(
-            "seldom",
-        NextAction::array(0, new NextAction("lfg leave", relevance), NULL)));
-
-    triggers.push_back(new TriggerNode(
-            "lfg proposal",
-        NextAction::array(0, new NextAction("lfg accept", relevance), NULL)));
-
-    triggers.push_back(new TriggerNode(
-            "lfg proposal active",
-        NextAction::array(0, new NextAction("lfg accept", relevance), NULL)));
+    // Four trigger nodes used to push "lfg join", "lfg leave" and "lfg accept"
+    // here. No action is registered under any of those names (LfgActions.cpp is
+    // entirely commented out and LfgActions.h declares nothing), and none heads an
+    // ActionNode cascade, so every push was dropped silently -- "lfg join" and
+    // "lfg leave" on every "no possible targets"/"seldom" firing. Random-bot LFG is
+    // handled outside the strategy engine by RandomPlayerbotMgr under
+    // AiPlayerbot.RandomBotJoinLfg; teaching bots to answer the 1.12 Meeting Stone
+    // flow through actions would be a new feature, not a re-wiring.
 
     triggers.push_back(new TriggerNode(
             "often",

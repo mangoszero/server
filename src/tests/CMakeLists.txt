@@ -63,6 +63,7 @@ set(SRC_GRP_TESTS
     NavBinningTest.cpp
     DynamicCollisionTest.cpp
     PlacementTest.cpp
+    PlayerbotOutOfRangeMoverTest.cpp
     # Compiled in, not linked from `game`: game.lib pulls the whole server, down to the
     # database globals that only mangosd defines. These three know nothing of it.
     ${CMAKE_SOURCE_DIR}/src/game/WorldHandlers/DynamicCollision.cpp
@@ -139,6 +140,11 @@ add_test(NAME movement_state_seed
     COMMAND ${CMAKE_COMMAND}
         -DSOURCE_ROOT=${CMAKE_SOURCE_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckMovementStateSeed.cmake)
+
+add_test(NAME bot_relocation_notifies
+    COMMAND ${CMAKE_COMMAND}
+        -DSOURCE_ROOT=${CMAKE_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckBotRelocationNotifies.cmake)
 
 # Put the runtime DLLs beside the test binary so it can be run from the build tree.
 # A convenience, never a gate: the search is derived from the library that was actually

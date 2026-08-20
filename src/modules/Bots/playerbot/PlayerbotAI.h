@@ -145,6 +145,7 @@ class PlayerbotAI : public PlayerbotAIBase
         void HandleMasterIncomingPacket(const WorldPacket& packet);
         void HandleMasterOutgoingPacket(const WorldPacket& packet);
         void HandleTeleportAck();
+        void ResyncObserversAfterTeleport();
         void ChangeEngine(BotState type);
         void DoNextAction();
         void DoSpecificAction(string name);
@@ -153,6 +154,7 @@ class PlayerbotAI : public PlayerbotAIBase
         bool HasStrategy(const string& name, BotState type);
         bool HasStrategy(const string& name) { return HasStrategy(name, currentState); }
         BotState GetState() const { return currentState; }
+        uint32 GetTargetContextRevision() const { return m_targetContextRevision; }
         void ResetStrategies();
         void ReInitCurrentEngine();
         void Reset();
@@ -218,6 +220,27 @@ class PlayerbotAI : public PlayerbotAIBase
         }
 
         void StartJump(bool forward, float orientation = -1.f);
+        void CancelJump();
+
+        /**
+         * @brief Bring the bot to a genuine halt.
+         *
+         * MotionMaster::Clear() does not stop a bot. It pops the generators and calls their
+         * Finalize, which clears UNIT_STAT_ROAMING and nothing more -- the spline already
+         * handed to the client keeps running to the destination it was given. The server
+         * believes the bot is idle while the client is still carrying it forwards, and the
+         * two only agree again when the spline expires on its own.
+         *
+         * That is why a bot would slide past a corpse it had stopped to loot. Clear() ran,
+         * the loot packet was queued, and the bot went on travelling the rest of its leg.
+         *
+         * InterruptMoving is what actually ends it: it computes the position the spline had
+         * reached, puts the bot there, and sends the stop so observers agree. MoveIdle then
+         * gives the empty stack a resting generator. Use this at every point a bot is meant
+         * to come to rest -- looting, leaving a group, arriving. Do NOT use it as a prelude
+         * to new movement; MoveTo clears and re-issues in one step.
+         */
+        void StopMovement();
         void RequestJump(bool here = false);
         bool IsJumping() const { return m_isJumping; }
         bool IsPendingJump() const { return m_pendingJump; }
@@ -255,6 +278,7 @@ class PlayerbotAI : public PlayerbotAIBase
         Engine* currentEngine;
         Engine* engines[BOT_STATE_MAX];
         BotState currentState;
+        uint32 m_targetContextRevision; ///< Invalidates target observations across AI context changes.
         ChatHelper chatHelper;
         stack<ChatCommandHolder> chatCommands;
         PacketHandlingHelper botOutgoingPacketHandlers;
@@ -264,6 +288,7 @@ class PlayerbotAI : public PlayerbotAIBase
         PlayerbotSecurity security;
         time_t m_eatingUntil;
         time_t m_drinkingUntil;
+        bool m_wasDead; ///< Latches the bot's own death state so the dead->alive repair cannot be bypassed.
 
         bool   m_isJumping;
         uint32 m_jumpStartTime;

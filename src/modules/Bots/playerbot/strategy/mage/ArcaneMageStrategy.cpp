@@ -35,7 +35,11 @@ class ArcaneMageStrategyActionNodeFactory : public NamedObjectFactory<ActionNode
         {
             return new ActionNode ("arcane missiles",
                 /*P*/ NULL,
-                /*A*/ NextAction::array(0, new NextAction("shoot"), NULL),
+                // Fireball, not shoot -- see the frostbolt node in GenericMageStrategy. Arcane
+                // Barrage does not exist in 1.12 and Arcane Missiles is level 8, so this chain
+                // is the one a low-level arcane mage actually walks, and routing it through a
+                // wand it does not own is what left it unable to attack at all.
+                /*A*/ NextAction::array(0, new NextAction("fireball"), NULL),
                 /*C*/ NULL);
         }
 };
@@ -47,7 +51,21 @@ ArcaneMageStrategy::ArcaneMageStrategy(PlayerbotAI* ai) : GenericMageStrategy(ai
 
 NextAction** ArcaneMageStrategy::getDefaultActions()
 {
-    return NextAction::array(0, new NextAction("arcane barrage", 10.0f), NULL);
+    // Arcane Barrage is a Wrath spell and Arcane Blast is TBC; neither exists in 1.12, so the
+    // opener never fires here. Its fallback chain then ran arcane missiles (level 8) and shoot
+    // (needs a wand), which leaves an arcane mage below level 8 with literally nothing it can
+    // cast -- it stood in combat with "no actions executed" until something else killed its
+    // target. Fire opens on fireball (level 1) and Frost on frostbolt (level 4); arcane was the
+    // only spec with no low-level entry point. Fireball is trainable by every mage at level 1,
+    // so it is the correct floor, and it sits below the arcane spells so a mage that CAN cast
+    // them still prefers them.
+    return NextAction::array(0,
+        new NextAction("arcane barrage", 10.0f),
+        new NextAction("arcane missiles", 9.0f),
+        new NextAction("fireball", 8.0f),
+        new NextAction("shoot", 7.0f),
+        new NextAction("melee in range", 6.0f),
+        NULL);
 }
 
 void ArcaneMageStrategy::InitTriggers(std::list<TriggerNode*> &triggers)

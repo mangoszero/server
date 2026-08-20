@@ -9,6 +9,12 @@ namespace ai
             CastDemonSkinAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "demon skin") {}
     };
 
+    class CastSoulLinkAction : public CastBuffSpellAction
+    {
+        public:
+            CastSoulLinkAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "soul link") {}
+    };
+
     class CastDemonArmorAction : public CastBuffSpellAction
     {
         public:
@@ -80,10 +86,23 @@ namespace ai
             CastSummonImpAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "summon imp") {}
     };
 
+    // Healthstone is one of the very few 1.12 spells whose RANK is part of its name --
+    // "Create Healthstone (Minor)" through "(Major)", five ranks in one spell_chain. The
+    // spell-id lookup matches on exact name LENGTH, so the bare "create healthstone" can
+    // only ever resolve to the unsuffixed rank 3 (5699, level 34): a warlock below 34 could
+    // never make one at all, and above 34 always made the weakest it was capable of.
+    // Resolve the rank at cast time rather than at construction, because the action is
+    // cached for the life of the bot's context and the bot levels up underneath it.
     class CastCreateHealthstoneAction : public CastBuffSpellAction
     {
         public:
             CastCreateHealthstoneAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "create healthstone") {}
+
+            virtual bool isPossible();
+            virtual bool Execute(Event event);
+
+        private:
+            string BestKnownRank();
     };
 
     class CastCreateFirestoneAction : public CastBuffSpellAction

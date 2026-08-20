@@ -122,6 +122,22 @@ namespace ai
             void Remove(ObjectGuid guid);
 
             /**
+             * @brief Stop offering this object for a while.
+             *
+             * Remove alone is not enough to drop a loot target the bot can never open. The
+             * gather actions re-scan nearby corpses and objects every pass and call Add
+             * again, so a removal is undone within a tick and the bot keeps choosing the
+             * same impossible target -- which is what parked a grouped bot indefinitely,
+             * since FollowMasterAction refuses to follow while "can loot" is true.
+             *
+             * The entry expires, so this is a cooldown rather than a permanent ban: a target
+             * that failed because a skill was too low can legitimately become lootable once
+             * the bot trains, and a corpse whose owner has not yet released is only
+             * temporarily unopenable.
+             */
+            void Blacklist(ObjectGuid guid);
+
+            /**
              * @brief Clears the stack of loot objects.
              */
             void Clear();
@@ -154,6 +170,7 @@ namespace ai
         private:
             Player* bot; ///< The player bot.
             LootTargetList availableLoot; ///< The list of available loot targets.
+            LootTargetList blacklistedLoot; ///< Targets temporarily refused; see Blacklist.
     };
 
 };

@@ -76,6 +76,10 @@ class PlayerbotAIConfig
         bool randomBotKeepGroups; ///< Indicates if random bots should preserve groups across restarts.
         bool randomBotActiveZoneOnly; ///< If true, ungrouped random bots only tick when a real player is in their zone.
         uint32 randomBotTeleLevel; ///< The teleport level for random bots.
+        uint32 randomBotHomeZoneMaxLevel; ///< Bots at or below this level stay in their own racial starting zone. 0 disables.
+        uint32 randomBotStarterZonePct;   ///< Percent of the roster that lives permanently in its racial starting zone. 0 disables.
+        uint32 randomBotStarterZoneQuota; ///< Active residents each starting zone should hold before the roster fills at random. 0 disables.
+        uint32 randomBotHomeAreaMaxLevel; ///< Bots at or below this level stay in the starting SUB-AREA -- Shadowglen, Northshire. 0 disables.
         bool logInGroupOnly, logValuesPerTick;
         bool fleeingEnabled; ///< Indicates if fleeing is enabled for bots.
         std::string randomBotCombatStrategies, randomBotNonCombatStrategies;

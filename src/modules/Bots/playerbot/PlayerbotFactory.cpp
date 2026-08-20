@@ -49,6 +49,12 @@ void PlayerbotFactory::Refresh()
     InitAmmo();
     InitFood();
     InitPotions();
+    // Here as well as in InitInventory, because this is the path a guild bot takes on every
+    // level-up and the only one the `update` command reaches. A shaman that trains its first
+    // water totem spell on one of those levels would otherwise wait for a full randomization
+    // -- up to fourteen days -- before it could cast what it had just learned. The provision
+    // is guarded on the item already being held, so running it on both paths costs nothing.
+    InitInventoryTotems();
 
     uint32 money = urand(level * 1000, level * 5 * 1000);
     if (bot->GetMoney() < money)
@@ -119,7 +125,19 @@ void PlayerbotFactory::Randomize(bool incremental)
     bot->resetTalents(true);
     ClearSpells();
     ClearInventory();
-    bot->SaveToDB();
+
+    // The three intermediate SaveToDB calls that used to punctuate this function are gone
+    // (upstream mangoszero/server#366). Randomize wrote the bot four times -- here, after
+    // quests, after trade skills, and at the end -- and only the last one has any value: a
+    // bot re-randomizes from scratch on restart, so a half-finished state is never something
+    // anyone wants persisted. Nothing between these points reads the bot back from the
+    // database either; InitQuests, InitEquipment, InitBags, InitAmmo, InitPet and
+    // UpdateTradeSkills touch it not at all. Randomize calls InitPet(false), which skips
+    // SavePetToDB entirely -- the pet is rebuilt from scratch on the next randomisation, so
+    // there is nothing worth writing until the single flush at the end.
+    //
+    // Worth 3600 writes down to 900 across a 900-bot startup, which matters more now that
+    // this function also runs a third trainer pass for post-quest spell ranks.
 
     sLog.outDetail("Initializing quests...");
     InitQuests();
@@ -128,7 +146,6 @@ void PlayerbotFactory::Randomize(bool incremental)
     ClearInventory();
     bot->SetUInt32Value(PLAYER_XP, 0);
     CancelAuras();
-    bot->SaveToDB();
 
     sLog.outDetail("Initializing spells (step 1)...");
     InitAvailableSpells();
@@ -147,12 +164,23 @@ void PlayerbotFactory::Randomize(bool incremental)
     sLog.outDetail("Initializing Quest Spells...");
     InitQuestSpells();
 
+    // A third trainer pass, and it has to be here rather than folded into the two above.
+    //
+    // Quest wrappers teach rank ONE of several abilities -- Sunder Armor, Intercept, Maul,
+    // Searing Totem, Healing Stream Totem -- and a trainer refuses to sell rank two while
+    // rank one is missing (GetTrainerSpellState rejects it on the spell_chain predecessor).
+    // Both passes above ran before those quest leaves existed, so a level 60 warrior sat on
+    // Sunder Armor rank 1 with ranks 2-5 available at 22/34/46/58 and unreachable, and a
+    // level 60 druid on Maul rank 1 out of seven. Running the trainer once more, after the
+    // quest spells are in, is what lets those chains climb.
+    sLog.outDetail("Initializing spells (step 3, post-quest ranks)...");
+    InitAvailableSpells();
+
     sLog.outDetail("Initializing mounts...");
     InitMounts();
 
     sLog.outDetail("Initializing skills (step 2)...");
     UpdateTradeSkills();
-    bot->SaveToDB();
 
     sLog.outDetail("Initializing equipment...");
     InitEquipment(incremental);
@@ -176,7 +204,30 @@ void PlayerbotFactory::Randomize(bool incremental)
     InitInventory();
 
     sLog.outDetail("Initializing pet...");
-    InitPet();
+    InitPet(false);
+
+    // Rebuild the strategy set now that the bot is a different character than when its AI
+    // was created.
+    //
+    // CONTRACT: this DISCARDS deliberate per-bot strategy overrides -- a master's "+stay",
+    // "+runaway" or "+passive" does not survive a randomize. That is intended rather than
+    // overlooked: randomizing re-rolls the bot's level, talents, spellbook and gear, so it
+    // is not the character those commands were given to, and carrying the old set forward is
+    // what left a shaman playing a caster it no longer was. No current caller applies an
+    // override adjacent to this call. If overrides ever need to survive, store them as a
+    // delta and re-apply AFTER the fresh defaults -- do not restore the whole stale set.
+    //
+    // AiFactory picks strategies from talents and known spells, and it ran BEFORE this
+    // function cleared the spellbook, re-rolled talents and re-learned everything. Without
+    // this the choice is a snapshot of the bot's previous life: a shaman randomized into
+    // Enhancement keeps the caster set it was given while untalented, and a druid that has
+    // just learned Bear Form keeps the caster set chosen when it had none. PlayerbotAI::Reset
+    // is NOT enough -- it re-initialises the existing strategies rather than re-asking
+    // AiFactory which ones to have; only ResetStrategies does that.
+    if (PlayerbotAI* ai = bot->GetPlayerbotAI())
+    {
+        ai->ResetStrategies();
+    }
 
     sLog.outDetail("Saving to DB...");
     bot->SetMoney(urand(level * 1000, level * 5 * 1000));
@@ -187,7 +238,7 @@ void PlayerbotFactory::Randomize(bool incremental)
 /**
  * Initializes the player bot's pet.
  */
-void PlayerbotFactory::InitPet()
+void PlayerbotFactory::InitPet(bool persist)
 {
     if (bot->getClass() != CLASS_HUNTER)
     {
@@ -389,7 +440,19 @@ void PlayerbotFactory::InitPet()
         pet->ToggleAutocast(spellId, true);
     }
 
-    pet->SavePetToDB(PET_SAVE_AS_CURRENT);
+    // Persist only when nobody else is going to.
+    //
+    // SavePetToDB commits its own transaction immediately, while the owner's final
+    // Player::SaveToDB commits later -- so saving here during a Randomize leaves a window in
+    // which a crash would pair a freshly randomized PET with the previous owner state. That
+    // window was previously masked by the intermediate owner saves this function sat between,
+    // and those are gone (mangoszero/server#366). Randomize therefore passes persist=false
+    // and lets the final Player::SaveToDB write the pet after the owner has committed; the
+    // standalone hunter caller, which has no such save following it, still persists here.
+    if (persist)
+    {
+        pet->SavePetToDB(PET_SAVE_AS_CURRENT);
+    }
 }
 
 /**
@@ -437,11 +500,53 @@ void PlayerbotFactory::InitTalents()
     uint32 p2 = p1 + sPlayerbotAIConfig.specProbability[cls][1];
 
     uint32 specNo = (point < p1 ? 0 : (point < p2 ? 1 : 2));
-    InitTalents(specNo);
 
-    if (bot->GetFreeTalentPoints())
+    // One pass cannot spend a full budget: InitTalents(specNo) caps itself at five points
+    // and three attempts per talent row, so a level 60 with 51 points always came back with
+    // most of them unspent. Those leftovers used to be poured into a DIFFERENT tree --
+    // literally 2 - specNo -- and since GetPlayerSpecTab later reads whichever tree holds
+    // the most points, the bot ended up being whatever the leftovers landed in rather than
+    // what was rolled.
+    //
+    // That is why no Holy paladin has ever existed here despite a 20% roll. Two live
+    // examples at the time of writing, both level 52: Lyneat and Mikkileay, each holding
+    // 2 points in Holy and 11 in Retribution -- rolled Holy, spent what one pass allowed,
+    // and had the rest tipped into Retribution, which is then the spec the AI honours.
+    //
+    // So keep filling the tree that was actually chosen, stopping when a pass places
+    // nothing more, and only spill into another tree once this one genuinely cannot take
+    // any more points.
+    uint32 remaining = bot->GetFreeTalentPoints();
+    while (remaining)
     {
-        InitTalents(2 - specNo);
+        InitTalents(specNo);
+
+        uint32 afterPass = bot->GetFreeTalentPoints();
+        if (afterPass == remaining)
+        {
+            break;
+        }
+
+        remaining = afterPass;
+    }
+
+    // "2 - specNo" reads like the opposite tree and is not: for specNo 1 it evaluates to 1,
+    // the tree the loop above has just finished filling and which therefore cannot take
+    // another point, so a middle-spec bot kept its leftovers forever. Walk the other two
+    // trees instead, and stop as soon as one of them accepts something.
+    for (uint32 other = 0; other < 3 && bot->GetFreeTalentPoints(); ++other)
+    {
+        if (other == specNo)
+        {
+            continue;
+        }
+
+        uint32 before = bot->GetFreeTalentPoints();
+        InitTalents(other);
+        if (bot->GetFreeTalentPoints() != before)
+        {
+            break;
+        }
     }
 }
 
@@ -829,6 +934,58 @@ bool PlayerbotFactory::CanEquipItem(ItemPrototype const* proto, uint32 desiredQu
  * Initializes the player bot's equipment.
  * @param incremental Whether to apply incremental changes.
  */
+namespace
+{
+    typedef std::vector<ItemPrototype const*> ProtoList;
+
+    /**
+     * Every item prototype that could ever be equipped, resolved once.
+     *
+     * InitEquipment used to iterate 0..sItemStorage.GetMaxEntry() -- 24,283 ids -- calling
+     * sObjectMgr.GetItemPrototype on each, for every equipment slot and again for every
+     * quality tier it fell back through. Only 14,422 of those ids exist, so two in five
+     * lookups returned nothing, and only 8,923 belong to a class that can be equipped.
+     *
+     * None of that filtering depends on the bot, and item prototypes are fixed once the
+     * world has loaded, so it is answered once for the process and shared. What remains in
+     * the per-bot loop is the part that genuinely varies: level, quality, armour type,
+     * weapon type and the final CanEquipUnseenItem check.
+     */
+    ProtoList const& GetEquippableProtos()
+    {
+        static ProtoList equippable;
+        static bool built = false;
+
+        if (!built)
+        {
+            built = true;
+            for (uint32 itemId = 0; itemId < sItemStorage.GetMaxEntry(); ++itemId)
+            {
+                ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
+                if (!proto)
+                {
+                    continue;
+                }
+
+                if (proto->Class != ITEM_CLASS_WEAPON &&
+                    proto->Class != ITEM_CLASS_ARMOR &&
+                    proto->Class != ITEM_CLASS_CONTAINER &&
+                    proto->Class != ITEM_CLASS_PROJECTILE)
+                {
+                    continue;
+                }
+
+                equippable.push_back(proto);
+            }
+
+            sLog.outString(">> [Playerbots] %u equippable item prototypes indexed for bot gearing",
+                (uint32)equippable.size());
+        }
+
+        return equippable;
+    }
+}
+
 void PlayerbotFactory::InitEquipment(bool incremental)
 {
     DestroyItemsVisitor visitor(bot);
@@ -850,19 +1007,18 @@ void PlayerbotFactory::InitEquipment(bool incremental)
 
         do
         {
-            for (uint32 itemId = 0; itemId < sItemStorage.GetMaxEntry(); ++itemId)
+            // Walk the pre-built list of equippable prototypes rather than every id from 0
+            // to GetMaxEntry(). The bound is 24,283 but only 14,422 of those ids exist, so
+            // two in five iterations resolved to nothing, and only 8,923 are of a class
+            // that can be equipped at all -- and this loop runs once per slot and again per
+            // quality tier, so the waste was multiplied roughly sixty-four times over. The
+            // list is bot-independent and the prototypes do not change at runtime, so it is
+            // built once for the process and shared by every bot.
+            ProtoList const& equippable = GetEquippableProtos();
+            for (ProtoList::const_iterator protoItr = equippable.begin(); protoItr != equippable.end(); ++protoItr)
             {
-                ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
-                if (!proto)
-                {
-                    continue;
-                }
-
-                if (proto->Class != ITEM_CLASS_WEAPON &&
-                    proto->Class != ITEM_CLASS_ARMOR &&
-                    proto->Class != ITEM_CLASS_CONTAINER &&
-                    proto->Class != ITEM_CLASS_PROJECTILE)
-                    continue;
+                ItemPrototype const* proto = *protoItr;
+                uint32 itemId = proto->ItemId;
 
                 if (!CanEquipItem(proto, desiredQuality))
                 {
@@ -934,8 +1090,16 @@ void PlayerbotFactory::InitEquipment(bool incremental)
 
             if (oldItem)
             {
-                bot->RemoveItem(INVENTORY_SLOT_BAG_0, slot, true);
-                oldItem->DestroyForPlayer(bot);
+                // DestroyItem, not RemoveItem plus DestroyForPlayer. The old pair detached the
+                // item from its slot and told the client to forget it, and then simply dropped
+                // the pointer: the Item was never deleted, never marked ITEM_REMOVED, and never
+                // taken out of the player's m_itemUpdateQueue. A leaked object is the mild half.
+                // The queue entry is the sharp one -- _SaveInventory walks that vector on every
+                // periodic save and resolves each entry's bag and slot, and this item no longer
+                // has either, so it logs the inventory-corruption diagnostic and abandons the
+                // save. DestroyItem does the whole job: contained items first, enchantment and
+                // duration bookkeeping, quest checks, queue removal, then the delete.
+                bot->DestroyItem(INVENTORY_SLOT_BAG_0, slot, true);
             }
 
             Item* newItem = bot->EquipNewItem(dest, newItemId, true);
@@ -1469,6 +1633,26 @@ void PlayerbotFactory::InitAvailableSpells()
                 continue;
             }
 
+            // Bots already carrying a half-learned wrapper are NOT repaired here, and this is
+            // deliberate. Accepting TRAINER_SPELL_GRAY was tried and removed. Gray is certainly
+            // reachable -- Randomize runs this twice and ClearSpells keeps passives, so the
+            // second pass sees what the first learned -- but by then the pass above has already
+            // learned every effect, so handling gray repairs nothing. What it cannot do is fix
+            // damage a bot arrived with: no reachable caller reaches this code without
+            // ClearSpells first (InitSpells, which would be non-destructive, has no caller in
+            // the repository at all). It also would not have been safe if wired up:
+            // GetTrainerSpellState returns gray on EffectTriggerSpell[0] alone, BEFORE the
+            // class, level, rank, skill and profession-cap checks, so gray is not proof of
+            // eligibility to learn the rest.
+            //
+            // Existing damage repairs itself instead through the normal randomisation cycle,
+            // which rebuilds spells from scratch and now learns every effect. Measured on this
+            // server: 41 paladins missing 21084, 3 characters missing 13240, 0 bots in guilds.
+            // The normal IncreaseLevel guild branch takes Refresh instead of Randomize, and the
+            // `update` command calls Refresh for any bot; neither path reaches this function.
+            // Guild bots do still reach it through the level-one, starter-resident and level-cap
+            // paths, which run CleanRandomize. If a non-destructive repair is ever wanted, it
+            // needs its own bounded entry point and its own eligibility check, not this loop.
             ai->CastSpell(tSpell->spell, bot);
             const SpellEntry* spellInfo = sSpellStore.LookupEntry(tSpell->spell);
             if (spellInfo)
@@ -1479,8 +1663,21 @@ void PlayerbotFactory::InitAvailableSpells()
                         spellInfo->EffectTriggerSpell[ei] &&
                         !bot->HasSpell(spellInfo->EffectTriggerSpell[ei]))
                     {
+                        // Every learn effect, not just the first. A trainer entry is a wrapper
+                        // spell and several teach more than one thing; breaking here learned the
+                        // first and silently dropped the rest, leaving a half-trained bot the
+                        // trainer would never revisit -- GetTrainerSpellState only tests
+                        // EffectTriggerSpell[0], so the wrapper reads as already known.
+                        //
+                        // Observed on paladins: wrapper 10321 at level 4 teaches Judgement
+                        // (20271) AND the judgement-capable Seal of Righteousness (21084). Only
+                        // Judgement was learned, so the bot kept casting it over the level-1
+                        // "Non Judgement" seal 20154, whose CalculateSimpleValue carries no
+                        // derived spell -- the core then reached CastSpell(..., 0, true) and
+                        // logged "unknown spell id 0", 736 times across 32 bots in half an hour,
+                        // each one spending Judgement's mana and 10-second cooldown for nothing.
+                        // 41 paladins had 20271; not one had 21084.
                         bot->learnSpell(spellInfo->EffectTriggerSpell[ei], false);
-                        break;
                     }
                 }
             }
@@ -1498,6 +1695,37 @@ void PlayerbotFactory::InitSpecialSpells()
     {
         uint32 spellId = *i;
         bot->learnSpell(spellId, false);
+    }
+}
+
+/**
+ * Learn everything a wrapper spell teaches, rather than the one leaf someone remembered.
+ *
+ * A quest that rewards an ability rewards a WRAPPER spell, and several teach more than one
+ * thing. Listing the leaves by hand here is how bots ended up with Bear Form but no Growl
+ * and no Maul -- a druid that shapeshifted and then had no attack in the form. Asking the
+ * wrapper what it teaches cannot drift from the data the way a hand-kept list does, and it
+ * picks up any leaf a future data change adds.
+ *
+ * This is the same defect, and the same shape of fix, as the trainer loop in
+ * InitAvailableSpells: both learned only the first SPELL_EFFECT_LEARN_SPELL and stopped.
+ */
+static void LearnWrapperSpells(Player* bot, uint32 wrapperId)
+{
+    const SpellEntry* wrapper = sSpellStore.LookupEntry(wrapperId);
+    if (!wrapper)
+    {
+        return;
+    }
+
+    for (int ei = 0; ei < MAX_EFFECT_INDEX; ++ei)
+    {
+        if (wrapper->Effect[ei] == SPELL_EFFECT_LEARN_SPELL &&
+            wrapper->EffectTriggerSpell[ei] &&
+            !bot->HasSpell(wrapper->EffectTriggerSpell[ei]))
+        {
+            bot->learnSpell(wrapper->EffectTriggerSpell[ei], false);
+        }
     }
 }
 
@@ -1549,10 +1777,17 @@ void PlayerbotFactory::InitQuestSpells()
         case CLASS_WARRIOR:
             if (level >= 10)
             {
+                // Wrapper 8121 teaches Defensive Stance (71), Sunder Armor (7386) AND
+                // Taunt (355). Only the stance was learned, so a protection warrior held
+                // no threat abilities whatsoever -- and its Devastate -> Sunder Armor
+                // fallback resolved to nothing, leaving white attacks as its only damage.
+                LearnWrapperSpells(bot, 8121);
                 if (!bot->HasSpell(71))    bot->learnSpell(71, false);    // Defensive Stance
             }
             if (level >= 30)
             {
+                // Wrapper 8616 teaches Berserker Stance (2458) and Intercept (20252).
+                LearnWrapperSpells(bot, 8616);
                 if (!bot->HasSpell(2458))  bot->learnSpell(2458, false);  // Berserker Stance
             }
             break;
@@ -1560,6 +1795,10 @@ void PlayerbotFactory::InitQuestSpells()
         case CLASS_DRUID:
             if (level >= 10)
             {
+                // Wrapper 19179 teaches Bear Form (5487), Growl (6795) AND Maul (6807).
+                // Learning only the form is why bears had no attack and no taunt: the bot
+                // shapeshifted correctly and then had nothing to do in the form.
+                LearnWrapperSpells(bot, 19179);
                 if (!bot->HasSpell(5487))  bot->learnSpell(5487, false);  // Bear Form
             }
             if (level >= 16)
@@ -1608,6 +1847,19 @@ void PlayerbotFactory::InitQuestSpells()
                 {
                     bot->learnSpell(8012, false);  // Purge (often quest)
                 }
+
+                // Wrapper 2075 teaches Searing Totem (3599), which no code path learned at
+                // all -- so a shaman's damage totem simply never existed. spell_chain makes
+                // 3599 the first rank, so without it no later rank can be trained either.
+                LearnWrapperSpells(bot, 2075);
+                if (!bot->HasSpell(3599))  bot->learnSpell(3599, false);  // Searing Totem
+            }
+            if (level >= 20)
+            {
+                // Wrapper 5396 teaches Healing Stream Totem (5394), likewise never learned,
+                // and likewise the first rank of its chain.
+                LearnWrapperSpells(bot, 5396);
+                if (!bot->HasSpell(5394))  bot->learnSpell(5394, false);  // Healing Stream Totem
             }
             break;
         case CLASS_PRIEST:
@@ -1859,9 +2111,30 @@ void PlayerbotFactory::InitAmmo()
  */
 void PlayerbotFactory::InitMounts()
 {
+    // This used to group every SPELL_AURA_MOUNTED spell by speed and then learn one from
+    // EVERY group, twice over, with no check of level, class, race or riding skill. Two
+    // consequences, both confirmed against the live character_spell table: all 200 bots
+    // knew 3363 Summon Riding Gryphon -- a 499% flyer, the sole member of its speed group,
+    // on characters as low as level 1 -- and class mounts leaked across classes, with the
+    // Paladin Warhorse and Warlock Felsteed turning up on priests, rogues and druids.
+    //
+    // Riding skill is the real gate and InitSkills has already set it from the bot's level:
+    // 75 buys the 60% mount at 40, 150 buys the 100% mount at 60.
+    uint32 riding = bot->GetSkillValue(SKILL_RIDING);
+    if (riding < 75)
+    {
+        return;
+    }
+
+    // Effect base points carry speed-minus-one, so a 60% mount reads 59 and a 100% reads 99.
+    // Anything above that is a flying mount, which 1.12 does not have.
+    const int32 maxIncrease = (riding >= 150) ? 99 : 59;
+
+    const uint32 raceMask = bot->getRaceMask();
+    const uint32 classMask = bot->getClassMask();
+
     map<int32, vector<uint32> > spells;
 
-    // Iterate through all spell entries and find mount spells
     for (uint32 spellId = 0; spellId < sSpellStore.GetNumRows(); ++spellId)
     {
         SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
@@ -1876,7 +2149,41 @@ void PlayerbotFactory::InitMounts()
         }
 
         int32 effect = max(spellInfo->EffectBasePoints[1], spellInfo->EffectBasePoints[2]);
-        if (effect < 50)
+        if (effect < 50 || effect > maxIncrease)
+        {
+            continue;
+        }
+
+        // Class mounts carry a SkillLineAbility row that names the class -- Warhorse is
+        // classMask 2, Felsteed is 256 -- so where one exists it must be honoured. Racial
+        // and vendor mounts have no row at all in 1.12 (Brown Horse 458 and the rest), so
+        // an absent row cannot mean "forbidden" or every bot would end up on foot.
+        SkillLineAbilityMapBounds bounds = sSpellMgr.GetSkillLineAbilityMapBounds(spellId);
+        bool restricted = false;
+        bool permitted = false;
+        for (SkillLineAbilityMap::const_iterator i = bounds.first; i != bounds.second; ++i)
+        {
+            SkillLineAbilityEntry const* ability = i->second;
+            if (!ability->RaceMask && !ability->ClassMask)
+            {
+                continue;
+            }
+
+            restricted = true;
+            if (ability->RaceMask && !(ability->RaceMask & raceMask))
+            {
+                continue;
+            }
+            if (ability->ClassMask && !(ability->ClassMask & classMask))
+            {
+                continue;
+            }
+
+            permitted = true;
+            break;
+        }
+
+        if (restricted && !permitted)
         {
             continue;
         }
@@ -1884,21 +2191,16 @@ void PlayerbotFactory::InitMounts()
         spells[effect].push_back(spellId);
     }
 
-    // Learn a random mount spell for each type of mount
-    for (uint32 type = 0; type < 2; ++type)
+    // One mount, at the best speed this bot has the skill for -- not one from every tier.
+    if (spells.empty())
     {
-        for (map<int32, vector<uint32> >::iterator i = spells.begin(); i != spells.end(); ++i)
-        {
-            int32 effect = i->first;
-            vector<uint32>& ids = i->second;
-            uint32 index = urand(0, ids.size() - 1);
-            if (index >= ids.size())
-            {
-                continue;
-            }
+        return;
+    }
 
-            bot->learnSpell(ids[index], false);
-        }
+    vector<uint32>& ids = spells.rbegin()->second;
+    if (!ids.empty())
+    {
+        bot->learnSpell(ids[urand(0, ids.size() - 1)], false);
     }
 }
 
@@ -2058,9 +2360,186 @@ void PlayerbotFactory::CancelAuras()
  */
 void PlayerbotFactory::InitInventory()
 {
+    // Reagents first, so a full bag of random trade goods cannot crowd out the one item that
+    // makes a wired-up ability actually castable.
+    InitInventoryReagents();
+    InitInventoryTotems();
     InitInventoryTrade();
     InitInventoryEquip();
     InitInventorySkill();
+}
+
+/**
+ * @brief Supplies the reagents a bot's own spells require.
+ *
+ * A registered action whose spell needs an item the bot never receives is only a quieter kind
+ * of dead end: it resolves, passes its usefulness test, and is then refused by CanCastSpell
+ * every time. Druid Rebirth is the case that prompted this -- "party member dead" routes to
+ * it correctly, but a factory-built druid carried none of the seeds it consumes, so no bot
+ * druid could resurrect anyone.
+ *
+ * The reagent is read from the spell the bot ACTUALLY knows rather than mapped from its
+ * level. Rank and level are not interchangeable here: a bot can be past a rank's level and
+ * still not know it, and the DBC is the only thing that knows which seed a given rank eats.
+ */
+bool PlayerbotFactory::ProvisionSpellReagent(uint32 spellId, uint32 desiredStock)
+{
+    if (!bot->HasSpell(spellId))
+    {
+        return false;
+    }
+
+    const SpellEntry* spellInfo = sSpellStore.LookupEntry(spellId);
+    if (!spellInfo)
+    {
+        return false;
+    }
+
+    // Known, but consumes nothing. Still counts as handled so the caller stops looking at
+    // weaker ranks.
+    if (!spellInfo->Reagent[0] || !spellInfo->ReagentCount[0])
+    {
+        return true;
+    }
+
+    // Never fewer than one cast's worth, and normally a working stock. TakeReagents consumes
+    // the item on every successful cast and Refresh does not replenish, so provisioning the
+    // DBC quantity alone buys exactly one use for the bot's entire life. StoreItem clamps to
+    // the item's own maximum stack size.
+    const uint32 count = std::max(desiredStock, (uint32)spellInfo->ReagentCount[0]);
+
+    if (!bot->HasItemCount(spellInfo->Reagent[0], count))
+    {
+        StoreItem(spellInfo->Reagent[0], count);
+    }
+
+    return true;
+}
+
+void PlayerbotFactory::InitInventoryReagents()
+{
+    // Highest known rank first: that is the one the bot will actually cast, and its reagent
+    // is read from the DBC rather than guessed from the bot's level. Rank and level are not
+    // interchangeable -- a bot can be past a rank's level and still not know it.
+    static const uint32 rebirthRanks[]  = { 20748, 20747, 20742, 20739, 20484 };
+    static const uint32 vanishRanks[]   = { 1857, 1856 };
+    static const uint32 arcaneBrill[]   = { 23028 };
+    static const uint32 gBlessMight[]   = { 25916, 25782 };
+    static const uint32 gBlessWisdom[]  = { 25918, 25894 };
+    static const uint32 waterBreathing[] = { 131 };
+    static const uint32 waterWalking[]   = { 546 };
+
+    struct ReagentSpell
+    {
+        uint8 cls;
+        const uint32* ranks;
+        size_t count;
+        uint32 stock;
+    };
+
+    // Stock reflects how the ability is used. Vanish and Rebirth are consumed in ordinary
+    // play and are wired into combat and party behaviour, so they carry a working stack;
+    // the group buffs are cast rarely and degrade to their lesser versions, so they carry
+    // fewer.
+    static const ReagentSpell reagentSpells[] =
+    {
+        { CLASS_DRUID,   rebirthRanks, sizeof(rebirthRanks) / sizeof(uint32), 20 },
+        { CLASS_ROGUE,   vanishRanks,  sizeof(vanishRanks)  / sizeof(uint32), 20 },
+        { CLASS_MAGE,    arcaneBrill,  sizeof(arcaneBrill)  / sizeof(uint32), 10 },
+        { CLASS_PALADIN, gBlessMight,  sizeof(gBlessMight)  / sizeof(uint32), 10 },
+        { CLASS_PALADIN, gBlessWisdom, sizeof(gBlessWisdom) / sizeof(uint32), 10 },
+        // Shaman utility. Both are registered actions with live triggers, and both consume
+        // class-15 reagent items that InitInventoryTrade cannot supply, so without this they
+        // were wired up and permanently uncastable.
+        { CLASS_SHAMAN,  waterBreathing, sizeof(waterBreathing) / sizeof(uint32), 10 },
+        { CLASS_SHAMAN,  waterWalking,   sizeof(waterWalking)   / sizeof(uint32), 10 }
+    };
+
+    const uint8 cls = bot->getClass();
+
+    for (size_t i = 0; i < sizeof(reagentSpells) / sizeof(reagentSpells[0]); ++i)
+    {
+        if (reagentSpells[i].cls != cls)
+        {
+            continue;
+        }
+
+        for (size_t r = 0; r < reagentSpells[i].count; ++r)
+        {
+            if (ProvisionSpellReagent(reagentSpells[i].ranks[r], reagentSpells[i].stock))
+            {
+                break;
+            }
+        }
+    }
+}
+
+/**
+ * @brief Supplies the totem items a shaman's own spells require.
+ *
+ * Measured across two live runs on this server: not one player shaman cast a single totem.
+ * Around thirty totem spell ids were checked across every rank -- Searing, Magma, Healing
+ * Stream, Mana Spring, Mana Tide, Strength of Earth, Stoneskin, Tremor, Earthbind, Windfury,
+ * Flametongue, Grounding, the cleansing pair -- and the count was zero for all of them. The
+ * only totem-named entries in the log were talent passives applied at login.
+ *
+ * The strategies were never the reason. CasterShamanStrategy wires Searing Totem at 19.0,
+ * MeleeShamanStrategy wires Searing at 22.0 and Magma at 26.0, and HealShamanStrategy wires
+ * Healing Stream and Mana Tide, all with live triggers and registered actions. Every one of
+ * those casts was refused by the core.
+ *
+ * In 1.12 a totem is not summoned from nothing: Spell.dbc sets SpellEntry::Totem[0] on every
+ * shaman totem spell to one of four items -- Earth Totem 5175, Fire Totem 5176, Water Totem
+ * 5177, Air Totem 5178 -- and Spell::CheckCast walks that field and returns SPELL_FAILED_ITEM_GONE
+ * unless the item is in the caster's bags. A player earns those four from the Call of Earth,
+ * Fire, Water and Air quest chains. A bot does no quests, so it carried none of them, and the
+ * whole school was unreachable for every shaman on the server at every level.
+ *
+ * Which item is required is read from the spells the bot ACTUALLY knows rather than mapped
+ * from its level, for the same reason the reagent pass above does it that way: rank and level
+ * are not interchangeable, and the DBC is the only thing that knows which totem a given rank
+ * needs. A level 30 shaman that never trained a water totem gets no Water Totem, which is
+ * also what a player at that point would have.
+ *
+ * Scoped to the shaman spell family deliberately. Totem[] is the generic "required tool"
+ * field -- blacksmith hammers, enchanting rods, mining picks and skinning knives all travel
+ * in it -- and InitInventorySkill below already provisions those from the bot's skills.
+ */
+void PlayerbotFactory::InitInventoryTotems()
+{
+    std::set<uint32> required;
+
+    for (PlayerSpellMap::iterator itr = bot->GetSpellMap().begin(); itr != bot->GetSpellMap().end(); ++itr)
+    {
+        if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled)
+        {
+            continue;
+        }
+
+        const SpellEntry* spellInfo = sSpellStore.LookupEntry(itr->first);
+        if (!spellInfo || spellInfo->SpellClassSet != SPELLFAMILY_SHAMAN)
+        {
+            continue;
+        }
+
+        for (int i = 0; i < MAX_SPELL_TOTEMS; ++i)
+        {
+            if (spellInfo->Totem[i])
+            {
+                required.insert(spellInfo->Totem[i]);
+            }
+        }
+    }
+
+    for (std::set<uint32>::const_iterator i = required.begin(); i != required.end(); ++i)
+    {
+        // One is enough and one is all a player ever holds: a totem item is a focus the cast
+        // requires present, not a reagent it consumes.
+        if (!bot->HasItemCount(*i, 1))
+        {
+            StoreItem(*i, 1);
+        }
+    }
 }
 
 /**
@@ -2109,11 +2588,32 @@ void PlayerbotFactory::InitInventorySkill()
  */
 Item* PlayerbotFactory::StoreItem(uint32 itemId, uint32 count)
 {
+    // An id with no prototype is a null dereference one line down, and the ids reaching here
+    // are no longer all hand-checked: InitInventoryTotems reads them out of Spell.dbc, so a
+    // client data file now decides what gets asked for. The four 1.12 totem items do exist in
+    // item_template, but a DBC naming an item this world database does not carry must fail the
+    // provision, not the server.
     ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
+    if (!proto)
+    {
+        sLog.outError("PlayerbotFactory::StoreItem: no item_template entry for item %u, not stored", itemId);
+        return NULL;
+    }
+
     Item* newItem = bot->StoreNewItemInInventorySlot(itemId, min(count, proto->GetMaxStackSize()));
     if (newItem)
     {
         newItem->AddToUpdateQueueOf(bot);
+    }
+    else
+    {
+        // Say so rather than returning NULL in silence. A full bag is the ordinary reason,
+        // and the consequence is not cosmetic: the caller may have been provisioning the one
+        // item that makes a wired-up ability castable, and a shaman that quietly failed to
+        // receive its Fire Totem simply never casts a fire totem again with nothing in the
+        // log to say why.
+        sLog.outError("PlayerbotFactory::StoreItem: could not store item %u on bot %s",
+            itemId, bot->GetName());
     }
 
     return newItem;

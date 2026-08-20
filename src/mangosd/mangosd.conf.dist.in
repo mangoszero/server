@@ -44,7 +44,11 @@ ConfVersion=@MANGOS_WORLD_VER@
 #        Please, note, for data consistency only one connection for each database is used for transactions and async SELECTs.
 #        So formula to find out how many connections will be established:
 #                X = LoginDatabaseConnections + WorldDatabaseConnections + CharacterDatabaseConnections + 1
-#        Default: 1 connection for SELECT statements
+#        Default: 4 connections for SELECT statements
+#                 1 is enough for a near-idle realm, but startup and any workload that
+#                 fans out concurrent SELECTs -- a large playerbot roster in particular --
+#                 serialises hard behind a single connection. Measured load time on a
+#                 populated realm improves substantially at 4.
 #
 #    MaxPingTime
 #        Settings for maximum database-ping interval (minutes between pings)
@@ -66,9 +70,9 @@ LogsDir                      = ""
 LoginDatabaseInfo            = "127.0.0.1;3306;root;mangos;realmd"
 WorldDatabaseInfo            = "127.0.0.1;3306;root;mangos;mangos0"
 CharacterDatabaseInfo        = "127.0.0.1;3306;root;mangos;character0"
-LoginDatabaseConnections     = 1
-WorldDatabaseConnections     = 1
-CharacterDatabaseConnections = 1
+LoginDatabaseConnections     = 4
+WorldDatabaseConnections     = 4
+CharacterDatabaseConnections = 4
 MaxPingTime                  = 5
 WorldServerPort              = 8085
 BindIP                       = "0.0.0.0"

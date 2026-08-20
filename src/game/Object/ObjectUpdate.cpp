@@ -70,6 +70,7 @@
 #include "ObjectPosSelector.h"
 #include "TemporarySummon.h"
 #include "movement/packet_builder.h"
+#include "movement/MoveSpline.h"
 #include "CreatureLinkingMgr.h"
 #include "Chat.h"
 #include "GameTime.h"
@@ -313,9 +314,26 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
     if (updateFlags & UPDATEFLAG_LIVING)
     {
         MANGOS_ASSERT(unit);
-        if (unit->IsStopped() && unit->m_movementInfo.HasMovementFlag(MOVEFLAG_SPLINE_ENABLED))
+        // Ask the spline, not the unit states.
+        //
+        // This used to test IsStopped(), which is !hasUnitState(UNIT_STAT_MOVING) — a
+        // question about whether some generator has declared itself moving, not about
+        // whether a spline is running. HomeMovementGenerator declared nothing, so every
+        // healthy evade-return answered "stopped" and tripped this: 151 times in a single
+        // evening, against creatures whose splines were perfectly live.
+        //
+        // Worse, it then STRIPPED the flags. A packet builder was reaching into unit
+        // movement state and turning off a spline that was still running, so an observer
+        // entering visibility mid-return was handed a creature with no movement to draw
+        // while everyone already watching had been told it was moving.
+        //
+        // The real defect this was meant to catch is a flag that outlived its spline, so
+        // that is what it now asks. It reports and does not touch anything; with the
+        // reconciliation in Unit::UpdateSplineMovement it should never fire at all, which
+        // is the point of leaving it here.
+        if (unit->movespline->Finalized() && unit->m_movementInfo.HasMovementFlag(MOVEFLAG_SPLINE_ENABLED))
         {
-            sLog.outError("%s is not moving but have spline movement enabled!", GetGuidStr().c_str());
+            sLog.outError("%s has spline movement enabled but its spline is finalized!", GetGuidStr().c_str());
             std::string victimGuid = "none";
             if (Unit const* victim = unit->getVictim())
             {
@@ -335,7 +353,6 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
                           uint32(const_cast<Unit*>(unit)->GetMotionMaster()->GetCurrentMovementGeneratorType()),
                           unit->IsInCombat() ? "yes" : "no", unit->GetCombatTimer(),
                           victimGuid.c_str(), targetGuidString.c_str());
-            ((Unit*)this)->m_movementInfo.RemoveMovementFlag(MovementFlags(MOVEFLAG_SPLINE_ENABLED | MOVEFLAG_FORWARD));
         }
 
         // A boarded unit has no world position worth sending: the client places it from

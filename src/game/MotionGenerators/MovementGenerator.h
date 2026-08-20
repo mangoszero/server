@@ -87,6 +87,15 @@ class MovementGenerator
         /// False once a route to the goal only got partway there.
         virtual bool IsReachable() const { return true; }
 
+        /// True when this generator lays only legs the router actually routed.
+        ///
+        /// Exists because a routed leg and an ordinary point leg both report
+        /// POINT_MOTION_TYPE, so a caller cannot otherwise tell whether the leg in flight
+        /// is the one it asked for. Suppressing a re-issue on type alone would let an
+        /// ordinary spline stand in for a routed one and defeat MOVE_REQUIRE_ROUTE, which
+        /// exists precisely to stop a bot cutting through geometry.
+        virtual bool IsRoutedLeg() const { return false; }
+
         /// Still the top generator? Call after anything that may have re-entered the
         /// motion stack (an AI hook, a script).
         bool IsActive(Unit& owner);

@@ -49,9 +49,17 @@ void TankPaladinStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
             "righteous fury",
         NextAction::array(0, new NextAction("righteous fury", ACTION_HIGH + 8), NULL)));
 
+    // Consecration then Judgement. Hammer of the Righteous and Avenger's Shield are both
+    // post-vanilla and neither is a registered action, so this trigger was two silent NULLs
+    // in a row -- a protection paladin had no light-AoE response whatsoever. Consecration is
+    // the 1.12 paladin's actual AoE and is registered; Judgement backs it up when the mana
+    // or the cooldown will not allow it.
     triggers.push_back(new TriggerNode(
             "light aoe",
-        NextAction::array(0, new NextAction("hammer of the righteous", ACTION_HIGH + 6), new NextAction("avenger's shield", ACTION_HIGH + 6), NULL)));
+        NextAction::array(0,
+            new NextAction("consecration", ACTION_HIGH + 6),
+            new NextAction("judgement", ACTION_HIGH + 5),
+            NULL)));
 
     triggers.push_back(new TriggerNode(
             "medium aoe",

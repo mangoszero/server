@@ -44,6 +44,14 @@ void GenericWarlockNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &trig
             "demon armor",
         NextAction::array(0, new NextAction("fel armor", 21.0f), NULL)));
 
+    // Demonology's 31-point talent: it splits damage with the pet and is a permanent
+    // self-buff, so it belongs with the armor rather than in a combat rotation. Below the
+    // armor because armor is the buff every warlock has; a warlock without the talent
+    // fails CanCastSpell and the tick moves on.
+    triggers.push_back(new TriggerNode(
+            "soul link",
+        NextAction::array(0, new NextAction("soul link", 20.0f), NULL)));
+
     triggers.push_back(new TriggerNode(
             "no healthstone",
         NextAction::array(0, new NextAction("create healthstone", 15.0f), NULL)));
