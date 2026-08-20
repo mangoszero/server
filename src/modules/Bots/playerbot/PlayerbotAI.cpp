@@ -650,11 +650,6 @@ void PlayerbotAI::Reset()
  */
 void PlayerbotAI::HandleCommand(uint32 type, const string& text, Player& fromPlayer)
 {
-    if (!GetSecurity()->CheckLevelFor(PLAYERBOT_SECURITY_INVITE, type != CHAT_MSG_WHISPER, &fromPlayer))
-    {
-        return;
-    }
-
     if (type == CHAT_MSG_ADDON)
     {
         return;
