@@ -82,6 +82,9 @@
 #endif /* ENABLE_ELUNA */
 #ifdef ENABLE_PLAYERBOTS
 #include "playerbot.h"
+#include "PlayerbotAIConfig.h"
+#include "PlayerbotPacketPolicy.h"
+#include "PlayerbotPerformanceMonitor.h"
 #endif
 
 #include <cstdarg>
@@ -285,6 +288,10 @@ void WorldSession::SendPacket(WorldPacket const* packet)
     {
         if (GetPlayer()->GetPlayerbotAI())
         {
+            if (sPlayerbotAIConfig.performanceMetricsInterval)
+            {
+                ai::sPlayerbotPerformanceMonitor.RecordBuiltPacket(packet->size());
+            }
             GetPlayer()->GetPlayerbotAI()->HandleBotOutgoingPacket(*packet);
         }
         else if (GetPlayer()->GetPlayerbotMgr())
@@ -1121,12 +1128,35 @@ bool WorldSession::Update(PacketFilter& updater)
  */
 void WorldSession::HandleBotPackets()
 {
-    WorldPacket* packet;
+    WorldPacket* packet = NULL;
     while (m_mailbox->Next(packet))
     {
-        OpcodeHandler const& opHandle = opcodeTable[packet->GetOpcode()];
-        (this->*opHandle.handler)(*packet);
-        delete packet;
+        std::unique_ptr<WorldPacket> packetHolder(packet);
+        if (!packet || !_player || !_player->IsInWorld())
+        {
+            continue;
+        }
+
+        OpcodeHandler const* opHandle = ai::FindDispatchablePlayerbotOpcodeHandler(
+            opcodeTable, packet->GetOpcode(), STATUS_LOGGEDIN);
+        if (!opHandle)
+        {
+            sLog.outError(
+                "PLAYERBOT: rejected queued opcode %s (0x%.4X): not a dispatchable logged-in opcode",
+                LookupOpcodeName(packet->GetOpcode()), packet->GetOpcode());
+            continue;
+        }
+
+        try
+        {
+            ExecuteOpcode(*opHandle, packet);
+        }
+        catch (ByteBufferException&)
+        {
+            sLog.outError(
+                "WorldSession::HandleBotPackets ByteBufferException while parsing opcode %s (0x%.4X)",
+                LookupOpcodeName(packet->GetOpcode()), packet->GetOpcode());
+        }
     }
 }
 #endif

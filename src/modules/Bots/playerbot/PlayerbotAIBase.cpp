@@ -1,6 +1,7 @@
 #include "../botpch.h"
 #include "playerbot.h"
 #include "PlayerbotAIConfig.h"
+#include "PlayerbotPerformanceMonitor.h"
 
 using namespace ai;
 using namespace std;
@@ -32,11 +33,22 @@ void PlayerbotAIBase::UpdateAI(uint32 elapsed)
     // Check if the AI can be updated
     if (!CanUpdateAI())
     {
+        if (sPlayerbotAIConfig.performanceMetricsInterval)
+        {
+            ai::sPlayerbotPerformanceMonitor.RecordAiDeferred();
+        }
         return;
     }
 
     // Update the AI internal state
+    std::uint64_t const evaluationStartedAtMicros = sPlayerbotAIConfig.performanceMetricsInterval ?
+        ai::PlayerbotPerformanceNowMicros() : 0;
     UpdateAIInternal(elapsed);
+    if (sPlayerbotAIConfig.performanceMetricsInterval)
+    {
+        ai::sPlayerbotPerformanceMonitor.RecordAiEvaluation(
+            ai::PlayerbotPerformanceNowMicros() - evaluationStartedAtMicros);
+    }
     // Yield the current thread
     YieldThread();
 }

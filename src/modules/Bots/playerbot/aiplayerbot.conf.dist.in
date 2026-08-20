@@ -244,6 +244,12 @@ AiPlayerbot.RandomBotStarterZoneQuota = 5
 #AiPlayerbot.SpellDump = 0
 #AiPlayerbot.LogInGroupOnly = 1
 #AiPlayerbot.LogValuesPerTick = 0
+# Seconds between aggregate Playerbot performance reports. Counts already-built
+# bot packets and bytes, blocking event-query latency, and AI scheduler activity.
+# Event-query time is included within AI evaluation time, not additional to it.
+# Windows are nominal and re-arm when a world tick observes the deadline.
+# 0 disables instrumentation.
+#AiPlayerbot.PerformanceMetricsInterval = 0
 #AiPlayerbot.RandomChangeMultiplier = 1
 
 # Command server port, 0 - disabled

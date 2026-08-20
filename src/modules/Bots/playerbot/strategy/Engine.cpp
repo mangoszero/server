@@ -3,6 +3,7 @@
 
 #include "Engine.h"
 #include "../PlayerbotAIConfig.h"
+#include "../PlayerbotLogPolicy.h"
 #include <cstdarg>
 #include <mutex>
 
@@ -135,8 +136,11 @@ void Engine::InitStrategies()
     if (testMode)
     {
         FILE* file = fopen("test.log", "w");
-        fprintf(file, "\n");
-        fclose(file);
+        if (file)
+        {
+            WritePlayerbotLogLine(file, "");
+            fclose(file);
+        }
     }
 }
 
@@ -644,20 +648,20 @@ bool Engine::ListenAndExecute(Action* action, const Event& event)
 // Logs an action
 void Engine::LogAction(const char* format, ...)
 {
-    char buf[1024];
-
     va_list ap;
     va_start(ap, format);
-    vsprintf(buf, format, ap);
+    string const message = FormatPlayerbotLogMessage(format, ap);
     va_end(ap);
-    lastAction = buf;
+    lastAction = message;
 
     if (testMode)
     {
         FILE* file = fopen("test.log", "a");
-        fprintf(file, buf);
-        fprintf(file, "\n");
-        fclose(file);
+        if (file)
+        {
+            WritePlayerbotLogLine(file, message);
+            fclose(file);
+        }
     }
     else
     {

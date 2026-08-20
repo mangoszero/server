@@ -38,6 +38,8 @@ set(BOT_SRCS
     playerbot/PlayerbotAIBase.h
     playerbot/PlayerbotAIConfig.cpp
     playerbot/PlayerbotAIConfig.h
+    playerbot/PlayerbotPerformanceMonitor.cpp
+    playerbot/PlayerbotPerformanceMonitor.h
     playerbot/playerbotDefs.h
     playerbot/PlayerbotFactory.cpp
     playerbot/PlayerbotFactory.h

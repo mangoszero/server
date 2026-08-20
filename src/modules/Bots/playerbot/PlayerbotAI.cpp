@@ -62,7 +62,7 @@ void PacketHandlingHelper::Handle(ExternalEventHelper &helper)
 {
     while (!queue.empty())
     {
-        helper.HandlePacket(handlers, queue.top());
+        helper.HandlePacket(handlers, queue.front());
         queue.pop();
     }
 }
@@ -437,7 +437,7 @@ void PlayerbotAI::UpdateAIInternal(uint32 elapsed)
     ExternalEventHelper helper(aiObjectContext);
     while (!chatCommands.empty())
     {
-        ChatCommandHolder holder = chatCommands.top();
+        ChatCommandHolder holder = chatCommands.front();
         string command = holder.GetCommand();
         Player* owner = holder.GetOwner();
         if (!helper.ParseChatCommand(command, owner) && holder.GetType() == CHAT_MSG_WHISPER)
