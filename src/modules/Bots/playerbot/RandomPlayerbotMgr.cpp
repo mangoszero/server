@@ -7,6 +7,7 @@
 #include "../botpch.h"
 #include "playerbot.h"
 #include "PlayerbotAIConfig.h"
+#include "PlayerbotPerformanceMonitor.h"
 #include "PlayerbotFactory.h"
 #include "AccountMgr.h"
 #include "ObjectMgr.h"
@@ -1940,9 +1941,16 @@ uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event, bool cacheMis
     }
 
     // Query the database to get the event value for the specified bot
+    bool const performanceMetricsEnabled = sPlayerbotAIConfig.performanceMetricsInterval != 0;
+    std::uint64_t const queryStartedAtMicros = performanceMetricsEnabled ? ai::PlayerbotPerformanceNowMicros() : 0;
     QueryResult* results = CharacterDatabase.PQuery(
             "SELECT `value`, `time`, `validIn` FROM `ai_playerbot_random_bots` WHERE `owner` = 0 AND `bot` = '%u' AND `event` = '%s'",
         bot, event.c_str());
+    if (performanceMetricsEnabled)
+    {
+        ai::sPlayerbotPerformanceMonitor.RecordEventQuery(
+            ai::PlayerbotPerformanceNowMicros() - queryStartedAtMicros);
+    }
 
     if (results)
     {

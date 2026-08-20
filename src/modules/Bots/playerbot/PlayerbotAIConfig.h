@@ -81,6 +81,7 @@ class PlayerbotAIConfig
         uint32 randomBotStarterZoneQuota; ///< Active residents each starting zone should hold before the roster fills at random. 0 disables.
         uint32 randomBotHomeAreaMaxLevel; ///< Bots at or below this level stay in the starting SUB-AREA -- Shadowglen, Northshire. 0 disables.
         bool logInGroupOnly, logValuesPerTick;
+        uint32 performanceMetricsInterval; ///< Seconds between aggregate performance reports; 0 disables instrumentation.
         bool fleeingEnabled; ///< Indicates if fleeing is enabled for bots.
         std::string randomBotCombatStrategies, randomBotNonCombatStrategies;
         std::string botTankStrategies, botDpsStrategies, botHealStrategies, botGroupNonCombatStrategies;

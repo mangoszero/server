@@ -77,6 +77,7 @@ PlayerbotAIConfig::PlayerbotAIConfig()
     randomBotStarterZoneQuota(0),
     logInGroupOnly(false),
     logValuesPerTick(false),
+    performanceMetricsInterval(0),
     fleeingEnabled(false),
     randomBotMinLevel(0),
     randomBotMaxLevel(0),
@@ -242,6 +243,14 @@ bool PlayerbotAIConfig::Initialize()
     randomBotJoinLfg = config.GetBoolDefault("AiPlayerbot.RandomBotJoinLfg", true);
     logInGroupOnly = config.GetBoolDefault("AiPlayerbot.LogInGroupOnly", true);
     logValuesPerTick = config.GetBoolDefault("AiPlayerbot.LogValuesPerTick", false);
+    int32 configuredPerformanceMetricsInterval = config.GetIntDefault("AiPlayerbot.PerformanceMetricsInterval", 0);
+    if (configuredPerformanceMetricsInterval < 0)
+    {
+        sLog.outError("AiPlayerbot.PerformanceMetricsInterval cannot be negative; %d given, disabling instrumentation",
+            configuredPerformanceMetricsInterval);
+        configuredPerformanceMetricsInterval = 0;
+    }
+    performanceMetricsInterval = static_cast<uint32>(configuredPerformanceMetricsInterval);
     fleeingEnabled = config.GetBoolDefault("AiPlayerbot.FleeingEnabled", true);
     randomBotMinLevel = config.GetIntDefault("AiPlayerbot.RandomBotMinLevel", 1);
     randomBotMaxLevel = config.GetIntDefault("AiPlayerbot.RandomBotMaxLevel", 255);

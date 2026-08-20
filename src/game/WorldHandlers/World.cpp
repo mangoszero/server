@@ -113,6 +113,7 @@
 
 #include "PlayerbotAIConfig.h"
 #include "PlayerbotMgr.h"
+#include "PlayerbotPerformanceMonitor.h"
 #include "RandomPlayerbotMgr.h"
 #endif
 
@@ -1434,6 +1435,10 @@ void World::Update(uint32 diff)
 #ifdef ENABLE_PLAYERBOTS
     sRandomPlayerbotMgr.UpdateAI(diff);
     sRandomPlayerbotMgr.UpdateSessions(diff);
+    if (sPlayerbotAIConfig.performanceMetricsInterval)
+    {
+        ai::ReportPlayerbotPerformanceIfDue(sPlayerbotAIConfig.performanceMetricsInterval);
+    }
 #endif
 
     /// <li> Handle session updates

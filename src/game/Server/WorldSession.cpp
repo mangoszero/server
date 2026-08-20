@@ -82,7 +82,9 @@
 #endif /* ENABLE_ELUNA */
 #ifdef ENABLE_PLAYERBOTS
 #include "playerbot.h"
+#include "PlayerbotAIConfig.h"
 #include "PlayerbotPacketPolicy.h"
+#include "PlayerbotPerformanceMonitor.h"
 #endif
 
 #include <cstdarg>
@@ -286,6 +288,10 @@ void WorldSession::SendPacket(WorldPacket const* packet)
     {
         if (GetPlayer()->GetPlayerbotAI())
         {
+            if (sPlayerbotAIConfig.performanceMetricsInterval)
+            {
+                ai::sPlayerbotPerformanceMonitor.RecordBuiltPacket(packet->size());
+            }
             GetPlayer()->GetPlayerbotAI()->HandleBotOutgoingPacket(*packet);
         }
         else if (GetPlayer()->GetPlayerbotMgr())
