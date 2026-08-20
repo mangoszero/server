@@ -2,10 +2,22 @@
 
 #include "SharedDefines.h"
 
+#include <map>
 #include <vector>
 
 namespace ai
 {
+    inline std::vector<uint8> const* FindRandomBotRaceCandidates(
+        std::map<uint8, std::vector<uint8> > const& candidates, uint8 cls)
+    {
+        std::map<uint8, std::vector<uint8> >::const_iterator itr = candidates.find(cls);
+        if (itr == candidates.end() || itr->second.empty())
+        {
+            return nullptr;
+        }
+        return &itr->second;
+    }
+
     inline std::vector<uint8> GetMissingRandomBotClasses(std::vector<uint8> const& existing)
     {
         bool present[MAX_CLASSES] = {};

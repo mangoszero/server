@@ -10,6 +10,8 @@ namespace ai
                                                  int32 castTime, int32 duration,
                                                  int32 speedIncrease)
     {
+        // Classic mount rows cast for at least 500 ms, last indefinitely, and store their
+        // speed increase minus one in EffectBasePoints: 59 means 60%, 99 means 100%.
         if (riding < 75 || !isMountAura || castTime < 500 || duration != -1)
         {
             return false;

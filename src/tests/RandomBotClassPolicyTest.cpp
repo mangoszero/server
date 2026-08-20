@@ -16,7 +16,10 @@
 
 #include "../modules/Bots/playerbot/RandomBotClassPolicy.h"
 
+#include <map>
+
 using ai::GetMissingRandomBotClasses;
+using ai::FindRandomBotRaceCandidates;
 
 namespace
 {
@@ -78,4 +81,22 @@ TEST(RandomBotClassPolicyCompleteAccountNeedsNothing)
                      CLASS_PRIEST, CLASS_SHAMAN, CLASS_MAGE, CLASS_WARLOCK,
                      CLASS_DRUID}),
                  {});
+}
+
+TEST(RandomBotClassPolicyRejectsMissingAndEmptyRaceCandidates)
+{
+    std::map<uint8, std::vector<uint8> > candidates;
+
+    CHECK(FindRandomBotRaceCandidates(candidates, CLASS_WARRIOR) == NULL);
+
+    candidates[CLASS_WARRIOR] = {};
+    CHECK(FindRandomBotRaceCandidates(candidates, CLASS_WARRIOR) == NULL);
+
+    candidates[CLASS_WARRIOR] = {RACE_HUMAN, RACE_ORC};
+    std::vector<uint8> const* races =
+        FindRandomBotRaceCandidates(candidates, CLASS_WARRIOR);
+    CHECK(races != NULL);
+    CHECK_EQ(races->size(), 2);
+    CHECK_EQ((*races)[0], RACE_HUMAN);
+    CHECK_EQ((*races)[1], RACE_ORC);
 }
