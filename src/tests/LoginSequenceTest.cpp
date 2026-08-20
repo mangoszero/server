@@ -25,6 +25,7 @@
 
 #include "TestHarness.h"
 
+#include "CharacterEnumMapSnapshot.h"
 #include "LoginEffectPackets.h"
 #include "Opcodes.h"
 #include "WorldPacket.h"
@@ -50,4 +51,25 @@ TEST(LoginEffectPackets_builds_retail_go)
     CHECK_EQ(int(packet.GetOpcode()), int(SMSG_SPELL_GO));
     CHECK_HEX(packet.contents(), packet.size(),
         "0f040302010f0403020144030000000101040302010000000000020000");
+}
+
+TEST(CharacterEnumMapSnapshot_requires_matching_guid_and_map)
+{
+    CharacterEnumMapSnapshot snapshot;
+    CHECK(!snapshot.Matches(0x11, 0));
+
+    snapshot.Replace({{0x11, 0}, {0x22, 1}});
+    CHECK(snapshot.Matches(0x11, 0));
+    CHECK(!snapshot.Matches(0x11, 1));
+    CHECK(!snapshot.Matches(0x33, 0));
+}
+
+TEST(CharacterEnumMapSnapshot_replaces_the_previous_response)
+{
+    CharacterEnumMapSnapshot snapshot;
+    snapshot.Replace({{0x11, 0}});
+    snapshot.Replace({{0x22, 1}});
+
+    CHECK(!snapshot.Matches(0x11, 0));
+    CHECK(snapshot.Matches(0x22, 1));
 }
