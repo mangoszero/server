@@ -101,7 +101,7 @@ class TransportMap : public Map
          * ordinary visibility pass at the end, because on this map they are ordinary objects
          * in ordinary cells.
          */
-        bool Add(Player* passenger) override;
+        bool Add(Player* passenger, InitialWorldEntryHook* initialEntry = nullptr) override;
 
         TransportMap* AsTransport() override { return this; }
         TransportMap const* AsTransport() const override { return this; }
@@ -221,7 +221,9 @@ class TransportMap : public Map
         // everyone aboard her, for as long as you share the map she sails.
 
         /// The vessel AND everyone on her. Static because a vessel the baker gave nothing to
-        /// has no map to ask, and is then exactly what the base class says it is.
+        /// has no map to ask, and is then exactly what the base class says it is. The
+        /// append-only seam lets login reuse the blocks without forcing an early packet.
+        static void AppendVesselCreateBlocks(Transport* vessel, Player* observer, UpdateData& data);
         static void AnnounceVessel(Transport* vessel, Player* observer);
         static void RetractVessel(Transport* vessel, Player* observer);
 

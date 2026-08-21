@@ -31,6 +31,7 @@
 #include "Utilities/MathDefines.h"
 #include "Utilities/PackedValues.h"
 #include "Player.h"
+#include "LoginEffectPackets.h"
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
@@ -87,6 +88,67 @@
 #endif
 
 #include <cmath>
+
+namespace
+{
+    // Spell 836 is deliberately split around the initial object batch. The
+    // event emits START after presentation and GO on the next eligible tick.
+    class LoginEffectEvent final : public BasicEvent
+    {
+        public:
+            explicit LoginEffectEvent(Player& player) : m_player(player)
+            {
+            }
+
+            bool Execute(uint64 eTime, uint32) override
+            {
+                std::optional<LoginEffectPhase> phase =
+                    m_state.TakeNext(m_player.IsInWorld());
+                if (!phase)
+                {
+                    return true;
+                }
+
+                WorldPacket packet = *phase == LoginEffectPhase::Start ?
+                    LoginEffectPackets::BuildStart(
+                        m_player.GetObjectGuid().GetRawValue()) :
+                    LoginEffectPackets::BuildGo(
+                        m_player.GetObjectGuid().GetRawValue());
+                m_player.SendMessageToSet(&packet, true);
+
+                if (*phase == LoginEffectPhase::Start)
+                {
+                    m_player.m_Events.AddEvent(this,
+                        eTime + LoginEffectDelayBefore(LoginEffectPhase::Go),
+                        false);
+                    return false;
+                }
+                return true;
+            }
+
+        private:
+            Player& m_player;
+            LoginEffectSequenceState m_state;
+    };
+
+    class LoginCinematicRootTimeoutEvent final : public BasicEvent
+    {
+        public:
+            explicit LoginCinematicRootTimeoutEvent(Player& player)
+                : m_player(player)
+            {
+            }
+
+            bool Execute(uint64, uint32) override
+            {
+                m_player.ReleaseLoginCinematicRoot();
+                return true;
+            }
+
+        private:
+            Player& m_player;
+    };
+}
 
 #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
 
@@ -698,6 +760,10 @@ Player::~Player()
  */
 void Player::CleanupsBeforeDelete()
 {
+    // Event teardown destroys the timers; clear their independent root token
+    // before any later cleanup can attempt to release it.
+    m_loginCinematicRootOwnership.Clear();
+
     // Stop cinematic flyover if active (must happen before camera dtor)
     if (m_cinematicFlyover && m_cinematicFlyover->IsActive())
     {
@@ -3870,9 +3936,18 @@ void Player::SendUpdateWorldState(uint32 Field, uint32 Value)
  */
 void Player::SendInitWorldStates(uint32 zoneid)
 {
+    SendInitWorldStates(GetMapId(), zoneid);
+}
+
+/**
+ * Sends initial world states for an explicit client-visible map anchor.
+ * Transport passengers live on a deck map internally while the client still
+ * renders the world map sailed by the vessel.
+ */
+void Player::SendInitWorldStates(uint32 mapid, uint32 zoneid)
+{
     // data depends on zoneid/mapid...
     BattleGround* bg = GetBattleGround();
-    uint32 mapid = GetMapId();
 
     DEBUG_LOG("Sending SMSG_INIT_WORLD_STATES to Map:%u, Zone: %u", mapid, zoneid);
 
@@ -5317,8 +5392,13 @@ void Player::SetComboPoints()
 
 
 
-/* Called by WorldSession::HandlePlayerLogin */
-void Player::SendInitialPacketsBeforeAddToMap()
+/**
+ * Sends the map-independent login preamble.
+ *
+ * @param deferLoginTimeSpeed Keep time/speed for the post-admission retail
+ *        ordering instead of sending it from this legacy position.
+ */
+void Player::SendInitialPacketsBeforeAddToMap(bool deferLoginTimeSpeed)
 {
     /** This packet seems useless...
      * TODO: Work out if we need SMSG_SET_REST_START */
@@ -5344,12 +5424,10 @@ void Player::SendInitialPacketsBeforeAddToMap()
     /* Update player's honour information (does not send anything) */
     UpdateHonor();
 
-    const float game_time = 0.01666667f; // Game speed
-
-    data.Initialize(SMSG_LOGIN_SETTIMESPEED, 4 + 4);
-    data << uint32(secsToTimeBitFields(sWorld.GetGameTime()));
-    data << game_time; // Float is 4 bytes here
-    GetSession()->SendPacket(&data);
+    if (!deferLoginTimeSpeed)
+    {
+        SendLoginTimeSpeed();
+    }
 
     // Set fly flag if player is on a taxi to avoid falling to the ground
     if (IsTaxiFlying())
@@ -5361,9 +5439,54 @@ void Player::SendInitialPacketsBeforeAddToMap()
     SetMover(this);
 }
 
-/**
- * @brief Sends map-dependent initialization packets after the player is added to the world.
- */
+/** Isolates SMSG_LOGIN_SETTIMESPEED so entry ordering can defer it unchanged. */
+void Player::SendLoginTimeSpeed()
+{
+    WorldPacket data(SMSG_LOGIN_SETTIMESPEED, 8);
+    data << uint32(secsToTimeBitFields(sWorld.GetGameTime()));
+    data << float(0.01666667f);
+    GetSession()->SendPacket(&data);
+}
+
+/** Queues the visible START/GO half after the initial object batch is sent. */
+void Player::ScheduleLoginEffect()
+{
+    m_Events.AddEvent(new LoginEffectEvent(*this),
+        m_Events.CalculateTime(
+            LoginEffectDelayBefore(LoginEffectPhase::Start)));
+}
+
+void Player::BeginLoginCinematicRoot()
+{
+    if (!m_loginCinematicRootOwnership.Claim())
+    {
+        return;
+    }
+
+    // Normal cinematic completion releases first; this timer is the bounded
+    // failsafe for clients that never send completion.
+    m_Events.AddEvent(new LoginCinematicRootTimeoutEvent(*this),
+        m_Events.CalculateTime(LOGIN_CINEMATIC_ROOT_TIMEOUT_MS));
+    SetRoot(true);
+}
+
+void Player::ReleaseLoginCinematicRoot()
+{
+    // Retain the token while out of world; consuming it there would lose the
+    // only later opportunity to send the matching unroot.
+    if (!m_loginCinematicRootOwnership.ReleaseOnce(IsInWorld()))
+    {
+        return;
+    }
+
+    if (!HasAuraType(SPELL_AURA_MOD_STUN) &&
+        !HasAuraType(SPELL_AURA_MOD_ROOT))
+    {
+        // This path owns only the cinematic root; active aura roots win.
+        SetRoot(false);
+    }
+}
+
 /**
  * @brief Where this player is, for the questions the WORLD answers: a graveyard, an area
  *        trigger, anything looked up against terrain the client shipped.
@@ -5511,15 +5634,36 @@ void Player::UpdateLiftMinions()
         CONTROLLED_PET | CONTROLLED_MINIPET | CONTROLLED_GUARDIANS);
 }
 
-void Player::SendInitialPacketsAfterAddToMap()
+/**
+ * Sends map-dependent initialization after committed world entry.
+ *
+ * A non-null context means the entry hook already sent world states and
+ * time/speed before the object batch. Null preserves the legacy teleport path.
+ */
+void Player::SendInitialPacketsAfterAddToMap(InitialWorldEntryContext const* initialEntry)
 {
-    /* Update players zone */
-    uint32 newzone, newarea;
-    GetTerrain()->GetZoneAndAreaId(newzone, newarea, Where().X(), Where().Y(), Where().Z());
-    UpdateZone(newzone, newarea);                           // This calls SendInitWorldStates
+    if (initialEntry)
+    {
+        UpdateZone(initialEntry->zoneId, initialEntry->areaId,
+            !initialEntry->initialWorldStatesSent);
+        if (initialEntry->cinematicStarted)
+        {
+            BeginLoginCinematicRoot();
+        }
+        // CAST_FAILED was part of the pre-batch hook; START/GO are intentionally
+        // deferred until the client has received its initial object world.
+        ScheduleLoginEffect();
+    }
+    else
+    {
+        /* Update players zone */
+        uint32 newzone, newarea;
+        GetTerrain()->GetZoneAndAreaId(newzone, newarea, Where().X(), Where().Y(), Where().Z());
+        UpdateZone(newzone, newarea);                       // This calls SendInitWorldStates
 
-    /* Login effect spell */
-    CastSpell(this, 836, true);                             // LOGINEFFECT
+        /* Login effect spell */
+        CastSpell(this, 836, true);                         // LOGINEFFECT
+    }
 
     /** Sets aura effects that need to be sent after the player is added to the map
      * We use SendMessageToSet so that it's sent to everyone, including the player
@@ -6936,5 +7080,3 @@ void Player::KnockBackFrom(Unit* target, float horizontalSpeed, float verticalSp
     float angle = this == target ? Where().Facing() + M_PI_F : target->Where().BearingTo(this->Where());
     GetSession()->SendKnockBack(angle, horizontalSpeed, verticalSpeed);
 }
-
-

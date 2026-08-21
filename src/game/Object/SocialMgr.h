@@ -126,9 +126,9 @@ class PlayerSocial
         bool AddToSocialList(ObjectGuid friend_guid, bool ignore);
         void RemoveFromSocialList(ObjectGuid friend_guid, bool ignore);
         void SetFriendNote(ObjectGuid friend_guid, std::string note);
-        // Packet send's
-        void SendFriendList();
-        void SendIgnoreList();
+        // The owner is explicit because initial login sends before registry insertion.
+        void SendFriendList(Player* owner);
+        void SendIgnoreList(Player* owner);
         // Misc
         bool HasFriend(ObjectGuid friend_guid);
         bool HasIgnore(ObjectGuid ignore_guid);

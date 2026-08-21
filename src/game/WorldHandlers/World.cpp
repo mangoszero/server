@@ -348,7 +348,6 @@ World::AddSession_(WorldSession* s)
     if (pLimit > 0 && Sessions >= pLimit && s->GetSecurity() == SEC_PLAYER)
     {
         AddQueuedSession(s);
-        s->SendPendingAddonInfo();
         UpdateMaxSessionCounters();
         DETAIL_LOG("PlayerQueue: Account id %u is in Queue Position (%u).", s->GetAccountId(), ++QueueSize);
         return;
@@ -361,7 +360,9 @@ World::AddSession_(WorldSession* s)
     packet << uint8(0);                                     // BillingPlanFlags
     packet << uint32(0);                                    // BillingTimeRested
     s->SendPacket(&packet);
-    s->SendPendingAddonInfo();
+
+    // Addon metadata stays queued until CMSG_CHAR_ENUM. Emitting it at
+    // authentication reverses the ordering observed on the Classic client.
     s->OnAuthenticatedAdmission();
 
     UpdateMaxSessionCounters();

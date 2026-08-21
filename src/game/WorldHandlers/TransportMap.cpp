@@ -25,6 +25,7 @@
 
 #include "Utilities/MathDefines.h"
 #include "TransportMap.h"
+#include "InitialWorldEntry.h"
 
 #include <algorithm>
 #include <cmath>
@@ -401,7 +402,7 @@ std::optional<Position> TransportMap::FreeSpotNear(WorldObject const& master, fl
 
 /* ******************************** Who is aboard ************************************** */
 
-bool TransportMap::Add(Player* passenger)
+bool TransportMap::Add(Player* passenger, InitialWorldEntryHook* initialEntry)
 {
     // WHERE HE REALLY STANDS. The wire calls it an offset; the moment it is ours it is a
     // position on this map, composed with nothing.
@@ -417,22 +418,46 @@ bool TransportMap::Add(Player* passenger)
     PromoteEnvelopeNeighboursToFull(cell.GridX(), cell.GridY());
     passenger->AddToWorld();
 
+    // As on an ordinary map, derive the client-visible world anchor only after
+    // membership commits and before vessel/passenger blocks are accumulated.
+    if (initialEntry)
+    {
+        initialEntry->AfterAddToWorld(*passenger);
+    }
+
+    // Match ordinary map login: only the passenger's own initial camera may
+    // coalesce this data. Seam crossings keep their established send path.
+    std::optional<InitialWorldUpdateBatch> initialUpdates;
+    if (passenger->GetSession()->PlayerLoading() && passenger->GetCamera().GetBody() == passenger)
+    {
+        initialUpdates.emplace();
+    }
+    auto* batch = initialUpdates ? &*initialUpdates : nullptr;
+
     // The ship, then the man standing on her. Nothing else: no world to introduce, no map
     // id he could be told. Her block is not stamped into his client set -- possession of a
     // vessel is map membership, and the elimination sweep must never learn she exists.
-    UpdateData data;
+    UpdateData localData;
+    UpdateData& data = batch ? batch->Data() : localData;
     m_vessel->BuildCreateUpdateBlockForPlayer(&data, passenger);
     passenger->BuildCreateUpdateBlockForPlayer(&data, passenger);
 
-    WorldPacket packet;
-    // hasTransport, and it must be true: this packet carries the vessel and a
-    // passenger whose own block names her. The byte is written on CLASSIC and TBC
-    // only -- mangos_two omits the argument because there the field does not exist,
-    // and copying that form here tells the client there is no transport in a packet
-    // that is nothing but transport. It then has nothing to compose him against and
-    // never leaves the loading screen.
-    data.BuildPacket(&packet, true);
-    passenger->GetSession()->SendPacket(&packet);
+    if (batch)
+    {
+        batch->MarkTransport();
+    }
+    else
+    {
+        WorldPacket packet;
+        // hasTransport, and it must be true: this packet carries the vessel and a
+        // passenger whose own block names her. The byte is written on CLASSIC and TBC
+        // only -- mangos_two omits the argument because there the field does not exist,
+        // and copying that form here tells the client there is no transport in a packet
+        // that is nothing but transport. It then has nothing to compose him against and
+        // never leaves the loading screen.
+        data.BuildPacket(&packet, true);
+        passenger->GetSession()->SendPacket(&packet);
+    }
 
     // And the OTHER ships on the water she is crossing. His client is drawing that map, so
     // they are his to see, and no sweep of his will ever reach them: he is not on it.
@@ -449,15 +474,38 @@ bool TransportMap::Add(Player* passenger)
             {
                 if (other != m_vessel && other->GetMap() == sailed)
                 {
-                    AnnounceVessel(other, passenger);
+                    if (batch)
+                    {
+                        AppendVesselCreateBlocks(other, passenger, batch->Data());
+                        batch->MarkTransport();
+                    }
+                    else
+                    {
+                        AnnounceVessel(other, passenger);
+                    }
                 }
             }
         }
     }
 
     NGridType* grid = getNGrid(cell.GridX(), cell.GridY());
-    passenger->GetViewPoint().Event_AddedToWorld(&(*grid)(cell.CellX(), cell.CellY()));
-    UpdateObjectVisibility(passenger, cell, p);
+    passenger->GetViewPoint().Event_AddedToWorld(
+        &(*grid)(cell.CellX(), cell.CellY()), passenger, batch);
+
+    // The owner camera must flush exactly once before normal visibility can
+    // proceed; otherwise the client would enter with a partial deck world.
+    if (batch && !batch->WasSent())
+    {
+        if (!batch->FlushAttempted())
+        {
+            sLog.outError("Initial object update batch for passenger %u was not flushed by the owner camera", passenger->GetGUIDLow());
+        }
+        passenger->GetSession()->KickPlayer();
+    }
+    else
+    {
+        UpdateObjectVisibility(passenger, cell, p);
+    }
 
     return true;
 }
@@ -476,7 +524,7 @@ void TransportMap::Embark(Player* passenger)
                      DescribeSpatially(passenger).c_str());
 
     passenger->GetMap()->Remove(passenger, false);
-    Add(passenger);
+    Add(passenger, nullptr);
 
     // His minions come with him, NOW. UpdateMinions reconciles this once per tick and is
     // the safety net for the half-dozen other ways one arrives -- but a pet that waits a
@@ -771,7 +819,7 @@ void TransportMap::SendCrewMemberCreate(Creature* crew)
     }
 }
 
-void TransportMap::AnnounceVessel(Transport* vessel, Player* observer)
+void TransportMap::AppendVesselCreateBlocks(Transport* vessel, Player* observer, UpdateData& data)
 {
     if (!vessel || !observer)
     {
@@ -781,13 +829,23 @@ void TransportMap::AnnounceVessel(Transport* vessel, Player* observer)
     // The hull AND everyone on her. The observer's own visibility sweep would find the crew
     // too, but only when HE moves -- and a man standing on a pier watching a ship come in
     // does not move. Leaving it to the sweep gave him an empty deck until he stepped aboard.
-    UpdateData data;
     vessel->BuildCreateUpdateBlockForPlayer(&data, observer);
 
     if (TransportMap* hull = vessel->AsMap())
     {
         hull->AppendCrewCreateBlocks(data, observer);
     }
+}
+
+void TransportMap::AnnounceVessel(Transport* vessel, Player* observer)
+{
+    if (!vessel || !observer)
+    {
+        return;
+    }
+
+    UpdateData data;
+    AppendVesselCreateBlocks(vessel, observer, data);
 
     WorldPacket packet;
     data.BuildPacket(&packet, true);

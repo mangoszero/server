@@ -56,6 +56,8 @@
 #include "World.h"
 #include "ObjectMgr.h"
 #include "Player.h"
+#include "DBCStores.h"
+#include "InitialWorldEntry.h"
 #include "CinematicFlyover.h"
 #include "Guild.h"
 #include "GuildMgr.h"
@@ -359,6 +361,9 @@ bool PlayerbotHolder::AddPlayerBot(uint64 playerGuid, uint32 masterAccountId)
 void WorldSession::HandleCharEnum(QueryResult* result)
 {
     WorldPacket data(SMSG_CHAR_ENUM, 100);                  // we guess size
+    // Preserve only rows that are successfully serialized. Login must compare
+    // against what reached this character screen, not current database state.
+    CharacterEnumMapSnapshot::MapByGuid advertisedMaps;
 
     uint8 num = 0;
 
@@ -369,10 +374,13 @@ void WorldSession::HandleCharEnum(QueryResult* result)
         do
         {
             uint32 guidlow = (*result)[0].GetUInt32();
+            uint32 advertisedMap = (*result)[9].GetUInt32();
             DETAIL_LOG("Build enum data for char guid %u from account %u.", guidlow, GetAccountId());
             if (Player::BuildEnumData(result, &data))
             {
                 ++num;
+                advertisedMaps.emplace(
+                    ObjectGuid(HIGHGUID_PLAYER, guidlow).GetRawValue(), advertisedMap);
             }
         }
         while (result->NextRow());
@@ -383,6 +391,8 @@ void WorldSession::HandleCharEnum(QueryResult* result)
     data.put<uint8>(0, num);
 
     SendPacket(&data);
+    // Each enum response replaces the previous screen snapshot in full.
+    m_characterEnumMaps.Replace(std::move(advertisedMaps));
 
     // Retail 1.12.1.5875 emits its first Warden packet after the completed
     // character list. Start is idempotent for repeated enumeration requests.
@@ -396,6 +406,10 @@ void WorldSession::HandleCharEnum(QueryResult* result)
  */
 void WorldSession::HandleCharEnumOpcode(WorldPacket & /*recv_data*/)
 {
+    // Retail answers the client's enum request with the queued addon metadata
+    // before the asynchronous character-list response, not alongside AUTH_OK.
+    SendPendingAddonInfo();
+
     /// get all the data necessary for loading all characters (along with their pets) on the account
     uint32 accountId = GetAccountId();
     CharacterDatabase.AsyncPQuery([accountId](QueryResult* result)
@@ -713,8 +727,9 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recv_data)
         return;
     }
 
-    // Do not gate login on Warden. This idempotent safety net covers clients
-    // that skip character enumeration while leaving normal retail order intact.
+    // Do not gate login on addon info or Warden. These idempotent safety nets
+    // cover clients that skip character enumeration.
+    SendPendingAddonInfo();
     StartWardenBootstrap();
 
     m_playerLoading = true;
@@ -770,37 +785,63 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     /* Validation check completely, assign player to WorldSession::_player for later use */
     SetPlayer(pCurrChar);
 
-    WorldPacket data(SMSG_LOGIN_VERIFY_WORLD, 20);
-    data << pCurrChar->GetMapId();
+    // Retail omits LOGIN_VERIFY_WORLD when the committed world anchor still
+    // matches CHAR_ENUM; a server-side move between screen and login needs it.
+    WorldPacket data;
+    uint32 anchorMapId = 0;
+    float anchorX = 0.0f;
+    float anchorY = 0.0f;
+    float anchorZ = 0.0f;
+    pCurrChar->GetWorldAnchor(anchorMapId, anchorX, anchorY, anchorZ);
 
-    // ABOARD, THE OFFSET -- exactly what SMSG_NEW_WORLD carries on the teleport path, and
-    // for the same reason. The create block that follows says the player is at (0, 0, 0) on
-    // a transport, with the deck spot in the offset; sending the ship's WORLD pose here
-    // instead means the two packets describe the position with two different meanings, and
-    // the second one has an orientation the vessel never updates (Transport::Create leaves
-    // it at 1.0). The teleport path is the one that demonstrably works; this makes login
-    // say the same thing.
-    if (pCurrChar->GetTransport())
+    // A matching enum map leaves the one allowed send available for an
+    // admission failure; a normal initial send consumes it immediately.
+    LoginVerifyDeliveryState loginVerifyDelivery;
+    auto sendLoginVerifyWorld = [&]()
     {
-        Position const* aboard = pCurrChar->m_movementInfo.GetTransportPos();
-        data << aboard->x << aboard->y << aboard->z << aboard->o;
-    }
-    else
+        data.Initialize(SMSG_LOGIN_VERIFY_WORLD, 20);
+        data << pCurrChar->GetMapId();
+
+        // ABOARD, THE OFFSET -- exactly what SMSG_NEW_WORLD carries on the teleport path, and
+        // for the same reason. The create block that follows says the player is at (0, 0, 0) on
+        // a transport, with the deck spot in the offset; sending the ship's WORLD pose here
+        // instead means the two packets describe the position with two different meanings, and
+        // the second one has an orientation the vessel never updates (Transport::Create leaves
+        // it at 1.0). The teleport path is the one that demonstrably works; this makes login
+        // say the same thing.
+        if (pCurrChar->GetTransport())
+        {
+            Position const* aboard = pCurrChar->m_movementInfo.GetTransportPos();
+            data << aboard->x << aboard->y << aboard->z << aboard->o;
+        }
+        else
+        {
+            data << pCurrChar->Where().X();
+            data << pCurrChar->Where().Y();
+            data << pCurrChar->Where().Z();
+            data << pCurrChar->Where().Facing();
+        }
+
+        SendPacket(&data);
+    };
+
+    if (loginVerifyDelivery.TakeInitial(
+            HasMatchingCharacterEnumMap(playerGuid, anchorMapId)))
     {
-        data << pCurrChar->Where().X();
-        data << pCurrChar->Where().Y();
-        data << pCurrChar->Where().Z();
-        data << pCurrChar->Where().Facing();
+        sendLoginVerifyWorld();
     }
 
-    SendPacket(&data);
-
+    // The captured pre-world preamble sends account data followed by friend
+    // and ignore lists, before MOTD and map admission.
     data.Initialize(SMSG_ACCOUNT_DATA_TIMES, 128);
     for (int i = 0; i < 32; ++i)
     {
         data << uint32(0);
     }
     SendPacket(&data);
+
+    pCurrChar->GetSocial()->SendFriendList(pCurrChar);
+    pCurrChar->GetSocial()->SendIgnoreList(pCurrChar);
 
     /* 1.12.1 does not have SMSG_MOTD, so we send a server message */
     /* Used for counting number of newlines in MOTD */
@@ -893,22 +934,29 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         pCurrChar->SendCorpseReclaimDelay(true);
     }
 
-    /** Sends information required before the player can be added to the map
-     * TODO: See if we can send information about game objects here (prevent alt+f4 through object) */
-    pCurrChar->SendInitialPacketsBeforeAddToMap();
-
-    /* If it's the player's first login, send a cinematic */
-    bool isFirstLogin = !pCurrChar->getCinematic();
-    if (isFirstLogin)
+    uint32 cinematicSequenceId = 0;
+    // Validate the sequence now, but do not mark or emit the cinematic until
+    // map admission succeeds and the entry hook owns the wire position.
+    if (!pCurrChar->getCinematic())
     {
-        pCurrChar->setCinematic(1);
-
-        /* Set the start location to the player's racial starting point */
-        if (ChrRacesEntry const* rEntry = sChrRacesStore.LookupEntry(pCurrChar->getRace()))
+        if (ChrRacesEntry const* race =
+                sChrRacesStore.LookupEntry(pCurrChar->getRace()))
         {
-            pCurrChar->SendCinematicStart(rEntry->CinematicSequence);
+            if (race->CinematicSequence &&
+                sCinematicSequencesStore.LookupEntry(race->CinematicSequence))
+            {
+                cinematicSequenceId = race->CinematicSequence;
+            }
         }
     }
+    // The hook owns packets placed after committed map membership but before
+    // the first consolidated object update.
+    InitialWorldEntryHook initialEntry(cinematicSequenceId);
+
+    /** Sends information required before the player can be added to the map
+     * TODO: See if we can send information about game objects here (prevent alt+f4 through object) */
+    // Time/speed is deferred into the hook's pre-object-batch position.
+    pCurrChar->SendInitialPacketsBeforeAddToMap(true);
 
     uint32 miscRequirement = 0;
     AreaLockStatus lockStatus = AREA_LOCKSTATUS_OK;
@@ -927,8 +975,16 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     }
 
     /* This code is run if we can not add the player to the map for some reason */
-    if (lockStatus != AREA_LOCKSTATUS_OK || !pCurrChar->BoardingMap()->Add(pCurrChar))
+    if (lockStatus != AREA_LOCKSTATUS_OK ||
+        !pCurrChar->BoardingMap()->Add(pCurrChar, &initialEntry))
     {
+        // Admission can fail after normal verify suppression. Send once before
+        // corrective teleport, without duplicating an initial verify.
+        if (loginVerifyDelivery.TakeAdmissionFallback())
+        {
+            sendLoginVerifyWorld();
+        }
+
         /* Attempt to find an areatrigger to teleport the player for us */
         AreaTrigger const* at = sObjectMgr.GetGoBackTrigger(pCurrChar->GetMapId());
         if (at)
@@ -943,27 +999,27 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         }
     }
 
+    InitialWorldEntryContext const* entryContext = initialEntry.GetContext();
+    // Admission can fail without starting a far teleport. Preserve the legacy
+    // time packet when no hook had a chance to emit it.
+    if (!entryContext && !pCurrChar->IsBeingTeleportedFar())
+    {
+        pCurrChar->SendLoginTimeSpeed();
+    }
+
     sPlayerRegistry.Add(pCurrChar);
     DEBUG_LOG("Player %s added to map %i", pCurrChar->GetName(), pCurrChar->GetMapId());
 
-    /* send the player's social lists */
-    pCurrChar->GetSocial()->SendFriendList();
-    pCurrChar->GetSocial()->SendIgnoreList();
-
     /* Send packets that must be sent only after player is added to the map */
-    pCurrChar->SendInitialPacketsAfterAddToMap();
+    pCurrChar->SendInitialPacketsAfterAddToMap(entryContext);
 
-    /* If it's the player's first login, create cinematic flyover if enabled */
-    /* Note: isFirstLogin was captured before mutating getCinematic() (line 807) */
-    /* We create the flyover after the player is fully in-world (per final review) */
-    if (isFirstLogin && sConfig.GetBoolDefault("Cinematic.Flyover.Enable", false))
+    /* Create a flyover only for the cinematic actually emitted by the entry hook. */
+    if (entryContext && entryContext->cinematicStarted &&
+        sConfig.GetBoolDefault("Cinematic.Flyover.Enable", false))
     {
-        if (sChrRacesStore.LookupEntry(pCurrChar->getRace()))
-        {
-            pCurrChar->SetCinematicFlyover(
-                std::make_unique<CinematicFlyover>(pCurrChar,
-                                                   pCurrChar->getRace()));
-        }
+        pCurrChar->SetCinematicFlyover(
+            std::make_unique<CinematicFlyover>(pCurrChar,
+                                               pCurrChar->getRace()));
     }
 
     /* Mark player as online in the database */

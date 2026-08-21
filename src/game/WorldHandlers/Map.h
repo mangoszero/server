@@ -86,6 +86,8 @@ class Creature;
 class Eluna;
 #endif /* ENABLE_ELUNA */
 class TransportMap;
+class InitialWorldUpdateBatch;
+class InitialWorldEntryHook;
 class Unit;
 class WorldPacket;
 class InstanceData;
@@ -169,7 +171,7 @@ class Map : public GridRefManager<NGridType>
             return false;
         }
 
-        virtual bool Add(Player*);
+        virtual bool Add(Player*, InitialWorldEntryHook* initialEntry = nullptr);
         virtual void Remove(Player*, bool);
         template<class T> void Add(T*);
         template<class T> void Remove(T*, bool);
@@ -466,9 +468,9 @@ class Map : public GridRefManager<NGridType>
 
         void SetTimer(uint32 t) { i_gridExpiry = t < MIN_GRID_DELAY ? MIN_GRID_DELAY : t; }
 
-        void SendInitSelf(Player* player);
+        void SendInitSelf(Player* player, InitialWorldUpdateBatch* batch);
 
-        void SendInitTransports(Player* player);
+        void SendInitTransports(Player* player, InitialWorldUpdateBatch* batch);
         void SendRemoveTransports(Player* player);
 
         bool CreatureCellRelocation(Creature* creature, const Cell &new_cell);
@@ -603,7 +605,7 @@ class DungeonMap : public Map
     public:
         DungeonMap(uint32 id, time_t, uint32 InstanceId);
         ~DungeonMap();
-        bool Add(Player*) override;
+        bool Add(Player*, InitialWorldEntryHook* initialEntry = nullptr) override;
         void Remove(Player*, bool) override;
         void Update(const uint32&) override;
         bool Reset(InstanceResetMethod method);
@@ -633,7 +635,7 @@ class BattleGroundMap : public Map
         ~BattleGroundMap();
 
         void Update(const uint32&) override;
-        bool Add(Player*) override;
+        bool Add(Player*, InitialWorldEntryHook* initialEntry = nullptr) override;
         void Remove(Player*, bool) override;
         bool CanEnter(Player* player) override;
         void SetUnload();

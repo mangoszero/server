@@ -37,6 +37,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include "CharacterEnumMapSnapshot.h"
 #include "SessionProtocolPolicy.h"
 #include "WardenConfiguration.h"
 #include "Auth/BigNumber.h"
@@ -343,6 +344,13 @@ class WorldSession
         void SetPlayer(Player* plr)
         {
             _player = plr;
+        }
+
+        // Compare login against the map this session actually advertised on
+        // the character screen, not a newer database value.
+        bool HasMatchingCharacterEnumMap(ObjectGuid const& guid, uint32 mapId) const
+        {
+            return m_characterEnumMaps.Matches(guid.GetRawValue(), mapId);
         }
 
         /// Session in auth.queue currently
@@ -941,6 +949,7 @@ class WorldSession
         void LogUnprocessedTail(WorldPacket* packet);
 
         Player* _player;
+        CharacterEnumMapSnapshot m_characterEnumMaps;
         std::shared_ptr<proto::IClientLink> m_link;
         std::shared_ptr<SessionMailbox> m_mailbox;
         std::unique_ptr<WorldPacket> m_pendingAddonInfo;

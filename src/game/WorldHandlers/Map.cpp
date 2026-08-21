@@ -49,6 +49,7 @@
 #include <set>
 #include "Utilities/MathDefines.h"
 #include "Map.h"
+#include "InitialWorldEntry.h"
 #include "GameObjectModel.h"
 #include "MapManager.h"
 #include "Player.h"
@@ -704,9 +705,10 @@ void Map::ForceLoadGrid(float x, float y)
  * @brief Adds a player to the map and initializes its visible world state.
  *
  * @param player The player entering the map.
+ * @param initialEntry Optional initial-login hook; ordinary map entry passes null.
  * @return Always true after the player has been added.
  */
-bool Map::Add(Player* player)
+bool Map::Add(Player* player, InitialWorldEntryHook* initialEntry)
 {
     player->GetMapRef().link(this, player);
     player->SetMap(this);
@@ -718,12 +720,43 @@ bool Map::Add(Player* player)
     PromoteEnvelopeNeighboursToFull(cell.GridX(), cell.GridY());
     player->AddToWorld();
 
-    SendInitSelf(player);
-    SendInitTransports(player);
+    // The hook needs committed membership to derive the correct world anchor,
+    // but must finish its preamble before any object block enters the batch.
+    if (initialEntry)
+    {
+        initialEntry->AfterAddToWorld(*player);
+    }
+
+    // Coalesce only a genuine login using the player's own camera. Redirected
+    // cameras and non-login map entry retain the established packet path.
+    std::optional<InitialWorldUpdateBatch> initialUpdates;
+    if (player->GetSession()->PlayerLoading() && player->GetCamera().GetBody() == player)
+    {
+        initialUpdates.emplace();
+    }
+    auto* batch = initialUpdates ? &*initialUpdates : nullptr;
+
+    SendInitSelf(player, batch);
+    SendInitTransports(player, batch);
 
     NGridType* grid = getNGrid(cell.GridX(), cell.GridY());
-    player->GetViewPoint().Event_AddedToWorld(&(*grid)(cell.CellX(), cell.CellY()));
-    UpdateObjectVisibility(player, cell, p);
+    player->GetViewPoint().Event_AddedToWorld(
+        &(*grid)(cell.CellX(), cell.CellY()), player, batch);
+
+    // The owner camera is the sole flush point. Continuing after a missed
+    // flush would admit a client with an incomplete initial world.
+    if (batch && !batch->WasSent())
+    {
+        if (!batch->FlushAttempted())
+        {
+            sLog.outError("Initial object update batch for player %u was not flushed by the owner camera", player->GetGUIDLow());
+        }
+        player->GetSession()->KickPlayer();
+    }
+    else
+    {
+        UpdateObjectVisibility(player, cell, p);
+    }
 
 #ifdef ENABLE_ELUNA
     if (Eluna* e = GetEluna())
@@ -1877,11 +1910,12 @@ void Map::UpdateObjectVisibility(WorldObject* obj, Cell cell, CellPair cellpair)
  *
  * @param player The player receiving the initialization packets.
  */
-void Map::SendInitSelf(Player* player)
+void Map::SendInitSelf(Player* player, InitialWorldUpdateBatch* batch)
 {
     DETAIL_LOG("Creating player data for himself %u", player->GetGUIDLow());
 
-    UpdateData data;
+    UpdateData localData;
+    UpdateData& data = batch ? batch->Data() : localData;
 
     bool hasTransport = false;
 
@@ -1889,6 +1923,10 @@ void Map::SendInitSelf(Player* player)
     if (Transport* transport = player->GetTransport())
     {
         hasTransport = true;
+        if (batch)
+        {
+            batch->MarkTransport();
+        }
         transport->BuildCreateUpdateBlockForPlayer(&data, player);
 
         // The vessel is the only thing that can announce her crew -- including to the man
@@ -1902,6 +1940,13 @@ void Map::SendInitSelf(Player* player)
     // build data for self presence in world at own client (one time for map)
     player->BuildCreateUpdateBlockForPlayer(&data, player);
 
+    if (batch)
+    {
+        // The owner camera sweep appends nearby objects and performs the one
+        // flush after every self, inventory, and vessel block is present.
+        return;
+    }
+
     WorldPacket packet;
     data.BuildPacket(&packet, hasTransport);
     player->GetSession()->SendPacket(&packet);
@@ -1912,7 +1957,7 @@ void Map::SendInitSelf(Player* player)
  *
  * @param player The player receiving transport initialization data.
  */
-void Map::SendInitTransports(Player* player)
+void Map::SendInitTransports(Player* player, InitialWorldUpdateBatch* batch)
 {
     // A player joining a map takes possession of every vessel on it -- one of the four
     // events that carry transport visibility. No distance, no grid: you share her map, you
@@ -1922,7 +1967,15 @@ void Map::SendInitTransports(Player* player)
     // logging in aboard was handed no hull at all, which is a man standing in mid-air.
     if (TransportMap* hull = AsTransport())
     {
-        TransportMap::AnnounceVessel(hull->Vessel(), player);
+        if (batch)
+        {
+            TransportMap::AppendVesselCreateBlocks(hull->Vessel(), player, batch->Data());
+            batch->MarkTransport();
+        }
+        else
+        {
+            TransportMap::AnnounceVessel(hull->Vessel(), player);
+        }
         return;
     }
 
@@ -1944,7 +1997,15 @@ void Map::SendInitTransports(Player* player)
             continue;
         }
 
-        TransportMap::AnnounceVessel(vessel, player);
+        if (batch)
+        {
+            TransportMap::AppendVesselCreateBlocks(vessel, player, batch->Data());
+            batch->MarkTransport();
+        }
+        else
+        {
+            TransportMap::AnnounceVessel(vessel, player);
+        }
     }
 }
 
@@ -2437,7 +2498,7 @@ void DungeonMap::InitVisibilityDistance()
 /**
  * Do map specific checks and add the player to the map if successful.
  */
-bool DungeonMap::Add(Player* player)
+bool DungeonMap::Add(Player* player, InitialWorldEntryHook* initialEntry)
 {
     // TODO: Not sure about checking player level: already done in HandleAreaTriggerOpcode
     // GMs still can teleport player in instance.
@@ -2560,7 +2621,7 @@ bool DungeonMap::Add(Player* player)
     m_unloadWhenEmpty = false;
 
     // this will acquire the same mutex so it can not be in the previous block
-    Map::Add(player);
+    Map::Add(player, initialEntry);
 
     return true;
 }
@@ -2823,7 +2884,7 @@ bool BattleGroundMap::CanEnter(Player* player)
  * @param player The player entering the battleground.
  * @return true if the player was added; otherwise false.
  */
-bool BattleGroundMap::Add(Player* player)
+bool BattleGroundMap::Add(Player* player, InitialWorldEntryHook* initialEntry)
 {
     if (!CanEnter(player))
     {
@@ -2833,7 +2894,7 @@ bool BattleGroundMap::Add(Player* player)
     // reset instance validity, battleground maps do not homebind
     player->m_InstanceValid = true;
 
-    return Map::Add(player);
+    return Map::Add(player, initialEntry);
 }
 
 /**

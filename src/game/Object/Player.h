@@ -87,6 +87,7 @@
 #include "PetMgr.h"                                          // held by value on Player; owns stable-slot count + temp-unsummon pet number
 #include "BattleGround.h"
 #include "DBCStores.h"
+#include "InitialWorldEntry.h"
 #include "SharedDefines.h"
 #include "Chat.h"
 #include "GMTicketMgr.h"
@@ -1189,8 +1190,11 @@ class Player : public Unit
             return Where().Z() < m_lastFallZ;
         }
 
-        void SendInitialPacketsBeforeAddToMap(); // Send initial packets before adding the player to the map
-        void SendInitialPacketsAfterAddToMap(); // Send initial packets after adding the player to the map
+        // A context is supplied only for the initial login lifecycle; null keeps
+        // ordinary teleport callers on their established packet sequence.
+        void SendInitialPacketsBeforeAddToMap(bool deferLoginTimeSpeed = false);
+        void SendInitialPacketsAfterAddToMap(InitialWorldEntryContext const* initialEntry = nullptr);
+        void SendLoginTimeSpeed();
         void SendInstanceResetWarning(uint32 mapid, uint32 time); // Send instance reset warning
 
         // Get the NPC if the player can interact with it
@@ -2498,7 +2502,7 @@ class Player : public Unit
         void SetFFAPvP(bool state);
 
         // Update the player's zone
-        void UpdateZone(uint32 newZone, uint32 newArea);
+        void UpdateZone(uint32 newZone, uint32 newArea, bool sendInitialWorldStates = true);
 
         // Update the player's area
         void UpdateArea(uint32 newArea);
@@ -3178,6 +3182,7 @@ class Player : public Unit
         void CastItemUseSpell(Item* item, SpellCastTargets const& targets);
 
         void SendInitWorldStates(uint32 zone);
+        void SendInitWorldStates(uint32 mapId, uint32 zone);
         void SendUpdateWorldState(uint32 Field, uint32 Value);
 
         // Send a direct message to the client
@@ -3550,6 +3555,11 @@ class Player : public Unit
 
         // Set the cinematic flyover manager
         void SetCinematicFlyover(std::unique_ptr<CinematicFlyover> flyover) { m_cinematicFlyover = std::move(flyover); }
+
+        // Initial-login presentation state; unrelated spell roots are not owned here.
+        void ScheduleLoginEffect();
+        void BeginLoginCinematicRoot();
+        void ReleaseLoginCinematicRoot();
 
         // Forced speed changes
         uint8 m_forced_speed_changes[MAX_MOVE_TYPE];
@@ -4059,6 +4069,8 @@ class Player : public Unit
 
         // Cinematic flyover manager (optional, for first-login intro visibility)
         std::unique_ptr<CinematicFlyover> m_cinematicFlyover;
+
+        LoginCinematicRootOwnership m_loginCinematicRootOwnership;
 
         // Countdown (ms) for the periodic observer-side visibility sweep
         uint32 m_visibilityObserverSweepTimer;

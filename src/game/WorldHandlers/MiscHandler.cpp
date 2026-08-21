@@ -603,7 +603,7 @@ void WorldSession::HandleStandStateChangeOpcode(WorldPacket& recv_data)
 void WorldSession::HandleFriendListOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_FRIEND_LIST");
-    _player->GetSocial()->SendFriendList();
+    _player->GetSocial()->SendFriendList(_player);
 }
 
 
@@ -967,6 +967,8 @@ void WorldSession::HandleCompleteCinematic(WorldPacket& /*recv_data*/)
                 flyover->Stop();
             }
         }
+        // Releases only the temporary root claimed by the initial-login cinematic.
+        player->ReleaseLoginCinematicRoot();
     }
 }
 

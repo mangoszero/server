@@ -71,6 +71,10 @@ set(SRC_GRP_TESTS
     PlayerbotEventQueueTest.cpp
     PlayerbotPacketPolicyTest.cpp
     PlayerbotPerformanceMonitorTest.cpp
+    # These pure packet builders are linked directly so the wire-layout tests
+    # do not pull the complete game library and its mangosd-only globals.
+    LoginSequenceTest.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/WorldHandlers/LoginEffectPackets.cpp
     # Compiled in, not linked from `game`: game.lib pulls the whole server, down to the
     # database globals that only mangosd defines. These three know nothing of it.
     ${CMAKE_SOURCE_DIR}/src/game/WorldHandlers/DynamicCollision.cpp
@@ -137,6 +141,11 @@ add_test(NAME warden_boundary
     COMMAND ${CMAKE_COMMAND}
         -DSOURCE_ROOT=${CMAKE_SOURCE_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckWardenBoundary.cmake)
+
+add_test(NAME login_object_batching
+    COMMAND ${CMAKE_COMMAND}
+        -DSOURCE_ROOT=${CMAKE_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckLoginObjectBatching.cmake)
 
 add_test(NAME spatial_boundary
     COMMAND ${CMAKE_COMMAND}

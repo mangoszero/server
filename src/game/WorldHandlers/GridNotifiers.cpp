@@ -77,6 +77,9 @@ void VisibleChangesNotifier::Visit(CameraMapType& m)
 void VisibleNotifier::Notify()
 {
     Player& player = *i_camera.GetOwner();
+    // Initial login aliases the earlier self/transport accumulator; every
+    // other visibility pass continues to use this notifier's local data.
+    UpdateData& data = Data();
     // at this moment i_clientGUIDs have guids that not iterate at grid level checks
     // but exist one case when this possible and object not out of range: transports
     if (player.GetMap()->AsTransport())
@@ -89,7 +92,7 @@ void VisibleNotifier::Notify()
             {
                 // ignore far sight case
                 mate->UpdateVisibilityOf(mate, &player);
-                player.UpdateVisibilityOf(&player, mate, i_data, i_visibleNow);
+                player.UpdateVisibilityOf(&player, mate, data, i_visibleNow);
                 i_clientGUIDs.erase(mate->GetObjectGuid());
             }
         }
@@ -101,7 +104,7 @@ void VisibleNotifier::Notify()
     // correct without anybody keeping a list.
 
     // generate outOfRange for not iterate objects
-    i_data.AddOutOfRangeGUID(i_clientGUIDs);
+    data.AddOutOfRangeGUID(i_clientGUIDs);
     for (GuidSet::iterator itr = i_clientGUIDs.begin(); itr != i_clientGUIDs.end(); ++itr)
     {
         player.m_clientGUIDs.erase(*itr);
@@ -110,15 +113,21 @@ void VisibleNotifier::Notify()
             itr->GetString().c_str(), player.GetGuidStr().c_str());
     }
 
-    if (i_data.HasData())
+    if (data.HasData())
     {
         // send create/outofrange packet to player (except player create updates that already sent using SendUpdateToPlayer)
         WorldPacket packet;
-        i_data.BuildPacket(&packet);
+        bool const built = BuildPacket(&packet);
+        if (i_initialBatch && !built)
+        {
+            sLog.outError("Failed to build initial object update batch for player %u", player.GetGUIDLow());
+            player.GetSession()->KickPlayer();
+            return;
+        }
         player.GetSession()->SendPacket(&packet);
 
         // send out of range to other players if need
-        GuidSet const& oor = i_data.GetOutOfRangeGUIDs();
+        GuidSet const& oor = data.GetOutOfRangeGUIDs();
         for (GuidSet::const_iterator iter = oor.begin(); iter != oor.end(); ++iter)
         {
             if (!iter->IsPlayer())
@@ -130,6 +139,13 @@ void VisibleNotifier::Notify()
             {
                 plr->UpdateVisibilityOf(plr->GetCamera().GetBody(), &player);
             }
+        }
+
+        if (i_initialBatch)
+        {
+            // Consume the shared batch only after its one packet was built and
+            // sent; Map::Add fails closed if this acknowledgement is absent.
+            i_initialBatch->MarkSent();
         }
     }
 

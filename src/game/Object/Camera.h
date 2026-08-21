@@ -35,6 +35,7 @@ class WorldObject;
 class UpdateData;
 class WorldPacket;
 class Player;
+class InitialWorldUpdateBatch;
 
 /// Camera - object-receiver. Receives broadcast packets from nearby worldobjects, object visibility changes and sends them to client
 class Camera
@@ -74,7 +75,7 @@ class Camera
 
     private:
         // called when viewpoint changes visibility state
-        void Event_AddedToWorld();
+        void Event_AddedToWorld(InitialWorldUpdateBatch* batch);
         void Event_RemovedFromWorld();
         void Event_Moved();
         void Event_ViewPointVisibilityChanged();
@@ -83,6 +84,7 @@ class Camera
         WorldObject* m_source;
 
         void UpdateForCurrentViewPoint();
+        void UpdateVisibilityForOwnerInBatch(InitialWorldUpdateBatch* batch);
 
     public:
         GridReference<Camera>& GetGridRef()
@@ -128,10 +130,17 @@ class ViewPoint
         bool hasViewers() const { return !m_cameras.empty(); }
 
         // these events are called when viewpoint changes visibility state
-        void Event_AddedToWorld(GridType* grid)
+        void Event_AddedToWorld(GridType* grid, Player* batchOwner = NULL,
+                                InitialWorldUpdateBatch* batch = NULL)
         {
             m_grid = grid;
-            CameraCall(&Camera::Event_AddedToWorld);
+            // A viewpoint may have several cameras. Only the logging-in
+            // player's own camera may consume the shared initial batch.
+            for (CameraList::iterator itr = m_cameras.begin(); itr != m_cameras.end();)
+            {
+                Camera* c = *(itr++);
+                c->Event_AddedToWorld(c->GetOwner() == batchOwner ? batch : NULL);
+            }
         }
 
         void Event_RemovedFromWorld()

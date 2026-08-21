@@ -162,14 +162,17 @@ void Camera::ResetView(bool update_far_sight_field /*= true*/)
 
 /**
  * @brief Handles the camera being added to the world.
+ *
+ * @param batch Shared initial-login data for the owner camera, or null for an
+ *        ordinary visibility rebuild.
  */
-void Camera::Event_AddedToWorld()
+void Camera::Event_AddedToWorld(InitialWorldUpdateBatch* batch)
 {
     GridType* grid = m_source->GetViewPoint().m_grid;
     MANGOS_ASSERT(grid);
     grid->AddWorldObject(this);
 
-    UpdateVisibilityForOwner();
+    UpdateVisibilityForOwnerInBatch(batch);
 }
 
 /**
@@ -222,6 +225,15 @@ void Camera::UpdateVisibilityOf(WorldObject* target, UpdateData& data, std::set<
  */
 void Camera::UpdateVisibilityForOwner()
 {
+    UpdateVisibilityForOwnerInBatch(NULL);
+}
+
+/**
+ * Rebuilds owner visibility while optionally appending create blocks to the
+ * initial self/transport batch instead of sending a second update packet.
+ */
+void Camera::UpdateVisibilityForOwnerInBatch(InitialWorldUpdateBatch* batch)
+{
     // Honor a per-viewpoint visibility distance override (e.g. the cinematic
     // flyover body widens the populate radius); otherwise use the map default.
     float visibilityDistance = m_source->GetVisibilityDistanceOverride();
@@ -230,7 +242,7 @@ void Camera::UpdateVisibilityForOwner()
         visibilityDistance = m_source->GetMap()->GetVisibilityDistance();
     }
 
-    MaNGOS::VisibleNotifier notifier(*this);
+    MaNGOS::VisibleNotifier notifier(*this, batch);
     Cell::VisitAllObjects(m_source, notifier, visibilityDistance, false);
 
     // The other side of a vessel's boundary. A deck and the shore it sails past are two
