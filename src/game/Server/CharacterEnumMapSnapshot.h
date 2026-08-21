@@ -56,4 +56,37 @@ class CharacterEnumMapSnapshot
         MapByGuid m_maps;
 };
 
+/**
+ * One-shot gate for SMSG_LOGIN_VERIFY_WORLD. An unchanged character-screen
+ * destination omits the initial packet, while an admission failure can still
+ * claim the fallback send without risking a duplicate.
+ */
+class LoginVerifyDeliveryState
+{
+    public:
+        bool TakeInitial(bool matchingEnumMap)
+        {
+            return matchingEnumMap ? false : Take();
+        }
+
+        bool TakeAdmissionFallback()
+        {
+            return Take();
+        }
+
+    private:
+        bool Take()
+        {
+            if (m_sent)
+            {
+                return false;
+            }
+
+            m_sent = true;
+            return true;
+        }
+
+        bool m_sent = false;
+};
+
 #endif

@@ -98,6 +98,21 @@ TEST(CharacterEnumMapSnapshot_replaces_the_previous_response)
     CHECK(snapshot.Matches(0x22, 1));
 }
 
+TEST(LoginVerifyDelivery_restores_suppressed_verify_on_admission_fallback)
+{
+    LoginVerifyDeliveryState delivery;
+    CHECK(!delivery.TakeInitial(true));
+    CHECK(delivery.TakeAdmissionFallback());
+    CHECK(!delivery.TakeAdmissionFallback());
+}
+
+TEST(LoginVerifyDelivery_does_not_duplicate_an_initial_verify_on_fallback)
+{
+    LoginVerifyDeliveryState delivery;
+    CHECK(delivery.TakeInitial(false));
+    CHECK(!delivery.TakeAdmissionFallback());
+}
+
 TEST(LoginSocialLists_accept_the_loaded_player_before_registry_insertion)
 {
     CHECK(HasExplicitLoginSocialRecipient<PlayerSocial>::value);

@@ -794,7 +794,10 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     float anchorZ = 0.0f;
     pCurrChar->GetWorldAnchor(anchorMapId, anchorX, anchorY, anchorZ);
 
-    if (!HasMatchingCharacterEnumMap(playerGuid, anchorMapId))
+    // A matching enum map leaves the one allowed send available for an
+    // admission failure; a normal initial send consumes it immediately.
+    LoginVerifyDeliveryState loginVerifyDelivery;
+    auto sendLoginVerifyWorld = [&]()
     {
         data.Initialize(SMSG_LOGIN_VERIFY_WORLD, 20);
         data << pCurrChar->GetMapId();
@@ -820,6 +823,12 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         }
 
         SendPacket(&data);
+    };
+
+    if (loginVerifyDelivery.TakeInitial(
+            HasMatchingCharacterEnumMap(playerGuid, anchorMapId)))
+    {
+        sendLoginVerifyWorld();
     }
 
     // The captured pre-world preamble sends account data followed by friend
@@ -969,6 +978,13 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     if (lockStatus != AREA_LOCKSTATUS_OK ||
         !pCurrChar->BoardingMap()->Add(pCurrChar, &initialEntry))
     {
+        // Admission can fail after normal verify suppression. Send once before
+        // corrective teleport, without duplicating an initial verify.
+        if (loginVerifyDelivery.TakeAdmissionFallback())
+        {
+            sendLoginVerifyWorld();
+        }
+
         /* Attempt to find an areatrigger to teleport the player for us */
         AreaTrigger const* at = sObjectMgr.GetGoBackTrigger(pCurrChar->GetMapId());
         if (at)
