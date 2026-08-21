@@ -83,7 +83,9 @@ enum class LoginEffectPhase
 
 constexpr uint32 LoginEffectDelayBefore(LoginEffectPhase phase)
 {
-    return phase == LoginEffectPhase::Start ? 500 : 1;
+    // The one-second START grace is presentation time, not spell cast time: it
+    // keeps the short visual from being consumed behind the loading transition.
+    return phase == LoginEffectPhase::Start ? 1000 : 1;
 }
 
 class LoginEffectSequenceState

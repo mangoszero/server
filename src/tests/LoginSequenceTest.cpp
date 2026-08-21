@@ -164,7 +164,7 @@ TEST(LoginEffectSequence_has_two_ordered_phases_and_cancels_out_of_world)
 
 TEST(LoginEffectTiming_delays_start_past_the_initial_loading_transition)
 {
-    CHECK_EQ(LoginEffectDelayBefore(LoginEffectPhase::Start), uint32(500));
+    CHECK_EQ(LoginEffectDelayBefore(LoginEffectPhase::Start), uint32(1000));
 }
 
 TEST(LoginEffectTiming_keeps_go_on_the_following_event_tick)
