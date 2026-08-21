@@ -653,8 +653,9 @@ void CreatureAI::SendAIEventAround(AIEventType eventType, Unit* pInvoker, uint32
 
         if (!receiverList.empty())
         {
-            AiDelayEventAround* e = new AiDelayEventAround(eventType, pInvoker ? pInvoker->GetObjectGuid() : ObjectGuid(), *m_creature, receiverList, miscValue);
-            m_creature->m_Events.AddEvent(e, m_creature->m_Events.CalculateTime(uiDelay));
+            m_creature->m_Events.AddEvent(
+                std::unique_ptr<BasicEvent>(new AiDelayEventAround(eventType, pInvoker ? pInvoker->GetObjectGuid() : ObjectGuid(), *m_creature, receiverList, miscValue)),
+                m_creature->m_Events.CalculateTime(uiDelay));
         }
     }
 }

@@ -6455,7 +6455,8 @@ void Unit::ScheduleAINotify(uint32 delay)
 {
     if (!IsAINotifyScheduled())
     {
-        m_Events.AddEvent(new RelocationNotifyEvent(*this), m_Events.CalculateTime(delay));
+        m_Events.AddEvent(std::unique_ptr<BasicEvent>(new RelocationNotifyEvent(*this)),
+                          m_Events.CalculateTime(delay));
     }
 }
 

@@ -2,7 +2,11 @@ name: Linux Build (GCC + Clang)
 
 on:
   push:
-    branches: [ master, united, devel ]
+    branches: [ '**' ]
+    paths-ignore:
+      - '**.md'
+      - 'extra/doc/**'
+      - 'LICENSE'
   pull_request:
     branches: [ master, united ]
 

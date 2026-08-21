@@ -2157,9 +2157,8 @@ void Creature::ForcedDespawn(uint32 timeMSToDespawn)
 {
     if (timeMSToDespawn)
     {
-        ForcedDespawnDelayEvent* pEvent = new ForcedDespawnDelayEvent(*this);
-
-        m_Events.AddEvent(pEvent, m_Events.CalculateTime(timeMSToDespawn));
+        m_Events.AddEvent(std::unique_ptr<BasicEvent>(new ForcedDespawnDelayEvent(*this)),
+                          m_Events.CalculateTime(timeMSToDespawn));
         return;
     }
 

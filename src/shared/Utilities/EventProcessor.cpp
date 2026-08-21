@@ -23,123 +23,268 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include <utility>
 #include "EventProcessor.h"
 
-/**
- * @brief Construct a new Event Processor::Event Processor object
- * Initializes member variables m_time and m_aborting.
- */
-EventProcessor::EventProcessor()
-{
-    m_time = 0;
-    m_aborting = false;
-}
+#include <utility>
 
-/**
- * @brief Destroy the Event Processor::Event Processor object
- * Calls KillAllEvents with force set to true.
- */
+namespace Events
+{
+
 EventProcessor::~EventProcessor()
 {
     KillAllEvents(true);
 }
 
-/**
- * @brief Updates the event processor with the given time.
- *
- * @param p_time Time to update the event processor with.
- */
-void EventProcessor::Update(uint32 p_time)
+bool EventProcessor::DeliverAbort(BasicEvent& event, std::uint64_t time)
 {
-    // update time
-    m_time += p_time;
-
-    // main event loop
-    EventList::iterator i;
-    while (((i = m_events.begin()) != m_events.end()) && i->first <= m_time)
+    if (event.m_aborted)
     {
-        // get and remove event from queue
-        BasicEvent* Event = i->second;
-        m_events.erase(i);
+        return false;
+    }
 
-        if (!Event->to_Abort)
+    event.m_aborted = true;
+    event.Abort(time);
+    return true;
+}
+
+void EventProcessor::Update(std::uint32_t elapsed)
+{
+    m_time += elapsed;
+    ++m_pass;
+
+    while (!m_events.empty())
+    {
+        auto it = m_events.begin();
+        if (it->first > m_time)
         {
-            if (Event->Execute(m_time, p_time))
-            {
-                // completely destroy event if it is not re-added
-                delete Event;
-            }
+            break;
         }
-        else
+
+        // Queued during THIS pass, so it waits for the next one. An event that
+        // re-adds itself for the current moment would otherwise be picked up
+        // again immediately, and Update would never return.
+        if (it->second && it->second->m_queuedPass == m_pass)
         {
-            Event->Abort(m_time);
-            delete Event;
+            break;
+        }
+
+        // Ownership moves OUT of the map before the event runs. That ordering is
+        // what makes re-entrancy safe: while Execute is running, the map holds
+        // no pointer to this event, so anything Execute triggers -- another
+        // Update, a KillAllEvents, the owner's destruction -- cannot reach it
+        // and cannot destroy it twice.
+        std::unique_ptr<BasicEvent> event = std::move(it->second);
+        m_events.erase(it);
+
+        if (!event)
+        {
+            continue;
+        }
+
+        if (event->IsAbortRequested())
+        {
+            DeliverAbort(*event, m_time);
+            continue;   // the unique_ptr destroys it
+        }
+
+        if (!event->Execute(m_time, elapsed))
+        {
+            // The event re-added itself, here or elsewhere, and that insertion
+            // is now its owner. Releasing is what stops this unique_ptr from
+            // destroying an object the queue is holding.
+            //
+            // An Execute that returns false WITHOUT re-adding leaks the event.
+            // That is the contract's one sharp edge and it cannot be detected
+            // from here -- the event may legitimately have gone to a processor
+            // this one has never heard of.
+            static_cast<void>(event.release());
         }
     }
 }
 
-/**
- * @brief Kills all events in the event processor.
- *
- * @param force If true, forces the deletion of all events.
- */
 void EventProcessor::KillAllEvents(bool force)
 {
-    // prevent event insertions
+    // Read by AddEvent and Reschedule, which refuse while it is set: an event
+    // queued from an Abort handler would land in a container that is being
+    // emptied two lines later.
+    //
+    // ===== SAVED AND RESTORED, BECAUSE THIS NESTS =====
+    //
+    // Abort() is virtual and runs game code, and game code can call
+    // KillAllEvents again. An inner call that finished by storing `false`
+    // outright would leave the OUTER call delivering aborts with the guard
+    // switched off, and an AddEvent from any later handler accepted into a
+    // processor that is in the middle of destroying its queue.
+    //
+    // Restoring the previous value instead makes the depth irrelevant: the inner
+    // call puts back `true`, and only the outermost one puts back `false`.
+    // ==================================================
+    const bool wasAborting = m_aborting;
     m_aborting = true;
 
-    // first, abort all existing events
-    for (EventList::iterator i = m_events.begin(); i != m_events.end();)
+    if (force)
     {
-        EventList::iterator i_old = i;
-        ++i;
+        // Tell any non-forced pass further up the stack that its survivors are
+        // not to be re-queued. Its container is out of reach from here.
+        m_forceRequested = true;
 
-        i_old->second->to_Abort = true;
-        i_old->second->Abort(m_time);
-        if (force || i_old->second->IsDeletable())
+        // Move the whole queue out FIRST, then destroy.
+        //
+        // Destroying them in place would leave the map full of dangling
+        // pointers between the first destruction and the clear -- and Abort() is
+        // virtual and runs game code, so anything it touches that reaches back
+        // into this processor would walk them.
+        std::multimap<std::uint64_t, std::unique_ptr<BasicEvent>> doomed;
+        doomed.swap(m_events);
+
+        for (auto& entry : doomed)
         {
-            delete i_old->second;
-
-            if (!force)                                     // need per-element cleanup
+            if (entry.second)
             {
-                m_events.erase(i_old);
+                entry.second->RequestAbort();
+                DeliverAbort(*entry.second, m_time);
             }
+        }
+
+        // doomed goes out of scope here and destroys every event.
+        //
+        // The request is left standing for a non-forced pass higher up to read,
+        // and cleared only by the outermost call -- otherwise it would survive
+        // into the next unrelated kill and drop survivors nobody asked to drop.
+        if (!wasAborting)
+        {
+            m_forceRequested = false;
+        }
+
+        m_aborting = wasAborting;
+        return;
+    }
+
+    // ===== NOT ITERATED WHILE GAME CODE RUNS =====
+    //
+    // Non-forced: abort everything, but keep what is not yet deletable. Abort is
+    // virtual, it runs game code, and that code can call KillAllEvents(true) --
+    // which swaps the whole map out from under any iterator this function is
+    // holding. AddEvent is refused during an abort, so insertion is not the
+    // hazard; the swap is, and no flag prevents it.
+    //
+    // So the queue is moved out first and put back afterwards, the same shape the
+    // forced branch already uses. While the handlers run, m_events is a container
+    // they are welcome to do anything to.
+    // =============================================
+    std::multimap<std::uint64_t, std::unique_ptr<BasicEvent>> pending;
+    pending.swap(m_events);
+
+    std::multimap<std::uint64_t, std::unique_ptr<BasicEvent>> survivors;
+
+    // Saved and restored for the same reason m_aborting is: this nests.
+    const bool hadForceRequest = m_forceRequested;
+    m_forceRequested = false;
+
+    for (auto& entry : pending)
+    {
+        if (!entry.second)
+        {
+            continue;
+        }
+
+        entry.second->RequestAbort();
+        DeliverAbort(*entry.second, m_time);
+
+        if (!entry.second->IsDeletable())
+        {
+            // Stays queued. A later Update will find the abort request and
+            // destroy it -- WITHOUT calling Abort again, because m_aborted is
+            // now set.
+            survivors.emplace(entry.first, std::move(entry.second));
+        }
+
+        // Anything else is destroyed with `pending`, at the end of this scope.
+    }
+
+    // A handler asked for a forced kill while this pass was running, and it
+    // found nothing to destroy because the queue was already in `pending`.
+    // Honouring it here is what stops "force" from being downgraded: the
+    // survivors are dropped rather than re-queued, and `survivors` destroys
+    // them on the way out. They were aborted once already, and DeliverAbort
+    // will not fire a second time.
+    if (!m_forceRequested)
+    {
+        // Whatever a handler queued in the meantime keeps its place; the
+        // survivors are merged back in rather than overwriting it.
+        for (auto& entry : survivors)
+        {
+            m_events.emplace(entry.first, std::move(entry.second));
         }
     }
 
-    // fast clear event list (in force case)
-    if (force)
-    {
-        m_events.clear();
-    }
+    m_forceRequested = hadForceRequest;
+    m_aborting = wasAborting;
 }
 
-/**
- * @brief Adds an event to the event processor.
- *
- * @param Event Pointer to the event to add.
- * @param e_time Execution time of the event.
- * @param set_addtime If true, sets the add time of the event.
- */
-void EventProcessor::AddEvent(BasicEvent* Event, uint64 e_time, bool set_addtime)
+bool EventProcessor::AddEvent(std::unique_ptr<BasicEvent> event,
+                              std::uint64_t executionTime,
+                              bool setAddTime)
 {
-    if (set_addtime)
+    if (!event)
     {
-        Event->m_addTime = m_time;
+        return false;
     }
 
-    Event->m_execTime = e_time;
-    m_events.insert(std::pair<uint64, BasicEvent*>(e_time, Event));
+    if (m_aborting)
+    {
+        // Refused, and cleaned up rather than dropped. The event is aborted so
+        // that whatever it was holding is released on the way out.
+        event->RequestAbort();
+        DeliverAbort(*event, m_time);
+        return false;
+    }
+
+    if (setAddTime)
+    {
+        event->m_addTime = m_time;
+    }
+    event->m_execTime = executionTime;
+    event->m_queuedPass = m_pass;
+
+    m_events.emplace(executionTime, std::move(event));
+    return true;
 }
 
-/**
- * @brief Calculates the time with the given offset.
- *
- * @param t_offset Time offset to add.
- * @return uint64 Calculated time.
- */
-uint64 EventProcessor::CalculateTime(uint64 t_offset) const
+bool EventProcessor::Reschedule(BasicEvent* event,
+                                std::uint64_t executionTime,
+                                bool setAddTime)
 {
-    return m_time + t_offset;
+    if (!event)
+    {
+        return false;
+    }
+
+    if (m_aborting)
+    {
+        return false;
+    }
+
+    // Already queued: adopting it a second time would put two unique_ptrs on one
+    // object, and the second destruction is a double free. Linear, but the scan
+    // only runs on the re-add path and these queues are short.
+    for (const auto& entry : m_events)
+    {
+        if (entry.second.get() == event)
+        {
+            return false;
+        }
+    }
+
+    if (setAddTime)
+    {
+        event->m_addTime = m_time;
+    }
+    event->m_execTime = executionTime;
+    event->m_queuedPass = m_pass;
+
+    m_events.emplace(executionTime, std::unique_ptr<BasicEvent>(event));
+    return true;
 }
+
+} // namespace Events

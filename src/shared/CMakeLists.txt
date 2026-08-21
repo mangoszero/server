@@ -169,6 +169,24 @@ set(SRC_GRP_POLICIES
 )
 source_group("Policies" FILES ${SRC_GRP_POLICIES})
 
+# Running in the background: one interface, the host picks the implementation.
+# The server's own loop is handed over as a parameter, so main() has one code
+# path instead of two #ifdef-ed halves that drift.
+set(SRC_GRP_PROCESS
+  Process/Process.h
+  Process/ProcessCommon.cpp
+)
+if(WIN32)
+    list(APPEND SRC_GRP_PROCESS Process/WindowsProcess.cpp)
+else()
+    list(APPEND SRC_GRP_PROCESS Process/PosixProcess.cpp)
+endif()
+source_group("Process" FILES ${SRC_GRP_PROCESS})
+
+# Kept for realmd, which is a separate repository and still includes these
+# headers; mangosd builds against Process/ above. shared is a static library, so
+# these objects are simply not pulled into a link that does not name them.
+# WheatyExceptionReport is unrelated to services and is needed regardless.
 if(WIN32)
     set(SRC_GRP_SVC
       Win/ServiceWin32.cpp
@@ -251,6 +269,7 @@ add_library(shared STATIC
     ${SRC_GRP_THREAD}
     ${SRC_GRP_PLATFORM}
     ${SRC_GRP_POLICIES}
+    ${SRC_GRP_PROCESS}
     ${SRC_GRP_SVC}
     ${SRC_GRP_UTILITIES}
     ${CMAKE_CURRENT_BINARY_DIR/revision_data.h}
@@ -286,6 +305,10 @@ target_link_libraries(shared
         # Winsock + the AcceptEx/GetAcceptExSockaddrs extensions used by IocpServer.
         $<$<BOOL:${WIN32}>:ws2_32>
         $<$<BOOL:${WIN32}>:mswsock>
+        # The service control manager, for Process/WindowsProcess.cpp. Named
+        # rather than relied on: MSVC's default library set happens to include
+        # it, and that is not something to build on.
+        $<$<BOOL:${WIN32}>:advapi32>
         $<$<BOOL:${MANGOS_USE_IO_URING}>:${URING_LIBRARY}>
     PRIVATE
         mangos_openssl_strict
