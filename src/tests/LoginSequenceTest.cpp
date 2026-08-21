@@ -152,11 +152,21 @@ TEST(LoginCinematicRootOwnership_releases_exactly_once)
     LoginCinematicRootOwnership ownership;
     CHECK(ownership.Claim());
     CHECK(!ownership.Claim());
-    CHECK(ownership.ReleaseOnce());
-    CHECK(!ownership.ReleaseOnce());
+    CHECK(ownership.ReleaseOnce(true));
+    CHECK(!ownership.ReleaseOnce(true));
     CHECK(!ownership.IsOwned());
 
     CHECK(ownership.Claim());
     ownership.Clear();
-    CHECK(!ownership.ReleaseOnce());
+    CHECK(!ownership.ReleaseOnce(true));
+}
+
+TEST(LoginCinematicRootOwnership_retains_ownership_until_release_is_actionable)
+{
+    LoginCinematicRootOwnership ownership;
+    CHECK(ownership.Claim());
+    CHECK(!ownership.ReleaseOnce(false));
+    CHECK(ownership.IsOwned());
+    CHECK(ownership.ReleaseOnce(true));
+    CHECK(!ownership.IsOwned());
 }

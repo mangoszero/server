@@ -5468,14 +5468,17 @@ void Player::BeginLoginCinematicRoot()
 
 void Player::ReleaseLoginCinematicRoot()
 {
-    if (!m_loginCinematicRootOwnership.ReleaseOnce())
+    // Retain the token while out of world; consuming it there would lose the
+    // only later opportunity to send the matching unroot.
+    if (!m_loginCinematicRootOwnership.ReleaseOnce(IsInWorld()))
     {
         return;
     }
 
-    if (IsInWorld() && !HasAuraType(SPELL_AURA_MOD_STUN) &&
+    if (!HasAuraType(SPELL_AURA_MOD_STUN) &&
         !HasAuraType(SPELL_AURA_MOD_ROOT))
     {
+        // This path owns only the cinematic root; active aura roots win.
         SetRoot(false);
     }
 }

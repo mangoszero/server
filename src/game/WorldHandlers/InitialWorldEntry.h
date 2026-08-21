@@ -121,8 +121,15 @@ class LoginCinematicRootOwnership
             return m_owned.compare_exchange_strong(expected, true);
         }
 
-        bool ReleaseOnce()
+        bool ReleaseOnce(bool canRelease)
         {
+            // Do not consume ownership while Player cannot emit the matching
+            // unroot. Unit::Update stops before m_Events.Update out of world,
+            // so this timeout cannot fire until the player has re-entered.
+            if (!canRelease)
+            {
+                return false;
+            }
             return m_owned.exchange(false);
         }
 
