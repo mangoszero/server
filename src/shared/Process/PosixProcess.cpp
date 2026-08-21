@@ -116,15 +116,17 @@ bool RedirectStandardStreams()
     // the terminal closes takes the process down with SIGHUP or a write error at
     // an arbitrary moment.
     //
-    // freopen hands back the stream it was given, not a new one, so there is
-    // nothing here to own or close -- only success to check. All three are
-    // attempted rather than short-circuited: a failure on one is no reason to
-    // leave the other two pointed at a terminal that is going away.
-    FILE* const in = std::freopen("/dev/null", "rt", stdin);
-    FILE* const out = std::freopen("/dev/null", "wt", stdout);
-    FILE* const err = std::freopen("/dev/null", "wt", stderr);
+    // Only the outcome is kept, never the pointer: freopen hands back the stream
+    // it was given, not a new one, so there is nothing here to own and closing it
+    // would close the standard stream itself.
+    //
+    // All three are attempted rather than short-circuited -- one failure is no
+    // reason to leave the other two pointed at a terminal that is going away.
+    const bool okIn = std::freopen("/dev/null", "rt", stdin) != nullptr;
+    const bool okOut = std::freopen("/dev/null", "wt", stdout) != nullptr;
+    const bool okErr = std::freopen("/dev/null", "wt", stderr) != nullptr;
 
-    return in != nullptr && out != nullptr && err != nullptr;
+    return okIn && okOut && okErr;
 }
 
 bool WritePidFile(const std::string& path)
