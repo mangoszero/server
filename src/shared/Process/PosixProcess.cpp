@@ -227,10 +227,21 @@ int RunInBackground(const Options& options, const std::function<int()>& serve)
     g_parentPid = getpid();
 
     std::signal(SIGUSR1, HandleStartupSignal);
-    std::signal(SIGCHLD, HandleStartupSignal);
     std::signal(SIGINT, HandleStartupSignal);
     std::signal(SIGTERM, HandleStartupSignal);
     std::signal(SIGALRM, HandleStartupSignal);
+
+    // SIGCHLD through sigaction, for SA_NOCLDSTOP alone. std::signal leaves it
+    // clear, and SIGCHLD is then delivered when the child merely STOPS as well as
+    // when it dies -- a debugger, a supervisor or a plain ^Z on the child. The
+    // handler reads every SIGCHLD as death, so the parent would report a failed
+    // start and exit while leaving a stopped child that finishes daemonising the
+    // moment it is continued. With the flag, only a real exit arrives here.
+    struct sigaction childAction = {};
+    childAction.sa_handler = HandleStartupSignal;
+    sigemptyset(&childAction.sa_mask);
+    childAction.sa_flags = SA_NOCLDSTOP;
+    sigaction(SIGCHLD, &childAction, nullptr);
 
     // Blocked across the fork. g_childPid is assigned only AFTER fork returns,
     // so a SIGTERM landing in that window would find it still zero: the handler

@@ -410,6 +410,22 @@ int main(int argc, char **argv)
     case Process::ServiceAction::Uninstall:
         return Process::Uninstall(processOptions) ? 0 : 1;
 
+    case Process::ServiceAction::Stop:
+        // Where there is a service manager, stopping is its business and needs
+        // nothing but the service name -- so it must not be made to depend on
+        // finding a configuration file. `mangosd -s stop` run from any other
+        // directory would otherwise fail on the config lookup below and never
+        // reach the stop it was asked for.
+        //
+        // Without one, the pid file is the only handle on the running instance
+        // and that comes from the configuration, so the POSIX stop falls through
+        // and is dispatched after it is loaded.
+        if (Process::HasServiceManager())
+        {
+            return Process::Stop(processOptions) ? 0 : 1;
+        }
+        break;
+
     default:
         break;
     }
