@@ -831,8 +831,8 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     }
     SendPacket(&data);
 
-    pCurrChar->GetSocial()->SendFriendList();
-    pCurrChar->GetSocial()->SendIgnoreList();
+    pCurrChar->GetSocial()->SendFriendList(pCurrChar);
+    pCurrChar->GetSocial()->SendIgnoreList(pCurrChar);
 
     /* 1.12.1 does not have SMSG_MOTD, so we send a server message */
     /* Used for counting number of newlines in MOTD */

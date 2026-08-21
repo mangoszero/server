@@ -29,7 +29,6 @@
 #include "Opcodes.h"
 #include "WorldPacket.h"
 #include "Player.h"
-#include "ObjectMgr.h"
 #include "World.h"
 #include "Util.h"
 #include "PlayerRegistry.h"
@@ -170,11 +169,15 @@ struct friend_
 
 /**
  * @brief Sends the friend list packet to the owning player.
+ *
+ * @param plr Explicit owner. Initial login calls this before PlayerRegistry
+ *        insertion, so a global lookup cannot be used here.
  */
-void PlayerSocial::SendFriendList()
+void PlayerSocial::SendFriendList(Player* plr)
 {
-    Player* plr = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, m_playerLowGuid));
-    if (!plr)
+    // The explicit pointer crosses the pre-registry window; retain the GUID
+    // check so another player can never receive this private list.
+    if (!plr || plr->GetGUIDLow() != m_playerLowGuid)
     {
         return;
     }
@@ -207,14 +210,12 @@ void PlayerSocial::SendFriendList()
 
 /**
  * @brief Sends the ignore list packet to the owning player.
+ *
+ * @param plr Explicit owner; see SendFriendList for the pre-registry reason.
  */
-void PlayerSocial::SendIgnoreList()
+void PlayerSocial::SendIgnoreList(Player* plr)
 {
-    /* Make sure the player ID is actually valid */
-    Player* plr = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, m_playerLowGuid));
-
-    /* The ID is NOT valid, so just return */
-    if (!plr)
+    if (!plr || plr->GetGUIDLow() != m_playerLowGuid)
     {
         return;
     }

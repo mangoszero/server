@@ -29,7 +29,30 @@
 #include "InitialWorldEntry.h"
 #include "LoginEffectPackets.h"
 #include "Opcodes.h"
+#include "../game/Object/SocialMgr.h"
 #include "WorldPacket.h"
+
+#include <type_traits>
+#include <utility>
+
+namespace
+{
+    // This compile-time seam protects pre-registry login delivery without
+    // constructing Player or linking the complete game library into the test.
+    template <typename T, typename = void>
+    struct HasExplicitLoginSocialRecipient : std::false_type
+    {
+    };
+
+    template <typename T>
+    struct HasExplicitLoginSocialRecipient<T, std::void_t<
+        decltype(std::declval<T&>().SendFriendList(
+            static_cast<Player*>(nullptr))),
+        decltype(std::declval<T&>().SendIgnoreList(
+            static_cast<Player*>(nullptr)))>> : std::true_type
+    {
+    };
+}
 
 TEST(LoginEffectPackets_builds_success_result)
 {
@@ -73,6 +96,11 @@ TEST(CharacterEnumMapSnapshot_replaces_the_previous_response)
 
     CHECK(!snapshot.Matches(0x11, 0));
     CHECK(snapshot.Matches(0x22, 1));
+}
+
+TEST(LoginSocialLists_accept_the_loaded_player_before_registry_insertion)
+{
+    CHECK(HasExplicitLoginSocialRecipient<PlayerSocial>::value);
 }
 
 TEST(InitialWorldEntry_orders_established_packets)
