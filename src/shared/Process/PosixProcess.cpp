@@ -115,9 +115,16 @@ bool RedirectStandardStreams()
     // The daemon has no terminal. Left attached, the first write to stdout after
     // the terminal closes takes the process down with SIGHUP or a write error at
     // an arbitrary moment.
-    return std::freopen("/dev/null", "rt", stdin)
-           && std::freopen("/dev/null", "wt", stdout)
-           && std::freopen("/dev/null", "wt", stderr);
+    //
+    // freopen hands back the stream it was given, not a new one, so there is
+    // nothing here to own or close -- only success to check. All three are
+    // attempted rather than short-circuited: a failure on one is no reason to
+    // leave the other two pointed at a terminal that is going away.
+    FILE* const in = std::freopen("/dev/null", "rt", stdin);
+    FILE* const out = std::freopen("/dev/null", "wt", stdout);
+    FILE* const err = std::freopen("/dev/null", "wt", stderr);
+
+    return in != nullptr && out != nullptr && err != nullptr;
 }
 
 bool WritePidFile(const std::string& path)
@@ -137,27 +144,27 @@ bool WritePidFile(const std::string& path)
     return bool(file);
 }
 
+#ifdef __linux__
+
 /**
  * @brief Is @p pid running the same executable as this process?
  *
- * @return true when it is, AND when the platform cannot say. A false negative
- *         would refuse a legitimate stop, which is worse than the stale-pid case
- *         this guards -- so only a definite mismatch refuses.
+ * Defined only where it can be answered. Elsewhere the caller drops the check
+ * entirely rather than calling a function that can only say yes -- a guard whose
+ * condition is unreachable reads as a guard, and is not one.
+ *
+ * @return true when it is, and when the answer cannot be obtained. A false
+ *         negative would refuse a legitimate stop, which is worse than the
+ *         stale-pid case this guards, so only a definite mismatch refuses.
+ *
+ * stat() through /proc/<pid>/exe lands on the binary itself, so the two are
+ * compared by device and inode rather than by the path they happen to be
+ * reachable at. The string form got that wrong in both directions: an in-place
+ * upgrade leaves the path identical while the file underneath is a different
+ * one, and a hard link or a bind mount gives one file two names.
  */
 bool IsSameExecutable(pid_t pid)
 {
-#ifdef __linux__
-    // ===== IDENTITY, NOT SPELLING =====
-    //
-    // stat() through /proc/<pid>/exe lands on the binary itself, so the two are
-    // compared by device and inode rather than by the path they happen to be
-    // reachable at. That is the question actually being asked, and the string
-    // form got it wrong in both directions: an in-place upgrade leaves the path
-    // identical while the file underneath is a different one, and a hard link or
-    // a bind mount gives one file two names.
-    //
-    // No buffer either, so there is no PATH_MAX and no truncation to reason about.
-    // ==================================
     char link[64] = {};
     std::snprintf(link, sizeof(link), "/proc/%ld/exe", static_cast<long>(pid));
 
@@ -176,13 +183,9 @@ bool IsSameExecutable(pid_t pid)
     }
 
     return mine.st_dev == theirs.st_dev && mine.st_ino == theirs.st_ino;
-#else
-    // FreeBSD and macOS need sysctl/libproc for this. Not worth the platform code
-    // until a stale pid file actually bites somewhere other than Linux.
-    (void)pid;
-    return true;
-#endif
 }
+
+#endif // __linux__
 
 } // namespace
 
@@ -288,7 +291,12 @@ int RunInBackground(const Options& options, const std::function<int()>& serve)
 
     sigprocmask(SIG_SETMASK, &previous, nullptr);
 
-    umask(0);
+    // Not umask(0). The daemon creates its pid file and its logs through streams
+    // that ask for 0666, so a zero mask hands both to every user on the box --
+    // world-writable pid file included, which is the one file `-s stop` trusts.
+    // Owner-only; a deployment that wants group access sets it from the outside
+    // (systemd UMask=), where that decision belongs.
+    umask(077);
 
     if (setsid() < 0)
     {
@@ -359,8 +367,10 @@ bool Stop(const Options& options)
 
     // A pid file outlives the process it names, and pids are reused. Signalling
     // whatever now holds that number is how a stale file comes to interrupt an
-    // unrelated program. Where the check is available, the target must be running
-    // the same executable as this one.
+    // unrelated program, so on Linux the target must be running this same
+    // executable. FreeBSD and macOS would need sysctl or libproc; until a stale
+    // pid file bites there, the check is absent rather than stubbed out to yes.
+#ifdef __linux__
     if (!IsSameExecutable(static_cast<pid_t>(pid)))
     {
         sLog.outError("The pid file %s names process %ld, which is not this server;"
@@ -368,6 +378,7 @@ bool Stop(const Options& options)
                       options.pidFile.c_str(), pid);
         return false;
     }
+#endif
 
     if (kill(static_cast<pid_t>(pid), SIGINT) < 0)
     {

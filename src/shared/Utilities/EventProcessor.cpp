@@ -97,7 +97,7 @@ void EventProcessor::Update(std::uint32_t elapsed)
             // That is the contract's one sharp edge and it cannot be detected
             // from here -- the event may legitimately have gone to a processor
             // this one has never heard of.
-            event.release();
+            static_cast<void>(event.release());
         }
     }
 }
