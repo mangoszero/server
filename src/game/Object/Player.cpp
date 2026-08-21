@@ -118,7 +118,9 @@ namespace
 
                 if (*phase == LoginEffectPhase::Start)
                 {
-                    m_player.m_Events.AddEvent(this, eTime + 1, false);
+                    m_player.m_Events.AddEvent(this,
+                        eTime + LoginEffectDelayBefore(LoginEffectPhase::Go),
+                        false);
                     return false;
                 }
                 return true;
@@ -5449,7 +5451,9 @@ void Player::SendLoginTimeSpeed()
 /** Queues the visible START/GO half after the initial object batch is sent. */
 void Player::ScheduleLoginEffect()
 {
-    m_Events.AddEvent(new LoginEffectEvent(*this), m_Events.CalculateTime(1));
+    m_Events.AddEvent(new LoginEffectEvent(*this),
+        m_Events.CalculateTime(
+            LoginEffectDelayBefore(LoginEffectPhase::Start)));
 }
 
 void Player::BeginLoginCinematicRoot()

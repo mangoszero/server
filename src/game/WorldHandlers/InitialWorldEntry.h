@@ -72,12 +72,19 @@ struct InitialWorldEntryContext
     bool cinematicStarted = false;
 };
 
+// Separate scheduling lets START wait for world presentation while the +1 ms
+// GO delay guarantees a following eligible EventProcessor tick.
 enum class LoginEffectPhase
 {
     Start,
     Go,
     Complete
 };
+
+constexpr uint32 LoginEffectDelayBefore(LoginEffectPhase phase)
+{
+    return phase == LoginEffectPhase::Start ? 500 : 1;
+}
 
 class LoginEffectSequenceState
 {
