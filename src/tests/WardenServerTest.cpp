@@ -476,6 +476,7 @@ bool StartTimingMpqLuaMemCheck(Harness& harness)
         "7265615461626C652E646263044F4B4159"
         "0028E701F4028C0000896100208C000662"
         "7C000D8C00504A4900058C00FCDF800004"
+        "8C00ACAA4600108C00C801490010"
         "7F");
 }
 
@@ -739,37 +740,37 @@ TEST(WardenManager_creation_is_inert_for_exact_builds_and_rejects_unknown_ones)
         return true;
     };
 
-    std::unique_ptr<warden::WardenServer> supported =
-        warden::WardenManager::Instance().Create(5875, "Win", "enUS",
-            TestSessionKey(), send);
-    REQUIRE(supported != nullptr);
-    CHECK_EQ(calls, 0u);
-    CHECK(supported->Start());
-    CHECK_EQ(calls, 1u);
-    CHECK(supported->Start());
-    CHECK_EQ(calls, 1u);
+    struct Profile
+    {
+        uint32 build;
+        char const* locale;
+    };
+    Profile const profiles[] =
+    {
+        {5875, "enUS"}, {5875, "koKR"}, {5875, "zhTW"},
+        {5875, "frFR"}, {5875, "esES"}, {6005, "enGB"},
+        {6005, "deDE"}, {6141, "zhCN"}
+    };
 
-    std::unique_ptr<warden::WardenServer> supported6005 =
-        warden::WardenManager::Instance().Create(6005, "Win", "enGB",
-            TestSessionKey(), send);
-    REQUIRE(supported6005 != nullptr);
-    CHECK_EQ(calls, 1u);
-    CHECK(supported6005->Start());
-    CHECK_EQ(calls, 2u);
-
-    std::unique_ptr<warden::WardenServer> supported6141 =
-        warden::WardenManager::Instance().Create(6141, "Win", "zhCN",
-            TestSessionKey(), send);
-    REQUIRE(supported6141 != nullptr);
-    CHECK_EQ(calls, 2u);
-    CHECK(supported6141->Start());
-    CHECK_EQ(calls, 3u);
+    for (Profile const& profile : profiles)
+    {
+        std::unique_ptr<warden::WardenServer> supported =
+            warden::WardenManager::Instance().Create(profile.build, "Win",
+                profile.locale, TestSessionKey(), send);
+        REQUIRE(supported != nullptr);
+        CHECK_EQ(calls, 0u);
+        CHECK(supported->Start());
+        CHECK_EQ(calls, 1u);
+        CHECK(supported->Start());
+        CHECK_EQ(calls, 1u);
+        calls = 0;
+    }
 
     std::unique_ptr<warden::WardenServer> unsupported =
         warden::WardenManager::Instance().Create(9999, "Win", "enUS",
             TestSessionKey(), send);
     CHECK(unsupported == nullptr);
-    CHECK_EQ(calls, 3u);
+    CHECK_EQ(calls, 0u);
 }
 
 TEST(WardenManager_publishes_one_immutable_check_catalogue_snapshot)
@@ -793,26 +794,29 @@ TEST(WardenManager_publishes_one_immutable_check_catalogue_snapshot)
     warden::WardenCheckProfile const* selected =
         manager.FindCheckProfile(5875, "Win", "enUS");
     REQUIRE(selected != nullptr);
-    CHECK_EQ(selected->checks.size(), size_t(7));
+    CHECK_EQ(selected->checks.size(), size_t(9));
     CHECK(!manager.PublishCheckCatalog(empty));
     CHECK(!manager.PublishCheckCatalog(second));
     CHECK(manager.FindCheckProfile(5875, "Win", "enUS") == selected);
 }
 
-TEST(WardenManager_selects_content_checks_only_for_the_exact_locale)
+TEST(WardenManager_selects_content_checks_for_supported_exact_locales_only)
 {
     Harness enUS(ManagerLocale{"enUS"});
     REQUIRE(StartTimingMpqLuaMemCheck(enUS));
 
+    Harness frFR(ManagerLocale{"frFR"});
+    REQUIRE(StartTimingMpqLuaMemCheck(frFR));
+
     warden::WardenCreationOptions observe;
     observe.configuration.enforcementMode =
         warden::WardenEnforcementMode::Observe;
-    Harness frFR(ManagerLocale{"frFR"}, true, observe);
-    REQUIRE(ReachModuleReady(frFR));
-    frFR.server->Update(true, 60000);
-    CHECK(frFR.server->GetState() == warden::WardenState::ModuleReady);
-    CHECK_EQ(frFR.sent.size(), size_t(3));
-    CHECK(frFR.evidenceEvents.empty());
+    Harness itIT(ManagerLocale{"itIT"}, true, observe);
+    REQUIRE(ReachModuleReady(itIT));
+    itIT.server->Update(true, 60000);
+    CHECK(itIT.server->GetState() == warden::WardenState::ModuleReady);
+    CHECK_EQ(itIT.sent.size(), size_t(3));
+    CHECK(itIT.evidenceEvents.empty());
 }
 
 TEST(WardenManager_enforcing_modes_require_exact_check_profiles)
@@ -827,9 +831,14 @@ TEST(WardenManager_enforcing_modes_require_exact_check_profiles)
     };
     Profile const profiles[] =
     {
-        {5875, "enUS", "frFR"},
-        {6005, "enGB", "enUS"},
-        {6141, "zhCN", "enUS"}
+        {5875, "enUS", "itIT"},
+        {5875, "koKR", "itIT"},
+        {5875, "zhTW", "itIT"},
+        {5875, "frFR", "itIT"},
+        {5875, "esES", "itIT"},
+        {6005, "enGB", "itIT"},
+        {6005, "deDE", "itIT"},
+        {6141, "zhCN", "itIT"}
     };
 
     for (warden::WardenEnforcementMode mode :
@@ -857,7 +866,7 @@ TEST(WardenManager_observe_mode_allows_missing_check_profile)
     options.configuration.enforcementMode =
         warden::WardenEnforcementMode::Observe;
 
-    CHECK(warden::WardenManager::Instance().Create(5875, "Win", "frFR",
+    CHECK(warden::WardenManager::Instance().Create(5875, "Win", "itIT",
         TestSessionKey(), [](warden::Bytes const&) { return true; },
         options) != nullptr);
 }
@@ -866,10 +875,15 @@ TEST(WardenManager_identifies_only_exact_enforcement_profiles)
 {
     REQUIRE(EnsureTestCatalogPublished());
     CHECK(warden::IsWardenEnforcementProfile(5875, "Win", "enUS"));
+    CHECK(warden::IsWardenEnforcementProfile(5875, "Win", "koKR"));
+    CHECK(warden::IsWardenEnforcementProfile(5875, "Win", "zhTW"));
+    CHECK(warden::IsWardenEnforcementProfile(5875, "Win", "frFR"));
+    CHECK(warden::IsWardenEnforcementProfile(5875, "Win", "esES"));
     CHECK(warden::IsWardenEnforcementProfile(6005, "Win", "enGB"));
+    CHECK(warden::IsWardenEnforcementProfile(6005, "Win", "deDE"));
     CHECK(warden::IsWardenEnforcementProfile(6141, "Win", "zhCN"));
 
-    CHECK(!warden::IsWardenEnforcementProfile(5875, "Win", "enGB"));
+    CHECK(!warden::IsWardenEnforcementProfile(5875, "Win", "itIT"));
     CHECK(!warden::IsWardenEnforcementProfile(6005, "Win", "enUS"));
     CHECK(!warden::IsWardenEnforcementProfile(6141, "Win", "enUS"));
     CHECK(!warden::IsWardenEnforcementProfile(5875, "OSX", "enUS"));

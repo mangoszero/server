@@ -39,6 +39,7 @@ TEST(CoreDatabaseVersion_requires_database_backed_warden_catalogue)
 
     CHECK_STR(GitRevision::GetWorldDBVersion(), "22");
     CHECK_STR(GitRevision::GetWorldDBStructure(), "6");
-    CHECK_STR(GitRevision::GetWorldDBContent(), "3");
-    CHECK_STR(GitRevision::GetWorldDBUpdateDescription(), "Warden_Checks");
+    CHECK_STR(GitRevision::GetWorldDBContent(), "4");
+    CHECK_STR(GitRevision::GetWorldDBUpdateDescription(),
+        "Warden_Locale_Hardening");
 }

@@ -53,7 +53,8 @@ inline void AppendInitialProfile(std::vector<WardenCheckRowInput>& rows,
     std::string const& mpqExpectedHex, std::string const& luaExpectedHex,
     uint32 functionAddress, std::string const& functionExpectedHex,
     uint32 flagsAddress, uint32 luaProtectionAddress,
-    std::string const& luaProtectionExpectedHex, uint32 wallClimbAddress)
+    std::string const& luaProtectionExpectedHex, uint32 wallClimbAddress,
+    uint32 frameDispatchAddress, std::string const& frameDispatchExpectedHex)
 {
     rows.push_back(MakeRow(build, localeHex, 65536,
         WardenCheckType::Timing, 10, WardenEvidenceClass::ProtocolHealth));
@@ -98,28 +99,77 @@ inline void AppendInitialProfile(std::vector<WardenCheckRowInput>& rows,
     wallClimb.length = 4;
     wallClimb.expectedHex = "BB8D243F";
     rows.push_back(wallClimb);
+
+    // Both tables dispatch the client interface-signature result. A patched
+    // table can turn all outcomes into success without changing Warden code.
+    WardenCheckRowInput glueDispatch = MakeRow(build, localeHex, 65537,
+        WardenCheckType::Mem, 80, WardenEvidenceClass::IntegrityInvariant);
+    glueDispatch.address = 4631212;
+    glueDispatch.length = 16;
+    glueDispatch.expectedHex = "1CA9460029A9460036A946009EA94600";
+    rows.push_back(glueDispatch);
+
+    WardenCheckRowInput frameDispatch = MakeRow(build, localeHex, 65538,
+        WardenCheckType::Mem, 90, WardenEvidenceClass::IntegrityInvariant);
+    frameDispatch.address = frameDispatchAddress;
+    frameDispatch.length = 16;
+    frameDispatch.expectedHex = frameDispatchExpectedHex;
+    rows.push_back(frameDispatch);
 }
 
-/** Exact database rows intended for the first three supported profiles. */
+/** Exact database rows intended for all supported Classic Windows profiles. */
 inline std::vector<WardenCheckRowInput> InitialWardenRows()
 {
     std::vector<WardenCheckRowInput> rows;
-    rows.reserve(21);
+    rows.reserve(72);
     AppendInitialProfile(rows, 5875, "656E5553",
         "7D88154D3411811985F5D81177C5453248133443", "4F6B6179",
         6392064,
         "558BEC8B51408B450C81E2FF7DA075508950108B450850E824DA1A005DC20800",
-        8151558, 4803152, "A1C0EACE00", 8445948);
+        8151558, 4803152, "A1C0EACE00", 8445948, 4784584,
+        "5EFF48006BFF480078FF480095FF4800");
+    AppendInitialProfile(rows, 5875, "6B6F4B52",
+        "755D6D7F49BB34114433386D559261ED3AA23F00", "ED9995EC9DB8",
+        6392064,
+        "558BEC8B51408B450C81E2FF7DA075508950108B450850E824DA1A005DC20800",
+        8151558, 4803152, "A1C0EACE00", 8445948, 4784584,
+        "5EFF48006BFF480078FF480095FF4800");
+    AppendInitialProfile(rows, 5875, "7A685457",
+        "2A70E6402A40A4F9E9960CED419DBA5E6DEB8536", "E7A2BAE5AE9A",
+        6392064,
+        "558BEC8B51408B450C81E2FF7DA075508950108B450850E824DA1A005DC20800",
+        8151558, 4803152, "A1C0EACE00", 8445948, 4784584,
+        "5EFF48006BFF480078FF480095FF4800");
+    AppendInitialProfile(rows, 5875, "66724652",
+        "AF2D81AF013A9BA6BB92CE171E43FA903C9E8C09", "4F4B",
+        6392064,
+        "558BEC8B51408B450C81E2FF7DA075508950108B450850E824DA1A005DC20800",
+        8151558, 4803152, "A1C0EACE00", 8445948, 4784584,
+        "5EFF48006BFF480078FF480095FF4800");
+    AppendInitialProfile(rows, 5875, "65734553",
+        "1ECEC2C6596B8411FA5FE153EDFB9A6EE43360E9", "41636570746172",
+        6392064,
+        "558BEC8B51408B450C81E2FF7DA075508950108B450850E824DA1A005DC20800",
+        8151558, 4803152, "A1C0EACE00", 8445948, 4784584,
+        "5EFF48006BFF480078FF480095FF4800");
     AppendInitialProfile(rows, 6005, "656E4742",
         "7D88154D3411811985F5D81177C5453248133443", "4F6B6179",
         6392064,
         "558BEC8B51408B450C81E2FF7DA075508950108B450850E864DA1A005DC20800",
-        8151622, 4803152, "A1C0EACE00", 8445948);
+        8151622, 4803152, "A1C0EACE00", 8445948, 4784584,
+        "5EFF48006BFF480078FF480095FF4800");
+    AppendInitialProfile(rows, 6005, "64654445",
+        "A0B3DC2D78AD892F2436BCD937BE51B4989D64C1", "4F4B",
+        6392064,
+        "558BEC8B51408B450C81E2FF7DA075508950108B450850E864DA1A005DC20800",
+        8151622, 4803152, "A1C0EACE00", 8445948, 4784584,
+        "5EFF48006BFF480078FF480095FF4800");
     AppendInitialProfile(rows, 6141, "7A68434E",
         "C5A1DE4C1CD412EB4D2E02AFAB6131B737EFCAF0", "E7A1AEE5AE9A",
         6401184,
         "558BEC8B51408B450C81E2FF7DA075508950108B450850E864EB1A005DC20800",
-        8165094, 4806720, "A1E031CF00", 8462780);
+        8165094, 4806720, "A1E031CF00", 8462780, 4788152,
+        "4E0D49005B0D4900680D4900850D4900");
     return rows;
 }
 

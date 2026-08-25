@@ -67,12 +67,12 @@ std::vector<warden::WardenCheckRowInput> FirstProfileRows()
 {
     std::vector<warden::WardenCheckRowInput> rows =
         warden::test::InitialWardenRows();
-    rows.resize(7);
+    rows.resize(9);
     return rows;
 }
 }
 
-TEST(WardenCheckCatalog_decodes_and_selects_three_exact_profiles)
+TEST(WardenCheckCatalog_decodes_and_selects_eight_exact_profiles)
 {
     warden::WardenCheckCatalogBuilder builder;
     warden::WardenCheckDiagnostic diagnostic;
@@ -86,21 +86,94 @@ TEST(WardenCheckCatalog_decodes_and_selects_three_exact_profiles)
     warden::WardenCheckCatalog catalog;
     REQUIRE(builder.Build(catalog, diagnostic) ==
         warden::CheckCatalogValidation::Valid);
-    CHECK_EQ(catalog.TotalRows(), uint32(21));
-    CHECK_EQ(catalog.EnabledRows(), uint32(21));
-    CHECK_EQ(catalog.Profiles().size(), size_t(3));
+    CHECK_EQ(catalog.TotalRows(), uint32(72));
+    CHECK_EQ(catalog.EnabledRows(), uint32(72));
+    CHECK_EQ(catalog.Profiles().size(), size_t(8));
 
-    warden::WardenCheckProfile const* profile =
-        catalog.Find(6141, "Win", "zhCN");
-    REQUIRE(profile != nullptr);
-    REQUIRE(profile->checks.size() == 7u);
-    CHECK(profile->hasActionableChecks);
-    CHECK_EQ(profile->totalRows, uint32(7));
-    CHECK_EQ(warden::GetWardenCheckId(profile->checks[0]), uint32(65536));
-    CHECK(warden::GetWardenCheckType(profile->checks[0]) ==
-        warden::WardenCheckType::Timing);
-    CHECK(!warden::IsConfirmationEligible(profile->checks[0]));
-    CHECK(warden::IsConfirmationEligible(profile->checks[1]));
+    struct ProfileExpectation
+    {
+        uint32 build;
+        char const* locale;
+        char const* mpqSha1;
+        char const* luaText;
+        uint32 frameDispatchAddress;
+        char const* frameDispatchBytes;
+    };
+    ProfileExpectation const profiles[] =
+    {
+        {5875, "enUS", "7d88154d3411811985f5d81177c5453248133443",
+            "4f6b6179", 4784584,
+            "5eff48006bff480078ff480095ff4800"},
+        {5875, "koKR", "755d6d7f49bb34114433386d559261ed3aa23f00",
+            "ed9995ec9db8", 4784584,
+            "5eff48006bff480078ff480095ff4800"},
+        {5875, "zhTW", "2a70e6402a40a4f9e9960ced419dba5e6deb8536",
+            "e7a2bae5ae9a", 4784584,
+            "5eff48006bff480078ff480095ff4800"},
+        {5875, "frFR", "af2d81af013a9ba6bb92ce171e43fa903c9e8c09",
+            "4f4b", 4784584,
+            "5eff48006bff480078ff480095ff4800"},
+        {5875, "esES", "1ecec2c6596b8411fa5fe153edfb9a6ee43360e9",
+            "41636570746172", 4784584,
+            "5eff48006bff480078ff480095ff4800"},
+        {6005, "enGB", "7d88154d3411811985f5d81177c5453248133443",
+            "4f6b6179", 4784584,
+            "5eff48006bff480078ff480095ff4800"},
+        {6005, "deDE", "a0b3dc2d78ad892f2436bcd937be51b4989d64c1",
+            "4f4b", 4784584,
+            "5eff48006bff480078ff480095ff4800"},
+        {6141, "zhCN", "c5a1de4c1cd412eb4d2e02afab6131b737efcaf0",
+            "e7a1aee5ae9a", 4788152,
+            "4e0d49005b0d4900680d4900850d4900"}
+    };
+    uint32 const expectedIds[] =
+        {65536, 1, 2, 1107, 827, 1566, 1135, 65537, 65538};
+
+    for (ProfileExpectation const& expected : profiles)
+    {
+        warden::WardenCheckProfile const* profile =
+            catalog.Find(expected.build, "Win", expected.locale);
+        REQUIRE(profile != nullptr);
+        REQUIRE(profile->checks.size() == 9u);
+        CHECK(profile->hasActionableChecks);
+        CHECK_EQ(profile->totalRows, uint32(9));
+        for (size_t index = 0; index < 9u; ++index)
+        {
+            CHECK_EQ(warden::GetWardenCheckId(profile->checks[index]),
+                expectedIds[index]);
+        }
+
+        CHECK(warden::GetWardenCheckType(profile->checks[0]) ==
+            warden::WardenCheckType::Timing);
+        CHECK(!warden::IsConfirmationEligible(profile->checks[0]));
+        CHECK(warden::IsConfirmationEligible(profile->checks[1]));
+
+        warden::MpqCheckProfile const& mpq =
+            std::get<warden::MpqCheckProfile>(profile->checks[1].payload);
+        CHECK_HEX(mpq.expectedSha1.data(), mpq.expectedSha1.size(),
+            expected.mpqSha1);
+        warden::LuaCheckProfile const& lua =
+            std::get<warden::LuaCheckProfile>(profile->checks[2].payload);
+        CHECK_HEX(reinterpret_cast<uint8 const*>(lua.expectedText.data()),
+            lua.expectedText.size(), expected.luaText);
+
+        warden::MemCheckProfile const& glue =
+            std::get<warden::MemCheckProfile>(profile->checks[7].payload);
+        CHECK_EQ(glue.addressOrRva, uint32(4631212));
+        CHECK_HEX(glue.expectedBytes.data(), glue.expectedBytes.size(),
+            "1ca9460029a9460036a946009ea94600");
+        CHECK(profile->checks[7].evidenceClass ==
+            warden::WardenEvidenceClass::IntegrityInvariant);
+
+        warden::MemCheckProfile const& frame =
+            std::get<warden::MemCheckProfile>(profile->checks[8].payload);
+        CHECK_EQ(frame.addressOrRva, expected.frameDispatchAddress);
+        CHECK_HEX(frame.expectedBytes.data(), frame.expectedBytes.size(),
+            expected.frameDispatchBytes);
+        CHECK(profile->checks[8].evidenceClass ==
+            warden::WardenEvidenceClass::IntegrityInvariant);
+    }
+
     CHECK(warden::IsActionableEvidenceClass(
         warden::WardenEvidenceClass::IntegrityInvariant));
     CHECK(warden::IsActionableEvidenceClass(
@@ -110,12 +183,7 @@ TEST(WardenCheckCatalog_decodes_and_selects_three_exact_profiles)
     CHECK(!warden::IsActionableEvidenceClass(
         warden::WardenEvidenceClass::Corroboration));
 
-    warden::LuaCheckProfile const& lua =
-        std::get<warden::LuaCheckProfile>(profile->checks[2].payload);
-    CHECK_HEX(reinterpret_cast<uint8 const*>(lua.expectedText.data()),
-        lua.expectedText.size(), "e7a1aee5ae9a");
-    CHECK(catalog.Find(5875, "Win", "enUS") != nullptr);
-    CHECK(catalog.Find(6005, "Win", "enGB") != nullptr);
+    CHECK(catalog.Find(5875, "Win", "itIT") == nullptr);
     CHECK(catalog.Find(6005, "Win", "enUS") == nullptr);
     CHECK(catalog.Find(6141, "OSX", "zhCN") == nullptr);
 }
@@ -239,7 +307,7 @@ TEST(WardenCheckCatalog_enforces_timing_contract_and_cardinality)
     CHECK(BuildRows(rows) == warden::CheckCatalogValidation::DisabledTiming);
     rows = FirstProfileRows();
     warden::WardenCheckRowInput secondTiming = rows[0];
-    secondTiming.checkId = 65537;
+    secondTiming.checkId = 65539;
     secondTiming.sortOrder = 11;
     rows.push_back(secondTiming);
     CHECK(BuildRows(rows) == warden::CheckCatalogValidation::MultipleTiming);
@@ -523,12 +591,12 @@ TEST(WardenCheckCatalog_enforces_complete_profiles_and_atomic_build)
 
     warden::WardenCheckCatalog unchanged =
         warden::test::BuildInitialWardenCatalog();
-    REQUIRE(unchanged.TotalRows() == 21u);
+    REQUIRE(unchanged.TotalRows() == 72u);
     rows = FirstProfileRows();
     rows[2].checkId = rows[1].checkId;
     CHECK(BuildRows(rows, unchanged) ==
         warden::CheckCatalogValidation::DuplicateId);
-    CHECK_EQ(unchanged.TotalRows(), uint32(21));
+    CHECK_EQ(unchanged.TotalRows(), uint32(72));
     CHECK(unchanged.Find(6141, "Win", "zhCN") != nullptr);
 }
 

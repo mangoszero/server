@@ -158,7 +158,7 @@ TEST(WardenCheckPlanner_profileless_planner_remains_inert)
 TEST(WardenCheckPlanner_initial_plan_waits_and_preserves_catalogue_order)
 {
     std::vector<warden::WardenCheckDefinition> const checks = ExactChecks();
-    REQUIRE(checks.size() == 7u);
+    REQUIRE(checks.size() == 9u);
     warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
         checks);
 
@@ -169,11 +169,11 @@ TEST(WardenCheckPlanner_initial_plan_waits_and_preserves_catalogue_order)
     REQUIRE(plan.has_value());
     CHECK_EQ(plan->requestId, uint32(1));
     CHECK(plan->purpose == warden::CheckPlanPurpose::Initial);
-    REQUIRE(plan->checks.size() == 7u);
+    REQUIRE(plan->checks.size() == 9u);
     for (size_t index = 1; index < plan->checks.size(); ++index)
         CHECK(plan->checks[index - 1].sortOrder < plan->checks[index].sortOrder);
     CHECK_EQ(warden::GetWardenCheckId(plan->checks.front()), uint32(65536));
-    CHECK_EQ(warden::GetWardenCheckId(plan->checks.back()), uint32(1135));
+    CHECK_EQ(warden::GetWardenCheckId(plan->checks.back()), uint32(65538));
     CHECK(!planner.Update(true, 60000).has_value());
 }
 
@@ -189,7 +189,7 @@ TEST(WardenCheckPlanner_resets_partial_initial_delay_when_ineligible)
 
 TEST(WardenCheckPlanner_normal_rotation_covers_every_nonhealth_check_once)
 {
-    ScriptedRandom random{{30, 30, 30, 30}, {}, {}};
+    ScriptedRandom random{{30, 30, 30, 30, 30}, {}, {}};
     warden::WardenCheckPlanner planner(warden::WardenConfiguration{}, 1000,
         ExactChecks(), random.Callback());
     std::optional<warden::CheckPlan> initial = planner.Update(true, 1000);
@@ -197,7 +197,7 @@ TEST(WardenCheckPlanner_normal_rotation_covers_every_nonhealth_check_once)
     planner.Complete(*initial);
 
     std::map<uint32, uint32> counts;
-    for (uint32 batch = 0; batch < 3; ++batch)
+    for (uint32 batch = 0; batch < 4; ++batch)
     {
         std::optional<warden::CheckPlan> recurring =
             planner.Update(true, 30000);
@@ -216,9 +216,9 @@ TEST(WardenCheckPlanner_normal_rotation_covers_every_nonhealth_check_once)
         planner.Complete(*recurring);
     }
 
-    CHECK_EQ(counts.size(), size_t(6));
+    CHECK_EQ(counts.size(), size_t(8));
     for (uint32 id : {uint32(1), uint32(2), uint32(1107), uint32(827),
-            uint32(1566), uint32(1135)})
+            uint32(1566), uint32(1135), uint32(65537), uint32(65538)})
         CHECK_EQ(counts[id], uint32(1));
 }
 
@@ -275,7 +275,7 @@ TEST(WardenCheckPlanner_aggressive_plans_include_only_actionable_checks)
     CHECK(immediate->purpose ==
         warden::CheckPlanPurpose::AggressiveImmediate);
     CHECK(CheckIds(*immediate) ==
-        std::vector<uint32>({1107, 827, 1566}));
+        std::vector<uint32>({1107, 827, 1566, 65537, 65538}));
     planner.Complete(*immediate);
 
     std::optional<warden::CheckPlan> initial = planner.Update(true, 1000);
@@ -287,7 +287,7 @@ TEST(WardenCheckPlanner_aggressive_plans_include_only_actionable_checks)
     CHECK(recurring->purpose ==
         warden::CheckPlanPurpose::AggressiveRecurring);
     CHECK(CheckIds(*recurring) ==
-        std::vector<uint32>({1107, 827, 1566}));
+        std::vector<uint32>({1107, 827, 1566, 65537, 65538}));
 }
 
 TEST(WardenCheckPlanner_observation_only_aggressive_mode_uses_normal_checks)
@@ -354,10 +354,10 @@ TEST(WardenCheckPlanner_preflight_is_linear_and_uses_exact_purposes)
     REQUIRE(exact != nullptr);
     std::vector<warden::CheckPlan> plans =
         warden::BuildWardenPreflightPlans(*exact);
-    REQUIRE(plans.size() == 7u);
+    REQUIRE(plans.size() == 9u);
     CHECK(plans[0].purpose == warden::CheckPlanPurpose::Initial);
     CHECK_EQ(plans[0].requestId, uint32(1));
-    CHECK_EQ(plans[0].checks.size(), size_t(7));
+    CHECK_EQ(plans[0].checks.size(), size_t(9));
     for (size_t index = 1; index < plans.size(); ++index)
     {
         CHECK(plans[index].purpose ==

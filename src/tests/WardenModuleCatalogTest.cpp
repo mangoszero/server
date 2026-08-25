@@ -91,7 +91,7 @@ TEST(WardenCatalog_coverage_requires_profiles_and_modules_both_directions)
 
     std::vector<warden::WardenCheckRowInput> rows =
         warden::test::InitialWardenRows();
-    rows.resize(7);
+    rows.resize(9);
     warden::WardenCheckCatalog missingModule = BuildCheckCatalog(rows);
     CHECK(warden::ValidateWardenCatalogCoverage(missingModule, modules) ==
         warden::WardenCheckCatalogLoadFailure::ModuleWithoutProfile);

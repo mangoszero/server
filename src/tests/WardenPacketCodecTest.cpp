@@ -324,11 +324,14 @@ TEST(WardenPacket_encodes_exact_crossbuild_timing_and_mem_requests)
     Vector const vectors[] =
     {
         {5875, "enUS",
-            "0200288c0000896100208c0006627c000d8c00504a4900058c00fcdf8000047f"},
+            "0200288c0000896100208c0006627c000d8c00504a4900058c00fcdf800004"
+            "8c00acaa4600108c00c8014900107f"},
         {6005, "enGB",
-            "0200288c0000896100208c0046627c000d8c00504a4900058c00fcdf8000047f"},
+            "0200288c0000896100208c0046627c000d8c00504a4900058c00fcdf800004"
+            "8c00acaa4600108c00c8014900107f"},
         {6141, "zhCN",
-            "0200288c00a0ac6100208c00e6967c000d8c0040584900058c00bc218100047f"}
+            "0200288c00a0ac6100208c00e6967c000d8c0040584900058c00bc21810004"
+            "8c00acaa4600108c00b80f4900107f"}
     };
 
     for (Vector const& vector : vectors)
@@ -505,17 +508,20 @@ TEST(WardenPacket_decodes_exact_crossbuild_mem_result_vectors)
     Vector const vectors[] =
     {
         {5875, "enUS",
-            "023f00833bdafb010403020100558bec8b51408b450c81e2ff7da07550"
+            "0261000ff23245010403020100558bec8b51408b450c81e2ff7da07550"
             "8950108b450850e824da1a005dc208000025ffffdffb0d00200000894640"
-            "00a1c0eace0000bb8d243f"},
+            "00a1c0eace0000bb8d243f001ca9460029a9460036a946009ea94600"
+            "005eff48006bff480078ff480095ff4800"},
         {6005, "enGB",
-            "023f0053b1b911010403020100558bec8b51408b450c81e2ff7da07550"
+            "026100d90dfed3010403020100558bec8b51408b450c81e2ff7da07550"
             "8950108b450850e864da1a005dc208000025ffffdffb0d00200000894640"
-            "00a1c0eace0000bb8d243f"},
+            "00a1c0eace0000bb8d243f001ca9460029a9460036a946009ea94600"
+            "005eff48006bff480078ff480095ff4800"},
         {6141, "zhCN",
-            "023f0099e39fee010403020100558bec8b51408b450c81e2ff7da07550"
+            "02610060124e86010403020100558bec8b51408b450c81e2ff7da07550"
             "8950108b450850e864eb1a005dc208000025ffffdffb0d00200000894640"
-            "00a1e031cf0000bb8d243f"}
+            "00a1e031cf0000bb8d243f001ca9460029a9460036a946009ea94600"
+            "004e0d49005b0d4900680d4900850d4900"}
     };
 
     for (Vector const& vector : vectors)
@@ -525,9 +531,9 @@ TEST(WardenPacket_decodes_exact_crossbuild_mem_result_vectors)
         REQUIRE(warden::DecodeCheckResult(View(response),
             TimingMemPlan(vector.build, vector.locale), result) ==
             warden::DecodeStatus::Ok);
-        REQUIRE(result.checks.size() == 5u);
-        size_t const expectedSizes[] = {32u, 13u, 5u, 4u};
-        for (size_t index = 0; index < 4u; ++index)
+        REQUIRE(result.checks.size() == 7u);
+        size_t const expectedSizes[] = {32u, 13u, 5u, 4u, 16u, 16u};
+        for (size_t index = 0; index < 6u; ++index)
         {
             REQUIRE(std::holds_alternative<warden::MemResult>(
                 result.checks[index + 1u]));
@@ -539,11 +545,11 @@ TEST(WardenPacket_decodes_exact_crossbuild_mem_result_vectors)
     }
 
     warden::Bytes const unavailable =
-        FromHex("0209005848324d010403020101010101");
+        FromHex("020b00f49e5b190104030201010101010101");
     warden::CheckBatchResult result;
     REQUIRE(warden::DecodeCheckResult(View(unavailable),
         TimingMemPlan(5875, "enUS"), result) == warden::DecodeStatus::Ok);
-    REQUIRE(result.checks.size() == 5u);
+    REQUIRE(result.checks.size() == 7u);
     for (size_t index = 1; index < result.checks.size(); ++index)
     {
         warden::MemResult const& mem =
@@ -1014,7 +1020,7 @@ TEST(WardenPacket_inspects_plan_identity_and_confirmation_contracts)
         warden::CheckPlanValidation::DuplicateCheckId);
     plan.checks = profile->checks;
     warden::WardenCheckDefinition secondTiming = plan.checks[0];
-    std::get<warden::TimingCheckProfile>(secondTiming.payload).checkId = 65537;
+    std::get<warden::TimingCheckProfile>(secondTiming.payload).checkId = 65539;
     secondTiming.sortOrder = 11;
     plan.checks.push_back(secondTiming);
     CHECK(warden::InspectCheckPlan(plan, budget) ==
