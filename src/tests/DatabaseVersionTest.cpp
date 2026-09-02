@@ -27,9 +27,10 @@
 TEST(CoreDatabaseVersion_requires_database_backed_warden_catalogue)
 {
     CHECK_STR(GitRevision::GetRealmDBVersion(), "22");
-    CHECK_STR(GitRevision::GetRealmDBStructure(), "4");
+    CHECK_STR(GitRevision::GetRealmDBStructure(), "5");
     CHECK_STR(GitRevision::GetRealmDBContent(), "1");
-    CHECK_STR(GitRevision::GetRealmDBUpdateDescription(), "Warden audit");
+    CHECK_STR(GitRevision::GetRealmDBUpdateDescription(),
+        "Cata Warden identity");
 
     CHECK_STR(GitRevision::GetCharDBVersion(), "22");
     CHECK_STR(GitRevision::GetCharDBStructure(), "5");
