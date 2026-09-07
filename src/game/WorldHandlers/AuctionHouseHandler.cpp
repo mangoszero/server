@@ -2152,11 +2152,12 @@ static std::string AhMailSubject(uint32 itemTemplate, int32 itemRand, uint32 res
 // The output row is a value snapshot and the output item remains cache-owned.
 static bool AhGetCachedReservedItem(std::string const& key, uint32 auctionId,
                                     uint32 ownerGuid, uint32 expectedItemGuid,
-                                    CustodyRow& row, Item*& item)
+                                    CustodyRow& row, Item*& item,
+                                    uint8 expectedRole = ROLE_ITEM)
 {
     item = NULL;
     if (key.empty() || !CustodyLedger::Get(key, row) ||
-        row.kind != CUSTODY_ITEM || row.role != ROLE_ITEM ||
+        row.kind != CUSTODY_ITEM || row.role != expectedRole ||
         row.state != CST_RESERVED || row.ownerGuid != ownerGuid ||
         row.beneficiaryGuid != 0u || row.amount != 0u ||
         row.auctionId != auctionId ||
@@ -2169,9 +2170,9 @@ static bool AhGetCachedReservedItem(std::string const& key, uint32 auctionId,
     }
 
     item = sAuctionMgr.GetAItem(row.itemGuid);
-    if (!item)
+    if (!item || item->GetOwnerGuid().GetCounter() != ownerGuid)
     {
-        sLog.outError("[AHMut] auction %u escrow item %u missing from cache; "
+        sLog.outError("[AHMut] auction %u escrow item %u missing/mismatched in cache; "
                       "holding custody for retry",
                       auctionId, row.itemGuid);
         return false;
@@ -2179,21 +2180,52 @@ static bool AhGetCachedReservedItem(std::string const& key, uint32 auctionId,
     return true;
 }
 
-// [SP-2] every live (CST_RESERVED CUSTODY_GOLD ROLE_BID) row for an auction.
-// LoadNonTerminal + filter: no new CustodyLedger read API; the non-terminal
-// set is TTL-bounded.
-static void AhLoadLiveBidRows(uint32 auctionId, std::vector<CustodyRow>& out)
+static bool AhPreflightTerminalItem(MutationFacts const& facts,
+                                    bool requireDeposit)
 {
-    std::vector<CustodyRow> rows;
-    CustodyLedger::LoadNonTerminal(rows);
-    for (size_t i = 0; i < rows.size(); ++i)
+    // Bot materializations carry a botlist: marker, not player seller escrow.
+    // Read the marker count in one query so an error cannot look like absence.
+    std::unique_ptr<QueryResult> markers(CharacterDatabase.PQuery(
+        "SELECT COUNT(*), COALESCE(MAX(`idem_key`),'') FROM `custody_ledger` "
+        "WHERE `auction_id`=%u AND `idem_key` LIKE 'botlist:%%'",
+        facts.auctionId));
+    if (!markers)
     {
-        if (rows[i].auctionId == auctionId && rows[i].kind == CUSTODY_GOLD &&
-            rows[i].role == ROLE_BID && rows[i].state == CST_RESERVED)
+        return false;
+    }
+    uint64 const markerCount = markers->Fetch()[0].GetUInt64();
+    CustodyRow itemRow;
+    Item* item = NULL;
+    if (markerCount != 0u)
+    {
+        if (markerCount != 1u ||
+            !AhGetCachedReservedItem(markers->Fetch()[1].GetCppString(),
+                facts.auctionId, facts.sellerGuid, facts.itemGuid,
+                itemRow, item, ROLE_RESOLUTION))
         {
-            out.push_back(rows[i]);
+            return false;
         }
     }
+    else
+    {
+        if (requireDeposit)
+        {
+            CustodyRow deposit;
+            if (!CustodyLedger::Get("dep:" + std::to_string(facts.auctionId), deposit) ||
+                deposit.kind != CUSTODY_GOLD || deposit.role != ROLE_DEPOSIT ||
+                deposit.state != CST_RESERVED || deposit.ownerGuid != facts.sellerGuid ||
+                deposit.amount != facts.deposit || deposit.auctionId != facts.auctionId)
+            {
+                return false;
+            }
+        }
+        if (!AhGetCachedReservedItem("item:" + std::to_string(facts.auctionId),
+                facts.auctionId, facts.sellerGuid, facts.itemGuid, itemRow, item))
+        {
+            return false;
+        }
+    }
+    return item->GetEntry() == facts.itemTemplate;
 }
 
 // [SP-2] the prior/current bidder's live bid row: EXACTLY ONE live bid row for
@@ -2202,27 +2234,8 @@ static void AhLoadLiveBidRows(uint32 auctionId, std::vector<CustodyRow>& out)
 static bool AhFindPriorBidRow(uint32 auctionId, uint32 bidderGuid, uint32 amount,
                               std::string const& excludeKey, CustodyRow& out)
 {
-    std::vector<CustodyRow> rows;
-    AhLoadLiveBidRows(auctionId, rows);
-    bool found = false;
-    for (size_t i = 0; i < rows.size(); ++i)
-    {
-        if (!excludeKey.empty() && rows[i].idemKey == excludeKey)
-        {
-            continue;
-        }
-        if (found)
-        {
-            return false;   // ambiguous -> fail closed
-        }
-        out = rows[i];
-        found = true;
-    }
-    if (!found)
-    {
-        return false;
-    }
-    return out.ownerGuid == bidderGuid && out.amount == amount;
+    return CustodyLedger::GetSingleLiveBidRow(auctionId, out, excludeKey) &&
+        out.ownerGuid == bidderGuid && out.amount == amount;
 }
 
 // [SP-2] in-txn wallet re-credit WITHOUT a ledger-row flip (the buyout
@@ -2693,26 +2706,11 @@ static bool AhFinalizeBidOk(PlayerMutationResult const& res, PendingMutation con
     }
     uint32 const remainder = pm.reservedAmount - needed;
 
-    if (isBuyoutWin)
+    if (isBuyoutWin && !AhPreflightTerminalItem(f, true))
     {
-        std::string const depKey = "dep:" + std::to_string(f.auctionId);
-        CustodyRow depRow;
-        CustodyRow itemRow;
-        Item* item = NULL;
-        if (!CustodyLedger::Get(depKey, depRow) ||
-            depRow.kind != CUSTODY_GOLD ||
-            depRow.role != ROLE_DEPOSIT || depRow.state != CST_RESERVED ||
-            depRow.ownerGuid != f.sellerGuid || depRow.amount != f.deposit ||
-            depRow.auctionId != f.auctionId ||
-            !AhGetCachedReservedItem("item:" + std::to_string(f.auctionId),
-                                     f.auctionId, f.sellerGuid, f.itemGuid,
-                                     itemRow, item))
-        {
-            sLog.outError("[AHMut] buyout terminal custody unavailable for "
-                          "auction %u; queued for retry",
-                          f.auctionId);
-            return false;
-        }
+        sLog.outError("[AHMut] buyout terminal custody unavailable for "
+                      "auction %u; queued for retry", f.auctionId);
+        return false;
     }
 
     CustodyRow liveRow;
@@ -2816,17 +2814,7 @@ static bool AhFinalizeCancelOk(PlayerMutationResult const& res, PendingMutation 
 {
     MutationFacts const& f = res.facts;
 
-    std::string const depKey = "dep:" + std::to_string(f.auctionId);
-    CustodyRow depRow;
-    CustodyRow itemRow;
-    Item* item = NULL;
-    if (!CustodyLedger::Get(depKey, depRow) || depRow.kind != CUSTODY_GOLD ||
-        depRow.role != ROLE_DEPOSIT || depRow.state != CST_RESERVED ||
-        depRow.ownerGuid != f.sellerGuid || depRow.amount != f.deposit ||
-        depRow.auctionId != f.auctionId ||
-        !AhGetCachedReservedItem("item:" + std::to_string(f.auctionId),
-                                 f.auctionId, f.sellerGuid, f.itemGuid,
-                                 itemRow, item))
+    if (!AhPreflightTerminalItem(f, true))
     {
         sLog.outError("[AHMut] cancel terminal custody unavailable for auction "
                       "%u; queued for retry",
@@ -3290,8 +3278,8 @@ void AhProcessRedriveQueue(uint32 nowSec)
 // reservation for an auction. The cancel-CONFIRM path salts the cut idem key
 // with the CANCEL uuid ("cut:<auc>:<uuid>"), but a RESOLVE_CANCELLED_UNLOCK
 // arrives with its OWN (worker-minted) uuid, so the cut cannot be found by a
-// deterministic point key -- it is located by auction + role instead (mirrors
-// AhLoadLiveBidRows). Returns the row's real idemKey for the release.
+// deterministic point key -- it is located by auction + role instead.
+// Returns the row's real idemKey for the release.
 static bool AhFindLiveCutRow(uint32 auctionId, CustodyRow& out)
 {
     std::vector<CustodyRow> rows;
@@ -3330,19 +3318,11 @@ uint8 AhHandleResolveApply(ResolveApply const& ra)
         (ra.kind == uint8(RESOLVE_WON) ||
          ra.kind == uint8(RESOLVE_EXPIRED_NOBID) ||
          (ra.kind == uint8(RESOLVE_REPAIR_RETURN) && !repairRefundOnly));
-    if (needsItem)
+    if (needsItem && !AhPreflightTerminalItem(f, false))
     {
-        CustodyRow itemRow;
-        Item* item = NULL;
-        if (!AhGetCachedReservedItem("item:" + std::to_string(f.auctionId),
-                                     f.auctionId, f.sellerGuid, f.itemGuid,
-                                     itemRow, item))
-        {
-            sLog.outError("[AHMut] resolve kind %u auction %u missing terminal "
-                          "item; RES_FAILED",
-                          uint32(ra.kind), f.auctionId);
-            return uint8(RES_FAILED);
-        }
+        sLog.outError("[AHMut] resolve kind %u auction %u missing terminal "
+                      "item; RES_FAILED", uint32(ra.kind), f.auctionId);
+        return uint8(RES_FAILED);
     }
 
     CustodyDeferred def;
@@ -3383,9 +3363,11 @@ uint8 AhHandleResolveApply(ResolveApply const& ra)
             }
             else
             {
-                std::vector<CustodyRow> liveRows;
-                AhLoadLiveBidRows(f.auctionId, liveRows);
-                bidRowOk = liveRows.empty();
+                std::unique_ptr<QueryResult> liveRows(CharacterDatabase.PQuery(
+                    "SELECT COUNT(*) FROM `custody_ledger` WHERE `auction_id`=%u "
+                    "AND `kind`=%u AND `role`=%u AND `state`=%u",
+                    f.auctionId, uint32(CUSTODY_GOLD), uint32(ROLE_BID), uint32(CST_RESERVED)));
+                bidRowOk = liveRows && liveRows->Fetch()[0].GetUInt64() == 0u;
             }
             if (!bidRowOk)
             {

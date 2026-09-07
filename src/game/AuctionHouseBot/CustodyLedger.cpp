@@ -223,15 +223,20 @@ bool CustodyLedger::Get(std::string const& idemKey, CustodyRow& out)
     return true;
 }
 
-bool CustodyLedger::GetSingleLiveBidRow(uint32 auctionId, CustodyRow& out)
+bool CustodyLedger::GetSingleLiveBidRow(uint32 auctionId, CustodyRow& out,
+                                       std::string const& excludeKey)
 {
-    // Fetch every live bid row (kind=GOLD, role=BID, state=RESERVED) so we can
-    // assert there is EXACTLY ONE before trusting it (spec I1: fail closed on
+    // Fetch live bid rows (kind=GOLD, role=BID, state=RESERVED), excluding the
+    // optional in-flight reservation. Require EXACTLY ONE (fail closed on
     // absent or ambiguous rows). No LIMIT -- we must see a second row if present.
+    std::string escapedKey = excludeKey;
+    CharacterDatabase.escape_string(escapedKey);
     QueryResult* result = CharacterDatabase.PQuery(
         "SELECT " CUSTODY_SELECT_COLS " FROM `custody_ledger` "
-        "WHERE `auction_id`=%u AND `kind`=%u AND `role`=%u AND `state`=%u",
-        auctionId, uint32(CUSTODY_GOLD), uint32(ROLE_BID), uint32(CST_RESERVED));
+        "WHERE `auction_id`=%u AND `kind`=%u AND `role`=%u AND `state`=%u "
+        "AND (%u=0 OR `idem_key`<>'%s')",
+        auctionId, uint32(CUSTODY_GOLD), uint32(ROLE_BID), uint32(CST_RESERVED),
+        uint32(!excludeKey.empty()), escapedKey.c_str());
     if (!result)
     {
         return false;

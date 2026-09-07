@@ -193,9 +193,11 @@ namespace CustodyLedger
      *
      * @param auctionId Auction entry id to probe.
      * @param out       Populated with the single live bid row on success.
-     * @return true iff exactly one live bid row exists for @p auctionId.
+     * @param excludeKey Optional in-flight delta reservation to omit.
+     * @return true iff exactly one non-excluded live bid row exists for @p auctionId.
      */
-    bool GetSingleLiveBidRow(uint32 auctionId, CustodyRow& out);
+    bool GetSingleLiveBidRow(uint32 auctionId, CustodyRow& out,
+                             std::string const& excludeKey = "");
 
     /**
      * @brief Allocate the next per-event bid sequence for an auction.

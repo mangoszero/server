@@ -5432,6 +5432,159 @@ static int RunAhReconcileAbortTest()
     return 2;
 }
 
+/// Marker-owned worker resolutions and player buyouts retain missing or
+/// mismatched item custody, then complete exactly once after it is restored.
+static int RunAhBotTerminalTest()
+{
+    bool pass = true;
+    uint32 const buyer = 990117u;
+    uint32 const bot = AHBOT_SYSTEM_OWNER_GUID;
+    CharacterDatabase.AllowAsyncTransactions();
+    sObjectMgr.SetHighestGuids();
+    sObjectMgr.LoadItemPrototypes();
+    if (!CharacterDatabase.DirectPExecute(
+        "REPLACE INTO `characters` (`guid`,`account`,`name`,`money`) "
+        "VALUES (%u,1,'AhBotTerm',100000)", buyer))
+    {
+        printf("ahbotterminal FAIL: seed receiver\n");
+        return 2;
+    }
+
+    // Bot expiry, bid-won expiry, and player buyout all use marker custody,
+    // not a player's item:/dep: pair. A failed preflight must remain retryable.
+    for (uint32 mode = 0; mode < 3u; ++mode)
+    {
+        uint32 const auctionId = 991117u + mode;
+        uint64 const uuid = 0xBB117ull + mode;
+        std::string const markerKey = "botlist:test:terminal:" + std::to_string(mode);
+        std::string const bidKey = "bid:" + std::to_string(auctionId) + ":test";
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `custody_ledger` WHERE `auction_id`=%u", auctionId);
+        Item* const item = TestCreateCachedAuctionItem(19019u, bot);
+        if (!item)
+        {
+            printf("ahbotterminal FAIL: create escrow item\n");
+            return 2;
+        }
+        uint32 const itemGuid = item->GetGUIDLow();
+        CharacterDatabase.BeginTransaction();
+        CustodyLedger::Insert(TestCustodyRow(0, markerKey, CUSTODY_ITEM,
+            ROLE_RESOLUTION, bot, 0, itemGuid, auctionId));
+        if (mode != 0u)
+        {
+            CustodyLedger::Insert(TestCustodyRow(0, bidKey, CUSTODY_GOLD,
+                ROLE_BID, buyer, 800u, 0, auctionId));
+        }
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahbotterminal FAIL: seed custody\n");
+            return 2;
+        }
+
+        MutationFacts facts = {};
+        facts.auctionId = auctionId;
+        facts.houseId = 7;
+        facts.sellerGuid = bot;
+        facts.itemGuid = itemGuid;
+        facts.itemTemplate = 19019u;
+        facts.itemCount = 1;
+        facts.buyout = 800u;
+        if (mode != 0u)
+        {
+            facts.curBidderGuid = buyer;
+            facts.curBid = facts.effectiveBid = 800u;
+        }
+        PlayerMutationResult result = {};
+        result.uuid = uuid;
+        result.op = uint8(IPC_PLAYER_BUYOUT & 0xFFu);
+        result.status = uint8(MUT_OK);
+        result.facts = facts;
+        ResolveApply resolve = {};
+        resolve.uuid = uuid;
+        resolve.kind = mode == 0u ? uint8(RESOLVE_EXPIRED_NOBID) : uint8(RESOLVE_WON);
+        resolve.facts = facts;
+        PendingMutation pending = {};
+        if (mode == 2u)
+        {
+            pending.uuid = uuid;
+            pending.op = IPC_PLAYER_BUYOUT;
+            pending.playerGuidLow = buyer;
+            pending.auctionId = auctionId;
+            pending.state = PMUT_AWAIT_RESULT;
+            pending.sentSec = uint32(time(NULL));
+            pending.reserveKey = bidKey;
+            pending.reservedAmount = 800u;
+            sWorld.GetMutationPending().Register(pending);
+        }
+        auto apply = [&](uint32 attempt)
+        {
+            if (mode != 2u)
+            {
+                AhHandleResolveApply(resolve);
+            }
+            else if (attempt == 0u)
+            {
+                AhHandlePlayerMutationResult(result);
+            }
+            else
+            {
+                AhProcessRedriveQueue(uint32(time(NULL)) + attempt * 10u);
+            }
+        };
+        auto mailCount = [&]() -> uint64
+        {
+            std::unique_ptr<QueryResult> rows(CharacterDatabase.PQuery(
+                "SELECT COUNT(*) FROM `mail_items` WHERE `item_guid`=%u "
+                "AND `receiver`=%u", itemGuid, buyer));
+            return rows ? rows->Fetch()[0].GetUInt64() : 0u;
+        };
+
+        sAuctionMgr.RemoveAItem(itemGuid);
+        apply(0u);
+        sAuctionMgr.AddAItem(item);
+        CharacterDatabase.DirectPExecute(
+            "UPDATE `custody_ledger` SET `item_guid`=%u WHERE `idem_key`='%s'",
+            itemGuid + 1u, markerKey.c_str());
+        apply(1u);
+        CustodyRow row;
+        if (mailCount() != 0u || CustodyService::ResolutionApplied(uuid) ||
+            (mode != 0u && (!CustodyLedger::Get(bidKey, row) || row.state != CST_RESERVED)))
+        {
+            printf("ahbotterminal FAIL: mode %u missing/mismatched custody moved value\n", mode);
+            pass = false;
+        }
+        CharacterDatabase.DirectPExecute(
+            "UPDATE `custody_ledger` SET `item_guid`=%u WHERE `idem_key`='%s'",
+            itemGuid, markerKey.c_str());
+        apply(2u);
+        apply(3u);
+        std::unique_ptr<QueryResult> persisted(CharacterDatabase.PQuery(
+            "SELECT `owner_guid` FROM `item_instance` WHERE `guid`=%u", itemGuid));
+        if (sAuctionMgr.GetAItem(itemGuid) ||
+            !CustodyLedger::Get(markerKey, row) || row.state != CST_RESERVED ||
+            (mode == 0u && persisted) ||
+            (mode != 0u && (!persisted || persisted->Fetch()[0].GetUInt32() != buyer ||
+                mailCount() != 1u || !CustodyLedger::Get(bidKey, row) || row.state != CST_TERMINAL_OK)) ||
+            (mode != 2u && !CustodyService::ResolutionApplied(uuid)))
+        {
+            printf("ahbotterminal FAIL: mode %u did not finish exactly once after retry\n", mode);
+            pass = false;
+        }
+        if (Item* leftover = sAuctionMgr.GetAItem(itemGuid))
+        {
+            sAuctionMgr.RemoveAItem(itemGuid);
+            delete leftover;
+        }
+        CharacterDatabase.DirectPExecute("DELETE FROM `item_instance` WHERE `guid`=%u", itemGuid);
+        CharacterDatabase.DirectPExecute("DELETE FROM `mail_items` WHERE `item_guid`=%u", itemGuid);
+        CharacterDatabase.DirectPExecute("DELETE FROM `custody_ledger` WHERE `auction_id`=%u", auctionId);
+    }
+    CharacterDatabase.DirectPExecute("DELETE FROM `mail` WHERE `receiver`=%u", buyer);
+    CharacterDatabase.DirectPExecute("DELETE FROM `characters` WHERE `guid`=%u", buyer);
+    printf("ahbotterminal %s\n", pass ? "OK" : "FAIL");
+    return pass ? 0 : 1;
+}
+
 /// SP-2 Task 13 self-test for the bot-sell materialization leg. Drives
 /// AuctionIntentExecutor::TestMaterializeSell directly -- the live path reaches
 /// it through Apply() -> ApplySell(), but that re-validation chain needs a fully
@@ -5940,6 +6093,11 @@ int RunMangosdTest(std::string const& name)
     if (name == "ahmaterialize")
     {
         return RunAhMaterializeTest();
+    }
+
+    if (name == "ahbotterminal")
+    {
+        return RunAhBotTerminalTest();
     }
 
     printf("%s FAIL: unknown test\n", name.c_str());
