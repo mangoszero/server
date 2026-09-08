@@ -30,6 +30,12 @@
 #include <vector>
 #include "Database/DatabaseEnv.h"
 
+namespace
+{
+    // World-thread only. Unknown startup state must never bypass custody.
+    bool s_mayHaveReservedRows = true;
+}
+
 /// Column order used by SELECT queries (matches the struct field order for
 /// LoadNonTerminal / Get):
 ///   0:id  1:idem_key  2:kind  3:role  4:state  5:owner_guid
@@ -60,6 +66,11 @@ static void FillRow(Field* f, CustodyRow& row)
 
 void CustodyLedger::Insert(CustodyRow const& r)
 {
+    if (r.state == CST_RESERVED)
+    {
+        // Sticky even on rollback: a false positive only costs a route lookup.
+        s_mayHaveReservedRows = true;
+    }
     std::string key = r.idemKey;
     CharacterDatabase.escape_string(key);
     CharacterDatabase.PExecute(
@@ -75,6 +86,10 @@ void CustodyLedger::Insert(CustodyRow const& r)
 
 void CustodyLedger::SetState(std::string const& idemKey, uint8 newState, uint64 resolvedTime)
 {
+    if (newState == CST_RESERVED)
+    {
+        s_mayHaveReservedRows = true;
+    }
     std::string key = idemKey;
     CharacterDatabase.escape_string(key);
     CharacterDatabase.PExecute(
@@ -92,9 +107,22 @@ void CustodyLedger::SetAmount(std::string const& idemKey, uint32 newAmount)
         newAmount, key.c_str());
 }
 
+void CustodyLedger::InitializeRouting()
+{
+    QueryResult* result = CharacterDatabase.Query(
+        "SELECT EXISTS(SELECT 1 FROM `custody_ledger` WHERE `state`=0 LIMIT 1)");
+    s_mayHaveReservedRows = !result || result->Fetch()[0].GetUInt32() != 0u;
+    delete result;
+}
+
 CustodyRouteState CustodyLedger::GetRouteState(uint32 auctionId)
 {
     CustodyRouteState route = {};
+    if (!s_mayHaveReservedRows)
+    {
+        route.known = true;
+        return route;
+    }
     QueryResult* result = CharacterDatabase.PQuery(
         "SELECT "
         "COALESCE(MAX(`idem_key` LIKE 'botlist:%%'),0),"
@@ -110,6 +138,7 @@ CustodyRouteState CustodyLedger::GetRouteState(uint32 auctionId)
     }
 
     Field* fields = result->Fetch();
+    route.known = true;
     bool const hasMarker = fields[0].GetUInt32() != 0;
     bool const hasSellerCandidate = fields[1].GetUInt32() != 0;
     route.usesPlayerSellerCustody = hasSellerCandidate && !hasMarker;

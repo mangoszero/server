@@ -115,6 +115,7 @@ struct CustodySnapshotGroup
 
 struct CustodyRouteState
 {
+    bool known; ///< False on lookup failure; callers must not use legacy settlement.
     bool usesPlayerSellerCustody;
     bool hasLiveBidCustody;
 };
@@ -127,6 +128,8 @@ struct CustodyRouteState
  */
 namespace CustodyLedger
 {
+    /// Initialize once at startup. Reservations latch routing on until restart.
+    void InitializeRouting();
     CustodyRouteState GetRouteState(uint32 auctionId);
 
     void LoadReconcileSnapshot(std::vector<CustodySnapshotGroup>& out);

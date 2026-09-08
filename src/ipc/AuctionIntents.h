@@ -81,7 +81,8 @@ enum IntentReason : uint8
     REASON_STALE_BID     = 4,   ///< Bid is below current bid
     REASON_GUID_MISMATCH = 5,   ///< botGuid does not own the auction
     REASON_NO_FUNDS      = 6,   ///< Insufficient funds for bid/buyout
-    REASON_BAD_ITEM      = 7    ///< Item ID invalid or not listable
+    REASON_BAD_ITEM      = 7,   ///< Item ID invalid or not listable
+    REASON_TRANSACTION   = 8    ///< Custody validation or checked commit failed
 };
 
 // ---------------------------------------------------------------------------

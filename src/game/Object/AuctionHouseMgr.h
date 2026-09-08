@@ -146,7 +146,8 @@ struct AuctionEntry
                               bool hasLiveBidCustody,
                               std::string const& liveBidKey,
                               uint32 auctionCut);
-    bool UpdateBid(uint32 newbid, Player* newbidder = NULL);// true if normal bid, false if buyout, bidder==NULL for generated bid
+    /// True if still active. Optional applied distinguishes failure from buyout.
+    bool UpdateBid(uint32 newbid, Player* newbidder = NULL, bool* applied = NULL);
     /// Custody co-commit mirror of UpdateBid: moves the bidder's gold via the
     /// custody primitives and appends every DB write to the caller's already-open
     /// CharacterDatabase transaction (the caller opens/commits it). Live effects

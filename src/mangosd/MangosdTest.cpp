@@ -4723,6 +4723,125 @@ static int RunAhCustodyRouteTest()
         }
     }
 
+    // Bot bids share the legacy UpdateBid entry point with the fallback buyer.
+    {
+        uint32 const auctionId = 995130u;
+        AuctionEntry* auction = createAuction(
+            auctionId, sellerGuid, bidderGuid, 100u, 0u, 20u);
+        if (!auction)
+        {
+            return 2;
+        }
+        seedRow("bid:995130:1", CUSTODY_GOLD, ROLE_BID,
+                bidderGuid, 100u, 0u, auctionId);
+        uint32 const refunds = mailCount(bidderGuid, AUCTION_OUTBIDDED);
+        uint64 const refundMoney = mailMoney(bidderGuid, AUCTION_OUTBIDDED);
+        auction->UpdateBid(120u);
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.CommitTransactionChecked();
+        if (rowState("bid:995130:1") != CST_TERMINAL_BACK ||
+            auction->bidder != 0u || auction->bid != 120u ||
+            mailCount(bidderGuid, AUCTION_OUTBIDDED) != refunds + 1u ||
+            mailMoney(bidderGuid, AUCTION_OUTBIDDED) != refundMoney + 100u)
+        {
+            printf("ahcustodyroute FAIL: bot displacement stranded player bid\n");
+            pass = false;
+        }
+        AuctionHouseObject* map = sAuctionMgr.GetAuctionsMap(&house);
+        map->AddAuction(auction);
+        auction->expireTime = static_cast<time_t>(-1);
+        map->Update();
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.CommitTransactionChecked();
+        if (auctionExists(auctionId))
+        {
+            printf("ahcustodyroute FAIL: bot-held auction could not expire\n");
+            pass = false;
+        }
+        if (AuctionEntry* leftover = map->GetAuction(auctionId))
+        {
+            map->RemoveAuction(auctionId);
+            delete leftover;
+        }
+    }
+
+    // A failed bot buyout must roll back refund, seller payout, book and escrow.
+    {
+        uint32 const auctionId = 995131u;
+        AuctionEntry* auction = createAuction(
+            auctionId, sellerGuid, bidderGuid, 100u, 200u, 20u);
+        if (!auction)
+        {
+            return 2;
+        }
+        uint32 const itemGuid = auction->itemGuidLow;
+        Item* const cached = sAuctionMgr.GetAItem(itemGuid);
+        seedRow("bid:995131:1", CUSTODY_GOLD, ROLE_BID,
+                bidderGuid, 100u, 0u, auctionId);
+        seedRow("item:995131", CUSTODY_ITEM, ROLE_ITEM,
+                sellerGuid, 0u, itemGuid, auctionId);
+        seedRow("dep:995131", CUSTODY_GOLD, ROLE_DEPOSIT,
+                sellerGuid, 20u, 0u, auctionId);
+        uint32 const refunds = mailCount(bidderGuid, AUCTION_OUTBIDDED);
+        uint64 const refundMoney = mailMoney(bidderGuid, AUCTION_OUTBIDDED);
+        uint32 const sales = mailCount(sellerGuid, AUCTION_SUCCESSFUL);
+        uint64 const salesMoney = mailMoney(sellerGuid, AUCTION_SUCCESSFUL);
+        uint32 const payout = 220u - uint32(house.cutPercent * 200u *
+            sWorld.getConfig(CONFIG_FLOAT_RATE_AUCTION_CUT) / 100.0f);
+        AuctionHouseObject* map = sAuctionMgr.GetAuctionsMap(&house);
+        map->AddAuction(auction);
+        std::string originalConfig;
+        std::string testConfig;
+        if (!TestArmCustodyCommitFailure("bot-bid", originalConfig, testConfig))
+        {
+            TestRestoreConfig(originalConfig, testConfig);
+            return 2;
+        }
+        auction->UpdateBid(200u);
+        bool const restored = TestRestoreConfig(originalConfig, testConfig);
+        CharacterDatabase.BeginTransaction();
+        CharacterDatabase.CommitTransactionChecked();
+        AuctionEntry* retry = map->GetAuction(auctionId);
+        if (!restored || !retry || !auctionExists(auctionId) ||
+            retry->bidder != bidderGuid || retry->bid != 100u ||
+            sAuctionMgr.GetAItem(itemGuid) != cached ||
+            rowState("bid:995131:1") != CST_RESERVED ||
+            rowState("item:995131") != CST_RESERVED ||
+            rowState("dep:995131") != CST_RESERVED ||
+            mailCount(bidderGuid, AUCTION_OUTBIDDED) != refunds ||
+            mailCount(sellerGuid, AUCTION_SUCCESSFUL) != sales)
+        {
+            printf("ahcustodyroute FAIL: failed bot buyout moved value\n");
+            pass = false;
+        }
+        if (retry)
+        {
+            retry->UpdateBid(200u);
+            CharacterDatabase.BeginTransaction();
+            CharacterDatabase.CommitTransactionChecked();
+            std::unique_ptr<QueryResult> itemRow(CharacterDatabase.PQuery(
+                "SELECT 1 FROM `item_instance` WHERE `guid`=%u", itemGuid));
+            if (auctionExists(auctionId) || map->GetAuction(auctionId) ||
+                sAuctionMgr.GetAItem(itemGuid) || itemRow ||
+                rowState("bid:995131:1") != CST_TERMINAL_BACK ||
+                rowState("item:995131") != CST_TERMINAL_OK ||
+                rowState("dep:995131") != CST_TERMINAL_BACK ||
+                mailCount(bidderGuid, AUCTION_OUTBIDDED) != refunds + 1u ||
+                mailMoney(bidderGuid, AUCTION_OUTBIDDED) != refundMoney + 100u ||
+                mailCount(sellerGuid, AUCTION_SUCCESSFUL) != sales + 1u ||
+                mailMoney(sellerGuid, AUCTION_SUCCESSFUL) != salesMoney + payout)
+            {
+                printf("ahcustodyroute FAIL: bot buyout retry did not settle once\n");
+                pass = false;
+            }
+        }
+        if (AuctionEntry* leftover = map->GetAuction(auctionId))
+        {
+            map->RemoveAuction(auctionId);
+            delete leftover;
+        }
+    }
+
     for (size_t i = 0; i < itemGuids.size(); ++i)
     {
         Item* liveItem = sAuctionMgr.GetAItem(itemGuids[i]);
@@ -4751,6 +4870,80 @@ static int RunAhCustodyRouteTest()
         return 0;
     }
     return 2;
+}
+
+/// No-work routing must avoid SQL, while reservations survive config disable.
+static int RunAhRouteGateTest()
+{
+    CharacterDatabase.AllowAsyncTransactions();
+    std::unique_ptr<QueryResult> count(CharacterDatabase.Query(
+        "SELECT COUNT(*) FROM `custody_ledger` WHERE `state`=0"));
+    if (!count || count->Fetch()[0].GetUInt64() != 0u)
+    {
+        printf("ahroutegate FAIL: requires an empty disposable ledger\n");
+        return 2;
+    }
+    bool pass = true;
+    CustodyLedger::InitializeRouting();
+    if (!CharacterDatabase.DirectExecute(
+            "RENAME TABLE `custody_ledger` TO `custody_route_test_unavailable`"))
+    {
+        return 2;
+    }
+    // If routing attempts SQL despite known-empty startup, this becomes unknown.
+    CustodyRouteState const empty = CustodyLedger::GetRouteState(995190u);
+    bool const restored = CharacterDatabase.DirectExecute(
+        "RENAME TABLE `custody_route_test_unavailable` TO `custody_ledger`");
+    if (!restored)
+    {
+        printf("ahroutegate FAIL: could not restore ledger table\n");
+        return 2;
+    }
+    if (!empty.known || empty.usesPlayerSellerCustody || empty.hasLiveBidCustody)
+    {
+        printf("ahroutegate FAIL: known-empty route attempted SQL\n");
+        pass = false;
+    }
+    CharacterDatabase.BeginTransaction();
+    CustodyLedger::Insert(TestCustodyRow(0, "test:route-gate", CUSTODY_GOLD,
+        ROLE_BID, 9502u, 100u, 0u, 995190u));
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        return 2;
+    }
+    bool const wasEnabled = sWorld.IsAhCustodyEnabled();
+    sWorld.setConfig(CONFIG_BOOL_AH_CUSTODY, false);
+    CustodyRouteState const inserted = CustodyLedger::GetRouteState(995190u);
+    CustodyLedger::InitializeRouting();
+    CustodyRouteState const restarted = CustodyLedger::GetRouteState(995190u);
+    sWorld.setConfig(CONFIG_BOOL_AH_CUSTODY, wasEnabled);
+    if (!inserted.known || !inserted.hasLiveBidCustody ||
+        !restarted.known || !restarted.hasLiveBidCustody)
+    {
+        printf("ahroutegate FAIL: reservation lost after insertion/restart/disable\n");
+        pass = false;
+    }
+    if (!CharacterDatabase.DirectExecute(
+            "RENAME TABLE `custody_ledger` TO `custody_route_test_unavailable`"))
+    {
+        return 2;
+    }
+    CustodyLedger::InitializeRouting();
+    CustodyRouteState const failed = CustodyLedger::GetRouteState(995190u);
+    if (!CharacterDatabase.DirectExecute(
+            "RENAME TABLE `custody_route_test_unavailable` TO `custody_ledger`"))
+    {
+        return 2;
+    }
+    if (failed.known)
+    {
+        printf("ahroutegate FAIL: failed lookup treated as known legacy route\n");
+        pass = false;
+    }
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` WHERE `idem_key`='test:route-gate'");
+    printf("ahroutegate %s\n", pass ? "OK" : "FAIL");
+    return pass ? 0 : 2;
 }
 
 /// Regression for a real SP-2 smoke failure: the worker committed a cancel and
@@ -6297,6 +6490,10 @@ int RunMangosdTest(std::string const& name)
     if (name == "ahcustodyroute")
     {
         return RunAhCustodyRouteTest();
+    }
+    if (name == "ahroutegate")
+    {
+        return RunAhRouteGateTest();
     }
 
     if (name == "ahreconcile")

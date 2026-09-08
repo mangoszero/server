@@ -1065,6 +1065,11 @@ void AuctionHouseObject::Update()
             // not settlement of value already represented by durable rows.
             CustodyRouteState const route =
                 CustodyLedger::GetRouteState(old->second->Id);
+            if (!route.known)
+            {
+                sLog.outError("custody route unavailable; deferring auction expiry");
+                return;
+            }
 
             ///- perform the transaction if there was bidder
             if (old->second->bid)
@@ -1783,10 +1788,63 @@ void AuctionEntry::PrepareCancelCustody(Player* seller, CustodyDeferred& def,
  *
  * @param newbid The new bid amount.
  * @param newbidder The player placing the bid.
+ * @param applied Optional success output; false on a custody/commit failure.
  * @return true if the auction remains active after the update; otherwise, false.
  */
-bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=NULL*/)
+bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=NULL*/,
+                             bool* applied /*=NULL*/)
 {
+    if (applied)
+    {
+        *applied = false;
+    }
+    if (!newbidder)
+    {
+        // Both service intents and the in-process buyer enter here. Preserve
+        // player custody when a generated bid displaces its current owner.
+        CustodyRouteState const route = CustodyLedger::GetRouteState(Id);
+        if (!route.known)
+        {
+            return false;
+        }
+        if (route.usesPlayerSellerCustody || route.hasLiveBidCustody)
+        {
+            std::string liveBidKey;
+            if (route.hasLiveBidCustody)
+            {
+                CustodyRow row;
+                if (bidder == 0u || !CustodyLedger::GetSingleLiveBidRow(Id, row) ||
+                    row.ownerGuid != bidder || row.amount != bid)
+                {
+                    sLog.outError("custody bot bid validation failed for auction %u",
+                                  Id);
+                    return false;
+                }
+                liveBidKey = row.idemKey;
+            }
+            uint32 const oldBid = bid;
+            uint32 const oldBidder = bidder;
+            CustodyDeferred def;
+            if (!CharacterDatabase.BeginTransaction())
+            {
+                return false;
+            }
+            bool const active = UpdateBidCustody(newbid, NULL, def,
+                route.usesPlayerSellerCustody, route.hasLiveBidCustody, liveBidKey);
+            if (!CustodyService::CommitCheckedOrForcedFail("bot-bid"))
+            {
+                bid = oldBid;
+                bidder = oldBidder;
+                return false;
+            }
+            if (applied)
+            {
+                *applied = true;
+            }
+            def.run(); // A successful buyout deletes this auction last.
+            return active;
+        }
+    }
     Player* auction_owner = owner ? sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, owner)) : NULL;
 
     // bid can't be greater buyout
@@ -1825,10 +1883,18 @@ bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=NULL*/)
             newbidder->SaveInventoryAndGoldToDB();
         }
         CharacterDatabase.CommitTransaction();
+        if (applied)
+        {
+            *applied = true;
+        }
         return true;
     }
     else                                                    // buyout
     {
+        if (applied)
+        {
+            *applied = true;
+        }
         AuctionBidWinning(newbidder);
         return false;
     }
@@ -1850,7 +1916,7 @@ bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=NULL*/)
  * active), true on a normal bid.
  *
  * @param newbid     The new bid amount (capped at buyout here, as in UpdateBid).
- * @param newbidder  The player placing the bid (always non-NULL for the player seam).
+ * @param newbidder  The bidding player, or NULL for a generated bot bid.
  * @param def        Ordered deferred-effects queue for this co-commit.
  * @param liveBidKey idem_key of the existing live bid row (validated by the
  *                   handler), empty when the auction has no live bidder.
@@ -1916,11 +1982,14 @@ bool AuctionEntry::UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDef
         // NextBidSeq returns MAX(id) of existing bid rows: monotonic, never
         // decreases after TTL pruning, so the suffix is always strictly greater
         // than every existing row's suffix -- UNIQUE constraint cannot fire.
-        std::string newBidKey = "bid:" + std::to_string(Id) + ":" +
-                                std::to_string(CustodyLedger::NextBidSeq(Id));
-        CustodyService::ReserveGold(def, newbidder ? newbidder->GetGUIDLow() : 0,
-                                    newbidder, newbid, newBidKey, Id, ROLE_BID);
-        winningBidKey = newBidKey;
+        if (newbidder)
+        {
+            std::string newBidKey = "bid:" + std::to_string(Id) + ":" +
+                                    std::to_string(CustodyLedger::NextBidSeq(Id));
+            CustodyService::ReserveGold(def, newbidder->GetGUIDLow(),
+                                        newbidder, newbid, newBidKey, Id, ROLE_BID);
+            winningBidKey = newBidKey;
+        }
     }
 
     bidder = newbidder ? newbidder->GetGUIDLow() : 0;
@@ -1938,11 +2007,11 @@ bool AuctionEntry::UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDef
     // Buyout: resolve the win on this same open transaction. The winner's gold is
     // already persisted (ReserveGold/TopUpBid above), so AuctionBidWinningCustody
     // does NOT re-save it. Pass winningBidKey so the bid-row commit-net does not
-    // SELECT for the uncommitted row (bidder==0 cannot happen here: a player buyout
-    // always has a live newbidder). The auction is deleted in a deferred closure
-    // run only after the caller's checked commit succeeds.
+    // SELECT for the uncommitted row. Generated buyers have no gold reservation.
+    // The auction is deleted in a deferred closure run only after the caller's
+    // checked commit succeeds.
     AuctionBidWinningCustody(newbidder, def, usesPlayerSellerCustody,
-                             true, winningBidKey);
+                             !winningBidKey.empty(), winningBidKey);
     return false;
 }
 

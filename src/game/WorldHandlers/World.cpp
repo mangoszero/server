@@ -765,6 +765,7 @@ void World::SetInitialWorldSettings()
 
     ///- Load dynamic data tables from the database
     sLog.outString("Loading Auctions...");
+    CustodyLedger::InitializeRouting();
     sAuctionMgr.LoadAuctionItems();
     sAuctionMgr.LoadAuctions();
     sLog.outString(">>> Auctions loaded");

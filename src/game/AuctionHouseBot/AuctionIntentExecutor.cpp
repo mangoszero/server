@@ -1030,7 +1030,14 @@ void AuctionIntentExecutor::ApplyBid(const IpcMessage& in,
     // UpdateBid returns true for a normal bid. It can only return false if
     // newbid reaches buyout, which we excluded above, so for a pure bid this
     // is the OK path regardless of return value.
-    auction->UpdateBid(b.bidAmount, NULL);
+    bool applied = false;
+    auction->UpdateBid(b.bidAmount, NULL, &applied);
+    if (!applied)
+    {
+        ++m_rejected;
+        MakeResult(resultOut, b.uuid, INTENT_REJECTED, REASON_TRANSACTION);
+        return;
+    }
 
     ++m_applied;
     Remember(b.uuid, now);
@@ -1143,7 +1150,14 @@ void AuctionIntentExecutor::ApplyBuyout(const IpcMessage& in,
     // pays nothing; UpdateBid returns false here (buyout reached) and deletes
     // the auction internally -- false is the SUCCESS path for buyout, so we
     // must NOT touch `auction` afterwards.
-    auction->UpdateBid(auction->buyout, NULL);
+    bool applied = false;
+    auction->UpdateBid(auction->buyout, NULL, &applied);
+    if (!applied)
+    {
+        ++m_rejected;
+        MakeResult(resultOut, b.uuid, INTENT_REJECTED, REASON_TRANSACTION);
+        return;
+    }
 
     ++m_applied;
     Remember(b.uuid, now);

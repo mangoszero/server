@@ -1109,6 +1109,12 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
     // durable rows already in flight remain authoritative until terminal.
     CustodyRouteState const route = CustodyLedger::GetRouteState(auction->Id);
 
+    if (!route.known)
+    {
+        SendAuctionCommandResultData(auction->Id, AUCTION_BID_PLACED,
+                                     AUCTION_ERR_DATABASE, EQUIP_ERR_OK, 0);
+        return;
+    }
     // A player-seller row or a player-bid row selects the combined transaction.
     // Marker-only bot listings remain entirely on the legacy path.
     if (route.usesPlayerSellerCustody || route.hasLiveBidCustody)
@@ -1296,6 +1302,12 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
     // durable rows already in flight remain authoritative until terminal.
     CustodyRouteState const route = CustodyLedger::GetRouteState(auction->Id);
 
+    if (!route.known)
+    {
+        SendAuctionCommandResultData(auction->Id, AUCTION_REMOVED,
+                                     AUCTION_ERR_DATABASE, EQUIP_ERR_OK, 0);
+        return;
+    }
     if (route.usesPlayerSellerCustody || route.hasLiveBidCustody)
     {
         // -------------------------------------------------------------------
