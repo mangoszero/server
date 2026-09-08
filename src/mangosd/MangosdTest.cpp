@@ -1569,11 +1569,26 @@ static int RunCustodyTest()
             livenessAuctionId, now + HOUR);
         bool const blockedAfterInsert = found &&
             !AhRepairFindingMutationAllowed(scanned);
+        if (!CharacterDatabase.DirectExecute(
+                "RENAME TABLE `auction` TO `auction_test_unavailable`"))
+        {
+            printf("custody FAIL: could not inject auction query failure\n");
+            return 2;
+        }
+        bool const blockedOnQueryFailure = found &&
+            !AhRepairFindingMutationAllowed(scanned);
+        if (!CharacterDatabase.DirectExecute(
+                "RENAME TABLE `auction_test_unavailable` TO `auction`"))
+        {
+            printf("custody FAIL: could not restore auction table\n");
+            return 2;
+        }
         CharacterDatabase.DirectPExecute(
             "DELETE FROM `auction` WHERE `id`=%u", livenessAuctionId);
         bool const allowedAfterDelete = found &&
             AhRepairFindingMutationAllowed(scanned);
-        if (!found || !blockedAfterInsert || !allowedAfterDelete)
+        if (!found || !blockedAfterInsert || !blockedOnQueryFailure ||
+            !allowedAfterDelete)
         {
             printf("custody FAIL: repair liveness guard ignored post-scan DB state\n");
             pass = false;
@@ -5270,6 +5285,110 @@ static int RunAhReconcileTest()
         pend.Take(malformedUuid, held);
     }
 
+    // ---- Part 4: COMMITTED cancels retain their PREPARED journal envelope ----
+    {
+        uint32 const auctionId = 993105u;
+        uint64 const uuid = 0xC105ull;
+        sObjectMgr.SetHighestGuids();
+        sObjectMgr.LoadItemPrototypes();
+        Item* const item = TestCreateCachedAuctionItem(19019u, 1u);
+        if (!item)
+        {
+            printf("ahreconcile FAIL: create committed-cancel item\n");
+            return 2;
+        }
+        uint32 const itemGuid = item->GetGUIDLow();
+        PlayerMutationResult prepared = {};
+        prepared.uuid = uuid;
+        prepared.op = uint8(IPC_PLAYER_CANCEL & 0xFFu);
+        prepared.status = uint8(MUT_PREPARED);
+        prepared.facts.auctionId = auctionId;
+        prepared.facts.houseId = 7u;
+        prepared.facts.sellerGuid = 1u;
+        prepared.facts.itemGuid = itemGuid;
+        prepared.facts.itemTemplate = 19019u;
+        prepared.facts.itemCount = 1u;
+        prepared.facts.deposit = 32u;
+        ByteBuffer bytes;
+        prepared.Encode(bytes);
+        std::string const hex = TestHexEncode(bytes);
+        CharacterDatabase.BeginTransaction();
+        CustodyLedger::Insert(TestCustodyRow(0, "dep:993105", CUSTODY_GOLD,
+            ROLE_DEPOSIT, 1u, 32u, 0, auctionId));
+        CustodyLedger::Insert(TestCustodyRow(0, "item:993105", CUSTODY_ITEM,
+            ROLE_ITEM, 1u, 0, itemGuid, auctionId));
+        CharacterDatabase.PExecute(
+            "INSERT INTO `ah_worker_journal` "
+            "(`uuid`,`auction_id`,`kind`,`state`,`facts`,"
+            "`created_time`,`resolved_time`) VALUES (%llu,%u,%u,3,'%s',0,0)",
+            static_cast<unsigned long long>(uuid), auctionId,
+            uint32(prepared.op), hex.c_str());
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahreconcile FAIL: seed committed-cancel journal\n");
+            return 2;
+        }
+        PendingMutation pm = {};
+        pm.uuid = uuid;
+        pm.playerGuidLow = 1u;
+        pm.op = IPC_PLAYER_CANCEL;
+        pm.auctionId = auctionId;
+        pm.state = PMUT_AWAIT_CONFIRM;
+        pm.itemKey = "item:993105";
+        pm.depKey = "dep:993105";
+        pend.Register(pm);
+        auto itemMails = [&]() -> uint64
+        {
+            std::unique_ptr<QueryResult> rows(CharacterDatabase.PQuery(
+                "SELECT COUNT(*) FROM `mail_items` "
+                "WHERE `item_guid`=%u AND `receiver`=1", itemGuid));
+            return rows ? rows->Fetch()[0].GetUInt64() : 0u;
+        };
+        uint64 const before = readMoney();
+        AhReconcileOnReconnect();
+        PendingMutation held;
+        // APPLIED + PREPARED can mean an abort; it is not proof of cancellation.
+        if (!pend.Peek(uuid, held) || itemMails() != 0u ||
+            rowState("dep:993105") != CST_RESERVED ||
+            rowState("item:993105") != CST_RESERVED || readMoney() != before)
+        {
+            printf("ahreconcile FAIL: ambiguous applied cancel moved value\n");
+            pass = false;
+        }
+        CharacterDatabase.DirectPExecute(
+            "UPDATE `ah_worker_journal` SET `state`=1 WHERE `uuid`=%llu",
+            static_cast<unsigned long long>(uuid));
+        AhReconcileOnReconnect();
+        AhReconcileOnReconnect();
+        if (pend.Peek(uuid, held) || itemMails() != 1u ||
+            rowState("dep:993105") != CST_TERMINAL_OK ||
+            rowState("item:993105") != CST_TERMINAL_OK ||
+            sAuctionMgr.GetAItem(itemGuid) || readMoney() != before)
+        {
+            printf("ahreconcile FAIL: committed prepared cancel did not "
+                   "complete exactly once\n");
+            pass = false;
+        }
+        pend.Take(uuid, held);
+        if (Item* leftover = sAuctionMgr.GetAItem(itemGuid))
+        {
+            sAuctionMgr.RemoveAItem(itemGuid);
+            delete leftover;
+        }
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `mail` WHERE `id` IN "
+            "(SELECT `mail_id` FROM `mail_items` WHERE `item_guid`=%u)", itemGuid);
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `mail_items` WHERE `item_guid`=%u", itemGuid);
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `item_instance` WHERE `guid`=%u", itemGuid);
+        CharacterDatabase.DirectExecute(
+            "DELETE FROM `custody_ledger` WHERE `auction_id`=993105");
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `ah_worker_journal` WHERE `uuid`=%llu",
+            static_cast<unsigned long long>(uuid));
+    }
+
     CharacterDatabase.DirectPExecute(
         "DELETE FROM `custody_ledger` "
         "WHERE `auction_id` IN (993101,993102,993104) "
@@ -6052,6 +6171,32 @@ static int RunAhMaterializeTest()
             "DELETE FROM `custody_ledger` WHERE `idem_key`='botlist:test:relisted'");
         CharacterDatabase.DirectPExecute(
             "DELETE FROM `item_instance` WHERE `guid`=%u", relistedGuid);
+    }
+
+    // ---- Part 7: empty and failed candidate queries have distinct outcomes ----
+    {
+        if (!CharacterDatabase.DirectExecute(
+                "RENAME TABLE `custody_ledger` TO `custody_ledger_test_unavailable`"))
+        {
+            printf("ahmaterialize FAIL: could not inject candidate query failure\n");
+            return 2;
+        }
+        OrphanMaterializationSweepReport const failed =
+            sAuctionIntentExecutor.SweepOrphanMaterializations(301u, 100u);
+        if (!CharacterDatabase.DirectExecute(
+                "RENAME TABLE `custody_ledger_test_unavailable` TO `custody_ledger`"))
+        {
+            printf("ahmaterialize FAIL: could not restore custody table\n");
+            return 2;
+        }
+        OrphanMaterializationSweepReport const empty =
+            sAuctionIntentExecutor.SweepOrphanMaterializations(301u, 100u);
+        if (failed.committed || failed.selected || failed.swept ||
+            !empty.committed || empty.selected || empty.swept || empty.morePending)
+        {
+            printf("ahmaterialize FAIL: failed query reported as drained\n");
+            pass = false;
+        }
     }
 
     // Clean up the minted item and synthetic fixtures.

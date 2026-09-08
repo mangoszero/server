@@ -5,6 +5,22 @@
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
  * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * World of Warcraft, and all World of Warcraft or Warcraft art, images,
+ * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
 #include "CustodyReconciler.h"
@@ -63,7 +79,7 @@ namespace
                     CustodyRepairOwnership ownership,
                     CustodyFindingState state)
     {
-        CustodyFinding finding;
+        CustodyFinding finding = {};
         finding.row = row;
         finding.reason = reason;
         finding.repairOwnership = ownership;
@@ -408,7 +424,7 @@ void CustodyReconciler::Scan(std::vector<CustodySnapshotGroup> const& groups,
         {
             if (requiresBid)
             {
-                CustodyFinding finding;
+                CustodyFinding finding = {};
                 finding.row = ExpectedRow("bid:" + std::to_string(group.auctionId) +
                     ":missing", CUSTODY_GOLD, ROLE_BID,
                     group.auction.bidderGuid, group.auction.bid, 0,
@@ -421,7 +437,7 @@ void CustodyReconciler::Scan(std::vector<CustodySnapshotGroup> const& groups,
         {
             for (size_t i = 0; i < bidRows.size(); ++i)
             {
-                CustodyFinding finding;
+                CustodyFinding finding = {};
                 finding.row = *bidRows[i];
                 finding.reason = CUSTODY_FINDING_UNEXPECTED;
                 bidFindings.push_back(finding);
@@ -431,7 +447,7 @@ void CustodyReconciler::Scan(std::vector<CustodySnapshotGroup> const& groups,
         {
             for (size_t i = 0; i < bidRows.size(); ++i)
             {
-                CustodyFinding finding;
+                CustodyFinding finding = {};
                 finding.row = *bidRows[i];
                 finding.reason = CUSTODY_FINDING_DUPLICATE;
                 bidFindings.push_back(finding);
@@ -441,7 +457,7 @@ void CustodyReconciler::Scan(std::vector<CustodySnapshotGroup> const& groups,
                      group.auction.bidderGuid, group.auction.bid, 0,
                      group.auctionId))
         {
-            CustodyFinding finding;
+            CustodyFinding finding = {};
             finding.row = *bidRows[0];
             finding.reason = CUSTODY_FINDING_MISMATCHED;
             bidFindings.push_back(finding);

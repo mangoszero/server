@@ -747,18 +747,22 @@ AuctionIntentExecutor::SweepOrphanMaterializations(uint32 nowSec,
     // is absent from the shared `auction` table (worker never wrote / already
     // removed the book row). Other reserved custody means value finalization
     // may still need the marker and item, even after the book row was removed.
+    // The sentinel keeps an empty result distinct from a failed query (NULL).
     uint64 const queryLimit = uint64(maxRows) + 1u;
     QueryResult* q = CharacterDatabase.PQuery(
-        "SELECT c.`id`, c.`item_guid`, c.`owner_guid` "
+        "(SELECT c.`id`, c.`item_guid`, c.`owner_guid` "
         "FROM `custody_ledger` c "
         "WHERE c.`idem_key` LIKE 'botlist:%%' AND c.`created_time` < " UI64FMTD " "
         "AND c.`auction_id` NOT IN (SELECT `id` FROM `auction`) "
         "AND NOT EXISTS (SELECT 1 FROM `custody_ledger` r "
         "WHERE r.`auction_id`=c.`auction_id` AND r.`state`=0 AND r.`id`<>c.`id`) "
-        "ORDER BY c.`id` LIMIT " UI64FMTD,
+        "ORDER BY c.`id` LIMIT " UI64FMTD ") UNION ALL SELECT 0,0,0",
         cutoff, queryLimit);
     if (q == NULL)
     {
+        report.committed = false;
+        sLog.outError("[AHExecutor] orphan materialization candidate query "
+                      "failed; sweep will retry");
         return report;
     }
 
@@ -772,13 +776,17 @@ AuctionIntentExecutor::SweepOrphanMaterializations(uint32 nowSec,
     candidates.reserve(maxRows);
     do
     {
+        Field* f = q->Fetch();
+        if (f[0].GetUInt32() == 0u)
+        {
+            continue;
+        }
         if (candidates.size() == maxRows)
         {
             report.morePending = true;
             break;
         }
 
-        Field* f = q->Fetch();
         Candidate candidate;
         candidate.ledgerId = f[0].GetUInt32();
         candidate.itemGuid = f[1].GetUInt32();

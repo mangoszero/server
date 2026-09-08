@@ -175,13 +175,15 @@ void CustodyLedger::LoadReconcileSnapshot(std::vector<CustodySnapshotGroup>& out
 bool CustodyLedger::AuctionExists(uint32 auctionId)
 {
     QueryResult* result = CharacterDatabase.PQuery(
-        "SELECT 1 FROM `auction` WHERE `id`=%u LIMIT 1", auctionId);
+        "SELECT COUNT(*) FROM `auction` WHERE `id`=%u", auctionId);
     if (!result)
     {
-        return false;
+        // Repair must positively establish absence before moving custody.
+        return true;
     }
+    bool const exists = result->Fetch()[0].GetUInt64() != 0u;
     delete result;
-    return true;
+    return exists;
 }
 
 void CustodyLedger::LoadNonTerminal(std::vector<CustodyRow>& out)

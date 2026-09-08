@@ -131,6 +131,7 @@ namespace CustodyLedger
 
     void LoadReconcileSnapshot(std::vector<CustodySnapshotGroup>& out);
 
+    /// Conservative liveness guard: query failure also returns true.
     bool AuctionExists(uint32 auctionId);
 
     /**

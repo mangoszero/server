@@ -395,7 +395,7 @@ int Master::Run(std::string const& testMode)
         sLog.outString("mangosd test '%s' exit %d", testMode.c_str(), rc);
         sLog.Flush();
         fflush(stdout);
-        _exit(rc);
+        std::_Exit(rc);
     }
 
     ClearOnlineAccounts();

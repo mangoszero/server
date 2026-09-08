@@ -3741,9 +3741,13 @@ static std::map<uint64, uint32> s_ahReconnectRetries;
 static AhReconnectDisposition AhResolveForwardFromJournal(
     PendingMutation const& pm, AhJournalPeek const& jp)
 {
+    // Cancel confirmation only updates the journal state: its stored envelope
+    // still describes PREPARED. APPLIED is ambiguous (it also records ABORT).
+    bool const committedCancel = jp.payloadOk && jp.state == 1u &&
+        pm.op == IPC_PLAYER_CANCEL && jp.result.status == uint8(MUT_PREPARED);
     if (!jp.payloadOk || jp.auctionId != pm.auctionId ||
         jp.result.op != uint8(pm.op & 0xFFu) ||
-        jp.result.status != uint8(MUT_OK))
+        (jp.result.status != uint8(MUT_OK) && !committedCancel))
     {
         sLog.outError("[AHMut] reconcile uuid " UI64FMTD ": committed journal "
                       "payload invalid; holding reservation in-doubt",
@@ -3751,8 +3755,14 @@ static AhReconnectDisposition AhResolveForwardFromJournal(
         sWorld.GetMutationPending().Tombstone(pm.uuid);
         return AH_RECONNECT_HELD;
     }
+    PlayerMutationResult result = jp.result;
+    if (committedCancel)
+    {
+        result.op = uint8(IPC_PLAYER_CANCEL_CONFIRM & 0xFFu);
+        result.status = uint8(MUT_OK);
+    }
     // Takes the pending and applies the fail-closed finalize.
-    AhHandlePlayerMutationResult(jp.result);
+    AhHandlePlayerMutationResult(result);
     return AH_RECONNECT_COMPLETE;
 }
 
