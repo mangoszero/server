@@ -3330,10 +3330,10 @@ uint8 AhHandleResolveApply(ResolveApply const& ra)
         (ra.kind == uint8(RESOLVE_WON) ||
          ra.kind == uint8(RESOLVE_EXPIRED_NOBID) ||
          (ra.kind == uint8(RESOLVE_REPAIR_RETURN) && !repairRefundOnly));
-    if (needsItem && !AhPreflightTerminalItem(f, false))
+    if (needsItem && !AhPreflightTerminalItem(f, true))
     {
-        sLog.outError("[AHMut] resolve kind %u auction %u missing terminal "
-                      "item; RES_FAILED", uint32(ra.kind), f.auctionId);
+        sLog.outError("[AHMut] resolve kind %u auction %u invalid terminal "
+                      "item or deposit custody; RES_FAILED", uint32(ra.kind), f.auctionId);
         return uint8(RES_FAILED);
     }
 

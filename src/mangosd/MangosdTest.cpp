@@ -3598,6 +3598,128 @@ static int RunAhResolveTest()
         return res ? res->Fetch()[0].GetUInt64() : 0;
     };
 
+    // Terminal player resolutions require the matching deposit before any leg.
+    uint8 const terminalKinds[] =
+        { RESOLVE_WON, RESOLVE_EXPIRED_NOBID, RESOLVE_REPAIR_RETURN };
+    for (uint32 mode = 0u; mode < 3u; ++mode)
+    {
+        for (uint32 mismatch = 0u; mismatch < 2u; ++mismatch)
+        {
+            uint32 const auctionId = 991010u + mode * 2u + mismatch;
+            std::string const depKey = "dep:" + std::to_string(auctionId);
+            std::string const itemKey = "item:" + std::to_string(auctionId);
+            std::string const bidKey = "bid:" + std::to_string(auctionId) + ":1";
+            Item* const item = TestCreateCachedAuctionItem(19019u, 2u);
+            if (!item)
+            {
+                return 2;
+            }
+            uint32 const itemGuid = item->GetGUIDLow();
+            CharacterDatabase.BeginTransaction();
+            CustodyLedger::Insert(TestCustodyRow(0, itemKey, CUSTODY_ITEM,
+                ROLE_ITEM, 2u, 0u, itemGuid, auctionId));
+            if (mode == 0u)
+            {
+                CustodyLedger::Insert(TestCustodyRow(0, bidKey, CUSTODY_GOLD,
+                    ROLE_BID, 1u, 200u, 0u, auctionId));
+            }
+            if (mismatch)
+            {
+                CustodyLedger::Insert(TestCustodyRow(0, depKey, CUSTODY_GOLD,
+                    ROLE_DEPOSIT, 2u, 31u, 0u, auctionId));
+            }
+            if (!CharacterDatabase.CommitTransactionChecked())
+            {
+                return 2;
+            }
+            ResolveApply ra = {};
+            ra.uuid = 9912000ull + auctionId;
+            ra.kind = terminalKinds[mode];
+            ra.facts.auctionId = auctionId;
+            ra.facts.houseId = 7u;
+            ra.facts.sellerGuid = 2u;
+            ra.facts.itemGuid = itemGuid;
+            ra.facts.itemTemplate = 19019u;
+            ra.facts.itemCount = 1u;
+            ra.facts.deposit = 32u;
+            if (mode == 0u)
+            {
+                ra.facts.curBidderGuid = 1u;
+                ra.facts.curBid = ra.facts.effectiveBid = 200u;
+            }
+            uint64 const wallet = readMoney();
+            uint8 const result = AhHandleResolveApply(ra);
+            std::unique_ptr<QueryResult> heldMail(CharacterDatabase.Query(
+                "SELECT COUNT(*) FROM `mail` WHERE `receiver` IN (1,2)"));
+            bool const held = result == uint8(RES_FAILED) &&
+                !CustodyService::ResolutionApplied(ra.uuid) &&
+                sAuctionMgr.GetAItem(itemGuid) == item &&
+                rowState(itemKey.c_str()) == CST_RESERVED &&
+                rowState(depKey.c_str()) == (mismatch ? CST_RESERVED : 255u) &&
+                (mode != 0u || rowState(bidKey.c_str()) == CST_RESERVED) &&
+                readMoney() == wallet && heldMail &&
+                heldMail->Fetch()[0].GetUInt64() == 0u;
+            if (!held)
+            {
+                printf("ahresolve FAIL: kind %u %s deposit moved value\n",
+                       uint32(ra.kind), mismatch ? "mismatched" : "missing");
+                pass = false;
+            }
+            else
+            {
+                CharacterDatabase.BeginTransaction();
+                if (mismatch)
+                {
+                    CustodyLedger::SetAmount(depKey, 32u);
+                }
+                else
+                {
+                    CustodyLedger::Insert(TestCustodyRow(0, depKey, CUSTODY_GOLD,
+                        ROLE_DEPOSIT, 2u, 32u, 0u, auctionId));
+                }
+                if (!CharacterDatabase.CommitTransactionChecked())
+                {
+                    return 2;
+                }
+                uint8 const retried = AhHandleResolveApply(ra);
+                uint8 const duplicate = AhHandleResolveApply(ra);
+                std::unique_ptr<QueryResult> mails(CharacterDatabase.Query(
+                    "SELECT COUNT(*),COALESCE(SUM(`money`),0) "
+                    "FROM `mail` WHERE `receiver` IN (1,2)"));
+                std::unique_ptr<QueryResult> delivery(CharacterDatabase.PQuery(
+                    "SELECT COUNT(*) FROM `mail_items` "
+                    "WHERE `item_guid`=%u AND `receiver`=%u",
+                    itemGuid, mode == 0u ? 1u : 2u));
+                if (retried != uint8(RES_APPLIED) ||
+                    duplicate != uint8(RES_DUPLICATE) ||
+                    !CustodyService::ResolutionApplied(ra.uuid) ||
+                    rowState(depKey.c_str()) != CST_TERMINAL_OK ||
+                    rowState(itemKey.c_str()) != CST_TERMINAL_OK ||
+                    (mode == 0u && rowState(bidKey.c_str()) != CST_TERMINAL_OK) ||
+                    !mails || mails->Fetch()[0].GetUInt64() != (mode == 0u ? 2u : 1u) ||
+                    mails->Fetch()[1].GetUInt64() != (mode == 0u ? 232u : 0u) ||
+                    !delivery || delivery->Fetch()[0].GetUInt64() != 1u)
+                {
+                    printf("ahresolve FAIL: restored deposit did not settle once\n");
+                    pass = false;
+                }
+            }
+            if (Item* leftover = sAuctionMgr.GetAItem(itemGuid))
+            {
+                sAuctionMgr.RemoveAItem(itemGuid);
+                delete leftover;
+            }
+            CharacterDatabase.DirectPExecute(
+                "DELETE FROM `custody_ledger` WHERE `auction_id`=%u", auctionId);
+            CharacterDatabase.DirectExecute(
+                "DELETE FROM `mail_items` WHERE `receiver` IN (1,2)");
+            CharacterDatabase.DirectExecute(
+                "DELETE FROM `mail` WHERE `receiver` IN (1,2)");
+            CharacterDatabase.DirectPExecute(
+                "DELETE FROM `item_instance` WHERE `guid`=%u", itemGuid);
+        }
+    }
+
     // ---- RESOLVE_WON: missing item cache must hold every value leg ----
     {
         CharacterDatabase.BeginTransaction();
