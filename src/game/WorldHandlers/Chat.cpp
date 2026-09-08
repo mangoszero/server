@@ -734,6 +734,14 @@ ChatCommand* ChatHandler::getCommandTable()
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };
 
+    static ChatCommand ticketPayloadCommandTable[] =
+    {
+        { "list", SEC_GAMEMASTER, true, &ChatHandler::HandleTicketPayloadListCommand, "", NULL },
+        { "show", SEC_GAMEMASTER, true, &ChatHandler::HandleTicketPayloadShowCommand, "", NULL },
+        { "ping", SEC_GAMEMASTER, true, &ChatHandler::HandleTicketPayloadPingCommand, "", NULL },
+        { NULL,   0,              false, NULL,                                          "", NULL }
+    };
+
     static ChatCommand ticketCommandTable[] =
     {
         { "accept",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleTicketAcceptCommand,         "", NULL },
@@ -743,6 +751,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "list",           SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketListCommand,           "", NULL },
         { "meaccept",       SEC_GAMEMASTER,     false, &ChatHandler::HandleTicketMeAcceptCommand,       "", NULL },
         { "onlinelist",     SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketOnlineListCommand,     "", NULL },
+        { "payload",        SEC_GAMEMASTER,     true,  NULL,                                            "", ticketPayloadCommandTable },
         { "respond",        SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketRespondCommand,        "", NULL },
         { "show",           SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketShowCommand,           "", NULL },
         { "surveyclose",    SEC_GAMEMASTER,     true,  &ChatHandler::HandleTickerSurveyClose,           "", NULL },

@@ -37,10 +37,14 @@
 #include <string>
 #include "Chat.h"
 #include "ObjectMgr.h"
+#include "Opcodes.h"
 #include "World.h"
+#include "WorldPacket.h"
 #include "GMTicketMgr.h"
 #include "Mail.h"
 #include "PlayerRegistry.h"
+
+#include <iomanip>
 
 // show ticket (helper)
 void ChatHandler::ShowTicket(GMTicket const* ticket)
@@ -675,5 +679,213 @@ bool ChatHandler::HandleTickerSurveyClose(char* args)
 
     PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, ticketId, target_name.c_str(), m_session ? m_session->GetPlayer()->GetName() : gmNameReplacementWhenUsingCLI);
 
+    return true;
+}
+
+static std::string TicketEscapeField(const std::string& in)
+{
+    std::string out;
+    out.reserve(in.size());
+    for (size_t i = 0; i < in.size(); ++i)
+    {
+        char c = in[i];
+        switch (c)
+        {
+        case '\\': out += "\\\\"; break;
+        case '\t': out += "\\t"; break;
+        case '\n': out += "\\n"; break;
+        case '\r': out += "\\r"; break;
+        default:   out += c;
+        }
+    }
+    return out;
+}
+
+void ChatHandler::SendTicketPayload(char kind, const std::string& body)
+{
+    if (!m_session || !m_session->GetPlayer())
+    {
+        return;
+    }
+
+    const size_t CHUNK = 200;
+    const size_t MAXCHUNKS = 16;
+
+    std::string b = body;
+    if (b.size() > CHUNK * MAXCHUNKS)
+    {
+        b.resize(CHUNK * MAXCHUNKS);
+    }
+
+    size_t total = b.empty() ? 1 : ((b.size() + CHUNK - 1) / CHUNK);
+    ObjectGuid sender = m_session->GetPlayer()->GetObjectGuid();
+
+    for (size_t seq = 1; seq <= total; ++seq)
+    {
+        std::string chunk = b.empty() ? std::string() : b.substr((seq - 1) * CHUNK, CHUNK);
+        std::ostringstream framed;
+        framed << "ZGMTKT\t" << kind << "\t" << seq << "\t" << total << "\t" << chunk;
+        std::string msg = framed.str();
+
+        WorldPacket data(SMSG_MESSAGECHAT, msg.size() + 32);
+        data << uint8(CHAT_MSG_WHISPER);
+        data << int32(LANG_ADDON);
+        data << sender;
+        data << uint32(msg.length() + 1);
+        data << msg;
+        data << uint8(0);
+        m_session->SendPacket(&data);
+    }
+}
+
+bool ChatHandler::HandleTicketPayloadPingCommand(char* /*args*/)
+{
+    // Stress the whisper channel exactly where real payloads are fragile:
+    // a 2-chunk body whose 200-byte boundary lands on a space (chunk 1 ends in a
+    // space) and whose last chunk ends in a trailing space, plus an empty-body 'L'
+    // frame (empty final chunk). The spike confirms these survive intact.
+    std::string body(199, 'a');
+    body += ' ';                       // byte 200 -> chunk 1 ends in a space
+    body += std::string(199, 'b');
+    body += ' ';                       // trailing space on the final chunk
+    SendTicketPayload('P', body);
+    SendTicketPayload('L', "");        // empty-body frame (empty chunk, total=1)
+    return true;
+}
+
+bool ChatHandler::HandleTicketPayloadShowCommand(char* args)
+{
+    char* px = ExtractLiteralArg(&args);
+    if (!px)
+    {
+        return false;
+    }
+
+    GMTicket* ticket = NULL;
+    uint32 num;
+    if (ExtractUInt32(&px, num))
+    {
+        if (num == 0)
+        {
+            return false;
+        }
+        ticket = sTicketMgr.GetGMTicket(num);
+        if (!ticket)
+        {
+            PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST, num);
+            SetSentErrorMessage(true);
+            return false;
+        }
+    }
+    else
+    {
+        ObjectGuid target_guid; std::string target_name;
+        if (!ExtractPlayerTarget(&px, NULL, &target_guid, &target_name))
+        {
+            return false;
+        }
+        ticket = sTicketMgr.GetGMTicket(target_guid);
+        if (!ticket)
+        {
+            PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST_NAME, target_name.c_str());
+            SetSentErrorMessage(true);
+            return false;
+        }
+    }
+
+    std::string name; bool online; float x, y, z; uint32 mapId;
+    bool posValid = ResolveTicketCreator(ticket->GetPlayerGuid(), name, online, x, y, z, mapId);
+
+    std::string text = ticket->GetText();
+    if (text.size() > 500)
+    {
+        text.resize(500);
+    }
+    std::string resp = ticket->GetResponse();
+    if (resp.size() > 500)
+    {
+        resp.resize(500);
+    }
+
+    std::ostringstream b;
+    b << ticket->GetId() << "\t" << TicketEscapeField(name) << "\t" << (online ? "1" : "0")
+      << "\t" << (posValid ? "1" : "0")
+      << "\t" << std::fixed << std::setprecision(2) << x << "\t" << y << "\t" << z
+      << "\t" << mapId << "\t" << TicketEscapeField(text) << "\t" << TicketEscapeField(resp);
+    SendTicketPayload('D', b.str());
+    return true;
+}
+
+bool ChatHandler::ResolveTicketCreator(ObjectGuid guid, std::string& name, bool& online,
+                                       float& x, float& y, float& z, uint32& mapId)
+{
+    if (Player* p = sObjectMgr.GetPlayer(guid))
+    {
+        online = true;
+        name = p->GetName();
+        x = p->GetPositionX(); y = p->GetPositionY(); z = p->GetPositionZ();
+        mapId = p->GetMapId();
+        return true;
+    }
+
+    online = false; x = 0.0f; y = 0.0f; z = 0.0f; mapId = 0; name = "<offline>";
+    QueryResult* res = CharacterDatabase.PQuery(
+        "SELECT `name`, `position_x`, `position_y`, `position_z`, `map` "
+        "FROM `characters` WHERE `guid` = '%u'", guid.GetCounter());
+    if (res)
+    {
+        Field* fld = res->Fetch();
+        name = fld[0].GetCppString();
+        x = fld[1].GetFloat(); y = fld[2].GetFloat(); z = fld[3].GetFloat();
+        mapId = fld[4].GetUInt32();
+        delete res;
+        return true;
+    }
+    return false;
+}
+
+bool ChatHandler::HandleTicketPayloadListCommand(char* /*args*/)
+{
+    std::string body;
+    // Cap like HandleTicketListCommand so the joined body stays well under 200*16 bytes;
+    // an uncapped body would hit the SendTicketPayload cap and truncate the last record.
+    uint16 numToShow = std::min(uint16(sTicketMgr.GetTicketCount()),
+                                uint16(sWorld.getConfig(CONFIG_UINT32_GM_TICKET_LIST_SIZE)));
+    for (uint16 i = 0; i < numToShow; ++i)
+    {
+        GMTicket* t = sTicketMgr.GetGMTicketByOrderPos(i);
+        if (!t)
+        {
+            continue;
+        }
+
+        std::string name; bool online; float x, y, z; uint32 mapId;
+        ResolveTicketCreator(t->GetPlayerGuid(), name, online, x, y, z, mapId);
+
+        std::string snippet = t->GetText();
+        if (snippet.size() > 40)
+        {
+            snippet.resize(40);
+        }
+
+        uint32 age = uint32(time(NULL) - t->GetLastUpdate());
+        std::ostringstream rec;
+        rec << t->GetId() << "\t" << TicketEscapeField(name) << "\t" << age << "\t"
+            << (online ? "1" : "0") << "\t" << TicketEscapeField(snippet);
+        std::string recStr = rec.str();
+        // Bound the joined body by BYTES, not only record count: SendTicketPayload caps at
+        // 200*16=3200 bytes and would resize()-truncate the tail record into an unparseable
+        // (<5-field) fragment that the addon drops. Stop cleanly before that can happen.
+        if (!body.empty() && body.size() + 1 + recStr.size() > 3100)
+        {
+            break;
+        }
+        if (!body.empty())
+        {
+            body += "\n";
+        }
+        body += recStr;
+    }
+    SendTicketPayload('L', body);
     return true;
 }
