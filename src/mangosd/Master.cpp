@@ -382,8 +382,15 @@ void Master::ShutdownWorld()
     sMapMgr.UnloadAll();
 }
 
-int Master::Run(std::string const& testMode)
+int Master::Run(std::string const& testMode, bool allowDestructiveTests)
 {
+    if (!testMode.empty() && !allowDestructiveTests)
+    {
+        sLog.outError("Self-tests can DELETE character data. Use a disposable "
+                      "database configuration and --allow-destructive-tests "
+                      "to opt in. No databases have been opened.");
+        return 1;
+    }
     if (!StartDatabases())
     {
         return 1;

@@ -64,7 +64,8 @@ class Master
          *
          * @return The process exit code.
          */
-        int Run(std::string const& testMode = "");
+        int Run(std::string const& testMode = "",
+                bool allowDestructiveTests = false);
 
     private:
 

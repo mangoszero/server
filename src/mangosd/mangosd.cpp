@@ -161,7 +161,8 @@ static void usage(const char* prog)
         "    -v, --version              print version and exist\n\r"
         "    -c <config_file>           use config_file as configuration file\n\r"
         "    -a, --ahbot <config_file>  use config_file as ahbot configuration file\n\r"
-        "    -t <test_name>             run an in-process self-test and exit\n\r"
+        "    -t <test_name>             run a DESTRUCTIVE self-test and exit\n\r"
+        "    --allow-destructive-tests  opt in; use ONLY disposable databases\n\r"
 #ifdef WIN32
         "    Running as service functions:\n\r"
         "    -s run                     run as service\n\r"
@@ -206,6 +207,7 @@ int main(int argc, char** argv)
 
     char serviceDaemonMode = '\0';
     std::string testMode;
+    bool allowDestructiveTests = false;
 
     // Walked by hand rather than with ACE_Get_Opt (gone with the rest of ACE) or
     // getopt (absent on MSVC). Four options do not justify a dependency.
@@ -230,6 +232,10 @@ int main(int argc, char** argv)
         else if (arg == "-t" && hasValue)
         {
             testMode = argv[++i];
+        }
+        else if (arg == "--allow-destructive-tests")
+        {
+            allowDestructiveTests = true;
         }
         else if (arg == "-s" && hasValue)
         {
@@ -256,6 +262,14 @@ int main(int argc, char** argv)
             Log::WaitBeforeContinueIfNeed();
             return 1;
         }
+    }
+
+    if ((!testMode.empty() && serviceDaemonMode != '\0') ||
+        (allowDestructiveTests && testMode.empty()))
+    {
+        sLog.outError("Self-test options require -t and cannot be combined "
+                      "with service or daemon mode.");
+        return 1;
     }
 
 #ifdef _WIN32                                                // windows service command need execute before config read
@@ -382,7 +396,7 @@ int main(int argc, char** argv)
     // runs the world loop on this thread and returns once the world has stopped
     // and every service has been joined.
     Master master;
-    const int runCode = master.Run(testMode);
+    const int runCode = master.Run(testMode, allowDestructiveTests);
 
     ///- Remove signal handling before leaving
     unhook_signals();
