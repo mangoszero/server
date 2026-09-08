@@ -5541,6 +5541,21 @@ static int RunAhBotTerminalTest()
 
         sAuctionMgr.RemoveAItem(itemGuid);
         apply(0u);
+        if (mode != 0u)
+        {
+            OrphanMaterializationSweepReport const sweep =
+                sAuctionIntentExecutor.SweepOrphanMaterializations(301u, 100u);
+            CustodyRow heldMarker;
+            std::unique_ptr<QueryResult> heldItem(CharacterDatabase.PQuery(
+                "SELECT 1 FROM `item_instance` WHERE `guid`=%u", itemGuid));
+            if (!sweep.committed || sweep.selected != 0u || !heldItem ||
+                !CustodyLedger::Get(markerKey, heldMarker) ||
+                heldMarker.state != CST_RESERVED)
+            {
+                printf("ahbotterminal FAIL: mode %u sweep destroyed held sale escrow\n", mode);
+                pass = false;
+            }
+        }
         sAuctionMgr.AddAItem(item);
         CharacterDatabase.DirectPExecute(
             "UPDATE `custody_ledger` SET `item_guid`=%u WHERE `idem_key`='%s'",
@@ -5569,6 +5584,20 @@ static int RunAhBotTerminalTest()
         {
             printf("ahbotterminal FAIL: mode %u did not finish exactly once after retry\n", mode);
             pass = false;
+        }
+        if (mode != 0u)
+        {
+            OrphanMaterializationSweepReport const sweep =
+                sAuctionIntentExecutor.SweepOrphanMaterializations(301u, 100u);
+            std::unique_ptr<QueryResult> deliveredItem(CharacterDatabase.PQuery(
+                "SELECT `owner_guid` FROM `item_instance` WHERE `guid`=%u", itemGuid));
+            if (!sweep.committed || sweep.swept != 1u ||
+                CustodyLedger::Get(markerKey, row) || !deliveredItem ||
+                deliveredItem->Fetch()[0].GetUInt32() != buyer || mailCount() != 1u)
+            {
+                printf("ahbotterminal FAIL: mode %u terminal sweep changed delivered item\n", mode);
+                pass = false;
+            }
         }
         if (Item* leftover = sAuctionMgr.GetAItem(itemGuid))
         {
@@ -5978,6 +6007,51 @@ static int RunAhMaterializeTest()
             printf("ahmaterialize FAIL: second bounded sweep batch\n");
             pass = false;
         }
+    }
+
+    // ---- Part 6: an old bot marker must not evict a buyer's relisted item ----
+    {
+        Item* const relisted = TestCreateCachedAuctionItem(itemId, buyerGuid);
+        if (!relisted)
+        {
+            printf("ahmaterialize FAIL: relisted item fixture\n");
+            return 2;
+        }
+        uint32 const relistedGuid = relisted->GetGUIDLow();
+        CharacterDatabase.BeginTransaction();
+        CustodyLedger::Insert(TestCustodyRow(0, "botlist:test:relisted",
+            CUSTODY_ITEM, ROLE_RESOLUTION, botGuid, 0, relistedGuid, 99900003u));
+        CharacterDatabase.PExecute(
+            "INSERT INTO `auction` (`id`,`itemguid`,`itemowner`) "
+            "VALUES (99900004,%u,%u)", relistedGuid, buyerGuid);
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("ahmaterialize FAIL: relisted marker seed commit\n");
+            return 2;
+        }
+        OrphanMaterializationSweepReport const sweep =
+            sAuctionIntentExecutor.SweepOrphanMaterializations(301u, 100u);
+        CustodyRow marker;
+        std::unique_ptr<QueryResult> persisted(CharacterDatabase.PQuery(
+            "SELECT `owner_guid` FROM `item_instance` WHERE `guid`=%u", relistedGuid));
+        if (!sweep.committed || sweep.swept != 1u ||
+            CustodyLedger::Get("botlist:test:relisted", marker) ||
+            sAuctionMgr.GetAItem(relistedGuid) != relisted || !persisted ||
+            persisted->Fetch()[0].GetUInt32() != buyerGuid)
+        {
+            printf("ahmaterialize FAIL: old marker sweep destroyed buyer's relisted escrow\n");
+            pass = false;
+        }
+        if (Item* leftover = sAuctionMgr.GetAItem(relistedGuid))
+        {
+            sAuctionMgr.RemoveAItem(relistedGuid);
+            delete leftover;
+        }
+        CharacterDatabase.DirectExecute("DELETE FROM `auction` WHERE `id`=99900004");
+        CharacterDatabase.DirectExecute(
+            "DELETE FROM `custody_ledger` WHERE `idem_key`='botlist:test:relisted'");
+        CharacterDatabase.DirectPExecute(
+            "DELETE FROM `item_instance` WHERE `guid`=%u", relistedGuid);
     }
 
     // Clean up the minted item and synthetic fixtures.

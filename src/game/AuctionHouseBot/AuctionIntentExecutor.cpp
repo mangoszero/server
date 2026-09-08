@@ -745,14 +745,17 @@ AuctionIntentExecutor::SweepOrphanMaterializations(uint32 nowSec,
 
     // Candidates: durable botlist rows, past the grace window, whose auction id
     // is absent from the shared `auction` table (worker never wrote / already
-    // removed the book row).
+    // removed the book row). Other reserved custody means value finalization
+    // may still need the marker and item, even after the book row was removed.
     uint64 const queryLimit = uint64(maxRows) + 1u;
     QueryResult* q = CharacterDatabase.PQuery(
-        "SELECT `id`, `item_guid`, `owner_guid` "
-        "FROM `custody_ledger` "
-        "WHERE `idem_key` LIKE 'botlist:%%' AND `created_time` < " UI64FMTD " "
-        "AND `auction_id` NOT IN (SELECT `id` FROM `auction`) "
-        "ORDER BY `id` LIMIT " UI64FMTD,
+        "SELECT c.`id`, c.`item_guid`, c.`owner_guid` "
+        "FROM `custody_ledger` c "
+        "WHERE c.`idem_key` LIKE 'botlist:%%' AND c.`created_time` < " UI64FMTD " "
+        "AND c.`auction_id` NOT IN (SELECT `id` FROM `auction`) "
+        "AND NOT EXISTS (SELECT 1 FROM `custody_ledger` r "
+        "WHERE r.`auction_id`=c.`auction_id` AND r.`state`=0 AND r.`id`<>c.`id`) "
+        "ORDER BY c.`id` LIMIT " UI64FMTD,
         cutoff, queryLimit);
     if (q == NULL)
     {
@@ -843,12 +846,17 @@ AuctionIntentExecutor::SweepOrphanMaterializations(uint32 nowSec,
 
     // Drop in-memory escrow only after both durable deletes commit. This is a
     // harmless no-op after restart, where the orphan was never reloaded.
+    // A buyer may have relisted the same item since this marker was created;
+    // preserve that escrow just as the durable owner guard preserves its row.
     for (std::vector<Candidate>::const_iterator it = candidates.begin();
          it != candidates.end(); ++it)
     {
         Item* const orphan = sAuctionMgr.GetAItem(it->itemGuid);
-        sAuctionMgr.RemoveAItem(it->itemGuid);
-        delete orphan;
+        if (orphan && orphan->GetOwnerGuid().GetCounter() == it->ownerGuid)
+        {
+            sAuctionMgr.RemoveAItem(it->itemGuid);
+            delete orphan;
+        }
     }
     report.swept = report.selected;
     sLog.outString("[AHExecutor] orphan materialization sweep:"
