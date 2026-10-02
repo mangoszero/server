@@ -35,7 +35,6 @@
 #include "SQLStorages.h"
 #include "ScriptMgr.h"
 #include "GossipDef.h"
-#include "AuctionHouseBot/AhBotSystemOwner.h"
 #include "LivingWorldAnchorPolicy.h"
 #include "MotionGenerators/MotionMaster.h"
 #include "MapManager.h"

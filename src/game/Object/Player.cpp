@@ -4291,22 +4291,6 @@ bool Player::HasItemWithIdEquipped(uint32 item, uint32 count, uint8 except_slot)
     return false;
 }
 
-/// Runs ONLY the Eluna OnCanUseItem veto (D5). Returns EQUIP_ERR_OK when Eluna
-/// is compiled out or there is no veto. Used by the deferred-Eluna browse pass,
-/// which has already had every non-Eluna sub-filter enforced worker-side.
-InventoryResult Player::CanUseItemEluna(uint32 itemEntry) const
-{
-#ifdef ENABLE_ELUNA
-    if (Eluna* e = GetEluna())
-    {
-        return e->OnCanUseItem(this, itemEntry);
-    }
-#else
-    (void)itemEntry;
-#endif
-    return EQUIP_ERR_OK;
-}
-
 
 
 

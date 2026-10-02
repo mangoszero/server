@@ -1,7 +1,89 @@
 [AhServiceConf]
+
+###############################################################################
+#    Enable
+#        Load the auction house service module in mangosd. 0 leaves the server
+#        without it: no worker, no custody, no .ah commands.
+#    Default: 0
+###############################################################################
+
+Enable = 0
+
 ConfVersion=@MANGOS_AHBOT_VER@
 Console.ShowOnStartup = 0
 LogLevel = 1
+
+###############################################################################
+# MANGOSD SIDE
+#
+#    AH.Service.Worker
+#        Run the auction house as a separate supervised child process.
+#        mangosd spawns the ah-service executable, maintains a loopback IPC
+#        channel, and restarts the child on unexpected exit. The child is
+#        given this file as --config.
+#        Default: 0 (the in-process AH bot is used instead)
+#
+#    AH.Service.Path
+#        Path to the ah-service executable, relative to the mangosd working
+#        directory (or absolute).
+#        Default: service-workers/ah-service/ah-service
+#
+#    AH.Service.Port
+#        Loopback TCP port for the mangosd <-> ah-service IPC channel.
+#        Default: 5760
+#
+#    AH.Service.Secret
+#        Shared secret for IPC handshake authentication.
+#        Change this to a random string in production configurations.
+#        mangosd passes this to the child OUT-OF-BAND via the
+#        AH_SERVICE_SECRET environment variable (NOT on the child command
+#        line), so it is not exposed in the process list.
+#        Default: changeme
+#
+#    AH.Service.IntentTtlSec
+#        How long (in seconds) the executor retains UUID records for
+#        deduplication of intents submitted by the child process.
+#        Default: 900
+#
+#    AH.Service.Custody
+#        Route player auction gold/items through the in-process custody escrow
+#        ledger.
+#        Default: 0
+#
+#    AH.Service.CustodyCrashAt
+#        TEST ONLY.  Inject _exit(3) at a custody seam transition:
+#        empty = off, pre-commit, pre-deferred, and the SP-2 write-path seams
+#        post-reserve-pre-forward, resolving-pre-apply.
+#        NEVER set on a live realm.
+#        Default: "" (off)
+#
+#    AH.Service.CustodyFailCommitAt
+#        TEST ONLY.  Force an AH custody checked-commit to roll back and report
+#        failure ONCE (one-shot per process): empty = off, finalize-fail,
+#        reconcile-release, reconcile-abort-release, orphan-sweep.
+#        NEVER set on a live realm.
+#        Default: "" (off)
+#
+#    AH.Service.WriteAuthority
+#        [SP-2] Grant the worker WRITE-AUTHORITY over the auction book: the
+#        worker inserts/updates/deletes `auction` rows and runs the expiry/win
+#        tick, while every other auction writer (boot repair, orphan cleanup,
+#        the in-process expiry sweep, and the AH bots) stands down.
+#        Read once at startup, ignored by `.ah reload`.
+#        HARD REQUIREMENT: AH.Service.Custody = 1, and the ah_worker_journal
+#        migration applied (see extra/doc/AuctionHouseBot.md).
+#        Default: 0 (mangosd owns the book)
+###############################################################################
+
+AH.Service.Worker              = 0
+AH.Service.Path                = service-workers/ah-service/ah-service
+AH.Service.Port                = 5760
+AH.Service.Secret              = changeme
+AH.Service.IntentTtlSec        = 900
+AH.Service.Custody             = 0
+AH.Service.CustodyCrashAt      = ""
+AH.Service.CustodyFailCommitAt = ""
+AH.Service.WriteAuthority      = 0
 
 ###############################################################################
 # AH-SERVICE INFRASTRUCTURE

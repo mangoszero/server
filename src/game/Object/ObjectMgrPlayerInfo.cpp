@@ -34,7 +34,6 @@
 #include "MapManager.h"
 #include "ProgressBar.h"
 #include "World.h"
-#include "AuctionHouseBot/AhBotSystemOwner.h"
 #include "LivingWorldAnchorPolicy.h"
 #include "MotionGenerators/MotionMaster.h"
 #include "ObjectGuid.h"

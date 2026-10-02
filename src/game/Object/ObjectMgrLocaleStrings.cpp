@@ -29,7 +29,6 @@
 #include "ObjectMgr.h"
 #include "Database/DatabaseEnv.h"
 #include "Policies/Singleton.h"
-#include "AuctionHouseBot/AhBotSystemOwner.h"
 #include "LivingWorldAnchorPolicy.h"
 #include "MotionGenerators/MotionMaster.h"
 #include "SQLStorages.h"

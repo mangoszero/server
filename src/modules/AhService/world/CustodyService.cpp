@@ -25,8 +25,8 @@
 
 #include "CustodyService.h"
 
-#include "Config/Config.h"
 #include "CustodyLedger.h"
+#include "AhService.h"
 #include "Log.h"
 #include "Mail.h"
 #include "Player.h"
@@ -120,7 +120,7 @@ void CustodyService::RollbackGoldRefund(CustodyDeferred& d,
 {
     CustodyLedger::SetState(key, CST_TERMINAL_BACK,
                             static_cast<uint64>(time(NULL)));
-    refundMail.SendMailToInTransaction(to, from, d);
+    refundMail.SendMailToInTransaction(to, from, d.effects);
 }
 
 void CustodyService::ReleaseGoldToWallet(CustodyDeferred& d, uint32 ownerGuid,
@@ -213,7 +213,7 @@ void CustodyService::DeliverItem(CustodyDeferred& d, std::string const& key,
 {
     CustodyLedger::SetState(key, CST_TERMINAL_OK,
                             static_cast<uint64>(time(NULL)));
-    itemMail.SendMailToInTransaction(to, from, d,
+    itemMail.SendMailToInTransaction(to, from, d.effects,
                                      static_cast<MailCheckMask>(checked));
 }
 
@@ -225,7 +225,7 @@ void CustodyService::DeferEffect(CustodyDeferred& d,
 
 std::string CustodyService::CrashPhase()
 {
-    return sConfig.GetStringDefault("AH.Service.CustodyCrashAt", "");
+    return sAhService.Settings().custodyCrashAt;
 }
 
 bool CustodyService::ShouldCrashAtPhase(std::string const& configuredPhase,
@@ -252,7 +252,7 @@ bool CustodyService::CommitCheckedOrForcedFail(
     // the next reconciliation attempt can take the real checked commit.
     static bool s_forcedFailFired = false;
     if (!s_forcedFailFired && !phase.empty() &&
-        sConfig.GetStringDefault("AH.Service.CustodyFailCommitAt", "") == phase)
+        sAhService.Settings().custodyFailCommitAt == phase)
     {
         s_forcedFailFired = true;
         sLog.outError(

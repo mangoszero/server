@@ -25,11 +25,11 @@
 
 #include <memory>
 #include "Master.h"
+#include "AuctionHouseModule.h"
 
 #include "AntiFreezeService.h"
 #include "CliService.h"
 #include "RASession.h"
-#include "AhService.h"
 
 #include "Config/Config.h"
 #include "Console/ConsoleUI.h"
@@ -234,12 +234,6 @@ void Master::StartServices()
     }
 #endif
 
-    // The out-of-process auction house. mangos_zero only, default-off.
-    if (sConfig.GetBoolDefault("AH.Service.Enabled", false))
-    {
-        m_services.push_back(std::unique_ptr<IService>(new AhServiceService()));
-    }
-
     // Watchdog. Disabled unless MaxCoreStuckTime is set.
     m_services.push_back(std::unique_ptr<IService>(new AntiFreezeService(
         1000 * uint32(sConfig.GetIntDefault("MaxCoreStuckTime", 0)))));
@@ -380,6 +374,9 @@ void Master::ShutdownWorld()
 
     sLog.outString("[shutdown] unloading maps");
     sMapMgr.UnloadAll();
+
+    sLog.outString("[shutdown] stopping the auction modules");
+    AuctionHouseModules::Stop();
 }
 
 int Master::Run(std::string const& testMode, bool allowDestructiveTests)
@@ -398,6 +395,8 @@ int Master::Run(std::string const& testMode, bool allowDestructiveTests)
 
     if (!testMode.empty())
     {
+        // The tests see the modules a running world would.
+        AuctionHouseModules::LoadConfig(false);
         int const rc = RunMangosdTest(testMode);
         sLog.outString("mangosd test '%s' exit %d", testMode.c_str(), rc);
         sLog.Flush();

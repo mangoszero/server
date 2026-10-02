@@ -32,7 +32,6 @@
 #include "SQLStorages.h"
 #include "DBCStores.h"
 #include "Group.h"
-#include "AuctionHouseBot/AhBotSystemOwner.h"
 #include "LivingWorldAnchorPolicy.h"
 #include "MotionGenerators/MotionMaster.h"
 #include "Policies/Singleton.h"

@@ -37,11 +37,18 @@
  *   ah repair          -- dry-run custody-ledger drift repair
  *   ah repair apply    -- terminalize supported custody-ledger drift
  *   ah repair force-forfeit <key>
+ *   ah reload          -- reload ah-service.conf, and the worker's settings
+ *   ah status          -- worker state and intent executor counters
  */
 
 #include "AuctionHouseMgr.h"
-#include "AuctionHouseBot/CustodyLedger.h"
-#include "AuctionHouseBot/CustodyService.h"
+#include "AhService.h"
+#include "AhServiceCommands.h"
+#include "AuctionHouseBot.h"
+#include "AuctionIntentExecutor.h"
+#include "AuctionIntents.h"
+#include "CustodyLedger.h"
+#include "CustodyService.h"
 #include "Bag.h"
 #include "Chat.h"
 #include "Database/DatabaseEnv.h"
@@ -574,24 +581,24 @@ static void CountRepairAction(AhRepairActionResult const& result,
 /**
  * @brief "ah console show" -- request the child to show its console window.
  */
-bool ChatHandler::HandleAhServiceConsoleShowCommand(char* /*args*/)
+static bool HandleConsoleShow(ChatHandler& handler, char* /*args*/)
 {
     // Console-only: this toggles the CHILD's console window on the SERVER
-    // HOST, which an in-game GM cannot see and never needs. m_session is
+    // HOST, which an in-game GM cannot see and never needs. GetSession() is
     // non-NULL only for an in-game chat invocation; reject those.
-    if (m_session)
+    if (handler.GetSession())
     {
-        PSendSysMessage("This command is only available from the server"
+        handler.PSendSysMessage("This command is only available from the server"
                         " console.");
-        SetSentErrorMessage(true);
+        handler.SetSentErrorMessage(true);
         return false;
     }
 
-    WorkerSupervisor* sv = sWorld.GetAhSupervisor();
+    WorkerSupervisor* sv = sAhService.GetSupervisor();
     if (!IsAhServiceConnected(sv))
     {
-        SendSysMessage("AH service is not running.");
-        SetSentErrorMessage(true);
+        handler.SendSysMessage("AH service is not running.");
+        handler.SetSentErrorMessage(true);
         return false;
     }
 
@@ -600,34 +607,34 @@ bool ChatHandler::HandleAhServiceConsoleShowCommand(char* /*args*/)
     msg.body << static_cast<uint8>(1);
     if (!sv->Channel().SendFrame(msg))
     {
-        SendSysMessage("AH service is not responding (send failed).");
-        SetSentErrorMessage(true);
+        handler.SendSysMessage("AH service is not responding (send failed).");
+        handler.SetSentErrorMessage(true);
         return false;
     }
-    SendSysMessage("AH service console show requested.");
+    handler.SendSysMessage("AH service console show requested.");
     return true;
 }
 
 /**
  * @brief "ah console hide" -- request the child to hide its console window.
  */
-bool ChatHandler::HandleAhServiceConsoleHideCommand(char* /*args*/)
+static bool HandleConsoleHide(ChatHandler& handler, char* /*args*/)
 {
     // Console-only: see HandleAhServiceConsoleShowCommand. An in-game GM
     // cannot see the host's child console window and never needs this.
-    if (m_session)
+    if (handler.GetSession())
     {
-        PSendSysMessage("This command is only available from the server"
+        handler.PSendSysMessage("This command is only available from the server"
                         " console.");
-        SetSentErrorMessage(true);
+        handler.SetSentErrorMessage(true);
         return false;
     }
 
-    WorkerSupervisor* sv = sWorld.GetAhSupervisor();
+    WorkerSupervisor* sv = sAhService.GetSupervisor();
     if (!IsAhServiceConnected(sv))
     {
-        SendSysMessage("AH service is not running.");
-        SetSentErrorMessage(true);
+        handler.SendSysMessage("AH service is not running.");
+        handler.SetSentErrorMessage(true);
         return false;
     }
 
@@ -636,24 +643,24 @@ bool ChatHandler::HandleAhServiceConsoleHideCommand(char* /*args*/)
     msg.body << static_cast<uint8>(0);
     if (!sv->Channel().SendFrame(msg))
     {
-        SendSysMessage("AH service is not responding (send failed).");
-        SetSentErrorMessage(true);
+        handler.SendSysMessage("AH service is not responding (send failed).");
+        handler.SetSentErrorMessage(true);
         return false;
     }
-    SendSysMessage("AH service console hide requested.");
+    handler.SendSysMessage("AH service console hide requested.");
     return true;
 }
 
 /**
  * @brief "ah repair" -- dry-run or repair custody-ledger drift.
  */
-bool ChatHandler::HandleAhRepairCommand(char* args)
+static bool HandleRepair(ChatHandler& handler, char* args)
 {
-    if (m_session)
+    if (handler.GetSession())
     {
-        PSendSysMessage("This command is only available from the server"
+        handler.PSendSysMessage("This command is only available from the server"
                         " console.");
-        SetSentErrorMessage(true);
+        handler.SetSentErrorMessage(true);
         return false;
     }
 
@@ -663,8 +670,8 @@ bool ChatHandler::HandleAhRepairCommand(char* args)
     bool const forceForfeit = ExtractForceForfeitKey(mode, forceForfeitKey);
     if (!mode.empty() && mode != "--dry-run" && !apply && !forceForfeit)
     {
-        SendSysMessage("Syntax: ah repair [--dry-run|apply|force-forfeit <key>]");
-        SetSentErrorMessage(true);
+        handler.SendSysMessage("Syntax: ah repair [--dry-run|apply|force-forfeit <key>]");
+        handler.SetSentErrorMessage(true);
         return false;
     }
 
@@ -703,13 +710,13 @@ bool ChatHandler::HandleAhRepairCommand(char* args)
         }
 
         CountRepairAction(result, repaired, skipped, failed);
-        PrintRepairAction(*this, budget, result);
-        PrintRepairSuppression(*this, budget);
-        PrintRepairSummary(*this, "force-forfeit", report,
+        PrintRepairAction(handler, budget, result);
+        PrintRepairSuppression(handler, budget);
+        PrintRepairSummary(handler, "force-forfeit", report,
                            repaired, skipped, failed);
         if (!found || result.status != AH_REPAIR_REPAIRED)
         {
-            SetSentErrorMessage(true);
+            handler.SetSentErrorMessage(true);
             return false;
         }
         return true;
@@ -718,13 +725,13 @@ bool ChatHandler::HandleAhRepairCommand(char* args)
     char const* modeName = apply ? "apply" : "dry-run";
     for (size_t i = 0; i < report.findings.size(); ++i)
     {
-        PrintRepairFinding(*this, budget, modeName, report.findings[i]);
+        PrintRepairFinding(handler, budget, modeName, report.findings[i]);
     }
 
     if (!apply)
     {
-        PrintRepairSuppression(*this, budget);
-        PrintRepairSummary(*this, modeName, report, 0, 0, 0);
+        PrintRepairSuppression(handler, budget);
+        PrintRepairSummary(handler, modeName, report, 0, 0, 0);
         return true;
     }
 
@@ -745,7 +752,7 @@ bool ChatHandler::HandleAhRepairCommand(char* args)
                    << " state=" << CustodyFindingStateName(finding.state);
             result = RepairAction(AH_REPAIR_SKIPPED, 0, detail.str());
             CountRepairAction(result, repaired, skipped, failed);
-            PrintRepairAction(*this, budget, result);
+            PrintRepairAction(handler, budget, result);
             continue;
         }
 
@@ -763,10 +770,92 @@ bool ChatHandler::HandleAhRepairCommand(char* args)
         }
 
         CountRepairAction(result, repaired, skipped, failed);
-        PrintRepairAction(*this, budget, result);
+        PrintRepairAction(handler, budget, result);
     }
 
-    PrintRepairSuppression(*this, budget);
-    PrintRepairSummary(*this, modeName, report, repaired, skipped, failed);
+    PrintRepairSuppression(handler, budget);
+    PrintRepairSummary(handler, modeName, report, repaired, skipped, failed);
     return failed == 0;
+}
+
+/**
+ * @brief "ah reload" -- reload ah-service.conf and the bot settings, and ask
+ * the worker to reload its own; its answer is logged.
+ */
+static bool HandleReload(ChatHandler& handler, char* /*args*/)
+{
+    sAhService.LoadConfig(true);
+    sAuctionBotConfig.Initialize();
+
+    WorkerSupervisor* sv = sAhService.GetSupervisor();
+    if (sv == NULL || !sv->ServiceActive())
+    {
+        handler.SendSysMessage("AH service settings reloaded; the worker is not running.");
+        return true;
+    }
+
+    GmCmd gc;
+    gc.cmd = static_cast<uint8>(GMCMD_RELOAD);
+    IpcMessage m;
+    m.op = IPC_GMCMD;
+    gc.Encode(m.body);
+    sv->Channel().SendFrame(m);
+
+    handler.SendSysMessage("AH service settings reloaded; reload signal sent to the worker - result will be logged.");
+    return true;
+}
+
+/**
+ * @brief "ah status" -- the worker's state and the intent executor's counters.
+ */
+static bool HandleStatus(ChatHandler& handler, char* /*args*/)
+{
+    WorkerSupervisor* sv = sAhService.GetSupervisor();
+    if (sv == NULL)
+    {
+        handler.PSendSysMessage("[AH service] worker: %s",
+                                sAhService.IsWorkerConfigured() ? "configured, failed to start" : "not configured");
+    }
+    else
+    {
+        handler.PSendSysMessage("[AH service] worker: %s",
+                                sv->ServiceActive() ? "active" : "inactive (in-process bot running)");
+    }
+    handler.PSendSysMessage("[AH service] custody: %s, write authority: %s",
+                            sAhService.IsCustodyEnabled() ? "on" : "off",
+                            sAhService.IsWriteAuthority() ? "on" : "off");
+    handler.PSendSysMessage("[AH service] executor: applied=%llu rejected=%llu"
+                            " duplicate=%llu malformed=%llu",
+                            static_cast<unsigned long long>(sAuctionIntentExecutor.GetApplied()),
+                            static_cast<unsigned long long>(sAuctionIntentExecutor.GetRejected()),
+                            static_cast<unsigned long long>(sAuctionIntentExecutor.GetDuplicate()),
+                            static_cast<unsigned long long>(sAuctionIntentExecutor.GetMalformed()));
+    return true;
+}
+
+ChatCommand* AhServiceCommands()
+{
+    static ChatCommand consoleTable[] =
+    {
+        ChatCommand("show",    &HandleConsoleShow, SEC_ADMINISTRATOR, true),
+        ChatCommand("hide",    &HandleConsoleHide, SEC_ADMINISTRATOR, true),
+        ChatCommand(NULL,      0,                  true, NULL, "", NULL)
+    };
+
+    static ChatCommand ahTable[] =
+    {
+        ChatCommand("console", SEC_ADMINISTRATOR,  true, NULL, "", consoleTable),
+        ChatCommand("repair",  &HandleRepair,      SEC_ADMINISTRATOR, true),
+        ChatCommand("reload",  &HandleReload,      SEC_ADMINISTRATOR, true),
+        ChatCommand("status",  &HandleStatus,      SEC_ADMINISTRATOR, true),
+        ChatCommand(NULL,      0,                  true, NULL, "", NULL)
+    };
+
+    static ChatCommand rootTable[] =
+    {
+        ChatCommand("ah",      SEC_ADMINISTRATOR,  true, NULL, "", ahTable),
+        ChatCommand(NULL,      0,                  false, NULL, "", NULL)
+    };
+
+    return rootTable;
 }

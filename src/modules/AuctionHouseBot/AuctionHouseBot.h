@@ -199,6 +199,12 @@ class AuctionBotConfig
         bool Initialize();
 
         /**
+         * @brief Reads the first key of the configuration file
+         * @return False when the file is missing or says Enable = 0
+         */
+        bool IsModuleEnabled();
+
+        /**
          * @brief Get the AHBot includes string
          * @return Comma-separated list of included item IDs
          */
@@ -461,13 +467,7 @@ class AuctionHouseBot
         void Update();
 
         /**
-         * @brief Drive the hourly mailed-item cleanup, mode-agnostic.
-         *
-         * Public wrapper around PurgeMailedItems() so World::Update can run
-         * the cleanup on the WUPDATE_AHBOT timer in BOTH bot modes (in-process
-         * and out-of-process service). In service mode Update() is gated out,
-         * so the cleanup must be driven from here or the bot's returned/unsold
-         * mail (mail / mail_items / item_instance) grows without bound.
+         * @brief Drive the hourly mailed-item cleanup, also while Update() stands down.
          *
          * Internally throttled to once per hour; cheap to call every tick.
          */

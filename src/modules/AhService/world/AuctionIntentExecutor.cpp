@@ -28,6 +28,8 @@
 #include "AuctionIntentExecutor.h"
 
 #include "AuctionIntents.h"
+#include "AhService.h"
+#include "AhServiceBook.h"
 #include "AuctionHouseMgr.h"
 #include "AuctionHouseBot.h"
 #include "CustodyLedger.h"
@@ -36,7 +38,6 @@
 #include "ItemPrototype.h"
 #include "Item.h"
 #include "DBCStores.h"
-#include "Config/Config.h"
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
 #include "World.h"
@@ -212,7 +213,7 @@ void AuctionIntentExecutor::RefreshTtl()
     static const uint32 TTL_MIN = 60u;
     static const uint32 TTL_MAX = 86400u;
 
-    const int32 raw = sConfig.GetIntDefault("AH.Service.IntentTtlSec", 900);
+    const int32 raw = sAhService.Settings().intentTtlSec;
     uint32 ttl;
     if (raw < static_cast<int32>(TTL_MIN))
     {
@@ -369,7 +370,7 @@ void AuctionIntentExecutor::Apply(const IpcMessage& in, IpcMessage& resultOut)
             // value effect in-process, bidder=0) and no longer sends
             // IPC_INTENT_BID. A frame arriving here is stray/stale: log+ignore
             // (no reply) rather than mutate a live auction from a stale snapshot.
-            if (sWorld.IsAhWriteAuthority())
+            if (sAhService.IsWriteAuthority())
             {
                 sLog.outError("[AHExecutor] IPC_INTENT_BID under WriteAuthority"
                               " (worker owns bids) - ignored");
@@ -382,7 +383,7 @@ void AuctionIntentExecutor::Apply(const IpcMessage& in, IpcMessage& resultOut)
         {
             // [SP-2] Same as IPC_INTENT_BID: buyouts are worker-owned under
             // WriteAuthority. A stray frame is logged and ignored.
-            if (sWorld.IsAhWriteAuthority())
+            if (sAhService.IsWriteAuthority())
             {
                 sLog.outError("[AHExecutor] IPC_INTENT_BUYOUT under"
                               " WriteAuthority (worker owns buyouts) - ignored");
@@ -434,7 +435,7 @@ void AuctionIntentExecutor::ApplySell(const IpcMessage& in,
     // orphan sweep. So skip the in-memory dedup here under authority and let
     // MaterializeSell's durable replay own idempotency (it never double-mints:
     // Get("botlist:<uuid>") replays the recorded ids on a redelivery).
-    if (!sWorld.IsAhWriteAuthority() && IsDuplicate(s.uuid))
+    if (!sAhService.IsWriteAuthority() && IsDuplicate(s.uuid))
     {
         ++m_duplicate;
         Remember(s.uuid, now);
@@ -577,7 +578,7 @@ void AuctionIntentExecutor::ApplySell(const IpcMessage& in,
     // sole `auction`-table writer; mangosd's job is to mint+persist+escrow the
     // item, allocate the id and record the durable idempotency row, then reply
     // the ids for the worker to write the book. All validations above still ran.
-    if (sWorld.IsAhWriteAuthority())
+    if (sAhService.IsWriteAuthority())
     {
         MaterializeSell(s, resultOut, now);
         return;
@@ -1031,7 +1032,7 @@ void AuctionIntentExecutor::ApplyBid(const IpcMessage& in,
     // newbid reaches buyout, which we excluded above, so for a pure bid this
     // is the OK path regardless of return value.
     bool applied = false;
-    auction->UpdateBid(b.bidAmount, NULL, &applied);
+    AhPlaceGeneratedBid(*auction, b.bidAmount, applied);
     if (!applied)
     {
         ++m_rejected;
@@ -1151,7 +1152,7 @@ void AuctionIntentExecutor::ApplyBuyout(const IpcMessage& in,
     // the auction internally -- false is the SUCCESS path for buyout, so we
     // must NOT touch `auction` afterwards.
     bool applied = false;
-    auction->UpdateBid(auction->buyout, NULL, &applied);
+    AhPlaceGeneratedBid(*auction, auction->buyout, applied);
     if (!applied)
     {
         ++m_rejected;

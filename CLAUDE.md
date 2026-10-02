@@ -12,7 +12,8 @@ this repo. Humans: also read [`doc/CodingStandard.md`](doc/CodingStandard.md).
   `Rel##_##_###_*.sql` migrations that chain via `db_version`.
 - Clone/update **recursively**: `dep`, `src/realmd`, `src/modules/{SD3,Eluna}`, `src/tools/Extractor_projects`
   and `win` are submodules. Never shallow-update a submodule to a non-tip pinned SHA.
-- Less-obvious locations: out-of-process services in `src/ipc/` + `src/ah-service/`; scripting in
+- Less-obvious locations: auction modules in `src/modules/AuctionHouseBot/` and `src/modules/AhService/`
+  (registered through `src/game/Object/AuctionHouseModule.h`); scripting in
   `src/modules/` (Eluna = Lua, SD3 = C++, Bots = playerbots).
 
 ## Build & test
@@ -34,7 +35,7 @@ make -j"$(nproc)" && make install -j"$(nproc)"
 
 Windows: use the EasyBuild helper in `win/`. **A PR MUST keep CI green:** the Linux build compiles with
 **both** GCC and Clang, Windows builds on AppVeyor, and Codacy/CodeFactor gate quality. If you touch
-`src/ipc/` or `src/ah-service/`, keep `ah-service --selftest` passing (it must print `intent codec selftest OK`
+`src/modules/AhService/`, keep `ah-service --selftest` passing (it must print `intent codec selftest OK`
 and `ipc selftest OK`).
 
 ## Code style
@@ -56,9 +57,11 @@ Source of truth: [`doc/CodingStandard.md`](doc/CodingStandard.md). Non-default r
 
 ## Architecture note
 
-The **in-process AuctionHouseBot is the default**; the out-of-process AH service is additive and default-off
-(`AH.Service.Enabled`). `mangosd` is the **sole authority** over game state — worker/service "intents" are
-re-validated server-side before they are applied.
+Auction house extras are **modules**: the core knows only `AuctionHouseModule` and never names one. Each
+module is a CMake option (`BUILD_AHBOT`, default on; `BUILD_AH_SERVICE`, default off), brings its own
+`.conf` whose first key is `Enable`, and registers itself from a static object. The playerbots' ike3 AhBot
+(`src/modules/Bots/ahbot/`) is not built; `src/modules/Bots/AhBotPrices.cpp` answers its price queries. `mangosd.conf` stays module-agnostic. `mangosd` is the **sole authority** over game state —
+worker/service "intents" are re-validated server-side before they are applied.
 
 ## Review focus (for `@claude`)
 

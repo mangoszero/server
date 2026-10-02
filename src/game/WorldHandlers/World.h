@@ -44,8 +44,6 @@
 #include "Timer.h"
 #include "Policies/Singleton.h"
 #include "SharedDefines.h"
-#include "AuctionHouseBot/BrowsePending.h"
-#include "AuctionHouseBot/MutationPending.h"
 #include <set>
 #include <list>
 #include <vector>
@@ -63,8 +61,6 @@ class WorldSession;
 class Player;
 class SqlResultQueue;
 class QueryResult;
-class WorkerSupervisor;
-class IpcMessage;
 
 // ServerMessages.dbc
 enum ServerMessageType
@@ -98,7 +94,6 @@ enum WorldTimers
     WUPDATE_CORPSES,
     WUPDATE_EVENTS,
     WUPDATE_DELETECHARS,
-    WUPDATE_AHBOT,
     WUPDATE_COUNT
 };
 
@@ -393,11 +388,6 @@ enum eConfigBoolValues
     // Recommended Or New Flag
     CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW_ENABLED,
     CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW,
-
-    // AH Service custody escrow ledger
-    CONFIG_BOOL_AH_CUSTODY,
-    // AH Service worker write-authority (SP-2, boot-latched)
-    CONFIG_BOOL_AH_WRITE_AUTHORITY,
     CONFIG_BOOL_WARDEN_REQUIRE_EXACT_PROFILE,
     CONFIG_BOOL_VALUE_COUNT
 };
@@ -622,17 +612,6 @@ class World
             return getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_FFA_PVP;
         }
 
-        /// Is the AH custody escrow ledger enabled?
-        bool IsAhCustodyEnabled() const { return getConfig(CONFIG_BOOL_AH_CUSTODY); }
-
-        /// Is the AH worker the auction write-authority? BOOT-LATCHED (SP-2,
-        /// spec decision 7): LoadConfigSettings reads the key only when
-        /// !reload, so `.reload config` can never change it mid-run.
-        bool IsAhWriteAuthority() const
-        {
-            return getConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY);
-        }
-
         void KickAll();
         void KickAllLess(AccountTypes sec);
         BanReturn BanAccount(BanMode mode, std::string nameOrIP, uint32 duration_secs, std::string reason, const std::string &author);
@@ -690,56 +669,6 @@ class World
         Eluna* GetEluna() const { return eluna; }
         Eluna* eluna;
 #endif /* ENABLE_ELUNA */
-
-        // AH subprocess supervisor (Task 5+).
-        // Set by mangosd.cpp after WorkerSupervisor::Start() succeeds.
-        // Returns NULL if AH.Service.Enabled=0 OR startup failed -- a NULL
-        // supervisor does NOT distinguish "not configured" from "configured but
-        // failed to start". Use IsAhServiceConfigured() for that distinction.
-        //
-        // PF3-A: published with a RELEASE store and read with ACQUIRE loads.
-        // SetAhSupervisor() runs AFTER worldThread->open(0) has already started
-        // the world tick loop, so the world thread reads this pointer
-        // concurrently. The release/acquire pairing guarantees the
-        // WorkerSupervisor's construction + Start() member stores
-        // happen-before any non-NULL observation, so the world thread can never
-        // dereference a half-constructed supervisor on a weakly-ordered CPU.
-        void SetAhSupervisor(WorkerSupervisor* sv)
-        {
-            m_ahSupervisor.store(sv, std::memory_order_release);
-        }
-        WorkerSupervisor* GetAhSupervisor() const
-        {
-            return m_ahSupervisor.load(std::memory_order_acquire);
-        }
-
-        // SP-1 coordinator authority: TRUE iff the AH worker is the CONFIGURED
-        // read authority (AH.Service.Enabled=1), independent of whether the
-        // supervisor object is currently live. A failed WorkerSupervisor::Start()
-        // nulls m_ahSupervisor but MUST leave this flag set, so the read handlers
-        // send "AH unavailable" instead of silently reverting to in-process reads.
-        void SetAhServiceConfigured(bool v)
-        {
-            m_ahServiceConfigured.store(v, std::memory_order_release);
-        }
-        bool IsAhServiceConfigured() const
-        {
-            return m_ahServiceConfigured.load(std::memory_order_acquire);
-        }
-
-        // SP-1: outstanding async browse requests awaiting a worker reply.
-        // Owned by the world thread; the handlers Register, the reply branch
-        // Takes, and the once-per-second sweep collects timed-out entries.
-        BrowsePendingMap& GetBrowsePending() { return m_browsePending; }
-
-        /// SP-2: outstanding player mutations awaiting a worker reply
-        /// (apply-all consume-once; world-thread owned). The forward branches
-        /// Register (Task 10); the finalize pump Takes/Sweeps (Task 11).
-        MutationPendingMap& GetMutationPending()
-        {
-            return m_mutationPending;
-        }
-
     protected:
         void _UpdateGameTime();
         // callback for UpdateRealmCharacters
@@ -855,32 +784,6 @@ class World
 
         // List of Maps that should be force-loaded on startup
         std::set<uint32> m_configForceLoadMapIds;
-
-        // AH subprocess supervisor pointer (NULL when service is disabled).
-        // PF3-A: atomic so the publishing release store in SetAhSupervisor()
-        // synchronises-with the acquire loads in the world tick loop.
-        std::atomic<WorkerSupervisor*> m_ahSupervisor;
-
-        // SP-1 coordinator authority flag (see SetAhServiceConfigured). Persists
-        // for the process lifetime once AH.Service.Enabled=1, even if the
-        // supervisor object is torn down after a failed Start().
-        std::atomic<bool> m_ahServiceConfigured;
-
-        // SP-1: pending-map for async browse proxying (world-thread owned).
-        BrowsePendingMap m_browsePending;
-
-        /// SP-2: pending-map for async player mutations (world-thread owned).
-        MutationPendingMap m_mutationPending;
-
-        /**
-         * @brief Dispatch one inbound frame from the AH subprocess.
-         *
-         * M1 stub: logs the opcode. M2 will route IPC_AH_* intents to
-         * the AH executor. Keep this switch extensible.
-         *
-         * @param msg The inbound frame from the ah-service child.
-         */
-        void HandleAhInbound(const IpcMessage& msg);
 };
 
 extern uint32 realmID;

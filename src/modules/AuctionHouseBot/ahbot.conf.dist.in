@@ -3,6 +3,16 @@
 ################################################################################
 
 [AhbotConf]
+
+################################################################################
+#    Enable
+#        Load the auction house bot module. 0 leaves the server without it,
+#        including its .ahbot commands.
+#    Default 1 (Enabled; Seller and Buyer below still decide what it does)
+################################################################################
+
+Enable = 1
+
 ConfVersion=@MANGOS_AHBOT_VER@
 
 ################################################################################
@@ -151,7 +161,7 @@ ConfVersion=@MANGOS_AHBOT_VER@
 #
 ################################################################################
 
-AuctionHouseBot.CharacterName  = "AuctionHouse"
+AuctionHouseBot.CharacterName  = ""
 AuctionHouseBot.Seller.Enabled = 0
 AuctionHouseBot.DEBUG.Seller   = 0
 
