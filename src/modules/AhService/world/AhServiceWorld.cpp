@@ -403,11 +403,10 @@ void AhServiceTick()
     // Overflow visibility: warn (rate-limited) when the inbound queue has
     // dropped frames since we last checked.
     static size_t s_lastDroppedSeen = 0;
-    static time_t s_lastOverflowWarn = 0;
-    static time_t s_lastNearFullWarn = 0;
     const size_t  dropped = ahSupervisor->InboundDropped();
     if (dropped > s_lastDroppedSeen)
     {
+        static time_t s_lastOverflowWarn = 0;
         const time_t now = time(NULL);
         // Baseline only advances on emission so suppressed bursts are counted
         // correctly in the next warning.
@@ -437,6 +436,7 @@ void AhServiceTick()
         const size_t qSize = ahSupervisor->Channel().InboundSize();
         if (qSize >= IPC_INBOUND_QUEUE_CAP * 4 / 5)
         {
+            static time_t s_lastNearFullWarn = 0;
             const time_t now = time(NULL);
             if (now - s_lastNearFullWarn >= 60)
             {
