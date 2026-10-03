@@ -18,10 +18,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-#AH Bot group
-file(GLOB SRC_GRP_AHBOT AuctionHouseBot/*.cpp AuctionHouseBot/*.h)
-source_group("AhBot" FILES ${SRC_GRP_AHBOT})
-
 #Battlegrounds group
 file(GLOB SRC_GRP_BATTLEGROUND BattleGround/*.cpp BattleGround/*.h)
 source_group("BattleGround" FILES ${SRC_GRP_BATTLEGROUND})
@@ -103,12 +99,11 @@ if(PLAYERBOTS)
 #Base files
 file(GLOB Playerbot_Source ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/*.h)
 source_group("Player Bot" FILES ${Playerbot_Source})
-file(GLOB AHbot_Source ${CMAKE_SOURCE_DIR}/src/modules/Bots/ahbot/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/ahbot/*.h)
-source_group("AH Bot" FILES ${AHbot_Source})
 
+# The ahbot/ AhBot is not built; the playerbots get its prices from here.
 set(SRC_GRP_BOTS
     ${Playerbot_Source}
-    ${AHbot_Source}
+    ${CMAKE_SOURCE_DIR}/src/modules/Bots/AhBotPrices.cpp
 )
 #Strategy files
 file(GLOB Playerbot_Strategy ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/*.h)
@@ -186,10 +181,7 @@ configure_file(${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/aiplayerbot.conf.d
 
 endif()
 
-configure_file(AuctionHouseBot/ahbot.conf.dist.in ${CMAKE_CURRENT_BINARY_DIR}/AuctionHouseBot/ahbot.conf.dist)
-
 add_library(game STATIC
-    ${SRC_GRP_AHBOT}
     ${SRC_GRP_BATTLEGROUND}
     ${SRC_GRP_CHAT_COMMANDS}
     ${SRC_GRP_MAP_THREAD}
@@ -217,7 +209,6 @@ endif()
 target_include_directories(game
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
-        AuctionHouseBot
         BattleGround
         ChatCommands
         Maps
@@ -261,7 +252,6 @@ target_link_libraries(game
         geometry
         proto
         shared
-        ah_ipc
         RecastNavigation::Detour
         ZLIB::ZLIB
         $<$<BOOL:${SCRIPT_LIB_SD3}>:mangosscript>
@@ -274,11 +264,6 @@ target_link_libraries(game
 if(PCH)
     add_cxx_pch(game pchdef.h pchdef.cpp)
 endif()
-
-install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/AuctionHouseBot/ahbot.conf.dist
-    DESTINATION ${CONF_INSTALL_DIR}
-)
 
 if(SCRIPT_LIB_ELUNA)
 install(

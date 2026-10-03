@@ -63,7 +63,7 @@
 #include "Console/ConsoleUI.h"
 #include "Log.h"
 #include "SystemConfig.h"
-#include "AuctionHouseBot.h"
+#include "AuctionHouseModule.h"
 #include "Master.h"
 #include "World.h"
 #include "Util.h"
@@ -227,7 +227,7 @@ int main(int argc, char** argv)
         }
         else if ((arg == "-a" || arg == "--ahbot") && hasValue)
         {
-            sAuctionBotConfig.SetConfigFileName(argv[++i]);
+            AuctionHouseModules::SetConfigFile(argv[++i]);
         }
         else if (arg == "-t" && hasValue)
         {

@@ -63,7 +63,32 @@
 #include "BattleGround/BattleGroundMgr.h"
 #include "Item.h"
 #include "AuctionHouseMgr.h"
-#include "AuctionHouseBot/CustodyDeferred.h"
+
+#include <functional>
+#include <utility>
+
+namespace
+{
+    /// What an online receiver is shown once the caller's transaction commits.
+    struct DeferredMailPush
+    {
+        uint32 mailId;
+        uint32 receiverGuid;
+        uint32 senderId;
+        uint8 messageType;
+        uint8 stationery;
+        uint32 mailTemplateId;
+        std::string subject;
+        std::string body;
+        uint32 money;
+        uint32 cod;
+        uint32 checked;
+        uint64 deliverTime;
+        uint64 expireTime;
+        std::vector<std::pair<uint32, uint32>> items;
+        std::vector<Item*> liveItems;
+    };
+}
 
 /**
  * Creates a new MailSender object.
@@ -431,27 +456,27 @@ void MailDraft::writeMailRows(uint32 mailId, MailReceiver const& receiver, MailS
 }
 
 /**
- * Custody co-commit variant of SendMailTo.
+ * Variant of SendMailTo that writes into the caller's open transaction.
  *
  * Mirrors SendMailTo's metadata/expiry computation and row writes EXACTLY, but
  * does NOT open or close a transaction: its INSERTs append to the caller's
  * already-open CharacterDatabase transaction so the mail co-commits atomically
  * with the caller's other writes. Every side effect that mutates live world
- * state or destroys a live Item* is queued into @p deferred instead of run
+ * state or destroys a live Item* is queued into @p afterCommit instead of run
  * inline, so it only happens after the caller's checked commit succeeds.
  *
- * Item lifetime invariant (spec I5): the deferred effects run in the SAME call
+ * Item lifetime: the deferred effects run in the SAME call
  * stack right after the checked commit (no yield/tick in between), so the
  * captured Player and Item pointers are still valid when the closure executes.
  *
  * @param receiver             The MailReceiver to which this mail is sent.
  * @param sender               The MailSender from which this mail is originated.
- * @param deferred             Ordered queue for the deferred online push / item destruction.
+ * @param afterCommit          Ordered queue for the deferred online push / item destruction.
  * @param checked              The mask used to specify the mail.
  * @param deliver_delay        The delay after which the mail is delivered in seconds.
  */
 void MailDraft::SendMailToInTransaction(MailReceiver const& receiver, MailSender const& sender,
-                                        CustodyDeferred& deferred, MailCheckMask checked,
+                                        std::vector<std::function<void()>>& afterCommit, MailCheckMask checked,
                                         uint32 deliver_delay)
 {
     Player* pReceiver = receiver.GetPlayer();               // can be NULL
@@ -467,8 +492,7 @@ void MailDraft::SendMailToInTransaction(MailReceiver const& receiver, MailSender
         // Delete the item_instance rows in the caller's transaction, but DEFER
         // the live Item* destruction into a SUCCESS-ONLY effect (do not delete
         // inside the open transaction). On rollback the closure never runs, the
-        // item_instance DELETE is reverted, and the live Item* survives in the
-        // AH cache (mAitems) for the next-tick re-resolution.
+        // item_instance DELETE is reverted, and the live Item* stays with its holder.
         std::vector<Item*> invalidItems;
         for (MailItemMap::iterator mailItemIter = m_items.begin(); mailItemIter != m_items.end(); ++mailItemIter)
         {
@@ -480,7 +504,7 @@ void MailDraft::SendMailToInTransaction(MailReceiver const& receiver, MailSender
 
         if (!invalidItems.empty())
         {
-            deferred.effects.push_back([invalidItems]()
+            afterCommit.push_back([invalidItems]()
             {
                 for (size_t i = 0; i < invalidItems.size(); ++i)
                 {
@@ -564,8 +588,8 @@ void MailDraft::SendMailToInTransaction(MailReceiver const& receiver, MailSender
             push.items.push_back(std::make_pair(item->GetGUIDLow(), item->GetEntry()));
             // The live Item* is disposed by the success push closure (AddMItem,
             // transferring ownership to the receiving Player). On rollback the
-            // closure never runs and the item survives in the AH cache (mAitems)
-            // for the next-tick re-resolution -- it is NOT freed on rollback.
+            // closure never runs and the item stays with its holder -- it is NOT
+            // freed on rollback.
             push.liveItems.push_back(item);
         }
 
@@ -574,8 +598,8 @@ void MailDraft::SendMailToInTransaction(MailReceiver const& receiver, MailSender
         m_items.clear();
 
         // Replays SendMailTo's online push (Mail.cpp online branch) identically.
-        // Re-resolves the receiver by GUID at run time (scalar-only closure, I2 invariant).
-        deferred.effects.push_back([push]()
+        // Re-resolves the receiver by GUID at run time.
+        afterCommit.push_back([push]()
         {
             // Re-resolve the receiver by GUID — no raw Player* captured.
             Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, push.receiverGuid));
@@ -634,8 +658,7 @@ void MailDraft::SendMailToInTransaction(MailReceiver const& receiver, MailSender
         // SUCCESS-ONLY effect instead of deleting inside the open transaction.
         // On success the item lives on only as the DB item_instance + mail_items
         // rows, so the live object is deleted. On rollback the closure never
-        // runs, the rows are reverted, and the live Item* survives in the AH
-        // cache (mAitems) for the next-tick re-resolution.
+        // runs, the rows are reverted, and the live Item* stays with its holder.
         std::vector<Item*> offlineItems;
         for (MailItemMap::iterator mailItemIter = m_items.begin(); mailItemIter != m_items.end(); ++mailItemIter)
         {
@@ -643,7 +666,7 @@ void MailDraft::SendMailToInTransaction(MailReceiver const& receiver, MailSender
         }
         m_items.clear();
 
-        deferred.effects.push_back([offlineItems]()
+        afterCommit.push_back([offlineItems]()
         {
             for (size_t i = 0; i < offlineItems.size(); ++i)
             {

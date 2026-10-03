@@ -8,4 +8,9 @@
 /// DB init but BEFORE world load. Returns 0 on pass, non-zero on fail.
 int RunMangosdTest(std::string const& name);
 
+typedef int (*MangosdTest)();
+
+/// Makes a test runnable by name; modules call it from a static object.
+void RegisterMangosdTest(char const* name, MangosdTest test);
+
 #endif

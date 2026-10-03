@@ -35,7 +35,6 @@
 #include "DBCStores.h"
 #include "GossipDef.h"
 #include "Language.h"
-#include "AuctionHouseBot/AhBotSystemOwner.h"
 #include "LivingWorldAnchorPolicy.h"
 #include "MotionGenerators/MotionMaster.h"
 #include "Policies/Singleton.h"

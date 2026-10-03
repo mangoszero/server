@@ -10,10 +10,7 @@
 # surfacing the boundary violation.
 add_executable(ah_usability_difftest EXCLUDE_FROM_ALL
     "${CMAKE_CURRENT_SOURCE_DIR}/AhUsabilityDiffTest.cpp"
-    "${CMAKE_SOURCE_DIR}/src/game/Object/AhUsabilityRef.cpp")
-
-target_include_directories(ah_usability_difftest PRIVATE
-    "${CMAKE_SOURCE_DIR}/src/game")   # for "Object/AhUsabilityRef.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/AhUsabilityRef.cpp")
 
 target_link_libraries(ah_usability_difftest PRIVATE ah_usability)
 # ah_usability pulls in ah_ipc (which provides Common.h / ByteBuffer.h /

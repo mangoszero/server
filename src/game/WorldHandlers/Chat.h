@@ -61,6 +61,8 @@ class Map;
 class ChatCommand
 {
     public:
+        typedef bool (*Function)(ChatHandler& handler, char* args);
+
         uint32             Id;
         const char* Name;
         uint32             SecurityLevel;                   // function pointer required correct align (use uint32)
@@ -68,6 +70,7 @@ class ChatCommand
         bool (ChatHandler::* Handler)(char* args);
         std::string        Help;
         ChatCommand* ChildCommands;
+        Function           Callback;                        // handler of a command a module brings
 
         ChatCommand(
             const char* pName,
@@ -76,7 +79,7 @@ class ChatCommand
             bool (ChatHandler::* pHandler)(char* args),
             std::string pHelp,
             ChatCommand* pChildCommands)
-                : Id(-1)
+                : Id(-1), Callback(NULL)
         {
             Name = pName;
             SecurityLevel = pSecurityLevel;
@@ -85,6 +88,20 @@ class ChatCommand
             Help = pHelp;
             ChildCommands = pChildCommands;
         }
+
+        ChatCommand(
+            const char* pName,
+            Function pCallback,
+            uint32 pSecurityLevel,
+            bool pAllowConsole,
+            ChatCommand* pChildCommands = NULL)
+                : Id(-1), Name(pName), SecurityLevel(pSecurityLevel), AllowConsole(pAllowConsole),
+                  Handler(NULL), ChildCommands(pChildCommands), Callback(pCallback)
+        {
+        }
+
+        bool HasHandler() const { return Handler || Callback; }
+        bool Execute(ChatHandler& handler, char* args) const;
 };
 
 enum ChatCommandSearchResult
@@ -249,20 +266,6 @@ class ChatHandler
         bool HandleAccountSetAddonCommand(char* args);
         bool HandleAccountSetGmLevelCommand(char* args);
         bool HandleAccountSetPasswordCommand(char* args);
-
-        bool HandleAHBotItemsAmountCommand(char* args);
-        template <int Q>
-            bool HandleAHBotItemsAmountQualityCommand(char* args);
-        bool HandleAHBotItemsRatioCommand(char* args);
-        template <int H>
-            bool HandleAHBotItemsRatioHouseCommand(char* args);
-        bool HandleAHBotRebuildCommand(char* args);
-        bool HandleAHBotReloadCommand(char* args);
-        bool HandleAHBotStatusCommand(char* args);
-
-        bool HandleAhServiceConsoleShowCommand(char* args);
-        bool HandleAhServiceConsoleHideCommand(char* args);
-        bool HandleAhRepairCommand(char* args);
 
         bool HandleAuctionAllianceCommand(char* args);
         bool HandleAuctionGoblinCommand(char* args);
@@ -721,7 +724,6 @@ class ChatHandler
 #ifdef ENABLE_PLAYERBOTS
         bool HandlePlayerbotCommand(char* args);
         bool HandlePlayerbotConsoleCommand(char* args);
-        bool HandleAhBotCommand(char* args);
 #endif
 
         //! LivingWorld grid occupancy diagnostic (read-only, GM-only, in-game only)
@@ -740,6 +742,7 @@ class ChatHandler
         void  SkipWhiteSpaces(char** args);
         bool  ExtractInt32(char** args, int32& val);
         bool  ExtractOptInt32(char** args, int32& val, int32 defVal);
+    public:
         bool  ExtractUInt32Base(char** args, uint32& val, uint32 base);
         bool  ExtractUInt32(char** args, uint32& val) { return ExtractUInt32Base(args, val, 10); }
         bool  ExtractOptUInt32(char** args, uint32& val, uint32 defVal);
@@ -759,6 +762,7 @@ class ChatHandler
         char* ExtractKeyFromLink(char** text, char const* linkType, char** something1 = NULL);
         char* ExtractKeyFromLink(char** text, char const* const* linkTypes, int* found_idx = NULL, char** something1 = NULL);
         bool  ExtractUint32KeyFromLink(char** text, char const* linkType, uint32& value);
+    protected:
 
         uint32 ExtractAccountId(char** args, std::string* accountName = NULL, Player** targetIfNullArg = NULL);
         uint32 ExtractSpellIdFromLink(char** text);
@@ -827,7 +831,10 @@ class ChatHandler
 
         void DumpPetsOn(Map* on, char const* label);
 
+    public:
         void SetSentErrorMessage(bool val) { sentErrorMessage = val;};
+        /// NULL for a console command
+        WorldSession* GetSession() const { return m_session; }
     private:
         WorldSession* m_session;                            // != NULL for chat command call and NULL for CLI command
 

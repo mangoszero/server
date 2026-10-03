@@ -46,10 +46,11 @@
 #include <string>
 #include <vector>
 #include "ObjectGuid.h"
+#include <functional>
 #include <map>
 
 struct AuctionEntry;
-struct CustodyDeferred;
+
 class Item;
 class Object;
 class Player;
@@ -270,15 +271,14 @@ class MailDraft
         void SendReturnToSender(uint32 sender_acc, ObjectGuid sender_guid, ObjectGuid receiver_guid);
         void SendMailTo(MailReceiver const& receiver, MailSender const& sender, MailCheckMask checked = MAIL_CHECK_MASK_NONE, uint32 deliver_delay = 0);
 
-        /// Custody co-commit: appends the mail INSERTs to the caller's OPEN
-        /// CharacterDatabase transaction (no own Begin/Commit) and DEFERS the
-        /// online receiver's in-memory push + any live-Item* destruction into
-        /// @p deferred, to be run AFTER the caller's checked commit succeeds.
-        /// The receiver's existence MUST be preflighted by the caller. The
-        /// deferred closure runs in the same call stack right after the checked
-        /// commit (no yield), so captured Player/Item pointers stay valid. Sec 5.1.
+        /// Appends the mail INSERTs to the caller's OPEN CharacterDatabase
+        /// transaction (no own Begin/Commit) and DEFERS the online receiver's
+        /// in-memory push + any live-Item* destruction into @p afterCommit, to be
+        /// run AFTER the caller's checked commit succeeds. The caller runs
+        /// @p afterCommit in the same call stack right after the commit, so
+        /// captured Player/Item pointers stay valid.
         void SendMailToInTransaction(MailReceiver const& receiver, MailSender const& sender,
-                                     CustodyDeferred& deferred,
+                                     std::vector<std::function<void()>>& afterCommit,
                                      MailCheckMask checked = MAIL_CHECK_MASK_NONE,
                                      uint32 deliver_delay = 0);
     private:

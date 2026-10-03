@@ -37,7 +37,6 @@ set(SRC_GRP_MAIN
   RASession.cpp
   RASession.h
   Service.h
-  AhService.h
   mangosd.cpp
 )
 source_group("Main" FILES ${SRC_GRP_MAIN})
@@ -81,7 +80,6 @@ target_link_libraries(mangosd
     PRIVATE
         game
         proto
-        ah_ipc
         $<$<BOOL:${SOAP}>:gsoap>
         Threads::Threads
         mangos_openssl

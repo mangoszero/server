@@ -23,12 +23,13 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <algorithm>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
 #include <map>
 #include "AuctionHouseBot.h"
-#include "AhBotSystemOwner.h"
 #include "ProgressBar.h"
 #include "Log.h"
 #include "ObjectMgr.h"
@@ -607,6 +608,16 @@ AuctionBotConfig::AuctionBotConfig()
  * @brief Initialize the AuctionBotConfig by loading from configuration file
  * @return True if initialization successful, false otherwise
  */
+bool AuctionBotConfig::IsModuleEnabled()
+{
+    if (!m_AhBotCfg.SetSource(m_configFileName.c_str()) && !m_AhBotCfg.SetSource(AUCTIONHOUSEBOT_CONFIG_NAME))
+    {
+        sLog.outString("AHBOT is Disabled. Unable to open configuration file %s. ", m_configFileName.c_str());
+        return false;
+    }
+    return m_AhBotCfg.GetBoolDefault("Enable", true);
+}
+
 bool AuctionBotConfig::Initialize()
 {
     if (!m_AhBotCfg.SetSource(m_configFileName.c_str()))
@@ -664,16 +675,13 @@ bool AuctionBotConfig::Initialize()
 void AuctionBotConfig::SetAHBotId(const std::string& BotCharName)
 {
     m_BotId = 0;
-    // F7: an upgraded ahbot.conf may still carry an explicit empty
-    // AuctionHouseBot.CharacterName (the pre-forged-owner default). An empty
-    // string would bypass the forged system owner and leave the bot GUID
-    // unresolved (0), so treat it as the forged AHBOT_SYSTEM_OWNER_NAME -- the
-    // name-intercept then resolves it to the reserved system GUID.
-    const std::string name = BotCharName.empty() ? AHBOT_SYSTEM_OWNER_NAME : BotCharName;
-    m_BotId = sObjectMgr.GetPlayerGuidByName(name.c_str()).GetCounter();
-    if (!m_BotId)
+    if (!BotCharName.empty())
     {
-        sLog.outError("AHBot uses an invalid character name `%s`", name.c_str());
+        m_BotId = sObjectMgr.GetPlayerGuidByName(BotCharName.c_str()).GetCounter();
+        if (!m_BotId)
+        {
+            sLog.outError("AHBot uses an invalid character name `%s`", BotCharName.c_str());
+        }
     }
 }
 
@@ -761,7 +769,7 @@ void AuctionBotConfig::GetConfigFromFile()
 
     SetAHBotIncludes(m_AhBotCfg.GetStringDefault("AuctionHouseBot.forceIncludeItems", ""));
     SetAHBotExcludes(m_AhBotCfg.GetStringDefault("AuctionHouseBot.forceExcludeItems", ""));
-    SetAHBotId(m_AhBotCfg.GetStringDefault("AuctionHouseBot.CharacterName", AHBOT_SYSTEM_OWNER_NAME));
+    SetAHBotId(m_AhBotCfg.GetStringDefault("AuctionHouseBot.CharacterName", ""));
 
     setConfig(CONFIG_BOOL_AHBOT_BUYER_ALLIANCE_ENABLED       , "AuctionHouseBot.Buyer.Alliance.Enabled"      , false);
     setConfig(CONFIG_BOOL_AHBOT_BUYER_HORDE_ENABLED          , "AuctionHouseBot.Buyer.Horde.Enabled"         , false);
@@ -2319,27 +2327,25 @@ bool AuctionBotSeller::getRandomArray(AHB_Seller_Config& config, RandomArray& ra
  */
 void AuctionBotSeller::SetPricesOfItem(AHB_Seller_Config& config, uint32& buyp, uint32& bidp, uint32 stackcnt, ItemQualities itemQuality)
 {
+    // Prices are worked out in 64 bits and saturate at the largest uint32
+    auto saturate = [](uint64 value) { return uint32(std::min<uint64>(value, std::numeric_limits<uint32>::max())); };
+
     // Calculate the buyout price based on the item quality and stack count
-    double temp_buyp = buyp * stackcnt *
-        (itemQuality < MAX_AUCTION_QUALITY ? config.GetPriceRatioPerQuality(AuctionQuality(itemQuality)) : 1);
+    uint64 const ratio = itemQuality < MAX_AUCTION_QUALITY ? config.GetPriceRatioPerQuality(AuctionQuality(itemQuality)) : 1;
+    uint64 const temp_buyp = uint64(buyp) * stackcnt * ratio;
 
-    // Calculate a random range for the buyout price
-    double randrange = temp_buyp * 0.4;
-
-    uint32 buypMin = (uint32)temp_buyp - (uint32)randrange;
-    uint32 buypMax = ((uint32)temp_buyp + (uint32)randrange) < temp_buyp ? std::numeric_limits<uint32>::max() : temp_buyp + randrange;
+    // Calculate a random range (40%) for the buyout price
+    uint64 const randrange = temp_buyp * 2 / 5;
 
     // Set the buyout price
-    buyp = (urand(buypMin, buypMax) / 100) + 1;
+    buyp = (urand(saturate(temp_buyp - randrange), saturate(temp_buyp + randrange)) / 100) + 1;
 
     // Calculate a random range for the bid price
-    double urandrange = buyp * 40;
-    double temp_bidp = buyp * 50;
-    uint32 bidPmin = (uint32)temp_bidp - (uint32)urandrange;
-    uint32 bidPmax = ((uint32)temp_bidp + (uint32)urandrange) < temp_bidp ? std::numeric_limits<uint32>::max() : temp_bidp + urandrange;
+    uint64 const urandrange = uint64(buyp) * 40;
+    uint64 const temp_bidp = uint64(buyp) * 50;
 
     // Set the bid price
-    bidp = (urand(bidPmin, bidPmax) / 100) + 1;
+    bidp = (urand(saturate(temp_bidp - urandrange), saturate(temp_bidp + urandrange)) / 100) + 1;
 }
 
 /**
@@ -2813,19 +2819,10 @@ void AuctionHouseBot::Update()
             break;
         }
     }
-    // NOTE: PurgeMailedItems() is intentionally NOT called here. Update() is
-    // gated out when the out-of-process AH service is active, so driving the
-    // mail cleanup from here would skip it entirely on a service realm. It is
-    // now driven UNCONDITIONALLY from World::Update on the WUPDATE_AHBOT timer
-    // (via PurgeMailedItemsTick()), so it runs in both modes.
 }
 
 void AuctionHouseBot::PurgeMailedItemsTick()
 {
-    // Public, mode-agnostic entry point driven from World::Update on the
-    // WUPDATE_AHBOT timer. PurgeMailedItems() is internally throttled to once
-    // per hour and depends only on the configured bot GUID (not on any
-    // in-process bot cycle state), so it is safe to call in both bot modes.
     PurgeMailedItems();
 }
 

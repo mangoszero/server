@@ -19,8 +19,6 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 # SD3 and Eluna link the `game` library, which only exists when BUILD_MANGOSD.
-# Guard on BOTH the script-lib option AND BUILD_MANGOSD so a worker-only
-# configure (BUILD_MANGOSD=OFF, BUILD_AH_SERVICE=ON) does not try to build them.
 if(BUILD_MANGOSD AND SCRIPT_LIB_SD3)
     add_subdirectory(SD3)
     mangos_submodule_compat(mangosscript
@@ -31,9 +29,11 @@ if(BUILD_MANGOSD AND SCRIPT_LIB_ELUNA)
     add_subdirectory(Eluna)
 endif()
 
-# The out-of-process auction-house worker. Self-contained: links only the IPC
-# wire contract (ah_ipc) + shared; never the mangosd game library. Gated by the
-# existing BUILD_AH_SERVICE option.
+# Auction modules link themselves into mangosd.
+if(BUILD_MANGOSD AND BUILD_AHBOT)
+    add_subdirectory(AuctionHouseBot)
+endif()
+
 if(BUILD_AH_SERVICE)
-    add_subdirectory(AhWorker)
+    add_subdirectory(AhService)
 endif()

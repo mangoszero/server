@@ -33,7 +33,6 @@
 #include "MapManager.h"
 #include "ProgressBar.h"
 #include "Util.h"
-#include "AuctionHouseBot/AhBotSystemOwner.h"
 #include "LivingWorldAnchorPolicy.h"
 #include "MotionGenerators/MotionMaster.h"
 #include "SQLStorages.h"

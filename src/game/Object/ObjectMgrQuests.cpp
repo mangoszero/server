@@ -61,7 +61,6 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "DisableMgr.h"
-#include "AuctionHouseBot/AhBotSystemOwner.h"
 #include "Formulas.h"
 #include "ItemEnchantmentMgr.h"
 #include <limits>

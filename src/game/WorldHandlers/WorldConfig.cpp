@@ -86,7 +86,7 @@
 #include "WaypointManager.h"
 #include "GMTicketMgr.h"
 #include "Util.h"
-#include "AuctionHouseBot/AuctionHouseBot.h"
+#include "AuctionHouseModule.h"
 #include "CharacterDatabaseCleaner.h"
 #include "CreatureLinkingMgr.h"
 #include "Weather.h"
@@ -99,16 +99,7 @@
 #include "UpdateTime.h"
 #include "GameTime.h"
 #include "SystemConfig.h"
-#include "AuctionHouseBot/AuctionIntentExecutor.h"
-#include "AuctionHouseBot/CustodyLedger.h"
-#include "AuctionHouseBot/CustodyService.h"
 #include "ScheduledExit.h"
-#include "WorkerSupervisor.h"
-#include "IpcMessage.h"
-#include "IpcOpcodes.h"
-#include "AuctionIntents.h"
-#include "BrowseMessages.h"
-#include "AuctionHouseBot/BrowsePending.h"
 #include <iostream>
 #include <sstream>
 #include "Corpse.h"
@@ -640,56 +631,6 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW_ENABLED, "Realm.RecommendedOrNew.Enabled", false);
     setConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW, "Realm.RecommendedOrNew", false);
 
-    // AH Service custody escrow ledger
-    setConfig(CONFIG_BOOL_AH_CUSTODY, "AH.Service.Custody", false);
-
-    // AH Service worker write-authority (SP-2). BOOT-LATCHED (spec decision 7):
-    // configNoReload returns true only when !reload; on `.reload config` it
-    // logs and keeps the boot value, so the flag is immutable for the run.
-    if (configNoReload(reload, CONFIG_BOOL_AH_WRITE_AUTHORITY, "AH.Service.WriteAuthority", false))
-    {
-        setConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY, "AH.Service.WriteAuthority", false);
-
-        // Startup invariant (spec I2): WriteAuthority hard-requires the custody
-        // ledger -- every WriteAuthority mutation is reservation-anchored.
-        if (getConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY) && !getConfig(CONFIG_BOOL_AH_CUSTODY))
-        {
-            sLog.outError("AH.Service.WriteAuthority = 1 requires AH.Service.Custody = 1; forcing WriteAuthority OFF.");
-            setConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY, false);
-        }
-
-        // [FIX C.1] Boot preflight: WriteAuthority hard-requires the
-        // `ah_worker_journal` migration. reconcile-on-reconnect reads that table
-        // to decide finalize-forward vs release; a missing table makes the read
-        // return "row absent" for a mutation the worker actually committed, so a
-        // committed bid gets refunded while the worker still shows the bidder ->
-        // double-credit. Refuse to run write-authority without the journal table.
-        if (getConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY))
-        {
-            QueryResult* jrnCheck = CharacterDatabase.Query("SHOW TABLES LIKE 'ah_worker_journal'");
-            if (!jrnCheck)
-            {
-                sLog.outError("AH.Service.WriteAuthority = 1 but the "
-                    "`ah_worker_journal` table is missing; apply the SP-2 "
-                    "migration first. Forcing WriteAuthority OFF.");
-                setConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY, false);
-            }
-            else
-            {
-                delete jrnCheck;
-            }
-        }
-
-        // Advisory only: with no worker configured, every AH mutation will
-        // report unavailable (spec 5.5: no in-process fallback).
-        if (getConfig(CONFIG_BOOL_AH_WRITE_AUTHORITY) && !sConfig.GetBoolDefault("AH.Service.Enabled", false))
-        {
-            sLog.outError("AH.Service.WriteAuthority = 1 but "
-                "AH.Service.Enabled = 0: no worker will start; all AH "
-                "mutations will be unavailable.");
-        }
-    }
-
     m_relocation_ai_notify_delay = sConfig.GetIntDefault("Visibility.AIRelocationNotifyDelay", 1000u);
     m_relocation_lower_limit_sq  = pow(sConfig.GetFloatDefault("Visibility.RelocationLowerLimit", 10), 2);
 
@@ -819,6 +760,8 @@ void World::LoadConfigSettings(bool reload)
         }
     }
 #endif /* ENABLE_ELUNA */
+
+    AuctionHouseModules::LoadConfig(reload);
     sLog.outString();
 }
 

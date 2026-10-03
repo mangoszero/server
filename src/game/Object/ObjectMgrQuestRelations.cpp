@@ -30,7 +30,6 @@
 #include "Log.h"
 #include "ProgressBar.h"
 #include "SQLStorages.h"
-#include "AuctionHouseBot/AhBotSystemOwner.h"
 #include "LivingWorldAnchorPolicy.h"
 #include "MotionGenerators/MotionMaster.h"
 #include "Policies/Singleton.h"

@@ -34,7 +34,6 @@
 #include "DBCStores.h"
 #include "SQLStorages.h"
 #include "SpellMgr.h"
-#include "AuctionHouseBot/AhBotSystemOwner.h"
 #include "LivingWorldAnchorPolicy.h"
 #include "MotionGenerators/MotionMaster.h"
 #include "MapManager.h"

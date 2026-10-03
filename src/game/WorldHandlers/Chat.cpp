@@ -44,6 +44,8 @@
 
 #include "Common/Locales.h"
 #include "Utilities/Errors.h"
+#include <algorithm>
+#include <cstring>
 #include <sstream>
 #include <string>
 #include <map>
@@ -64,7 +66,7 @@
 #include "SpellMgr.h"
 #include "PoolManager.h"
 #include "GameEventMgr.h"
-#include "AuctionHouseBot/AuctionHouseBot.h"
+#include "AuctionHouseModule.h"
 #include "CommandMgr.h"
 #include "ObjectLookup.h"
 
@@ -122,58 +124,6 @@ ChatCommand* ChatHandler::getCommandTable()
         { "password",       SEC_PLAYER,         true,  &ChatHandler::HandleAccountPasswordCommand,     "", NULL },
         { "",               SEC_PLAYER,         true,  &ChatHandler::HandleAccountCommand,             "", NULL },
         { NULL,             0,                  false, NULL,                                           "", NULL }
-    };
-
-    static ChatCommand ahbotItemsAmountCommandTable[] =
-    {
-        { "grey",           SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAHBotItemsAmountQualityCommand<AUCTION_QUALITY_GREY>,  "", NULL },
-        { "white",          SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAHBotItemsAmountQualityCommand<AUCTION_QUALITY_WHITE>, "", NULL },
-        { "green",          SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAHBotItemsAmountQualityCommand<AUCTION_QUALITY_GREEN>, "", NULL },
-        { "blue",           SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAHBotItemsAmountQualityCommand<AUCTION_QUALITY_BLUE>,  "", NULL },
-        { "purple",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAHBotItemsAmountQualityCommand<AUCTION_QUALITY_PURPLE>, "", NULL },
-        { "orange",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAHBotItemsAmountQualityCommand<AUCTION_QUALITY_ORANGE>, "", NULL },
-        { "yellow",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAHBotItemsAmountQualityCommand<AUCTION_QUALITY_YELLOW>, "", NULL },
-        { "",               SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAHBotItemsAmountCommand,      "", NULL },
-        { NULL,             0,                  true,  NULL,                                             "", NULL }
-    };
-
-    static ChatCommand ahbotItemsRatioCommandTable[] =
-    {
-        { "alliance",       SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAHBotItemsRatioHouseCommand<AUCTION_HOUSE_ALLIANCE>,  "", NULL },
-        { "horde",          SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAHBotItemsRatioHouseCommand<AUCTION_HOUSE_HORDE>,     "", NULL },
-        { "neutral",        SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAHBotItemsRatioHouseCommand<AUCTION_HOUSE_NEUTRAL>,   "", NULL },
-        { "",               SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAHBotItemsRatioCommand,      "", NULL },
-        { NULL,             0,                  true,  NULL,                                             "", NULL }
-    };
-
-    static ChatCommand ahbotItemsCommandTable[] =
-    {
-        { "amount",         SEC_ADMINISTRATOR,  true,  NULL,                                           "", ahbotItemsAmountCommandTable},
-        { "ratio",          SEC_ADMINISTRATOR,  true,  NULL,                                           "", ahbotItemsRatioCommandTable},
-        { NULL,             0,                  true,  NULL,                                           "", NULL }
-    };
-
-    static ChatCommand ahbotCommandTable[] =
-    {
-        { "items",          SEC_ADMINISTRATOR,  true,  NULL,                                           "", ahbotItemsCommandTable},
-        { "rebuild",        SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAHBotRebuildCommand,        "", NULL },
-        { "reload",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAHBotReloadCommand,         "", NULL },
-        { "status",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAHBotStatusCommand,         "", NULL },
-        { NULL,             0,                  true,  NULL,                                           "", NULL }
-    };
-
-    static ChatCommand ahConsoleCommandTable[] =
-    {
-        { "show",           SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAhServiceConsoleShowCommand, "", NULL },
-        { "hide",           SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAhServiceConsoleHideCommand, "", NULL },
-        { NULL,             0,                  true,  NULL,                                            "", NULL }
-    };
-
-    static ChatCommand ahCommandTable[] =
-    {
-        { "console",        SEC_ADMINISTRATOR,  true,  NULL,                                            "", ahConsoleCommandTable },
-        { "repair",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAhRepairCommand,             "", NULL },
-        { NULL,             0,                  true,  NULL,                                            "", NULL }
     };
 
     static ChatCommand auctionCommandTable[] =
@@ -777,9 +727,7 @@ ChatCommand* ChatHandler::getCommandTable()
     static ChatCommand commandTable[] =
     {
         { "account",        SEC_PLAYER,         true,  NULL,                                           "", accountCommandTable  },
-        { "ah",             SEC_ADMINISTRATOR,  true,  NULL,                                           "", ahCommandTable       },
         { "auction",        SEC_ADMINISTRATOR,  false, NULL,                                           "", auctionCommandTable  },
-        { "ahbot",          SEC_ADMINISTRATOR,  true,  NULL,                                           "", ahbotCommandTable    },
         { "cast",           SEC_ADMINISTRATOR,  true,  NULL,                                           "", castCommandTable     },
         { "character",      SEC_GAMEMASTER,     true,  NULL,                                           "", characterCommandTable},
         { "debug",          SEC_MODERATOR,      true,  NULL,                                           "", debugCommandTable    },
@@ -873,18 +821,43 @@ ChatCommand* ChatHandler::getCommandTable()
 #ifdef ENABLE_PLAYERBOTS
         { "bot",            SEC_PLAYER,         false, &ChatHandler::HandlePlayerbotCommand,           "", NULL },
         { "rndbot",         SEC_CONSOLE,        true,  &ChatHandler::HandlePlayerbotConsoleCommand,    "", NULL },
-        { "ahbot",          SEC_GAMEMASTER,     true,  &ChatHandler::HandleAhBotCommand,               "", NULL },
 #endif
 
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };
+
+    // the hardcoded commands followed by those the auction modules bring, sorted
+    // by name so a command that abbreviates another ("ah", "ahbot") comes first
+    static std::vector<ChatCommand> rootTable;
+    if (rootTable.empty())
+    {
+        for (uint32 i = 0; commandTable[i].Name != NULL; ++i)
+        {
+            rootTable.push_back(commandTable[i]);
+        }
+
+        std::vector<ChatCommand> moduleCommands;
+        for (ChatCommand* table : AuctionHouseModules::Commands())
+        {
+            for (uint32 i = 0; table[i].Name != NULL; ++i)
+            {
+                moduleCommands.push_back(table[i]);
+            }
+        }
+        std::sort(moduleCommands.begin(), moduleCommands.end(), [](ChatCommand const& a, ChatCommand const& b)
+        {
+            return strcmp(a.Name, b.Name) < 0;
+        });
+        rootTable.insert(rootTable.end(), moduleCommands.begin(), moduleCommands.end());
+        rootTable.push_back(ChatCommand(NULL, 0, false, NULL, "", NULL));
+    }
 
     if (load_command_table)
     {
         load_command_table = false;
 
         // check hardcoded part integrity
-        CheckIntegrity(commandTable, NULL);
+        CheckIntegrity(rootTable.data(), NULL);
 
         QueryResult* result = WorldDatabase.Query("SELECT `id`, `command_text`,`security`,`help_text` FROM `command`");
         if (result)
@@ -894,14 +867,19 @@ ChatCommand* ChatHandler::getCommandTable()
                 Field* fields = result->Fetch();
                 uint32 id = fields[0].GetUInt32();
                 std::string name = fields[1].GetCppString();
-                SetDataForCommandInTable(commandTable, id, name.c_str(), fields[2].GetUInt16(), fields[3].GetCppString());
+                SetDataForCommandInTable(rootTable.data(), id, name.c_str(), fields[2].GetUInt16(), fields[3].GetCppString());
             }
             while (result->NextRow());
             delete result;
         }
     }
 
-    return commandTable;
+    return rootTable.data();
+}
+
+bool ChatCommand::Execute(ChatHandler& handler, char* args) const
+{
+    return Callback ? Callback(handler, args) : (handler.*Handler)(args);
 }
 
 ChatHandler::ChatHandler(WorldSession* session) : m_session(session) {}
@@ -1118,7 +1096,7 @@ void ChatHandler::CheckIntegrity(ChatCommand* table, ChatCommand* parentCommand)
 
         if (command->ChildCommands)
         {
-            if (command->Handler)
+            if (command->HasHandler())
             {
                 if (parentCommand)
                 {
@@ -1139,7 +1117,7 @@ void ChatHandler::CheckIntegrity(ChatCommand* table, ChatCommand* parentCommand)
 
             CheckIntegrity(command->ChildCommands, command);
         }
-        else if (!command->Handler)
+        else if (!command->HasHandler())
         {
             if (parentCommand)
             {
@@ -1291,7 +1269,7 @@ ChatCommandSearchResult ChatHandler::FindCommand(ChatCommand* table, char const*
         }
 
         // must be have handler is explicitly selected
-        if (!table[i].Handler)
+        if (!table[i].HasHandler())
         {
             continue;
         }
@@ -1351,7 +1329,7 @@ void ChatHandler::ExecuteCommand(const char* text)
         case CHAT_COMMAND_OK:
         {
             SetSentErrorMessage(false);
-            if ((this->*(command->Handler))((char*)text))   // text content destroyed at call
+            if (command->Execute(*this, (char*)text))   // text content destroyed at call
             {
                 if (command->SecurityLevel > SEC_PLAYER)
                 {

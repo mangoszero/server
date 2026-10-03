@@ -14,7 +14,7 @@
 # IS NUL-terminated, and no core calls that overload at all -- every one of them uses
 # the two-iterator form.
 #
-# src/modules/{Bots,AhWorker} are deliberately absent: they are in-tree, they
+# src/modules/{Bots,AuctionHouseBot,AhService} are deliberately absent: they are in-tree, they
 # are ours, and they are analysed.
 exclude_paths:
   - "dep/**"

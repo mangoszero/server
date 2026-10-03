@@ -73,7 +73,8 @@ option(PCH                  "Enable precompiled headers"                    ON)
 option(WITH_IO_URING        "Use the io_uring network backend (Linux, needs liburing)" OFF)
 option(DEBUG                "Enable debug build (only on non IDEs)"         OFF)
 option(WITHOUT_GIT          "Disable Git revision detection"                OFF)
-option(BUILD_AH_SERVICE     "Build the out-of-process auction-house service" ON)
+option(BUILD_AHBOT          "Build the auction house bot module"            ON)
+option(BUILD_AH_SERVICE     "Build the out-of-process auction house service module" OFF)
 option(WITH_TESTS           "Build the unit tests"                          OFF)
 option(WITH_NET_TESTS       "Build the socket tests (slow; never in CI)"    OFF)
 #==================================================================================
@@ -99,6 +100,8 @@ message(
     SCRIPT_LIB_SD3          Compile with support for ScriptDev3 scripts
    Modules:
     PLAYERBOTS              Enable Player Bots
+    BUILD_AHBOT             Build the auction house bot module
+    BUILD_AH_SERVICE        Build the out-of-process auction house service module
 
   To set an option simply type -D<OPTION>=<VALUE> after 'cmake <srcs>'.
   Also, you can specify the generator with -G. See 'cmake --help' for more details

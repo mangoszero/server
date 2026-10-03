@@ -26,7 +26,7 @@
 // linked into production mangosd.
 //
 #include "Usability.h"              // worker port (ah_usability)
-#include "Object/AhUsabilityRef.h"  // reference (compiled in directly)
+#include "AhUsabilityRef.h"  // reference (compiled in directly)
 #include <cstdio>
 #include <vector>
 
