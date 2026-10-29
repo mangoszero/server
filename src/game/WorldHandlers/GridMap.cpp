@@ -352,7 +352,7 @@ GridMapLiquidStatus TerrainInfo::getLiquidStatus(float x, float y, float z,
     const world::terrain::Column column =
         ColumnAt(x, y, z + FLOOR_BURIED_LIFT, z - FLOOR_SEARCH_DOWN);
 
-    const auto liquid = column.HighestLiquid();
+    const auto liquid = column.LiquidFor(z);
     if (!liquid || !liquid->liquidEntry)
     {
         return LIQUID_MAP_NO_WATER;

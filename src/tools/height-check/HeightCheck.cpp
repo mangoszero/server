@@ -224,7 +224,7 @@ int main(int argc, char** argv)
 
         if (verbose)
         {
-            const auto liquid = column.HighestLiquid();
+            const auto liquid = column.LiquidFor(p.z);
             char liq[80] = "none";
             if (liquid)
             {

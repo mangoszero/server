@@ -29,6 +29,7 @@ namespace world::terrain
         LiquidKind liquid = LiquidKind::None;
         uint16_t liquidEntry = 0;
         bool deep = false;
+        std::optional<float> terrainZ;   ///< see LiquidInfo::terrainZ
 
         bool Solid() const { return kind != SurfaceKind::Liquid; }
 
@@ -39,9 +40,14 @@ namespace world::terrain
             info.kind = liquid;
             info.entry = liquidEntry;
             info.deep = deep;
+            info.terrainZ = terrainZ;
             return info;
         }
     };
+
+    /// How far under its ADT terrain a point may be and still be in that tile's
+    /// liquid.
+    constexpr float ADT_LIQUID_BURIED_LIMIT = 2.0f;
 
     class Column
     {
@@ -62,6 +68,7 @@ namespace world::terrain
                 s.liquid = info.kind;
                 s.liquidEntry = info.entry;
                 s.deep = info.deep;
+                s.terrainZ = info.terrainZ;
                 m_surfaces.push_back(s);
             }
 
@@ -127,6 +134,33 @@ namespace world::terrain
                     {
                         best = s;
                     }
+                }
+                return best;
+            }
+
+            /// The liquid a point at z is in, under or over: the highest one
+            /// that reaches it. An ADT liquid does not reach a point when it
+            /// lies under its own terrain, or the point is more than
+            /// ADT_LIQUID_BURIED_LIMIT under that terrain -- a cave, or a city
+            /// built below the surface (the Undercity under Tirisfal) -- as the
+            /// reference GridMap::getLiquidStatus had it.
+            std::optional<Surface> LiquidFor(float z) const
+            {
+                std::optional<Surface> best;
+                for (const Surface& s : m_surfaces)
+                {
+                    if (s.kind != SurfaceKind::Liquid ||
+                        (best && s.z <= best->z))
+                    {
+                        continue;
+                    }
+                    if (s.terrainZ &&
+                        (s.z < *s.terrainZ ||
+                         z < *s.terrainZ - ADT_LIQUID_BURIED_LIMIT))
+                    {
+                        continue;
+                    }
+                    best = s;
                 }
                 return best;
             }

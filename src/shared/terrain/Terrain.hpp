@@ -39,6 +39,9 @@ namespace world::terrain
         LiquidKind kind = LiquidKind::None;
         uint16_t entry = 0;   ///< LiquidType.dbc row id (0 = unknown)
         bool deep = false;    ///< drives swim fatigue ("dark water")
+        /// The ADT terrain under an ADT liquid; none for a model's liquid or
+        /// over a hole.
+        std::optional<float> terrainZ;
     };
 
     struct StaticInstance
