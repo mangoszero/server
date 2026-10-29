@@ -345,6 +345,9 @@ namespace world::terrain
         {
             if (auto adt = tile->LiquidAt(x, y))
             {
+                // The terrain it lies on: a point buried under that terrain is
+                // not in it (Column::LiquidFor), however far below the floor.
+                adt->terrainZ = tile->TerrainHeight(x, y);
                 column.AddLiquid(*adt);
             }
         }

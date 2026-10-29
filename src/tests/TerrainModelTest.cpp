@@ -26,6 +26,7 @@
 #include "TestHarness.h"
 
 #include "terrain/CollisionModel.hpp"
+#include "terrain/Column.hpp"
 #include "terrain/Terrain.hpp"
 #include "terrain/WmoModel.hpp"
 
@@ -335,4 +336,78 @@ TEST(WmoAreaInfoNamesTheGroupTheRayHit)
     const auto below = m.AreaInfo(Vec3{0.f, 0.f, 10.f}, Vec3{0, 0, -1}, 200.f);
     REQUIRE(below.has_value());
     CHECK_EQ(below->groupId, uint32_t(111));
+}
+
+namespace
+{
+    LiquidInfo AdtWater(float level, std::optional<float> terrainZ)
+    {
+        LiquidInfo info;
+        info.level = level;
+        info.kind = LiquidKind::Water;
+        info.entry = 1;
+        info.terrainZ = terrainZ;
+        return info;
+    }
+}
+
+TEST(AdtLiquidDoesNotReachAPointFarUnderItsTerrain)
+{
+    // The Undercity, Miles Dexter: Tirisfal's water at 32.93, under its own
+    // terrain at 34.14, the city's floor 95 yards down. The reference GridMap
+    // left it dry.
+    Column c;
+    c.AddSolid(-62.28f, SurfaceKind::Static);
+    c.AddLiquid(AdtWater(32.93f, 34.14f));
+    CHECK(!c.LiquidFor(-62.2f).has_value());
+    // still there for a caller that asks for any liquid
+    CHECK(c.HighestLiquid().has_value());
+}
+
+TEST(AdtLiquidReachesAPointAboveOrJustUnderItsTerrain)
+{
+    Column c;
+    c.AddSolid(10.f, SurfaceKind::Terrain);
+    c.AddLiquid(AdtWater(15.f, 10.f));
+    const auto swimming = c.LiquidFor(12.f);
+    REQUIRE(swimming.has_value());
+    CHECK_EQ(swimming->z, 15.f);
+    CHECK(c.LiquidFor(10.f - ADT_LIQUID_BURIED_LIMIT + 0.5f).has_value());
+    CHECK(!c.LiquidFor(10.f - ADT_LIQUID_BURIED_LIMIT - 0.5f).has_value());
+}
+
+TEST(AdtLiquidUnderItsOwnTerrainIsNoLiquid)
+{
+    Column c;
+    c.AddLiquid(AdtWater(32.93f, 34.14f));
+    CHECK(!c.LiquidFor(40.f).has_value());
+}
+
+TEST(AdtLiquidOverAHoleAndModelLiquidAreNotFiltered)
+{
+    // No terrain under it (a hole cut for a WMO entrance) or a WMO's own
+    // liquid: the floor checks of the caller decide, as before.
+    Column c;
+    c.AddLiquid(AdtWater(32.93f, std::nullopt));
+    LiquidInfo wmo = AdtWater(-60.f, std::nullopt);
+    wmo.kind = LiquidKind::Slime;
+    c.AddLiquid(wmo);
+    const auto hole = c.LiquidFor(-62.2f);
+    REQUIRE(hole.has_value());
+    CHECK_EQ(hole->z, 32.93f);
+}
+
+TEST(BuriedAdtLiquidLeavesAModelLiquidBelowIt)
+{
+    // The canal of a city under a lake: the lake is out, the canal is the
+    // answer.
+    Column c;
+    c.AddLiquid(AdtWater(32.93f, 30.f));
+    LiquidInfo canal = AdtWater(-63.f, std::nullopt);
+    canal.kind = LiquidKind::Slime;
+    c.AddLiquid(canal);
+    const auto liquid = c.LiquidFor(-64.f);
+    REQUIRE(liquid.has_value());
+    CHECK_EQ(liquid->z, -63.f);
+    CHECK(liquid->liquid == LiquidKind::Slime);
 }
