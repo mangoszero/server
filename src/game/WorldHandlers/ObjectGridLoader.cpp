@@ -441,6 +441,30 @@ ObjectGridUnloader::Unload(GridType& grid)
 {
     TypeContainerVisitor<ObjectGridUnloader, GridTypeMapContainer > unloader(*this);
     grid.Visit(unloader);
+
+    // the resurrectable player corpses are world objects and not deleted here
+    ObjectWorldUnloader worldUnloader;
+    TypeContainerVisitor<ObjectWorldUnloader, WorldTypeMapContainer > corpses(worldUnloader);
+    grid.Visit(corpses);
+}
+
+void ObjectWorldUnloader::Visit(CorpseMapType& m)
+{
+    // collect first: RemoveFromWorld must not run while the references are walked
+    std::vector<Corpse*> corpses;
+    for (CorpseMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
+    {
+        corpses.push_back(iter->getSource());
+    }
+
+    for (Corpse* corpse : corpses)
+    {
+        if (corpse->IsInWorld())
+        {
+            corpse->RemoveFromWorld();
+        }
+        corpse->ForgetMap();
+    }
 }
 
 template<class T>

@@ -116,7 +116,9 @@ bool Player::IsVisibleInGridForPlayer(Player* pl) const
     // Dead player see live players near own corpse
     if (IsAlive())
     {
-        if (Corpse* corpse = pl->GetCorpse())
+        Corpse* corpse = pl->GetCorpse();
+        // a corpse can be out of the world (its grid unloaded, its battleground ended): no map to compare
+        if (corpse && corpse->IsInWorld())
         {
             // 20 - aggro distance for same level, 25 - max additional distance if player level less that creature level
             if (InReach(*corpse, *this, (20 + 25) * sWorld.getConfig(CONFIG_FLOAT_RATE_CREATURE_AGGRO)))

@@ -668,7 +668,8 @@ void WorldSession::HandleReclaimCorpseOpcode(WorldPacket& recv_data)
 
     Corpse* corpse = GetPlayer()->GetCorpse();
 
-    if (!corpse)
+    // out of the world, the corpse has no map to reach it in (its grid unloaded, its battleground ended)
+    if (!corpse || !corpse->IsInWorld())
     {
         return;
     }
