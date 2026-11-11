@@ -77,9 +77,11 @@ class ObjectGridUnloader
                     Unload(i_grid(x, y));
                 }
             }
+            DetachCorpsesN();
         }
 
         void Unload(GridType& grid);
+        void DetachCorpsesN();
         template<class T> void Visit(GridRefManager<T>& m);
     private:
         NGridType& i_grid;
