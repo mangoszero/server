@@ -919,10 +919,12 @@ void BattleGround::AddPlayer(Player* plr)
     bp.OfflineRemoveTime = 0;
     bp.PlayerTeam = team;
 
+    // A player re-logging into the battleground is already counted
+    bool const isInBattleground = IsPlayerInBattleGround(guid);
+
     // Add to list/maps
     m_Players[guid] = bp;
 
-    bool const isInBattleground = IsPlayerInBattleGround(guid);
     if (!isInBattleground)
     {
         UpdatePlayersCountByTeam(team, false); // +1 player
