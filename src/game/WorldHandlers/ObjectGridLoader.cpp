@@ -443,6 +443,41 @@ ObjectGridUnloader::Unload(GridType& grid)
     grid.Visit(unloader);
 }
 
+void ObjectGridUnloader::DetachCorpsesN()
+{
+    // the resurrectable player corpses are world objects and not deleted with the grid; only a whole
+    // grid detaches them - AddCorpsesToGrid puts every corpse of the grid in the cell that loaded it,
+    // so a single cell unload would also detach corpses of cells that stay loaded
+    ObjectWorldUnloader worldUnloader;
+    TypeContainerVisitor<ObjectWorldUnloader, WorldTypeMapContainer > corpses(worldUnloader);
+    for (unsigned int x = 0; x < MAX_NUMBER_OF_CELLS; ++x)
+    {
+        for (unsigned int y = 0; y < MAX_NUMBER_OF_CELLS; ++y)
+        {
+            i_grid(x, y).Visit(corpses);
+        }
+    }
+}
+
+void ObjectWorldUnloader::Visit(CorpseMapType& m)
+{
+    // collect first: RemoveFromWorld must not run while the references are walked
+    std::vector<Corpse*> corpses;
+    for (CorpseMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
+    {
+        corpses.push_back(iter->getSource());
+    }
+
+    for (Corpse* corpse : corpses)
+    {
+        if (corpse->IsInWorld())
+        {
+            corpse->RemoveFromWorld();
+        }
+        corpse->ForgetMap();
+    }
+}
+
 template<class T>
     void ObjectGridUnloader::Visit(GridRefManager<T>& m)
 {

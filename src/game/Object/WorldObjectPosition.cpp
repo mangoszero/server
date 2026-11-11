@@ -250,8 +250,9 @@ static bool InCommonFrame(WorldObject const& a, WorldObject const& b,
         return true;
     }
 
-    TransportMap* va = a.GetMap() ? a.GetMap()->AsTransport() : NULL;
-    TransportMap* vb = b.GetMap() ? b.GetMap()->AsTransport() : NULL;
+    // FindMap, not GetMap: a player corpse whose grid unloaded has no map any more (GetMap asserts)
+    TransportMap* va = a.FindMap() ? a.FindMap()->AsTransport() : NULL;
+    TransportMap* vb = b.FindMap() ? b.FindMap()->AsTransport() : NULL;
 
     if (!va && !vb)
     {

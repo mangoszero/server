@@ -152,6 +152,12 @@ void CorpseManager::AddCorpsesToGrid(GridPair const& gridpair, GridType& grid, M
             return;
         }
 
+        // the same grid coordinates exist on every map
+        if (corpse->GetMapId() != map->GetId())
+        {
+            return;
+        }
+
         // On an instanceable map take only the corpses belonging to this instance.
         if (map->Instanceable())
         {

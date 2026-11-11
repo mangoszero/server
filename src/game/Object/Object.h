@@ -863,6 +863,11 @@ class WorldObject : public Object
         // used to check all object's GetMap() calls when object is not in world!
         void ResetMap();
 
+        /// Drops the map pointer of an object that outlives its map: a player corpse stays in the
+        /// CorpseManager after its grid unloaded, and its map can be destroyed (an ended battleground,
+        /// an unloaded instance). FindMap() is NULL afterwards; the grid loader sets the map again.
+        void ForgetMap() { m_currMap = NULL; }
+
         TerrainInfo const* GetTerrain() const;
 
         void AddToClientUpdateList() override;

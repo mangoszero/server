@@ -77,12 +77,26 @@ class ObjectGridUnloader
                     Unload(i_grid(x, y));
                 }
             }
+            DetachCorpsesN();
         }
 
         void Unload(GridType& grid);
+        void DetachCorpsesN();
         template<class T> void Visit(GridRefManager<T>& m);
     private:
         NGridType& i_grid;
+};
+
+/**
+ * Takes the player corpses of a grid that unloads out of the world. The CorpseManager owns them and
+ * they outlive the grid - and the map, which an ended battleground or an unloaded instance deletes -
+ * so they must not keep pointing at it; LoadHelper puts them back when the grid loads again.
+ */
+class ObjectWorldUnloader
+{
+    public:
+        void Visit(CorpseMapType& m);
+        template<class T> void Visit(GridRefManager<T>&) {}
 };
 
 class ObjectGridStoper
