@@ -116,7 +116,7 @@ int ns1__executeCommand(soap* soap, char* command, char** result)
 
     if (!sAccountMgr.CheckPassword(accountId, soap->passwd))
     {
-        sLog.outString("SoapThread: Client sent an invalid password for account %s", soap->passwd);
+        sLog.outString("SoapThread: Client sent an invalid password for account %s", soap->userid);
         return 401;
     }
 
